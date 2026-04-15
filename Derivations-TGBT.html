@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dérivations & TGBT</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{font-size:13px}
+body{min-height:100vh;background:#0e0e10;color:rgba(220,210,235,0.90);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;position:relative}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:repeating-linear-gradient(45deg,transparent 0px,transparent 1px,rgba(255,255,255,0.018) 1px,rgba(255,255,255,0.018) 2px),
+  repeating-linear-gradient(-45deg,transparent 0px,transparent 1px,rgba(255,255,255,0.018) 1px,rgba(255,255,255,0.018) 2px);background-size:4px 4px}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 70% 70% at 50% 30%,transparent 0%,rgba(6,4,12,0.55) 100%)}
+
+.topbar{position:fixed;top:0;left:0;right:0;z-index:100;height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;
+  background:linear-gradient(180deg,rgba(14,14,16,0.92) 0%,rgba(14,14,16,0.75) 100%);border-bottom:1px solid rgba(123,95,172,0.10);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.topbar-left,.topbar-right{display:flex;align-items:center;gap:16px}
+.topbar-center{display:flex;align-items:center;gap:16px}
+.btn-top{display:flex;align-items:center;gap:8px;padding:6px 18px;border:1px solid rgba(123,95,172,0.25);border-radius:6px;
+  background:rgba(91,63,140,0.08);color:rgba(200,186,216,0.85);font-family:'Segoe UI',system-ui,sans-serif;font-size:12.5px;
+  letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all 0.3s ease;text-decoration:none}
+.btn-top:hover{background:rgba(91,63,140,0.20);border-color:rgba(123,95,172,0.45);color:#E8E0F2}
+.btn-top svg{width:14px;height:14px;opacity:0.7}
+.topbar-sep{width:1px;height:18px;background:rgba(123,95,172,0.15)}
+.topbar-title{font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;font-weight:600;color:rgba(220,210,235,0.9);letter-spacing:1px}
+.topbar-clock{display:flex;align-items:center;gap:20px;font-family:'Segoe UI',system-ui,sans-serif;color:rgba(200,186,216,0.6);font-size:13px;letter-spacing:0.8px}
+.topbar-time{font-size:15px;font-weight:500;color:rgba(220,210,235,0.85);font-variant-numeric:tabular-nums;letter-spacing:1.5px}
+.topbar-date{font-size:12.5px;color:rgba(180,165,200,0.50);letter-spacing:1px;text-transform:uppercase}
+.topbar-badge{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase}
+.badge-purple{background:rgba(91,63,140,0.15);color:rgba(155,125,197,0.85);border:1px solid rgba(123,95,172,0.20)}
+.badge-count{background:rgba(91,63,140,0.25);color:rgba(200,186,216,0.90);border:1px solid rgba(123,95,172,0.30)}
+
+.tabs{position:fixed;top:48px;left:0;right:0;z-index:99;display:flex;gap:2px;padding:0 24px;height:42px;align-items:stretch;
+  background:linear-gradient(180deg,rgba(14,14,16,0.90),rgba(14,14,16,0.85));border-bottom:1px solid rgba(123,95,172,0.10);
+  backdrop-filter:blur(10px)}
+.tab{padding:0 20px;display:flex;align-items:center;font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;
+  color:rgba(180,165,200,0.45);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.3s}
+.tab:hover{color:rgba(200,186,216,0.75);background:rgba(91,63,140,0.06)}
+.tab.active{color:rgba(155,125,197,0.95);border-bottom-color:#7B5DA8}
+.tab-add{color:rgba(123,95,172,0.50);font-size:16px;padding:0 14px;cursor:pointer;display:flex;align-items:center;transition:color 0.3s}
+.tab-add:hover{color:#9B7DC5}
+
+.content{position:relative;z-index:1;margin-top:90px;padding:20px 24px 60px}
+.sheet{display:none;animation:shIn .3s ease}.sheet.active{display:block}
+@keyframes shIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.card{position:relative;border-radius:10px;border:1px solid rgba(123,95,172,0.12);
+  background:linear-gradient(165deg,rgba(22,18,32,0.85) 0%,rgba(14,14,16,0.92) 100%);margin-bottom:18px;overflow:hidden}
+.card::before{content:'';position:absolute;inset:0;border-radius:10px;pointer-events:none;
+  background:repeating-linear-gradient(45deg,transparent 0px,transparent 1px,rgba(255,255,255,0.010) 1px,rgba(255,255,255,0.010) 2px),
+  repeating-linear-gradient(-45deg,transparent 0px,transparent 1px,rgba(255,255,255,0.010) 1px,rgba(255,255,255,0.010) 2px);background-size:4px 4px}
+.card::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(123,95,172,0.18),transparent);pointer-events:none}
+.card-h{position:relative;padding:14px 20px;display:flex;align-items:center;gap:10px;
+  border-bottom:1px solid rgba(123,95,172,0.08);font-weight:700;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(200,186,216,0.75)}
+.card-h .ic{width:30px;height:30px;border-radius:7px;background:rgba(91,63,140,0.15);border:1px solid rgba(123,95,172,0.15);
+  display:flex;align-items:center;justify-content:center;font-size:14px}
+.card-h .rt{margin-left:auto}
+.card-b{position:relative;padding:16px 20px}
+
+table{width:100%;border-collapse:collapse}
+th{padding:8px 10px;font-size:10.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+  color:rgba(155,125,197,0.70);text-align:center;border-bottom:1px solid rgba(123,95,172,0.12);background:rgba(91,63,140,0.06)}
+td{padding:7px 10px;text-align:center;border-bottom:1px solid rgba(123,95,172,0.06);font-size:12.5px;
+  color:rgba(220,210,235,0.80);font-variant-numeric:tabular-nums}
+tr:hover td{background:rgba(91,63,140,0.04)}
+td.L{text-align:left}td.fl{font-weight:700;color:#9B7DC5;letter-spacing:1px}
+td.fm{color:rgba(155,125,197,0.95);font-weight:600}td.sx{color:#C8A2FF;font-weight:700}
+tr.tot td{background:rgba(91,63,140,0.10);border-top:1px solid rgba(123,95,172,0.20);font-weight:700;color:rgba(232,224,242,0.95)}
+tr.fsep td{border-top:2px solid rgba(123,95,172,0.35);padding-top:10px}
+tr.fsep td.fl{position:relative}
+tr.fsep td.fl::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:#7B5DA8;border-radius:0 2px 2px 0}
+tr.rw6 td.hl{background:rgba(255,159,67,0.08)}
+tr.rw6:hover td.hl{background:rgba(255,159,67,0.14)}
+tr.rw12 td.hl{background:rgba(255,85,85,0.08)}
+tr.rw12:hover td.hl{background:rgba(255,85,85,0.14)}
+
+input[type="number"],input[type="text"]{background:rgba(22,18,32,0.80);border:1px solid rgba(123,95,172,0.18);color:rgba(220,210,235,0.90);
+  font-family:inherit;font-size:12px;padding:5px 8px;border-radius:5px;text-align:center;transition:all .25s;font-variant-numeric:tabular-nums}
+input:focus{outline:none;border-color:rgba(123,95,172,0.50);background:rgba(32,24,50,0.90);box-shadow:0 0 0 3px rgba(91,63,140,0.12)}
+input.ns{-moz-appearance:textfield}
+input.ns::-webkit-outer-spin-button,input.ns::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+input.ws{width:55px}input.wm{width:85px}input.wl{width:125px;text-align:left}input.wlc{width:125px;text-align:center}
+select.sel{background:rgba(22,18,32,0.80);border:1px solid rgba(123,95,172,0.18);color:rgba(220,210,235,0.90);
+  font-family:inherit;font-size:12px;padding:5px 6px;border-radius:5px;text-align:center;cursor:pointer;transition:all .25s;
+  -webkit-appearance:none;appearance:none;min-width:52px}
+select.sel:focus{outline:none;border-color:rgba(123,95,172,0.50);background:rgba(32,24,50,0.90);box-shadow:0 0 0 3px rgba(91,63,140,0.12)}
+select.sel option{background:#1a1228;color:rgba(220,210,235,0.90)}
+select.sel-forced{border-color:rgba(255,159,67,0.50);background:rgba(255,159,67,0.08);color:#FFB86C}
+
+.ch{display:inline-block;padding:3px 10px;border-radius:5px;font-weight:700;font-size:12px;letter-spacing:.5px}
+.cp{background:rgba(91,63,140,0.20);color:#B89AE0;border:1px solid rgba(123,95,172,0.20)}
+.cg{background:rgba(46,213,115,0.10);color:#5FE09A;border:1px solid rgba(46,213,115,0.15)}
+.co{background:rgba(255,159,67,0.10);color:#FFB86C;border:1px solid rgba(255,159,67,0.15)}
+.cr{background:rgba(255,85,85,0.12);color:#FF6B6B;border:1px solid rgba(255,85,85,0.15)}
+.cc{background:rgba(100,200,255,0.10);color:#7BC8FF;border:1px solid rgba(100,200,255,0.12)}
+
+.ban{padding:14px 20px;border-radius:8px;margin:14px 0;font-weight:700;font-size:13px;text-align:center;letter-spacing:1px;
+  display:flex;align-items:center;justify-content:center;gap:10px}
+.ban-ok{background:rgba(46,213,115,0.08);color:#5FE09A;border:1px solid rgba(46,213,115,0.15)}
+.ban-no{background:rgba(255,85,85,0.08);color:#FF6B6B;border:1px solid rgba(255,85,85,0.15)}
+
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:900px){.g2{grid-template-columns:1fr}}
+.gB{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+@media(max-width:1200px){.gB{grid-template-columns:1fr}}
+.tr{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(123,95,172,0.06)}
+.tr:last-child{border-bottom:none}
+.tl{flex:1;font-size:12.5px;color:rgba(200,186,216,0.70)}
+
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:6px;font-size:11.5px;font-weight:600;letter-spacing:1px;
+  text-transform:uppercase;cursor:pointer;border:1px solid rgba(123,95,172,0.20);background:rgba(91,63,140,0.10);color:rgba(200,186,216,0.80);
+  font-family:inherit;transition:all .3s}
+.btn:hover{background:rgba(91,63,140,0.22);border-color:rgba(123,95,172,0.40);color:#E8E0F2}
+.ba{border-color:rgba(46,213,115,0.25);background:rgba(46,213,115,0.08);color:rgba(95,224,154,0.85)}
+.ba:hover{background:rgba(46,213,115,0.16);color:#5FE09A}
+.bd{border-color:rgba(255,85,85,0.20);color:rgba(255,107,107,0.70);background:transparent}
+.bd:hover{background:rgba(255,85,85,0.08);color:#FF6B6B}
+.bg_{display:flex;gap:8px;margin:10px 0;flex-wrap:wrap}
+
+.rd{opacity:0;cursor:pointer;color:rgba(255,85,85,0.50);font-size:11px;background:none;border:none;padding:2px 5px;transition:opacity .2s}
+tr:hover .rd{opacity:1}.rd:hover{color:#FF6B6B}
+
+.cb{display:flex;gap:0;margin-top:10px;border-radius:6px;overflow:hidden;border:1px solid rgba(123,95,172,0.10)}
+.cb div{flex:1;text-align:center;padding:5px 4px;font-size:10px;font-weight:600;font-variant-numeric:tabular-nums}
+.cb .ck{background:rgba(91,63,140,0.12);color:rgba(155,125,197,0.60)}.cb .cv{color:#B89AE0}
+
+.mo{display:none;position:fixed;inset:0;background:rgba(6,4,12,0.70);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(6px)}
+.mo.open{display:flex}
+.ml{background:linear-gradient(165deg,rgba(28,22,42,0.97),rgba(14,14,16,0.98));border:1px solid rgba(123,95,172,0.20);
+  border-radius:12px;padding:28px;width:380px;max-width:90vw}
+.ml h3{color:rgba(232,224,242,0.95);font-size:15px;letter-spacing:1px;margin-bottom:16px}
+.ml label{display:block;margin:10px 0 4px;font-size:11px;color:rgba(180,165,200,0.55);letter-spacing:1px;text-transform:uppercase}
+.ml input{width:100%}
+
+.ts{overflow-x:auto}
+::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:rgba(14,14,16,0.5)}
+::-webkit-scrollbar-thumb{background:rgba(123,95,172,0.25);border-radius:3px}::-webkit-scrollbar-thumb:hover{background:rgba(123,95,172,0.40)}
+
+.qfl{cursor:pointer;padding:2px 8px;border-radius:4px;background:rgba(123,95,172,0.15);border:1px solid rgba(123,95,172,0.25);color:rgba(180,165,200,0.70);font-size:10px;transition:all .15s;display:inline-block;margin:2px}.qfl:hover{background:rgba(123,95,172,0.30);color:rgba(220,210,235,0.95)}
+</style>
+</head>
+<body>
+<script>
+(function() {
+  var s = localStorage.getItem('algomes_auth');
+  var e = localStorage.getItem('algomes_auth_expiry');
+  if (s !== 'authenticated' || !e || Date.now() >= parseInt(e)) {
+    localStorage.removeItem('algomes_auth');
+    localStorage.removeItem('algomes_auth_expiry');
+    localStorage.removeItem('algomes_session');
+    window.location.href = 'index.html';
+  }
+})();
+</script>
+<button id="algomes-logout-btn" onclick="localStorage.removeItem('algomes_auth'); localStorage.removeItem('algomes_auth_expiry'); localStorage.removeItem('algomes_session'); window.location.href='index.html';"
+  style="position:fixed; top:16px; right:16px; z-index:99999; padding:8px 18px;
+  background:rgba(120,50,255,0.25); border:1px solid rgba(120,50,255,0.4);
+  border-radius:8px; color:#b388ff; font-family:'Rajdhani',sans-serif;
+  font-size:13px; font-weight:600; letter-spacing:1px; cursor:pointer;
+  backdrop-filter:blur(8px); transition:all 0.3s;">
+  &#x1f513; Déconnexion
+</button>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <a class="btn-top" href="accueil.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      Accueil
+    </a>
+    <div class="topbar-sep"></div>
+    <span class="topbar-title">DÉRIVATIONS & TGBT</span>
+    <div class="topbar-sep"></div>
+    <input type="text" id="projName" value="" placeholder="Nom de l'affaire..." style="background:rgba(91,63,140,0.08);border:1px solid rgba(123,95,172,0.20);border-radius:6px;
+      color:rgba(232,224,242,0.95);font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;font-weight:600;letter-spacing:0.5px;
+      padding:5px 14px;width:260px;transition:all 0.3s"
+      onfocus="this.style.borderColor='rgba(123,95,172,0.50)';this.style.background='rgba(91,63,140,0.15)'"
+      onblur="this.style.borderColor='rgba(123,95,172,0.20)';this.style.background='rgba(91,63,140,0.08)'">
+  </div>
+  <div class="topbar-center">
+    <button class="btn-top" onclick="newProject()">🗒️ Nouveau</button>
+    <label class="btn-top" style="cursor:pointer">📤 Import<input type="file" accept=".xlsx" onchange="importXLS(this)" style="display:none"></label>
+    <button class="btn-top" onclick="exportXLS()">📥 Excel</button>
+    <button class="btn-top" onclick="exportPDF()">📄 PDF</button>
+    <span class="topbar-badge badge-count" id="bL">0 lgts</span>
+  </div>
+  <div class="topbar-right">
+    <div class="topbar-clock">
+      <span class="topbar-date" id="topDate"></span>
+      <div class="topbar-sep"></div>
+      <span class="topbar-time" id="tT"></span>
+    </div>
+  </div>
+</div>
+<div class="tabs" id="tabs"></div>
+<div class="content" id="sh"></div>
+<div class="mo" id="mo"><div class="ml">
+  <h3>Ajouter</h3>
+  <label>Type</label>
+  <select id="mType" class="wl" style="text-align:left;margin-bottom:8px" onchange="document.getElementById('mNivRow').style.display=this.value==='bat'?'':'none'">
+    <option value="bat">Bâtiment</option><option value="tgbt">TGBT</option>
+  </select>
+  <label>Nom</label><input type="text" id="mN" placeholder="BAT-C">
+  <div id="mNivRow"><label>Nombre de niveaux (hors RDC)</label><input type="number" id="mNiv" value="9" min="1" max="30"></div>
+  <div class="bg_" style="margin-top:18px;justify-content:flex-end"><button class="btn" onclick="cM()">Annuler</button><button class="btn ba" onclick="aB()">Ajouter</button></div>
+</div></div>
+<script>
+function tk(){const n=new Date(),h=String(n.getHours()).padStart(2,'0'),m=String(n.getMinutes()).padStart(2,'0'),s=String(n.getSeconds()).padStart(2,'0');
+  document.getElementById('tT').textContent=h+':'+m+':'+s;
+  const days=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  const months=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  document.getElementById('topDate').textContent=days[n.getDay()]+' '+n.getDate()+' '+months[n.getMonth()]+' '+n.getFullYear()}
+tk();setInterval(tk,1000);
+
+const CO=[[0,0],[1,1],[5,.78],[10,.63],[15,.53],[20,.49],[25,.46],[30,.44],[35,.42],[40,.41],[50,.38],[100,.38]];
+const RE=[3,6,9,12,15,18,24,30,36,42,60,78,96,114,132,150,168,186,204,222,240];
+const FL=['RDC','R+1','R+2','R+3','R+4','R+5','R+6','R+7','R+8','R+9','R+10'];
+
+let TG=[];
+let T={nbTransfo:1,bpLignes:[],i:[
+  {n:'IRVE MESURE CONSERVATOIRE',B:0,C:'-',D:100,E:0,a:1},
+  {n:'LUMINAIRE parking SOUS SOL',B:0,C:3,D:2,E:1,a:2},
+  {n:'-',B:'-',C:'-',D:0,E:0,a:0},{n:'Chaufferie',B:'-',C:'-',D:1,E:5,a:0},
+  {n:'Supresseur logement',B:'-',C:'-',D:'',E:15,a:0},{n:'Surpresseur Arrosage',B:'-',C:'-',D:'',E:3,a:0},
+  {n:'Extracteur VMC',B:'-',C:'-',D:'',E:2,a:0},{n:'Relevage EU/EV',B:'-',C:'-',D:'',E:3,a:0},
+  {n:'Relevage EP',B:'',C:'',D:'',E:3,a:0},{n:'Éclairage Étages',B:'',C:'',D:'',E:2,a:0},
+  {n:'Autre Puissance',B:'',C:'',D:'',E:2,a:0}
+]};
+
+let B=[
+  {n:'BAT-A',sgx:[{n:'SGX',p:36}],niv:9,fl:['RDC','R+1','R+2','R+3','R+4','R+5','R+6','R+7','R+8','R+9'],a:[
+    {f:'RDC',r:'T4-A01',e:'001-A',u:77.85,l:10},
+    {f:'R+1',r:'T3-A11',e:'101-A',u:65.59,l:10},{f:'R+1',r:'T4-A12',e:'102-A',u:71.68,l:9},
+    {f:'R+1',r:'T2-A13',e:'103-A',u:50.89,l:11},{f:'R+1',r:'T5-A14',e:'104-A',u:96.68,l:12},
+    {f:'R+2',r:'T3-A21',e:'201-A',u:65.59,l:10},{f:'R+2',r:'T4-A22',e:'202-A',u:71.68,l:9},
+    {f:'R+2',r:'T2-A23',e:'203-A',u:50.87,l:11},{f:'R+2',r:'T5-A24',e:'204-A',u:96.68,l:12},
+    {f:'R+3',r:'T3-A31',e:'301-A',u:65.59,l:10},{f:'R+3',r:'T4-A32',e:'302-A',u:71.68,l:9},
+    {f:'R+3',r:'T2-A33',e:'303-A',u:50.87,l:11},{f:'R+3',r:'T5-A34',e:'304-A',u:96.68,l:12},
+    {f:'R+4',r:'T3-A41',e:'401-A',u:65.67,l:10},{f:'R+4',r:'T4-A42',e:'402-A',u:71.68,l:9},
+    {f:'R+4',r:'T2-A43',e:'403-A',u:50.87,l:11},{f:'R+4',r:'T5-A44',e:'404-A',u:96.68,l:12},
+    {f:'R+5',r:'T3-A51',e:'501-A',u:65.67,l:10},{f:'R+5',r:'T4-A52',e:'502-A',u:71.68,l:9},
+    {f:'R+5',r:'T2-A53',e:'503-A',u:50.87,l:11},{f:'R+5',r:'T5-A54',e:'504-A',u:96.68,l:12},
+    {f:'R+6',r:'T3-A61',e:'601-A',u:65.67,l:10},{f:'R+6',r:'T4-A62',e:'602-A',u:71.68,l:9},
+    {f:'R+6',r:'T2-A63',e:'603-A',u:50.88,l:11},{f:'R+6',r:'T4-A64',e:'604-A',u:77.26,l:9},
+    {f:'R+7',r:'T3-A71',e:'701-A',u:65.94,l:10},{f:'R+7',r:'T3-A72',e:'702-A',u:60.80,l:9},
+    {f:'R+7',r:'T3-A73',e:'703-A',u:62.79,l:9},
+    {f:'R+8',r:'T3-A81',e:'801-A',u:65.94,l:10},{f:'R+8',r:'T3-A82',e:'802-A',u:60.80,l:9},
+    {f:'R+8',r:'T3-A83',e:'803-A',u:62.79,l:9},
+    {f:'R+9',r:'T3-A91',e:'901-A',u:66.99,l:11},{f:'R+9',r:'T5-A92',e:'902-A',u:103.56,l:10},
+    {f:'R+9',r:'T4-A93',e:'903-A',u:86.95,l:10},{f:'R+9',r:'T5-A94',e:'904-A',u:101.83,l:9}
+  ]}
+];
+
+function pw(s){return s<35?6:s<100?9:12}
+function cl(p){return p===3?15:p===6?45:p===9?45:p===12?60:45}
+function gFL(niv){const f=['RDC'];for(let i=1;i<=niv;i++)f.push('R+'+i);return f}
+function sT(b){if(!b.sgx){b.sgx=[{n:'SGX',p:b.s||36}];delete b.s}return b.sgx.reduce((s,x)=>s+(parseFloat(x.p)||0),0)}
+function vl(n){let r=0;for(let[k,v]of CO){if(k<=n)r=v;else break}return r}
+function cI(b){if(b>=10&&b<=20)return 15;if(b>=21&&b<=40)return 22;if(b>=41&&b<50)return 30;if(b>=50&&b<=100)return 30+6*Math.ceil((b-50)/10);if(b>=101&&b<=200)return 60+3.6*Math.ceil((b-100)/10);if(b>200)return 96+.2*(b-200);return''}
+function cL(p,c){const d=Math.ceil((p+c)/2);return{d,e:Math.ceil(d*58/1000)}}
+function gR(b){if(b<=0)return 0;for(const s of RE)if(b<=s)return s;return'Hors plage'}
+function gT(r){return typeof r==='string'?'':r>=3&&r<=36?'TARIF BLEU':r>=42&&r<=240?'TARIF JAUNE':''}
+
+function rT(){
+  const ib=parseFloat(T.i[0].B)||0;T.i[0].E=cI(ib);
+  const lb=parseFloat(T.i[1].B)||0,lc=parseFloat(T.i[1].C)||0,lm=cL(lb,lc);T.i[1].D=lm.d;T.i[1].E=lm.e;
+  let tot=0;T.i.forEach(x=>{const v=parseFloat(x.E);if(!isNaN(v))tot+=v});tot=Math.ceil(tot);
+  const rg=gR(tot),tf=gT(rg);
+  let h=`<div class="g2"><div>
+    <div class="card"><div class="card-h"><div class="ic">🔌</div>Puissances TGBT<div class="rt">
+    <span style="display:inline-flex;align-items:center;gap:4px;margin-right:8px">
+      <button class="btn ${!T.transfo?'ba':''}" style="padding:3px 12px;font-size:10px" onclick="T.transfo=false;R();S('tgbt')">📦 Coffret</button>
+      <button class="btn ${T.transfo?'ba':''}" style="padding:3px 12px;font-size:10px;${T.transfo?'background:rgba(255,159,67,0.15);border-color:rgba(255,159,67,0.40);color:#FFB86C':''}" onclick="T.transfo=true;R();S('tgbt')">⚡ Transfo</button>
+    </span>
+    <button class="btn ba" style="padding:3px 12px;font-size:10px" onclick="addTI()">＋ Ligne</button></div></div><div class="card-b">
+    <table><tr><th style="width:24px"></th><th style="text-align:left">Désignation</th><th>Nb places</th><th>Nb locaux</th><th>Qté</th><th>kVA</th></tr>`;
+  T.i.forEach((x,i)=>{
+    const au=x.a>0;
+    h+=`<tr><td style="width:24px">${i>=2?'<button class="rd" style="opacity:0.5" onclick="T.i.splice('+i+',1);R()">✕</button>':''}</td>`;
+    h+=`<td class="L"><input type="text" class="wl" value="${x.n}" onchange="T.i[${i}].n=this.value"></td>`;
+    h+=x.B==='-'||x.B===''?`<td style="color:rgba(123,95,172,0.20)">${x.B}</td>`:`<td><input class="ws ns" type="number" value="${x.B}" onchange="T.i[${i}].B=parseFloat(this.value)||0;R()"></td>`;
+    h+=x.C==='-'||x.C===''?`<td style="color:rgba(123,95,172,0.20)">${x.C}</td>`:`<td><input class="ws ns" type="number" value="${x.C}" onchange="T.i[${i}].C=parseFloat(this.value)||0;R()"></td>`;
+    h+=au?`<td class="fm">${x.D}</td>`:`<td><input class="ws ns" type="number" value="${x.D||''}" onchange="T.i[${i}].D=parseFloat(this.value)||0;R()"></td>`;
+    h+=au?`<td class="fm">${x.E===''?'':x.E}</td>`:`<td><input class="ws ns" type="number" value="${x.E||''}" step=".5" onchange="T.i[${i}].E=parseFloat(this.value)||0;R()"></td>`;
+    h+=`</tr>`;
+  });
+  h+=`<tr class="tot"><td></td><td class="L" colspan="4">Puissance Totale Brut</td><td><span class="ch cp">${tot} kVA</span></td></tr>
+    <tr class="tot"><td></td><td class="L" colspan="3">Total Réglementaire</td><td><span class="ch" style="${tf==='TARIF BLEU'?'background:rgba(0,176,240,0.15);color:#00B0F0;border:1px solid rgba(0,176,240,0.30)':tf==='TARIF JAUNE'?'background:rgba(255,230,0,0.12);color:#FFE600;border:1px solid rgba(255,230,0,0.30)':'color:rgba(180,165,200,0.45)'}">${tf||'—'}</span></td><td><span class="ch cp">${rg} kVA</span></td></tr>`;
+  h+=`</table></div></div></div><div>
+    <div class="card"><div class="card-h"><div class="ic">⚡</div>TARIFS RÉGLEMENTÉS ENEDIS</div><div class="card-b">
+    <table>
+      <tr><th style="color:#7BC8FF">TARIF BLEU</th><th style="color:#FFB86C">TARIF JAUNE</th></tr>`;
+  const tarifBleu=[3,6,9,12,15,18,24,30,36];
+  const tarifJaune=[42,60,78,96,114,132,150,168,186,204,222,240];
+  const maxRows=Math.max(tarifBleu.length,tarifJaune.length);
+  for(let i=0;i<maxRows;i++){
+    const vb=tarifBleu[i]||'';
+    const vj=tarifJaune[i]||'';
+    const actB=vb===rg;
+    const actJ=vj===rg;
+    h+=`<tr>`;
+    h+=`<td style="${actB?'background:rgba(100,200,255,0.15);color:#7BC8FF;font-weight:700;border:1px solid rgba(100,200,255,0.40)':''}">${vb}</td>`;
+    h+=`<td style="${actJ?'background:rgba(255,159,67,0.15);color:#FFB86C;font-weight:700;border:1px solid rgba(255,159,67,0.40)':''}">${vj}</td>`;
+    h+=`</tr>`;
+  }
+  h+=`</table></div></div>
+    <div class="card"><div class="card-h"><div class="ic">🚗</div>CALCUL IRVE
+      <div class="rt"><span class="ch co">${T.i[0].E===''?'0':T.i[0].E} kVA</span></div>
+    </div><div class="card-b">
+      <div style="font-size:10.5px;color:rgba(180,165,200,0.55);line-height:1.6;margin-bottom:12px;text-align:center">
+        Points de recharge dans les parcs de stationnement des bâtiments résidentiels<br>
+        Points de recharge dans les parcs de stationnement des bâtiments non résidentiels à destination de véhicules à usage professionnel ou des véhicules des salariés ou des agents de service public
+      </div>
+      <table>
+        <tr><th>Nombre d'emplacements<br>N</th><th>Puissance IRVE</th></tr>
+        <tr><td class="fm">10 ≤ N ≤ 20</td><td>15 kVA</td></tr>
+        <tr><td class="fm">21 ≤ N ≤ 40</td><td>22 kVA</td></tr>
+        <tr><td class="fm">41 ≤ N ≤ 100</td><td style="font-size:11px;line-height:1.5">30 kVA + 6 kVA par tranche de 10<br>emplacements au-delà de 50<br><span style="color:#FFB86C;font-weight:600">P<sub>IRVE</sub> = 30 + 6 × ((Nplaces−50) / 10)</span></td></tr>
+        <tr><td class="fm">101 ≤ N ≤ 200</td><td style="font-size:11px;line-height:1.5">60 kVA + 3,6 kVA par tranche de 10<br>emplacements au-delà de 100<br><span style="color:#FFB86C;font-weight:600">P<sub>IRVE</sub> = 60 + 3,6 × ((Nplaces−100) / 10)</span></td></tr>
+        <tr><td class="fm">N > 200</td><td style="font-size:11px;line-height:1.5">96 kVA + 0,2 kVA × (N−200)<br><span style="color:#FFB86C;font-weight:600">P<sub>IRVE</sub> = 96 + 0,2 × (Nplaces−200)</span></td></tr>
+      </table>
+      <div style="margin-top:10px;font-size:9px;color:rgba(180,165,200,0.30);text-align:center;font-style:italic">extrait SEQUELEC GP13_IRVE_20210502</div>
+    </div></div>
+  </div></div>`;
+  return h;
+}
+
+function rB(bi){
+  const b=B[bi],a=b.a;if(!b.niv)b.niv=9;
+  if(!b.fl)b.fl=gFL(b.niv);
+  const bFL=b.fl;
+  a.forEach(x=>{if(x.p===undefined)x.p=pw(x.u);x.c=cl(x.p);if(!bFL.includes(x.f))x.f=bFL[0]});
+  // Sort by floor order
+  a.sort((a,b)=>bFL.indexOf(a.f)-bFL.indexOf(b.f));
+  const fg={};a.forEach(x=>{if(!fg[x.f])fg[x.f]=[];fg[x.f].push(x)});
+  const fc={};Object.entries(fg).forEach(([f,ar])=>{fc[f]={n3:ar.filter(x=>x.p===3).length,n6:ar.filter(x=>x.p===6).length,n9:ar.filter(x=>x.p===9).length,n12:ar.filter(x=>x.p===12).length,t:ar.length}});
+  const af=[...bFL].reverse(),cr=[];let cH=0,cK=0;
+  for(const f of af){const d=fc[f]||{n3:0,n6:0,n9:0,n12:0,t:0};cH+=d.t;const kn=d.n3*3+d.n6*6+d.n9*9+d.n12*12;cK+=kn;const co=vl(cH);const sx=(f===bFL[0])?sT(b):0;const pt=cK*co+sx;cr.push({f,d,cH,kn,cK,co,sx,pt,I:pt/.692})}
+  const rd=cr[cr.length-1],fI=rd?rd.I:0,ok=fI<200;
+  const tx=ok?`COLONNE DE ${Math.round(fI)}A → COLONNE SIMPLE 200A`:`COLONNE DE ${Math.round(fI)}A → DOUBLE COLONNE 200A OU COLONNE 400A`;
+
+  let h=`<div class="ban ${ok?'ban-ok':'ban-no'}">${ok?'✅':'⚠️'} ${tx}</div>`;
+  h+=`<div class="gB">`;
+  h+=`<div class="card"><div class="card-h"><div class="ic">🏠</div>Dérivations — ${b.n}<div class="rt">
+    <span style="display:inline-flex;align-items:center;gap:4px;margin-right:8px">
+      <button class="btn ${!b.transfo?'ba':''}" style="padding:3px 12px;font-size:10px" onclick="B[${bi}].transfo=false;R();S('b'+${bi})">📦 Coffret</button>
+      <button class="btn ${b.transfo?'ba':''}" style="padding:3px 12px;font-size:10px;${b.transfo?'background:rgba(255,159,67,0.15);border-color:rgba(255,159,67,0.40);color:#FFB86C':''}" onclick="B[${bi}].transfo=true;R();S('b'+${bi})">⚡ Transfo</button>
+    </span>
+    <span class="topbar-badge badge-purple" style="display:inline-flex;align-items:center;gap:6px">Niveaux <select class="sel" style="min-width:44px" onchange="setNiv(${bi},parseInt(this.value))">`;
+  for(let i=1;i<=30;i++){h+=`<option value="${i}"${b.niv===i?' selected':''}>${i}</option>`}
+  h+=`</select></span>
+    <button class="btn" onclick="editFloors(${bi})" style="padding:5px 10px" title="Personnaliser les niveaux">✏️</button>
+    
+    <span class="topbar-badge badge-count">${a.length} lgts</span></div></div>
+    <div class="card-b">
+    <div id="flEdit${bi}" style="display:none;margin-bottom:10px;padding:10px;border-radius:6px;border:1px solid rgba(123,95,172,0.20);background:rgba(22,18,32,0.6)">
+      <div style="font-size:11px;color:rgba(180,165,200,0.55);margin-bottom:6px;letter-spacing:1px">NIVEAUX (séparés par des virgules, du bas vers le haut) :</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="text" id="flInput${bi}" class="wl" style="flex:1;width:100%;text-align:left;font-size:12px" value="${bFL.join(', ')}">
+        <button class="btn ba" onclick="saveFloors(${bi})">Valider</button>
+        <button class="btn" onclick="document.getElementById('flEdit${bi}').style.display='none'">Annuler</button>
+      </div>
+      <div style="font-size:10px;color:rgba(180,165,200,0.30);margin-top:6px">
+        Ajouter : <span class="qfl" onclick="addFL(${bi},'RDJ')">RDJ</span> <span class="qfl" onclick="addFL(${bi},'RDC HAUT')">RDC HAUT</span> <span class="qfl" onclick="addFL(${bi},'RDC BAS')">RDC BAS</span> <span class="qfl" onclick="addFL(${bi},'TGBT')">TGBT</span> <span class="qfl" onclick="addFL(${bi},'TRANSFO')" style="background:rgba(255,159,67,0.15);border-color:rgba(255,159,67,0.30);color:#FFB86C">TRANSFO</span>
+      </div>
+    </div>
+    <div class="bg_" style="align-items:center">
+    <button class="btn ba" onclick="aA(${bi})">＋ Logement</button>
+    <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:rgba(180,165,200,0.55)">au niveau
+      <select class="sel" id="addFloor${bi}" style="min-width:62px">`;
+  bFL.forEach((f,fi)=>{h+=`<option value="${f}">${f}</option>`});
+  h+=`</select></span>
+    <button class="btn" onclick="autoEnedis(${bi})">⚡ Auto N° Enedis</button>
+    <span style="margin-left:auto"><button class="btn bd" onclick="delBat(${bi})">Supprimer ${b.n}</button></span></div>
+    <div class="ts"><table><tr><th></th><th>Niv</th><th>N° Archi</th><th>N° Enedis</th><th>Surface m²</th><th>Long. m</th><th>kVA</th><th>Calibre</th>
+    <th style="color:#FF6B6B">3</th><th style="color:#FF6B6B">6</th><th style="color:#FF6B6B">9</th><th style="color:#FF6B6B">12</th><th>Tot</th></tr>`;
+  let pf='';const dn={};
+  a.forEach((x,i)=>{
+    const nf=x.f!==pf;pf=x.f;const cn=(fg[x.f]||[]).length,fd=fc[x.f]||{n3:0,n6:0,n9:0,n12:0,t:0};
+    const rc=x.p===6?'rw6':x.p===12?'rw12':'';
+    h+=`<tr class="${nf?'fsep':''} ${rc}">`;
+    h+=`<td class="hl"><button class="rd" onclick="B[${bi}].a.splice(${i},1);R()">✕</button></td>`;
+    h+=`<td class="fl hl"><select class="sel" style="min-width:58px;color:#9B7DC5;font-weight:700" onchange="B[${bi}].a[${i}].f=this.value;R()">`;
+    bFL.forEach(f=>{h+=`<option value="${f}"${x.f===f?' selected':''}>${f}</option>`});
+    h+=`</select></td>`;
+    h+=`<td class="hl"><input type="text" class="wlc" value="${x.r}" onchange="B[${bi}].a[${i}].r=this.value"></td>`;
+    h+=`<td class="hl"><input type="text" class="wlc" value="${x.e}" onchange="B[${bi}].a[${i}].e=this.value"></td>`;
+    h+=`<td class="hl"><input class="wm ns" type="number" value="${x.u}" step=".01" onchange="B[${bi}].a[${i}].u=parseFloat(this.value)||0;B[${bi}].a[${i}].p=pw(B[${bi}].a[${i}].u);B[${bi}].a[${i}].forced=false;R()"></td>`;
+    h+=`<td class="hl"><input class="ws ns" type="number" value="${x.l}" onchange="B[${bi}].a[${i}].l=parseInt(this.value)||0"></td>`;
+    const isForced=x.p!==pw(x.u);
+    h+=`<td class="hl"><select class="sel${isForced?' sel-forced':''}" onchange="B[${bi}].a[${i}].p=parseInt(this.value);B[${bi}].a[${i}].forced=(parseInt(this.value)!==pw(B[${bi}].a[${i}].u));R()">
+      <option value="3"${x.p===3?' selected':''}>3</option>
+      <option value="6"${x.p===6?' selected':''}>6</option>
+      <option value="9"${x.p===9?' selected':''}>9</option>
+      <option value="12"${x.p===12?' selected':''}>12</option>
+    </select></td><td class="fm hl">${x.c}${isForced?' ⚠':''}A</td>`;
+    if(nf&&!dn[x.f]){dn[x.f]=1;
+      h+=`<td class="fm" rowspan="${cn}" style="color:#FF6B6B">${fd.n3?fd.n3+'x3':'—'}</td>`;
+      h+=`<td class="fm" rowspan="${cn}" style="color:#FF6B6B">${fd.n6?fd.n6+'x6':'—'}</td>`;
+      h+=`<td class="fm" rowspan="${cn}" style="color:#FF6B6B">${fd.n9?fd.n9+'x9':'—'}</td>`;
+      h+=`<td class="fm" rowspan="${cn}" style="color:#FF6B6B">${fd.n12?fd.n12+'x12':'—'}</td>`;
+      h+=`<td class="fm" rowspan="${cn}" style="font-size:14px">${fd.t}</td>`}
+    h+=`</tr>`});
+  h+=`</table></div>
+    <div style="margin-top:8px;font-size:10px;color:rgba(180,165,200,0.25)">Auto : &lt;35m²→6kVA | 35–99m²→9kVA | ≥100m²→12kVA — Modifiable manuellement (3/6/9/12)</div>
+  </div></div>`;
+
+  h+=`<div class="card"><div class="card-h"><div class="ic">📊</div>Calcul de Colonne — ${b.n}
+    <div class="rt"><span class="topbar-badge badge-purple">SGX Total : ${sT(b)} kVA</span></div>
+  </div><div class="card-b">
+    <div style="margin-bottom:12px;padding:10px;border-radius:6px;border:1px solid rgba(123,95,172,0.15);background:rgba(22,18,32,0.5)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <span style="font-size:11px;color:rgba(180,165,200,0.55);letter-spacing:1px;text-transform:uppercase">Puissances SGX</span>
+        <button class="btn ba" style="padding:3px 10px;font-size:10px" onclick="B[${bi}].sgx.push({n:'Nouveau',p:0});R();S('b'+${bi})">＋</button>
+      </div>`;
+  b.sgx.forEach((sx,si)=>{
+    h+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+      <input type="text" class="wl" value="${sx.n}" style="flex:1;text-align:left" onchange="B[${bi}].sgx[${si}].n=this.value">
+      <input type="number" class="ws ns" value="${sx.p}" step="0.5" onchange="B[${bi}].sgx[${si}].p=parseFloat(this.value)||0;R();S('b'+${bi})">
+      <span style="font-size:11px;color:rgba(180,165,200,0.45)">kVA</span>
+      ${b.sgx.length>1?`<button class="rd" style="opacity:1" onclick="B[${bi}].sgx.splice(${si},1);R();S('b'+${bi})">✕</button>`:''}
+    </div>`;
+  });
+  h+=`</div><div class="ts"><table>
+    <tr><th>Niv</th><th>3</th><th>6</th><th>9</th><th>12</th><th>Lgt/n</th><th>Cum</th><th>K</th><th>P/n</th><th>P cum</th><th>SGX</th><th>P×K+SGX</th><th>A</th></tr>`;
+  cr.forEach(r=>{
+    if(r.d.t===0&&r.cH===0&&r.f!=='RDC')return;
+    const isR=r.f==='RDC',ic=r.I>=200?'cr':r.I>=100?'co':'cg';
+    h+=`<tr${isR?' class="tot"':''}>`;
+    h+=`<td class="fl">${r.f}</td><td>${r.d.n3||'—'}</td><td>${r.d.n6||'—'}</td><td>${r.d.n9||'—'}</td><td>${r.d.n12||'—'}</td>`;
+    h+=`<td>${r.d.t||'—'}</td><td>${r.cH||'—'}</td><td>${r.co.toFixed(2)}</td>`;
+    h+=`<td>${r.kn||'—'}</td><td>${r.cK||'—'}</td><td class="sx">${r.sx||'—'}</td>`;
+    h+=`<td style="font-weight:700">${r.pt.toFixed(1)}</td><td><span class="ch ${ic}">${r.I.toFixed(1)}</span></td></tr>`});
+  h+=`</table></div>`;
+  h+=`<div style="margin-top:12px;font-size:10px;color:rgba(180,165,200,0.30)">Coefficient K — NF C 14-100</div>`;
+  h+=`<div class="cb"><div class="ck">N</div>`;CO.forEach(c=>{h+=`<div class="ck">${c[0]}</div>`});h+=`</div>`;
+  h+=`<div class="cb"><div class="ck">K</div>`;CO.forEach(c=>{h+=`<div class="cv">${c[1]}</div>`});h+=`</div>`;
+  h+=`</div></div>`;
+  h+=`</div>`;
+  return h;
+}
+
+
+
+function rTG(ti){
+  const tg=TG[ti];
+  const ref='TG['+ti+']';
+  // Auto-calc IRVE + Luminaires (same as main TGBT)
+  const ib=parseFloat(tg.i[0].B)||0;tg.i[0].E=cI(ib);
+  if(tg.i.length>1){const lb=parseFloat(tg.i[1].B)||0,lc=parseFloat(tg.i[1].C)||0,lm=cL(lb,lc);tg.i[1].D=lm.d;tg.i[1].E=lm.e}
+  let tot=0;tg.i.forEach(x=>{const v=parseFloat(x.E);if(!isNaN(v))tot+=v});tot=Math.ceil(tot);
+  const rg=gR(tot),tf=gT(rg);
+
+  let h=`<div class="g2"><div>
+    <div class="card"><div class="card-h"><div class="ic">🔌</div>${tg.n}<div class="rt">
+    <span style="display:inline-flex;align-items:center;gap:4px;margin-right:8px">
+      <button class="btn ${!tg.transfo?'ba':''}" style="padding:3px 12px;font-size:10px" onclick="${ref}.transfo=false;R();S('tg'+${ti})">📦 Coffret</button>
+      <button class="btn ${tg.transfo?'ba':''}" style="padding:3px 12px;font-size:10px;${tg.transfo?'background:rgba(255,159,67,0.15);border-color:rgba(255,159,67,0.40);color:#FFB86C':''}" onclick="${ref}.transfo=true;R();S('tg'+${ti})">⚡ Transfo</button>
+    </span>
+    <button class="btn ba" style="padding:3px 12px;font-size:10px" onclick="${ref}.i.push({n:'Nouveau poste',B:'-',C:'-',D:'',E:0,a:0});R();S('tg'+${ti})">＋ Ligne</button>
+    <button class="btn" style="padding:3px 12px;font-size:10px;margin-left:4px;color:var(--danger)" onclick="if(confirm('Supprimer '+${ref}.n+' ?')){TG.splice(${ti},1);R();S('tgbt')}">Supprimer</button>
+    </div></div><div class="card-b">
+    <table><tr><th style="width:24px"></th><th style="text-align:left">Désignation</th><th>Nb places</th><th>Nb locaux</th><th>Qté</th><th>kVA</th></tr>`;
+  tg.i.forEach((x,i)=>{
+    const au=x.a>0;
+    h+=`<tr><td style="width:24px">${i>=2?'<button class="rd" style="opacity:0.5" onclick="'+ref+'.i.splice('+i+',1);R();S(\'tg'+ti+'\')">✕</button>':''}</td>`;
+    h+=`<td class="L"><input type="text" class="wl" value="${x.n}" onchange="${ref}.i[${i}].n=this.value"></td>`;
+    h+=x.B==='-'||x.B===''?`<td style="color:rgba(123,95,172,0.20)">${x.B}</td>`:`<td><input class="ws ns" type="number" value="${x.B}" onchange="${ref}.i[${i}].B=parseFloat(this.value)||0;R();S('tg'+${ti})"></td>`;
+    h+=x.C==='-'||x.C===''?`<td style="color:rgba(123,95,172,0.20)">${x.C}</td>`:`<td><input class="ws ns" type="number" value="${x.C}" onchange="${ref}.i[${i}].C=parseFloat(this.value)||0;R();S('tg'+${ti})"></td>`;
+    h+=au?`<td class="fm">${x.D}</td>`:`<td><input class="ws ns" type="number" value="${x.D||''}" onchange="${ref}.i[${i}].D=parseFloat(this.value)||0;R();S('tg'+${ti})"></td>`;
+    h+=au?`<td class="fm">${x.E===''?'':x.E}</td>`:`<td><input class="ws ns" type="number" value="${x.E||''}" step=".5" onchange="${ref}.i[${i}].E=parseFloat(this.value)||0;R();S('tg'+${ti})"></td>`;
+    h+=`</tr>`;
+  });
+  h+=`<tr class="tot"><td></td><td class="L" colspan="4">Puissance Totale Brut</td><td><span class="ch cp">${tot} kVA</span></td></tr>
+    <tr class="tot"><td></td><td class="L" colspan="3">Total Réglementaire</td><td><span class="ch" style="${tf==='TARIF BLEU'?'background:rgba(0,176,240,0.15);color:#00B0F0;border:1px solid rgba(0,176,240,0.30)':tf==='TARIF JAUNE'?'background:rgba(255,230,0,0.12);color:#FFE600;border:1px solid rgba(255,230,0,0.30)':'color:rgba(180,165,200,0.45)'}">${tf||'—'}</span></td><td><span class="ch cp">${rg} kVA</span></td></tr>`;
+  h+=`</table></div></div></div><div>
+    <div class="card"><div class="card-h"><div class="ic">⚡</div>TARIFS RÉGLEMENTÉS ENEDIS</div><div class="card-b">
+    <table><tr><th style="color:#7BC8FF">TARIF BLEU</th><th style="color:#FFB86C">TARIF JAUNE</th></tr>`;
+  const tarifBleu=[3,6,9,12,15,18,24,30,36],tarifJaune=[42,60,78,96,114,132,150,168,186,204,222,240];
+  for(let i=0;i<Math.max(tarifBleu.length,tarifJaune.length);i++){
+    const vb=tarifBleu[i]||'',vj=tarifJaune[i]||'';
+    h+=`<tr><td style="${vb===rg?'background:rgba(100,200,255,0.15);color:#7BC8FF;font-weight:700;border:1px solid rgba(100,200,255,0.40)':''}">${vb}</td>`;
+    h+=`<td style="${vj===rg?'background:rgba(255,159,67,0.15);color:#FFB86C;font-weight:700;border:1px solid rgba(255,159,67,0.40)':''}">${vj}</td></tr>`;
+  }
+  h+=`</table></div></div>
+    <div class="card"><div class="card-h"><div class="ic">🚗</div>CALCUL IRVE
+      <div class="rt"><span class="ch co">${tg.i[0].E===''?'0':tg.i[0].E} kVA</span></div>
+    </div><div class="card-b">
+      <table>
+        <tr><th>Nombre d'emplacements N</th><th>Puissance IRVE</th></tr>
+        <tr><td class="fm">10 ≤ N ≤ 20</td><td>15 kVA</td></tr>
+        <tr><td class="fm">21 ≤ N ≤ 40</td><td>22 kVA</td></tr>
+        <tr><td class="fm">41 ≤ N ≤ 100</td><td style="font-size:11px">30 + 6 × ((N−50) / 10)</td></tr>
+        <tr><td class="fm">101 ≤ N ≤ 200</td><td style="font-size:11px">60 + 3,6 × ((N−100) / 10)</td></tr>
+        <tr><td class="fm">N > 200</td><td style="font-size:11px">96 + 0,2 × (N−200)</td></tr>
+      </table>
+    </div></div>
+  </div></div>`;
+  return h;
+}
+
+function rBP(){
+  if(!T.nbTransfo)T.nbTransfo=1;
+  const nT=T.nbTransfo;
+  const TS=[100,160,250,400,630,800,1000,1250,1600,2000];
+  const rows=[];
+
+  B.forEach((b,bi)=>{
+    if(!b.transfo)return;
+    if(!b.transfoNum||b.transfoNum>nT)b.transfoNum=1;
+    const a=b.a||[],n=a.length,K=vl(n);
+    const pBrut=a.reduce((s,x)=>s+((x.p||pw(x.u))),0);
+    const pK=Math.round(pBrut*K*10)/10,sgx=sT(b);
+    rows.push({type:'bat',name:b.n,n,pK,sgx,pBat:Math.round((pK+sgx)*10)/10,tNum:b.transfoNum,
+      sel:'B['+bi+'].transfoNum'});
+  });
+
+  if(T.transfo){
+    if(!T.transfoNum||T.transfoNum>nT)T.transfoNum=1;
+    let tv=0;T.i.forEach(x=>{const v=parseFloat(x.E);if(!isNaN(v))tv+=v});tv=Math.ceil(tv);
+    rows.push({type:'tgbt',name:'TGBT',n:'—',pK:'—',sgx:'—',pBat:tv,tNum:T.transfoNum,
+      sel:'T.transfoNum'});
+  }
+
+  // Additional TGBTs
+  TG.forEach((tg,ti)=>{
+    if(!tg.transfo)return;
+    if(!tg.transfoNum||tg.transfoNum>nT)tg.transfoNum=1;
+    let tv=0;tg.i.forEach(x=>{const v=parseFloat(x.E);if(!isNaN(v))tv+=v});tv=Math.ceil(tv);
+    rows.push({type:'tgbt',name:tg.n,n:'—',pK:'—',sgx:'—',pBat:tv,tNum:tg.transfoNum,
+      sel:'TG['+ti+'].transfoNum'});
+  });
+
+  // Custom lines
+  if(!T.bpLignes)T.bpLignes=[];
+  T.bpLignes.forEach((l,li)=>{
+    if(!l.tNum||l.tNum>nT)l.tNum=1;
+    rows.push({type:'custom',name:l.n,n:'—',pK:'—',sgx:'—',pBat:parseFloat(l.p)||0,tNum:l.tNum,
+      sel:'T.bpLignes['+li+'].tNum',li});
+  });
+
+  let h=`<div style="max-width:700px;margin:0 auto">
+    <div class="card"><div class="card-h"><div class="ic">⚡</div>BILAN DE PUISSANCE TRANSFORMATEUR
+      <div class="rt"><span style="font-size:11px;color:rgba(180,165,200,0.55);margin-right:6px">Nb transfo :</span>
+        <button class="btn ba" style="padding:3px 10px;font-size:10px;margin-right:8px" onclick="T.bpLignes.push({n:'Nouveau poste',p:0,tNum:1});R();S('bp')">＋ Ligne</button><select class="sel" style="min-width:50px" onchange="T.nbTransfo=parseInt(this.value);R();S('bp')">`;
+  for(let i=1;i<=5;i++)h+=`<option value="${i}" ${nT===i?'selected':''}>${i}</option>`;
+  h+=`</select></div></div><div class="card-b">`;
+
+  // Table with all rows + transfo selector if nT>1
+  h+=`<table><tr><th style="text-align:left">Désignation</th><th>Lgts</th><th>P×K</th><th>SGX</th><th>Total</th>`;
+  if(nT>1)h+=`<th>Transfo</th>`;
+  h+=`<th style="width:30px"></th></tr>`;
+  rows.forEach(r=>{
+    if(r.type==='custom'){
+      h+=`<tr><td class="L"><input type="text" class="wl" value="${r.name}" style="text-align:left;width:160px" onchange="T.bpLignes[${r.li}].n=this.value"></td>
+        <td class="fm">—</td><td class="fm">—</td><td class="fm">—</td>
+        <td><input type="number" class="ws ns" value="${r.pBat}" step="0.5" style="width:60px" onchange="T.bpLignes[${r.li}].p=parseFloat(this.value)||0;R();S('bp')"></td>`;
+      if(nT>1){
+        h+=`<td><select class="sel" style="min-width:50px" onchange="${r.sel}=parseInt(this.value);R();S('bp')">`;
+        for(let j=1;j<=nT;j++)h+=`<option value="${j}" ${r.tNum===j?'selected':''}>T${j}</option>`;
+        h+=`</select></td>`;
+      }
+      h+=`<td><button class="rd" onclick="T.bpLignes.splice(${r.li},1);R();S('bp')">✕</button></td></tr>`;
+    } else {
+      h+=`<tr><td class="L" style="font-weight:700">${r.name}</td>
+        <td class="fm">${r.n}</td><td class="fm">${r.type==='bat'?r.pK+' kVA':r.pK}</td>
+        <td class="fm">${r.type==='bat'?r.sgx+' kVA':r.sgx}</td>
+        <td class="fm" style="font-weight:700">${r.pBat} kVA</td>`;
+      if(nT>1){
+        h+=`<td><select class="sel" style="min-width:50px" onchange="${r.sel}=parseInt(this.value);R();S('bp')">`;
+        for(let j=1;j<=nT;j++)h+=`<option value="${j}" ${r.tNum===j?'selected':''}>T${j}</option>`;
+        h+=`</select></td>`;
+      }
+      h+=`<td></td></tr>`;
+    }
+  });
+  h+=`</table>`;
+
+  // Totals per transfo
+  for(let ti=1;ti<=nT;ti++){
+    const tRows=rows.filter(r=>r.tNum===ti);
+    const tTot=Math.round(tRows.reduce((s,r)=>s+r.pBat,0)*10)/10;
+    const tInt=Math.round(tTot/.692);
+    let tSz=TS.find(s=>s>=tTot)||'> 2000';
+
+    h+=`<div style="margin-top:16px;padding:12px;border-radius:8px;border:1px solid rgba(255,159,67,0.25);background:rgba(255,159,67,0.04)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-weight:700;color:#FFB86C;font-size:13px">${nT>1?'TRANSFO '+ti:'TRANSFORMATEUR'}</span>
+        <span style="font-size:12px;color:rgba(180,165,200,0.55)">${tRows.map(r=>r.name).join(' + ')}</span>
+      </div>
+      <div style="display:flex;gap:20px;align-items:center;margin-bottom:8px">
+        <div><span style="font-size:11px;color:rgba(180,165,200,0.55)">Puissance</span><div style="font-size:20px;font-weight:700;color:rgba(220,210,235,0.95)">${tTot} kVA</div></div>
+        <div><span style="font-size:11px;color:rgba(180,165,200,0.55)">Intensité</span><div style="font-size:20px;font-weight:700;color:rgba(220,210,235,0.95)">${tInt} A</div></div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">`;
+    TS.forEach(s=>{
+      const act=s===tSz;
+      h+=`<div style="padding:4px 10px;border-radius:5px;font-size:10px;font-weight:${act?'700':'400'};
+        ${act?'background:rgba(255,159,67,0.18);color:#FFB86C;border:1.5px solid rgba(255,159,67,0.45)':'color:rgba(180,165,200,0.30);border:1px solid rgba(123,95,172,0.08)'}">${s}</div>`;
+    });
+    h+=`</div></div>`;
+  }
+
+  h+=`</div></div></div>`;
+  return h;
+}
+
+function R(){
+  const at=document.querySelector('.tab.active'),ai=at?at.dataset.t:'tgbt';
+  const hasTransfo=T.transfo||B.some(b=>b.transfo)||TG.some(t=>t.transfo);
+  let th=`<div class="tab${ai==='tgbt'?' active':''}" data-t="tgbt" onclick="S('tgbt')">TGBT</div>`;
+  B.forEach((_,i)=>{const id='b'+i;th+=`<div class="tab${ai===id?' active':''}" data-t="${id}" onclick="S('${id}')">${B[i].n}</div>`});
+  TG.forEach((_,i)=>{const id='tg'+i;th+=`<div class="tab${ai===id?' active':''}" data-t="${id}" onclick="S('${id}')">${TG[i].n}</div>`});
+  if(hasTransfo)th+=`<div class="tab${ai==='bp'?' active':''}" data-t="bp" onclick="S('bp')" style="color:rgba(255,159,67,0.85)">⚡ BILAN TRANSFO</div>`;
+  th+=`<div class="tab-add" onclick="oM()">＋</div>`;
+  document.getElementById('tabs').innerHTML=th;
+  let s=`<div class="sheet${ai==='tgbt'?' active':''}" id="s-tgbt">${rT()}</div>`;
+  B.forEach((_,i)=>{const id='b'+i;s+=`<div class="sheet${ai===id?' active':''}" id="s-${id}">${rB(i)}</div>`});
+  TG.forEach((_,i)=>{const id='tg'+i;s+=`<div class="sheet${ai===id?' active':''}" id="s-${id}">${rTG(i)}</div>`});
+  if(hasTransfo)s+=`<div class="sheet${ai==='bp'?' active':''}" id="s-bp">${rBP()}</div>`;
+  document.getElementById('sh').innerHTML=s;
+  let tl=0;B.forEach(b=>tl+=b.a.length);document.getElementById('bL').textContent=tl+' lgts';
+}
+function S(id){document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.t===id));
+  document.querySelectorAll('.sheet').forEach(s=>s.classList.toggle('active',s.id==='s-'+id))}
+function addTI(){T.i.push({n:'Nouveau poste',B:'-',C:'-',D:'',E:0,a:0});R()}
+function aA(i){const b=B[i],sel=document.getElementById('addFloor'+i),f=sel?sel.value:(b.fl||['RDC'])[0];b.a.push({f,r:'',e:'',u:50,l:10,p:9});R();S('b'+i)}
+function autoEnedis(bi){const b=B[bi],fl=b.fl||gFL(b.niv||9),cnt={};
+  b.a.forEach(x=>{const fi=fl.indexOf(x.f);const prefix=fi<=0?0:fi;
+    if(!cnt[x.f])cnt[x.f]=0;cnt[x.f]++;
+    const num=prefix*100+cnt[x.f];
+    x.e=String(num).padStart(3,'0')});R();S('b'+bi)}
+function setNiv(bi,n){B[bi].niv=n;B[bi].fl=gFL(n);R();S('b'+bi)}
+function addFL(bi,name){
+  const inp=document.getElementById('flInput'+bi);
+  const cur=inp.value.split(',').map(s=>s.trim()).filter(s=>s.length>0);
+  if(cur.includes(name)){alert(name+' existe déjà');return}
+  if(name==='TRANSFO'||name==='TGBT'){cur.push(name)}
+  else{const specials=['SS2','SS1','SS','RDJ','RDC BAS','RDC HAUT'];
+    let insertIdx=0;
+    for(let i=0;i<cur.length;i++){if(specials.includes(cur[i]))insertIdx=i+1;else break}
+    cur.splice(insertIdx,0,name)}
+  inp.value=cur.join(', ');
+  saveFloors(bi);
+}
+function editFloors(bi){const el=document.getElementById('flEdit'+bi);el.style.display=el.style.display==='none'?'block':'none'}
+function saveFloors(bi){const v=document.getElementById('flInput'+bi).value;
+  const fl=v.split(',').map(s=>s.trim()).filter(s=>s.length>0);
+  if(fl.length<1){alert('Il faut au moins 1 niveau');return}
+  B[bi].fl=fl;B[bi].niv=fl.length;
+  B[bi].transfo=fl.includes('TRANSFO');
+  R();S(B[bi].transfo?'bp':'b'+bi)}
+function delBat(i){B.splice(i,1);R();S('tgbt')}
+function oM(){document.getElementById('mo').classList.add('open');document.getElementById('mType').value='bat';document.getElementById('mNivRow').style.display='';document.getElementById('mN').value='BAT-'+String.fromCharCode(65+B.length)}
+function cM(){document.getElementById('mo').classList.remove('open')}
+function aB(){const tp=document.getElementById('mType').value;const n=document.getElementById('mN').value.trim()||(tp==='tgbt'?'TGBT-'+(TG.length+2):'BAT-X');
+  if(tp==='tgbt'){TG.push({n,transfo:false,transfoNum:1,i:JSON.parse(JSON.stringify(T.i))});cM();R();S('tg'+(TG.length-1));return}
+  const nv=parseInt(document.getElementById('mNiv').value)||9;
+  B.push({n,sgx:[{n:'SGX',p:36}],niv:nv,fl:gFL(nv),a:[]});cM();R();S('b'+(B.length-1))}
+
+// ═══ EXPORT EXCEL ═══
+async function exportXLS(){
+  if(typeof ExcelJS==='undefined'){alert('Chargement de la librairie Excel en cours, réessayez dans 2 secondes...');return}
+  const wb=new ExcelJS.Workbook();
+  wb.creator='AL GOMES — Bureau d\'Études Techniques';
+  wb.created=new Date();
+
+  // ── PALETTE PRO ──
+  const navy={argb:'FF1F3864'};
+  const navyLight={argb:'FF2E4A7A'};
+  const white={argb:'FFFFFFFF'};
+  const black={argb:'FF000000'};
+  const greyLight={argb:'FFF2F2F2'};
+  const greyMed={argb:'FFE0E0E0'};
+  const greyBorder={argb:'FFB4B4B4'};
+  const greyDark={argb:'FF808080'};
+  const orangeLight={argb:'FFFFF2E0'};
+  const orangeFull={argb:'FFED7D31'};
+  const redLight={argb:'FFFFE0E0'};
+  const redFull={argb:'FFC00000'};
+  const greenBanner={argb:'FF548235'};
+  const redBanner={argb:'FFC00000'};
+  const blueAccent={argb:'FF4472C4'};
+
+  const bThin={style:'thin',color:greyBorder};
+  const bMed={style:'medium',color:greyBorder};
+  const bThick={style:'medium',color:navy};
+  const border={top:bThin,bottom:bThin,left:bThin,right:bThin};
+  const borderH={top:bThick,bottom:bThick,left:bThin,right:bThin};
+  const borderFloor={top:bMed,bottom:bThin,left:bThin,right:bThin};
+  const ca={horizontal:'center',vertical:'middle'};
+  const la={horizontal:'left',vertical:'middle'};
+  const hdrFont={bold:true,color:white,size:10,name:'Calibri'};
+  const cellFont={color:black,size:10,name:'Calibri'};
+  const cellFontBold={bold:true,color:black,size:10,name:'Calibri'};
+
+  function hdrRow(ws,r,fill){
+    const row=ws.getRow(r);row.height=26;
+    row.eachCell(c=>{c.fill={type:'pattern',pattern:'solid',fgColor:fill||navy};c.font={...hdrFont};c.alignment={...ca,wrapText:true};c.border=borderH});
+  }
+
+  // ═══ TGBT SHEET ═══
+  const st=wb.addWorksheet('TGBT',{properties:{tabColor:{argb:'FF4472C4'}},
+    pageSetup:{paperSize:9,orientation:'landscape',fitToPage:true,fitToWidth:1}});
+  st.columns=[{width:30},{width:15},{width:15},{width:13},{width:15},{width:2},{width:13},{width:13},{width:2},{width:18},{width:42}];
+
+  const blueEnedis={argb:'FF00B0F0'};const yellowEnedis={argb:'FFFFFF00'};
+  const redEnedis={argb:'FFD63031'};const orangeIRVE={argb:'FFED7D31'};
+  const blueVL={argb:'FFDBE5F1'};const yellowVL={argb:'FFFFFDE8'};const blueVL2={argb:'FFE8F4FC'};
+
+  const pName=document.getElementById('projName').value.trim()||'Sans titre';
+  const ib=parseFloat(T.i[0].B)||0;T.i[0].E=cI(ib);
+  const lb=parseFloat(T.i[1].B)||0,lc=parseFloat(T.i[1].C)||0,lm=cL(lb,lc);T.i[1].D=lm.d;T.i[1].E=lm.e;
+  let totB=0;T.i.forEach(x=>{const v=parseFloat(x.E);if(!isNaN(v))totB+=v});totB=Math.ceil(totB);
+  const rgB=gR(totB),tfB=gT(rgB);
+
+  // Helper
+  function sc(r,c,val,font,fill,align){
+    const cell=st.getCell(r,c);cell.value=val;
+    if(font)cell.font=font;if(fill)cell.fill={type:'pattern',pattern:'solid',fgColor:fill};
+    cell.alignment=align||ca;return cell;
+  }
+  function frm(r1,c1,r2,c2){for(let r=r1;r<=r2;r++)for(let c=c1;c<=c2;c++){
+    st.getCell(r,c).border={top:r===r1?bThick:bThin,bottom:r===r2?bThick:bThin,left:c===c1?bThick:bThin,right:c===c2?bThick:bThin}}}
+
+  // ════════════════════════════
+  // TITRE (lignes 1-2)
+  // ════════════════════════════
+  st.mergeCells('A1:E1');
+  sc(1,1,pName,{bold:true,color:white,size:20,name:'Calibri'},navy);
+  st.getRow(1).height=40;
+  st.mergeCells('A2:E2');
+  sc(2,1,'BILAN DE PUISSANCE TGBT — NF C 14-100',{bold:true,color:{argb:'FFB4C7E7'},size:10,name:'Calibri'},navyLight);
+  st.getRow(2).height=20;
+  frm(1,1,2,5);
+
+  st.getRow(3).height=10;
+
+  // ════════════════════════════
+  // EN-TÊTES (ligne 4)
+  // ════════════════════════════
+  const hdrs=['Désignation','Nb places parking','Nb de locaux','Quantité','Puissance (kVA)'];
+  hdrs.forEach((v,ci)=>{sc(4,ci+1,v,{bold:true,color:white,size:9.5,name:'Calibri'},navy,{...ca,wrapText:true})});
+  st.getRow(4).height=30;
+  frm(4,1,4,5);
+
+  // ════════════════════════════
+  // DONNÉES (lignes 5-15)
+  // ════════════════════════════
+  T.i.forEach((x,i)=>{
+    const r=5+i;const bg=i%2===0?white:greyLight;
+    const eVal=x.E===''?'':x.E;const hasVal=eVal!==''&&eVal!==0;
+    sc(r,1,x.n,{bold:true,color:{argb:'FF333333'},size:10,name:'Calibri'},bg,la);
+    sc(r,2,x.B==='-'?'-':x.B===''?'':x.B,{color:x.B==='-'?greyBorder:black,size:10,name:'Calibri'},bg);
+    sc(r,3,x.C==='-'?'-':x.C===''?'':x.C,{color:x.C==='-'?greyBorder:black,size:10,name:'Calibri'},bg);
+    sc(r,4,x.D===''?'':x.D,{color:black,size:10,name:'Calibri'},bg);
+    sc(r,5,eVal,{bold:hasVal,color:hasVal?navy:black,size:hasVal?12:10,name:'Calibri'},hasVal?blueVL:bg);
+  });
+  const lastDataRow=4+T.i.length;
+  frm(5,1,lastDataRow,5);
+  // Hauteur lignes données
+  for(let r=5;r<=lastDataRow;r++)st.getRow(r).height=22;
+
+  // ════════════════════════════
+  // TOTAUX (lignes après données)
+  // ════════════════════════════
+  const rG=lastDataRow+1;
+  st.getRow(rG).height=8;
+
+  // Puissance Brut
+  st.mergeCells(rG+1,1,rG+1,4);
+  sc(rG+1,1,'PUISSANCE TOTALE BRUT EN kVA',{bold:true,color:white,size:12,name:'Calibri'},navy,la);
+  sc(rG+1,5,totB,{bold:true,color:white,size:18,name:'Calibri'},navy);
+  frm(rG+1,1,rG+1,5);
+  st.getRow(rG+1).height=34;
+
+  // Total Réglementaire
+  const isTB=tfB==='TARIF BLEU';const isTJ=tfB==='TARIF JAUNE';
+  const tFill=isTB?blueEnedis:isTJ?yellowEnedis:greyMed;
+  st.mergeCells(rG+2,1,rG+2,3);
+  sc(rG+2,1,'TOTAL RÉGLEMENTAIRE EN kVA',{bold:true,color:black,size:12,name:'Calibri'},tFill,la);
+  sc(rG+2,4,tfB||'—',{bold:true,color:isTB?{argb:'FF003366'}:black,size:11,name:'Calibri'},tFill);
+  sc(rG+2,5,rgB,{bold:true,color:black,size:18,name:'Calibri'},tFill);
+  frm(rG+2,1,rG+2,5);
+  st.getRow(rG+2).height=34;
+
+  // ════════════════════════════
+  // TARIFS RÉGLEMENTÉS (G-H)
+  // ════════════════════════════
+  st.mergeCells('G3:H3');
+  sc(3,7,'TARIFS RÉGLEMENTÉS ENEDIS',{bold:true,color:white,size:9,name:'Calibri'},redEnedis);
+  st.getCell(3,7).border={top:bThick,bottom:bThick,left:bThick,right:bThick};
+
+  sc(4,7,'TARIF BLEU',{bold:true,color:{argb:'FF003366'},size:9,name:'Calibri'},blueEnedis);
+  sc(4,8,'TARIF JAUNE',{bold:true,color:{argb:'FF663300'},size:9,name:'Calibri'},yellowEnedis);
+
+  const tBleu=[3,6,9,12,15,18,24,30,36];
+  const tJaune=[42,60,78,96,114,132,150,168,186,204,222,240];
+  const maxTR=Math.max(tBleu.length,tJaune.length);
+  for(let i=0;i<maxTR;i++){
+    const r=5+i;const vb=tBleu[i]||'';const vj=tJaune[i]||'';
+    const actB=vb===rgB;const actJ=vj===rgB;
+    // Bleu column
+    if(actB){sc(r,7,'✓  '+vb,{bold:true,color:{argb:'FF003366'},size:12,name:'Calibri'},blueEnedis)}
+    else{sc(r,7,vb,{color:{argb:'FF333333'},size:10,name:'Calibri'},i%2===0?white:blueVL2)}
+    // Jaune column
+    if(actJ){sc(r,8,'✓  '+vj,{bold:true,color:{argb:'FF663300'},size:12,name:'Calibri'},yellowEnedis)}
+    else{sc(r,8,vj,{color:{argb:'FF333333'},size:10,name:'Calibri'},i%2===0?white:yellowVL)}
+  }
+  frm(4,7,4+maxTR,8);
+
+  // ════════════════════════════
+  // CALCUL IRVE (J-K)
+  // ════════════════════════════
+  st.mergeCells('J3:K3');
+  sc(3,10,'CALCUL IRVE',{bold:true,color:white,size:11,name:'Calibri'},navy);
+  st.getCell(3,10).border={top:bThick,bottom:bThick,left:bThick,right:bThick};
+
+  st.mergeCells('J4:K4');
+  sc(4,10,'Points de recharge — bâtiments résidentiels / non résidentiels',{italic:true,color:greyDark,size:8,name:'Calibri'},greyLight,{...ca,wrapText:true});
+  st.getRow(4).height=30;
+
+  sc(5,10,"Nb d'emplacements N",{bold:true,color:white,size:9,name:'Calibri'},navy,{...ca,wrapText:true});
+  sc(5,11,'Puissance IRVE',{bold:true,color:white,size:9,name:'Calibri'},navy,{...ca,wrapText:true});
+  st.getRow(5).height=22;
+
+  const irveR=[
+    ['10 ≤ N ≤ 20','15 kVA',0],
+    ['21 ≤ N ≤ 40','22 kVA',0],
+    ['41 ≤ N ≤ 100','30 kVA + 6 kVA/tranche 10 au-delà 50\nPirve = 30 + 6 ((N-50) /10)',1],
+    ['101 ≤ N ≤ 200','60 kVA + 3,6 kVA/tranche 10 au-delà 100\nPirve = 60 + 3,6 ((N-100) /10)',1],
+    ['N > 200','96 kVA + 0,2 kVA × (N-200)\nPirve = 96 + 0,2 (N-200)',1]
+  ];
+  irveR.forEach((d,i)=>{
+    const r=6+i;const bg=i%2===0?white:greyLight;
+    sc(r,10,d[0],{bold:true,color:navy,size:10,name:'Calibri'},bg);
+    sc(r,11,d[1],{color:d[2]?orangeIRVE:black,size:d[2]?9:10,name:'Calibri',bold:!!d[2]},bg,{...ca,wrapText:true});
+    st.getRow(r).height=d[2]?46:22;
+  });
+  frm(4,10,10,11);
+
+  sc(11,10,'extrait SEQUELEC GP13_IRVE_20210502',{italic:true,color:greyDark,size:7,name:'Calibri'},null,la);
+
+  // ════════════════════════════
+  // PIED DE PAGE
+  // ════════════════════════════
+  const fR=rG+4;
+  // Ligne de séparation
+  for(let c=1;c<=5;c++){st.getCell(fR-1,c).border={bottom:{style:'thin',color:navy}}}
+  sc(fR,1,'AL GOMES — Bureau d\'Études Techniques Électricité',{italic:true,color:navy,size:8,name:'Calibri'},null,la);
+  sc(fR,5,'NF C 14-100',{italic:true,color:navy,size:8,name:'Calibri'});
+
+
+  // ═══ BUILDING SHEETS ═══
+  B.forEach((b,bi)=>{
+    const a=b.a;if(!b.fl)b.fl=gFL(b.niv||9);
+    const bFL=b.fl;
+    a.forEach(x=>{if(x.p===undefined)x.p=pw(x.u);x.c=cl(x.p)});
+    a.sort((a,bb)=>bFL.indexOf(a.f)-bFL.indexOf(bb.f));
+
+    const fg={};a.forEach(x=>{if(!fg[x.f])fg[x.f]=[];fg[x.f].push(x)});
+    const fc={};Object.entries(fg).forEach(([f,ar])=>{fc[f]={n3:ar.filter(x=>x.p===3).length,n6:ar.filter(x=>x.p===6).length,n9:ar.filter(x=>x.p===9).length,n12:ar.filter(x=>x.p===12).length,t:ar.length}});
+
+    const af=[...bFL].reverse(),cr=[];let cH=0,cK=0;
+    for(const f of af){const d=fc[f]||{n3:0,n6:0,n9:0,n12:0,t:0};cH+=d.t;const kn=d.n3*3+d.n6*6+d.n9*9+d.n12*12;cK+=kn;const co=vl(cH);const sx=(f===bFL[0])?sT(b):0;const pt=cK*co+sx;cr.push({f,d,cH,kn,cK,co,sx,pt,I:pt/.692})}
+    const rd=cr[cr.length-1],fI=rd?rd.I:0,ok=fI<200;
+    const colTxt=ok?'COLONNE DE '+Math.round(fI)+'A  ➜  COLONNE SIMPLE 200A':'COLONNE DE '+Math.round(fI)+'A  ➜  DOUBLE COLONNE 200A OU 400A';
+
+    const ws=wb.addWorksheet(b.n,{properties:{tabColor:{argb:ok?'FF548235':'FFC00000'}},
+      pageSetup:{paperSize:9,orientation:'landscape',fitToPage:true,fitToWidth:1}});
+    ws.columns=[{width:11},{width:16},{width:14},{width:13},{width:10},{width:9},{width:10},{width:8},{width:8},{width:8},{width:8},{width:8}];
+
+    // ── TITLE BLOCK ──
+    ws.mergeCells('A1:L1');
+    const wt=ws.getCell('A1');wt.value=pName+' — '+b.n+' — DÉRIVATIONS';
+    wt.font={bold:true,color:white,size:16,name:'Calibri'};
+    wt.fill={type:'pattern',pattern:'solid',fgColor:navy};wt.alignment=ca;
+    wt.border={top:bThick,bottom:{style:'none'},left:bThick,right:bThick};
+    ws.getRow(1).height=32;
+
+    // ── RESULT BANNER ──
+    ws.mergeCells('A2:L2');
+    const cb=ws.getCell('A2');cb.value=colTxt;
+    cb.font={bold:true,color:white,size:12,name:'Calibri'};
+    cb.fill={type:'pattern',pattern:'solid',fgColor:ok?greenBanner:redBanner};cb.alignment=ca;
+    cb.border={top:{style:'none'},bottom:bThick,left:bThick,right:bThick};
+    ws.getRow(2).height=28;
+
+    // ── INFO ROW ──
+    ws.getRow(3).height=22;
+    ws.getCell('A3').value=a.length+' logements';ws.getCell('A3').font={bold:true,color:navy,size:10,name:'Calibri'};
+
+    // ── SGX DETAIL ──
+    let sr=4;
+    ws.getCell('A'+sr).value='PUISSANCES SGX';ws.getCell('A'+sr).font={bold:true,color:navy,size:9,name:'Calibri'};
+    ws.getCell('B'+sr).value='Désignation';ws.getCell('B'+sr).font={bold:true,color:greyDark,size:9,name:'Calibri'};ws.getCell('B'+sr).alignment=ca;
+    ws.getCell('C'+sr).value='kVA';ws.getCell('C'+sr).font={bold:true,color:greyDark,size:9,name:'Calibri'};ws.getCell('C'+sr).alignment=ca;
+    for(let ci=1;ci<=3;ci++){ws.getCell(sr,ci).border=border;ws.getCell(sr,ci).fill={type:'pattern',pattern:'solid',fgColor:greyLight}}
+    sr++;
+    b.sgx.forEach((sx,si)=>{
+      ws.getCell('B'+sr).value=sx.n;ws.getCell('B'+sr).font={...cellFont};ws.getCell('B'+sr).alignment=la;ws.getCell('B'+sr).border=border;
+      ws.getCell('C'+sr).value=sx.p;ws.getCell('C'+sr).font={...cellFont};ws.getCell('C'+sr).alignment=ca;ws.getCell('C'+sr).border=border;
+      ws.getCell('A'+sr).border=border;
+      sr++;
+    });
+    ws.getCell('B'+sr).value='TOTAL SGX';ws.getCell('B'+sr).font={bold:true,color:navy,size:10,name:'Calibri'};ws.getCell('B'+sr).alignment=la;
+    ws.getCell('C'+sr).value=sT(b);ws.getCell('C'+sr).font={bold:true,color:blueAccent,size:11,name:'Calibri'};ws.getCell('C'+sr).alignment=ca;
+    for(let ci=1;ci<=3;ci++){ws.getCell(sr,ci).border=borderH;ws.getCell(sr,ci).fill={type:'pattern',pattern:'solid',fgColor:greyLight}}
+    sr++;
+
+    ws.getRow(sr).height=6;sr++;
+
+    // ── DERIVATION HEADERS ──
+    ws.getRow(sr).values=['Niveau','N° Archi','N° Enedis','Surface (m²)','Long. (m)','kVA','Calibre','3 kVA','6 kVA','9 kVA','12 kVA','Total/niv'];
+    hdrRow(ws,sr);
+
+    // ── DERIVATION DATA ──
+    let r=sr+1,prevF='',rowIdx=0;
+    const floorRanges={};
+    a.forEach((x,i)=>{
+      const newF=x.f!==prevF;prevF=x.f;
+      const fd=fc[x.f]||{n3:0,n6:0,n9:0,n12:0,t:0};
+      const row=ws.getRow(r);row.height=22;
+
+      // Track floor ranges for merging
+      if(newF){floorRanges[x.f]={start:r,end:r,fd}}
+      else{floorRanges[x.f].end=r}
+
+      // Only write count values on first row of floor, leave empty for others
+      if(newF){
+        row.values=[x.f,x.r,x.e,x.u,x.l,x.p,x.c+' A',
+          fd.n3?fd.n3+'×3':'—',fd.n6?fd.n6+'×6':'—',fd.n9?fd.n9+'×9':'—',fd.n12?fd.n12+'×12':'—',fd.t];
+      }else{
+        row.values=['',x.r,x.e,x.u,x.l,x.p,x.c+' A','','','','',''];
+      }
+
+      const isForced=x.p!==pw(x.u);
+      const rowBg=x.p===6?orangeLight:x.p===12?redLight:(rowIdx%2===0?white:greyLight);
+
+      row.eachCell((c,ci)=>{
+        c.border=newF&&r>6?borderFloor:border;
+        c.alignment=ca;c.font={...cellFont};
+        c.fill={type:'pattern',pattern:'solid',fgColor:ci<=7?rowBg:(rowIdx%2===0?white:greyLight)};
+      });
+
+      // Floor name
+      if(newF){row.getCell(1).font={bold:true,color:navy,size:11,name:'Calibri'};
+        row.getCell(1).fill={type:'pattern',pattern:'solid',fgColor:greyLight}}
+
+      // kVA cell
+      row.getCell(6).font={bold:true,color:white,size:11,name:'Calibri'};
+      row.getCell(6).fill={type:'pattern',pattern:'solid',fgColor:x.p===6?orangeFull:x.p===12?redFull:x.p===3?blueAccent:navy};
+
+      // Calibre
+      if(isForced){row.getCell(7).font={bold:true,color:orangeFull,size:10,name:'Calibri'};row.getCell(7).value=x.c+' A ⚠'}
+
+      // Count columns styling (only on first row)
+      if(newF){
+        for(let ci=8;ci<=11;ci++){row.getCell(ci).font={bold:true,color:navy,size:9,name:'Calibri'}}
+        row.getCell(12).font={bold:true,color:navy,size:12,name:'Calibri'};
+        row.getCell(12).fill={type:'pattern',pattern:'solid',fgColor:greyLight};
+      }
+
+      rowIdx++;r++;
+    });
+
+    // Merge cells per floor for Niveau (col 1) and count columns (cols 8-12)
+    Object.values(floorRanges).forEach(({start,end})=>{
+      if(end>start){
+        ws.mergeCells(start,1,end,1);
+        for(let ci=8;ci<=12;ci++){ws.mergeCells(start,ci,end,ci)}
+      }
+      // Style merged count cells
+      for(let ci=8;ci<=12;ci++){
+        const c=ws.getCell(start,ci);
+        c.alignment={...ca,vertical:'middle'};
+        c.border=border;
+      }
+      // Niveau merged cell vertical align
+      const nc=ws.getCell(start,1);
+      nc.alignment={...ca,vertical:'middle'};
+    });
+
+    // ── SEPARATOR ──
+    r+=1;ws.getRow(r).height=6;r++;
+
+    // ── COLUMN CALC TITLE ──
+    ws.mergeCells('A'+r+':M'+r);
+    const ct=ws.getCell('A'+r);ct.value='CALCUL DE COLONNE — '+b.n;
+    ct.font={bold:true,color:white,size:14,name:'Calibri'};
+    ct.fill={type:'pattern',pattern:'solid',fgColor:navy};ct.alignment=ca;
+    ct.border={top:bThick,bottom:bThick,left:bThick,right:bThick};
+    ws.getRow(r).height=30;
+    ws.getColumn(13).width=15;
+    r++;
+
+    // ── COLUMN CALC HEADERS ──
+    ws.getRow(r).values=['Niveau','3 kVA','6 kVA','9 kVA','12 kVA','Lgt/niv','Lgt cumul','Coeff K','P/niv','P cumul','SGX','P×K+SGX','Courant (A)'];
+    hdrRow(ws,r);r++;
+
+    // ── COLUMN CALC DATA ──
+    let cri=0;
+    cr.forEach(row=>{
+      if(row.d.t===0&&row.cH===0&&row.f!==bFL[0])return;
+      const isBottom=row.f===bFL[0];
+      const wr=ws.getRow(r);wr.height=22;
+      wr.values=[row.f,row.d.n3||'—',row.d.n6||'—',row.d.n9||'—',row.d.n12||'—',
+        row.d.t||'—',row.cH||'—',row.co.toFixed(2),row.kn||'—',row.cK||'—',
+        row.sx||'—',row.pt.toFixed(1),row.I.toFixed(1)];
+
+      const rBg=isBottom?greyLight:(cri%2===0?white:greyLight);
+      wr.eachCell(c=>{c.border=isBottom?borderH:border;c.alignment=ca;c.font={...cellFont};
+        c.fill={type:'pattern',pattern:'solid',fgColor:rBg}});
+
+      wr.getCell(1).font={bold:true,color:navy,size:10,name:'Calibri'};
+      if(row.sx>0){wr.getCell(11).font={bold:true,color:blueAccent,size:11,name:'Calibri'}}
+      wr.getCell(12).font={bold:true,color:black,size:11,name:'Calibri'};
+
+      // Courant cell
+      const iCol=row.I>=200?redFull:row.I>=100?orangeFull:greenBanner;
+      wr.getCell(13).fill={type:'pattern',pattern:'solid',fgColor:iCol};
+      wr.getCell(13).font={bold:true,color:white,size:12,name:'Calibri'};
+
+      if(isBottom){
+        wr.getCell(1).fill={type:'pattern',pattern:'solid',fgColor:navy};
+        wr.getCell(1).font={bold:true,color:white,size:11,name:'Calibri'};
+      }
+      cri++;r++;
+    });
+
+    // ── COEFF K TABLE ──
+    r++;ws.getRow(r).height=6;r++;
+    ws.getCell('A'+r).value='Coefficient K — NF C 14-100';
+    ws.getCell('A'+r).font={bold:true,color:greyDark,size:9,name:'Calibri'};
+    r++;
+    const krN=ws.getRow(r);krN.values=['N',...CO.map(c=>c[0])];krN.height=18;
+    krN.eachCell(c=>{c.font={bold:true,color:navy,size:9,name:'Calibri'};c.alignment=ca;c.fill={type:'pattern',pattern:'solid',fgColor:greyLight};c.border=border});
+    r++;
+    const krK=ws.getRow(r);krK.values=['K',...CO.map(c=>c[1])];krK.height=18;
+    krK.eachCell(c=>{c.font={bold:true,color:blueAccent,size:9,name:'Calibri'};c.alignment=ca;c.fill={type:'pattern',pattern:'solid',fgColor:white};c.border=border});
+
+    // ── FOOTER ──
+    r+=2;
+    ws.getCell('A'+r).value='AL GOMES — Bureau d\'Études Techniques Électricité';
+    ws.getCell('A'+r).font={italic:true,color:greyDark,size:8,name:'Calibri'};
+    ws.getCell('F'+r).value='NF C 14-100 / Enedis';
+    ws.getCell('F'+r).font={italic:true,color:greyDark,size:8,name:'Calibri'};
+  });
+
+  // ── SAVE STATE IN HIDDEN SHEET ──
+  const ds=wb.addWorksheet('_DATA',{state:'veryHidden'});
+  ds.getCell('A1').value=JSON.stringify({P:pName,T,TG,B});
+
+  // ── PROTECT ALL SHEETS ──
+  wb.eachSheet(ws=>{if(ws.name!=='_DATA')ws.protect('sodikart',{sheet:true,objects:true,scenarios:true,selectLockedCells:true,selectUnlockedCells:true})});
+
+  // ── DOWNLOAD ──
+  const buf=await wb.xlsx.writeBuffer();
+  const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  if(window.showSaveFilePicker){
+    try{
+      const handle=await window.showSaveFilePicker({suggestedName:(pName.replace(/[^a-zA-Z0-9éèêëàâùûôîïç _-]/g,'_'))+'_Derivations_TGBT.xlsx',types:[{description:'Fichier Excel',accept:{'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':['.xlsx']}}]});
+      const wr=await handle.createWritable();await wr.write(blob);await wr.close();
+    }catch(e){if(e.name!=='AbortError')alert('Erreur : '+e.message)}
+  }else{
+    const url=URL.createObjectURL(blob);const link=document.createElement('a');
+    link.href=url;link.download=(pName.replace(/[^a-zA-Z0-9éèêëàâùûôîïç _-]/g,'_'))+'_Derivations_TGBT.xlsx';
+    document.body.appendChild(link);link.click();document.body.removeChild(link);URL.revokeObjectURL(url);
+  }
+}
+
+// ═══ IMPORT EXCEL ═══
+function newProject(){
+  T={i:[
+    {n:'IRVE MESURE CONSERVATOIRE',B:0,C:'-',D:100,E:0,a:1},
+    {n:'LUMINAIRE parking SOUS SOL',B:0,C:3,D:2,E:1,a:2},
+    {n:'-',B:'-',C:'-',D:0,E:0,a:0},{n:'Chaufferie',B:'-',C:'-',D:1,E:5,a:0},
+    {n:'Supresseur logement',B:'-',C:'-',D:'',E:15,a:0},{n:'Surpresseur Arrosage',B:'-',C:'-',D:'',E:3,a:0},
+    {n:'Extracteur VMC',B:'-',C:'-',D:'',E:2,a:0},{n:'Relevage EU/EV',B:'-',C:'-',D:'',E:3,a:0},
+    {n:'Relevage EP',B:'',C:'',D:'',E:3,a:0},{n:'Éclairage Étages',B:'',C:'',D:'',E:2,a:0},
+    {n:'Autre Puissance',B:'',C:'',D:'',E:2,a:0}
+  ]};
+  B=[];document.getElementById('projName').value='';R();S('tgbt');
+}
+
+async function importXLS(input){
+  const file=input.files[0];if(!file)return;
+  if(typeof ExcelJS==='undefined'){alert('Chargement de la librairie Excel en cours, réessayez dans 2 secondes...');input.value='';return}
+  try{
+    const buf=await file.arrayBuffer();
+    const wb=new ExcelJS.Workbook();
+    await wb.xlsx.load(buf);
+    const ds=wb.getWorksheet('_DATA');
+    if(!ds){alert('Ce fichier Excel ne contient pas de données de projet.\nUtilisez un fichier exporté depuis cette application.');input.value='';return}
+    const json=ds.getCell('A1').value;
+    if(!json){alert('Données de projet vides.');input.value='';return}
+    const data=JSON.parse(json);
+    if(data.T)T=data.T;if(data.TG)TG=data.TG;
+    if(data.B)B=data.B;
+    if(data.P)document.getElementById('projName').value=data.P;
+    R();S('tgbt');
+    input.value='';
+  }catch(e){alert('Erreur lors de l\'import : '+e.message);input.value=''}
+}
+
+R();
+
+// ═══ EXPORT PDF ═══
+async function exportPDF(){
+  if(typeof jspdf==='undefined'||typeof jspdf.jsPDF==='undefined'){alert('Chargement de la librairie PDF en cours, réessayez dans 2 secondes...');return}
+  const{jsPDF}=jspdf;
+  const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+  const pName=document.getElementById('projName').value.trim()||'Sans titre';
+  const pageW=doc.internal.pageSize.getWidth();
+  const pageH=doc.internal.pageSize.getHeight();
+  const navy=[31,56,100],white=[255,255,255],greyL=[242,242,242],blueA=[68,114,196];
+  const orangeF=[237,125,49],redF=[192,0,0],greenF=[84,130,53];
+
+  function footer(doc){
+    doc.setFontSize(7);doc.setTextColor(160,160,160);
+    doc.text('AL GOMES — Bureau d\'Études Techniques Électricité',14,pageH-6);
+    doc.text('NF C 14-100 / Enedis',pageW-14,pageH-6,{align:'right'});
+    doc.text('Page '+doc.internal.getNumberOfPages(),pageW/2,pageH-6,{align:'center'});
+  }
+
+  // Recalc TGBT
+  const ib=parseFloat(T.i[0].B)||0;T.i[0].E=cI(ib);
+  const lb=parseFloat(T.i[1].B)||0,lc=parseFloat(T.i[1].C)||0,lm=cL(lb,lc);T.i[1].D=lm.d;T.i[1].E=lm.e;
+  let totB=0;T.i.forEach(x=>{const v=parseFloat(x.E);if(!isNaN(v))totB+=v});totB=Math.ceil(totB);
+  const rgB=gR(totB),tfB=gT(rgB);
+
+  // ═══ PAGE 1: TGBT ═══
+  // Title band
+  doc.setFillColor(...navy);doc.rect(0,0,pageW,22,"F");
+  doc.setFontSize(18);doc.setTextColor(...white);doc.setFont('helvetica','bold');
+  doc.text(pName+' — TGBT',pageW/2,12,{align:'center'});
+  doc.setFontSize(10);doc.setTextColor(180,199,231);
+  doc.text('Bilan de Puissance — NF C 14-100',pageW/2,19,{align:'center'});
+
+  // TGBT table
+  const tHead=[['Désignation','Nb places park.','Nb locaux','Quantité','Puissance (kVA)']];
+  const tBody=T.i.map(x=>[x.n,x.B==='-'?'':x.B,x.C==='-'?'':x.C,x.D===''?'':x.D,x.E===''?'':x.E]);
+  tBody.push([{content:'PUISSANCE TOTALE BRUT',colSpan:4,styles:{fontStyle:'bold',fillColor:navy,textColor:white}},{content:totB+' kVA',styles:{fontStyle:'bold',fillColor:navy,textColor:white}}]);
+  tBody.push([{content:'TOTAL RÉGLEMENTAIRE',colSpan:3,styles:{fontStyle:'bold',fillColor:blueA,textColor:white}},{content:tfB||'—',styles:{fontStyle:'bold',fillColor:blueA,textColor:white}},{content:rgB+' kVA',styles:{fontStyle:'bold',fillColor:blueA,textColor:white}}]);
+
+  doc.autoTable({head:tHead,body:tBody,startY:28,
+    theme:'grid',
+    headStyles:{fillColor:navy,textColor:white,fontStyle:'bold',fontSize:9,halign:'center'},
+    bodyStyles:{fontSize:9,halign:'center'},
+    columnStyles:{0:{halign:'left',cellWidth:80}},
+    alternateRowStyles:{fillColor:greyL},
+    styles:{cellPadding:3,lineColor:[180,180,180],lineWidth:0.2},
+    margin:{left:14,right:14}
+  });
+  footer(doc);
+
+  // ═══ BUILDING PAGES ═══
+  B.forEach((b,bi)=>{
+    const a=[...b.a];if(!b.fl)b.fl=gFL(b.niv||9);
+    const bFL=b.fl;
+    a.forEach(x=>{if(x.p===undefined)x.p=pw(x.u);x.c=cl(x.p)});
+    a.sort((aa,bb)=>bFL.indexOf(aa.f)-bFL.indexOf(bb.f));
+    const fg={};a.forEach(x=>{if(!fg[x.f])fg[x.f]=[];fg[x.f].push(x)});
+    const fc={};Object.entries(fg).forEach(([f,ar])=>{fc[f]={n3:ar.filter(x=>x.p===3).length,n6:ar.filter(x=>x.p===6).length,n9:ar.filter(x=>x.p===9).length,n12:ar.filter(x=>x.p===12).length,t:ar.length}});
+    const af=[...bFL].reverse(),cr=[];let cH=0,cK=0;
+    for(const f of af){const d=fc[f]||{n3:0,n6:0,n9:0,n12:0,t:0};cH+=d.t;const kn=d.n3*3+d.n6*6+d.n9*9+d.n12*12;cK+=kn;const co=vl(cH);const sx=(f===bFL[0])?sT(b):0;const pt=cK*co+sx;cr.push({f,d,cH,kn,cK,co,sx,pt,I:pt/.692})}
+    const rd=cr[cr.length-1],fI=rd?rd.I:0,ok=fI<200;
+    const colTxt=ok?'COLONNE DE '+Math.round(fI)+'A  ➜  COLONNE SIMPLE 200A':'COLONNE DE '+Math.round(fI)+'A  ➜  DOUBLE COLONNE 200A OU 400A';
+
+    // New page
+    doc.addPage();
+
+    // Title band
+    doc.setFillColor(...navy);doc.rect(0,0,pageW,16,"F");
+    doc.setFontSize(14);doc.setTextColor(...white);doc.setFont('helvetica','bold');
+    doc.text(pName+' — '+b.n+' — DÉRIVATIONS',pageW/2,11,{align:'center'});
+
+    // Result banner
+    doc.setFillColor(...(ok?greenF:redF));doc.rect(0,16,pageW,10,"F");
+    doc.setFontSize(11);doc.setTextColor(...white);
+    doc.text(colTxt,pageW/2,23,{align:'center'});
+
+    // Info
+    doc.setFontSize(9);doc.setTextColor(60,60,60);doc.setFont('helvetica','normal');
+    doc.text(a.length+' logements',14,33);
+    doc.setTextColor(...blueA);doc.setFont('helvetica','bold');
+    doc.text('SGX Total : '+sT(b)+' kVA',70,33);
+
+    // SGX detail
+    const sgxHead=[['Désignation','kVA']];
+    const sgxBody=b.sgx.map(sx=>[sx.n,sx.p]);
+    sgxBody.push([{content:'TOTAL SGX',styles:{fontStyle:'bold'}},{content:sT(b),styles:{fontStyle:'bold',textColor:blueA}}]);
+    doc.autoTable({head:sgxHead,body:sgxBody,startY:36,
+      theme:'grid',tableWidth:70,
+      headStyles:{fillColor:greyL,textColor:navy,fontStyle:'bold',fontSize:8,halign:'center'},
+      bodyStyles:{fontSize:8,halign:'center'},
+      columnStyles:{0:{halign:'left',cellWidth:45}},
+      styles:{cellPadding:2,lineColor:[180,180,180],lineWidth:0.15},
+      margin:{left:14}
+    });
+
+    // Derivation table
+    const dHead=[['Niveau','N° Archi','N° Enedis','Surface (m²)','Long. (m)','kVA','Calibre','3 kVA','6 kVA','9 kVA','12 kVA','Total']];
+    const dBody=[];let pF='';
+    a.forEach(x=>{
+      const nf=x.f!==pF;pF=x.f;
+      const fd=fc[x.f]||{n3:0,n6:0,n9:0,n12:0,t:0};
+      const isForced=x.p!==pw(x.u);
+      const kvaStyle=x.p===6?{fillColor:orangeF,textColor:white}:x.p===12?{fillColor:redF,textColor:white}:x.p===3?{fillColor:blueA,textColor:white}:{fillColor:navy,textColor:white};
+      const rowBg=x.p===6?[255,242,224]:x.p===12?[255,224,224]:undefined;
+      dBody.push([
+        {content:nf?x.f:'',styles:{fontStyle:nf?'bold':'normal',textColor:nf?navy:[0,0,0]}},
+        x.r,x.e,x.u,x.l,
+        {content:x.p,styles:{fontStyle:'bold',...kvaStyle}},
+        isForced?x.c+' A ⚠':x.c+' A',
+        fd.n3?fd.n3+'×3':'—',fd.n6?fd.n6+'×6':'—',fd.n9?fd.n9+'×9':'—',fd.n12?fd.n12+'×12':'—',
+        {content:fd.t,styles:{fontStyle:'bold'}}
+      ]);
+    });
+
+    const lastY=doc.lastAutoTable?doc.lastAutoTable.finalY+4:56;
+    doc.autoTable({head:dHead,body:dBody,startY:lastY,
+      theme:'grid',
+      headStyles:{fillColor:navy,textColor:white,fontStyle:'bold',fontSize:8,halign:'center'},
+      bodyStyles:{fontSize:8,halign:'center'},
+      columnStyles:{0:{cellWidth:16},1:{cellWidth:20},2:{cellWidth:18},7:{fontSize:7,textColor:navy},8:{fontSize:7,textColor:navy},9:{fontSize:7,textColor:navy},10:{fontSize:7,textColor:navy},11:{fontStyle:'bold',fontSize:9}},
+      alternateRowStyles:{fillColor:greyL},
+      styles:{cellPadding:2,lineColor:[180,180,180],lineWidth:0.2},
+      margin:{left:14,right:14},
+      didParseCell:function(data){
+        if(data.section==='body'){
+          const r=a[data.row];
+          if(r&&(r.p===6||r.p===12)&&data.column.index<=6){
+            data.cell.styles.fillColor=r.p===6?[255,242,224]:[255,224,224];
+          }
+        }
+      }
+    });
+
+    // Column calc - check if we need a new page
+    let cY=doc.lastAutoTable.finalY+8;
+    if(cY>pageH-60){doc.addPage();cY=14}
+
+    // Column calc title
+    doc.setFillColor(...navy);doc.rect(14,cY,pageW-28,8,"F");
+    doc.setFontSize(10);doc.setTextColor(...white);doc.setFont('helvetica','bold');
+    doc.text('CALCUL DE COLONNE — '+b.n,pageW/2,cY+6,{align:'center'});
+
+    const cHead=[['Niv','3','6','9','12','Lgt/n','Cum','K','P/n','P cum','SGX','P×K+SGX','A']];
+    const cBody=[];
+    cr.forEach(row=>{
+      if(row.d.t===0&&row.cH===0&&row.f!==bFL[0])return;
+      const isBot=row.f===bFL[0];
+      const iCol=row.I>=200?redF:row.I>=100?orangeF:greenF;
+      cBody.push([
+        {content:row.f,styles:{fontStyle:'bold',textColor:isBot?white:navy,fillColor:isBot?navy:undefined}},
+        row.d.n3||'—',row.d.n6||'—',row.d.n9||'—',row.d.n12||'—',
+        row.d.t||'—',row.cH||'—',row.co.toFixed(2),row.kn||'—',row.cK||'—',
+        {content:row.sx||'—',styles:row.sx>0?{fontStyle:'bold',textColor:blueA}:{}},
+        {content:row.pt.toFixed(1),styles:{fontStyle:'bold'}},
+        {content:row.I.toFixed(1),styles:{fontStyle:'bold',fillColor:iCol,textColor:white}}
+      ]);
+    });
+
+    doc.autoTable({head:cHead,body:cBody,startY:cY+10,
+      theme:'grid',
+      headStyles:{fillColor:navy,textColor:white,fontStyle:'bold',fontSize:8,halign:'center'},
+      bodyStyles:{fontSize:8,halign:'center'},
+      alternateRowStyles:{fillColor:greyL},
+      styles:{cellPadding:2,lineColor:[180,180,180],lineWidth:0.2},
+      margin:{left:14,right:14}
+    });
+
+    footer(doc);
+  });
+
+  // Save
+  const fileName=(pName.replace(/[^a-zA-Z0-9éèêëàâùûôîïç _-]/g,'_'))+'_Derivations_TGBT.pdf';
+  if(window.showSaveFilePicker){
+    try{
+      const handle=await window.showSaveFilePicker({suggestedName:fileName,types:[{description:'Fichier PDF',accept:{'application/pdf':['.pdf']}}]});
+      const wr=await handle.createWritable();await wr.write(doc.output('blob'));await wr.close();
+    }catch(e){if(e.name!=='AbortError')alert('Erreur : '+e.message)}
+  }else{doc.save(fileName)}
+}
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+</body>
+</html>

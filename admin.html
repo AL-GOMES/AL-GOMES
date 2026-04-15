@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A.L.GOMES — Administration</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+  :root{--bg:#0a0a0f;--card:rgba(18,18,30,.95);--border:rgba(120,50,255,.18);--accent:#7832ff;--accent2:#5a1ecc;--text:#e0d8ff;--text2:rgba(180,160,255,.6);--success:#22c55e;--danger:#ef4444;--warning:#f59e0b;--radius:12px}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{min-height:100vh;font-family:'Rajdhani',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
+  body::before{content:'';position:fixed;inset:0;background:repeating-conic-gradient(#111 0% 25%,#0d0d12 0% 50%) 0 0/4px 4px,radial-gradient(ellipse at 20% 10%,rgba(120,50,255,.06) 0%,transparent 50%);z-index:0;pointer-events:none}
+  .topbar{position:fixed;top:0;left:0;right:0;height:60px;background:rgba(10,10,18,.95);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 28px;z-index:100;backdrop-filter:blur(16px)}
+  .topbar-left{display:flex;align-items:center;gap:14px}
+  .topbar-logo{font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;letter-spacing:3px;background:linear-gradient(135deg,#fff,#b388ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .topbar-badge{padding:4px 12px;background:rgba(120,50,255,.15);border:1px solid rgba(120,50,255,.3);border-radius:6px;font-size:11px;font-weight:700;color:#b388ff;letter-spacing:2px;text-transform:uppercase}
+  .topbar-right{display:flex;align-items:center;gap:16px}
+  .topbar-user{font-size:14px;color:var(--text2);font-weight:500}
+  .btn-nav{padding:8px 16px;background:rgba(120,50,255,.12);border:1px solid rgba(120,50,255,.25);border-radius:8px;color:#b388ff;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:600;letter-spacing:1px;cursor:pointer;transition:all .3s;text-decoration:none}
+  .btn-nav:hover{background:rgba(120,50,255,.25);border-color:rgba(120,50,255,.5)}
+  .btn-logout{border-color:rgba(239,68,68,.3);color:#f87171;background:rgba(239,68,68,.08)}
+  .btn-logout:hover{background:rgba(239,68,68,.2);border-color:rgba(239,68,68,.5)}
+  .main{position:relative;z-index:1;padding:80px 28px 40px;max-width:1100px;margin:0 auto}
+  h2{font-family:'Orbitron',sans-serif;font-size:20px;font-weight:700;letter-spacing:2px;margin-bottom:20px;color:#fff}
+  h2 span{color:var(--accent);margin-right:8px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:28px;margin-bottom:28px;box-shadow:0 4px 30px rgba(0,0,0,.3);animation:fadeUp .5s ease}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+  .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:28px}
+  .stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;text-align:center;animation:fadeUp .5s ease}
+  .stat-value{font-family:'Orbitron',sans-serif;font-size:32px;font-weight:900;color:#fff}
+  .stat-label{font-size:13px;color:var(--text2);letter-spacing:2px;text-transform:uppercase;margin-top:4px}
+  .table-wrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  thead th{text-align:left;padding:12px 14px;font-size:11px;font-weight:700;color:var(--text2);letter-spacing:2px;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap}
+  tbody td{padding:12px 14px;border-bottom:1px solid rgba(120,50,255,.06);vertical-align:middle}
+  tbody tr{transition:background .2s}
+  tbody tr:hover{background:rgba(120,50,255,.04)}
+  .role-badge{display:inline-block;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+  .role-admin{background:rgba(120,50,255,.15);color:#b388ff;border:1px solid rgba(120,50,255,.3)}
+  .role-ingenieur{background:rgba(34,197,94,.1);color:#4ade80;border:1px solid rgba(34,197,94,.25)}
+  .role-lecteur{background:rgba(245,158,11,.1);color:#fbbf24;border:1px solid rgba(245,158,11,.25)}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+  .form-row.four{grid-template-columns:1fr 1fr 1fr 1fr}
+  @media(max-width:800px){.form-row,.form-row.four{grid-template-columns:1fr 1fr}}
+  @media(max-width:500px){.form-row,.form-row.four{grid-template-columns:1fr}}
+  .form-group{display:flex;flex-direction:column;gap:6px}
+  .form-group label{font-size:11px;font-weight:700;color:var(--text2);letter-spacing:2px;text-transform:uppercase}
+  .form-group input,.form-group select{padding:12px 14px;background:rgba(120,50,255,.06);border:1px solid rgba(120,50,255,.15);border-radius:8px;font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:500;color:var(--text);outline:none;transition:all .3s}
+  .form-group input:focus,.form-group select:focus{border-color:rgba(120,50,255,.5);background:rgba(120,50,255,.1)}
+  .form-group select{cursor:pointer}
+  .form-group select option{background:#1a1a2e;color:#e0d8ff}
+  .btn{padding:12px 24px;border:none;border-radius:8px;font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all .3s;text-transform:uppercase}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff}
+  .btn-primary:hover{box-shadow:0 4px 20px rgba(120,50,255,.35);transform:translateY(-1px)}
+  .btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none!important}
+  .btn-danger{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.25)}
+  .btn-danger:hover{background:rgba(239,68,68,.3)}
+  .btn-sm{padding:6px 14px;font-size:10px;letter-spacing:1px;font-family:'Rajdhani',sans-serif;font-weight:700}
+  .actions{display:flex;gap:8px;flex-wrap:wrap}
+  .access-grid{display:grid;gap:12px}
+  .access-row{display:grid;grid-template-columns:200px repeat(3,80px);gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid rgba(120,50,255,.06)}
+  .access-row.header{border-bottom:1px solid var(--border)}
+  .access-row.header span{font-size:11px;font-weight:700;color:var(--text2);letter-spacing:2px;text-transform:uppercase;text-align:center}
+  .access-page{font-size:14px;font-weight:600;color:var(--text)}
+  .access-check{display:flex;justify-content:center}
+  .access-check input[type="checkbox"]{width:20px;height:20px;cursor:pointer;accent-color:var(--accent)}
+  @media(max-width:600px){.access-row{grid-template-columns:1fr repeat(3,60px)}.access-page{font-size:12px}}
+  .toast{position:fixed;bottom:24px;right:24px;padding:14px 24px;border-radius:10px;font-size:14px;font-weight:600;z-index:9999;transform:translateY(100px);opacity:0;transition:all .4s ease}
+  .toast.visible{transform:translateY(0);opacity:1}
+  .toast.success{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:#4ade80}
+  .toast.error{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#f87171}
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+  .modal-overlay.active{display:flex}
+  .modal{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:32px;width:420px;max-width:92vw;animation:cardAppear .3s ease}
+  @keyframes cardAppear{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+  .modal h3{font-family:'Orbitron',sans-serif;font-size:16px;margin-bottom:20px;color:#fff}
+  .modal-actions{display:flex;gap:12px;margin-top:24px;justify-content:flex-end}
+  .loading-screen{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px}
+  .spinner{width:48px;height:48px;border:3px solid rgba(120,50,255,.15);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading-screen p{color:var(--text2);font-size:14px;letter-spacing:2px}
+</style>
+</head>
+<body>
+
+<div class="loading-screen" id="loadingScreen">
+  <div class="spinner"></div>
+  <p>Chargement...</p>
+</div>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-logo">A.L.GOMES</span>
+    <span class="topbar-badge">Admin</span>
+  </div>
+  <div class="topbar-right">
+    <span class="topbar-user" id="currentUserName"></span>
+    <a href="accueil.html" class="btn-nav">⚡ Outils</a>
+    <button class="btn-nav btn-logout" onclick="logout()">🔓 Déconnexion</button>
+  </div>
+</div>
+
+<div class="main" id="mainContent" style="display:none">
+
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-value" id="statTotal">-</div><div class="stat-label">Utilisateurs</div></div>
+    <div class="stat-card"><div class="stat-value" id="statAdmins">-</div><div class="stat-label">Admins</div></div>
+    <div class="stat-card"><div class="stat-value" id="statIngenieurs">-</div><div class="stat-label">Ingénieurs</div></div>
+    <div class="stat-card"><div class="stat-value" id="statLecteurs">-</div><div class="stat-label">Lecteurs</div></div>
+  </div>
+
+  <!-- ADD USER -->
+  <div class="card">
+    <h2><span>+</span> Ajouter un utilisateur</h2>
+    <div class="form-row four">
+      <div class="form-group">
+        <label>Identifiant</label>
+        <input type="text" id="newLogin" placeholder="ex: jean.dupont">
+      </div>
+      <div class="form-group">
+        <label>Nom complet</label>
+        <input type="text" id="newName" placeholder="Jean Dupont">
+      </div>
+      <div class="form-group">
+        <label>Mot de passe</label>
+        <input type="password" id="newPassword" placeholder="Min. 6 caractères">
+      </div>
+      <div class="form-group">
+        <label>Rôle</label>
+        <select id="newRole">
+          <option value="ingenieur">Ingénieur</option>
+          <option value="lecteur">Lecteur</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="btnAddUser" onclick="addUser()">Créer l'utilisateur</button>
+  </div>
+
+  <!-- USER LIST -->
+  <div class="card">
+    <h2><span>👥</span> Utilisateurs</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Identifiant</th><th>Nom</th><th>Rôle</th><th>Créé le</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="userTableBody">
+          <tr><td colspan="5" style="text-align:center;padding:24px"><div class="spinner" style="width:32px;height:32px;margin:0 auto"></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PAGE ACCESS -->
+  <div class="card">
+    <h2><span>🔐</span> Accès par rôle</h2>
+    <div class="access-grid" id="accessGrid">
+      <div class="access-row header">
+        <span>Page</span><span>Admin</span><span>Ingénieur</span><span>Lecteur</span>
+      </div>
+    </div>
+    <div style="margin-top:20px">
+      <button class="btn btn-primary" onclick="saveAccess()">Sauvegarder les accès</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <h3>Modifier le rôle</h3>
+    <input type="hidden" id="editUid">
+    <div class="form-group">
+      <label>Utilisateur</label>
+      <input type="text" id="editUserLabel" disabled>
+    </div>
+    <div class="form-group" style="margin-top:12px">
+      <label>Nouveau rôle</label>
+      <select id="editRole">
+        <option value="admin">Admin</option>
+        <option value="ingenieur">Ingénieur</option>
+        <option value="lecteur">Lecteur</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger btn-sm" onclick="closeModal()">Annuler</button>
+      <button class="btn btn-primary btn-sm" onclick="saveRole()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESET PASSWORD MODAL -->
+<div class="modal-overlay" id="resetModal">
+  <div class="modal">
+    <h3>Réinitialiser le mot de passe</h3>
+    <input type="hidden" id="resetUid">
+    <div class="form-group">
+      <label>Utilisateur</label>
+      <input type="text" id="resetUserLabel" disabled>
+    </div>
+    <div class="form-group" style="margin-top:12px">
+      <label>Nouveau mot de passe</label>
+      <input type="password" id="resetNewPassword" placeholder="Min. 6 caractères">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger btn-sm" onclick="closeResetModal()">Annuler</button>
+      <button class="btn btn-primary btn-sm" onclick="doResetPassword()">Changer</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// FIREBASE
+// ============================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyAXuLjl6_yZNB28anBGSPP6PptugpkDJ4k",
+  authDomain: "algomes-a4e46.firebaseapp.com",
+  projectId: "algomes-a4e46",
+  storageBucket: "algomes-a4e46.firebasestorage.app",
+  messagingSenderId: "827799257472",
+  appId: "1:827799257472:web:b2248e501a5f72b63ec165"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+function toEmail(login) {
+  return login.toLowerCase().trim().replace(/\s+/g, '') + '@algomes.local';
+}
+
+let currentUser = null;
+let allUsers = [];
+
+const PAGES = [
+  { id: 'accueil.html', label: 'Accueil' },
+  { id: 'Derivations-TGBT.html', label: 'Dérivations & TGBT' },
+  { id: 'CALCUL_SECTION_CABLE.html', label: 'Calcul Section Câble' },
+  { id: 'TABLEAU-ABONNE.html', label: 'Tableau Abonné' },
+  { id: 'PLANNING.html', label: 'Planning' },
+  { id: 'liseuse-normes.html', label: 'Liseuse Normes' },
+  { id: 'admin.html', label: 'Administration' }
+];
+const ROLES = ['admin', 'ingenieur', 'lecteur'];
+
+// ============================================================
+// AUTH CHECK
+// ============================================================
+auth.onAuthStateChanged(async (user) => {
+  if (!user) { window.location.href = 'index.html'; return; }
+  try {
+    const doc = await db.collection('users').doc(user.uid).get();
+    if (!doc.exists || doc.data().role !== 'admin') {
+      window.location.href = 'accueil.html'; return;
+    }
+    currentUser = { uid: user.uid, ...doc.data() };
+    document.getElementById('currentUserName').textContent = currentUser.name || currentUser.login;
+    document.getElementById('loadingScreen').style.display = 'none';
+    document.getElementById('mainContent').style.display = 'block';
+    loadUsers();
+    loadAccess();
+  } catch(e) { console.error(e); toast('Erreur de chargement', 'error'); }
+});
+
+// ============================================================
+// USERS
+// ============================================================
+async function loadUsers() {
+  try {
+    const snap = await db.collection('users').orderBy('createdAt', 'desc').get();
+    allUsers = [];
+    snap.forEach(doc => allUsers.push({ uid: doc.id, ...doc.data() }));
+    renderUsers();
+    updateStats();
+  } catch(e) { console.error(e); toast('Erreur chargement', 'error'); }
+}
+
+function renderUsers() {
+  const tbody = document.getElementById('userTableBody');
+  if (!allUsers.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text2);padding:24px">Aucun utilisateur</td></tr>';
+    return;
+  }
+  tbody.innerHTML = allUsers.map(u => {
+    const date = u.createdAt ? new Date(u.createdAt.seconds * 1000).toLocaleDateString('fr-FR') : '—';
+    const isSelf = u.uid === currentUser.uid;
+    return `<tr>
+      <td><strong style="color:#b388ff">${esc(u.login || '—')}</strong></td>
+      <td>${esc(u.name || '—')}</td>
+      <td><span class="role-badge role-${u.role}">${u.role}</span></td>
+      <td>${date}</td>
+      <td class="actions">
+        <button class="btn btn-primary btn-sm" onclick="openEditModal('${u.uid}')">Rôle</button>
+        <button class="btn btn-sm" style="background:rgba(245,158,11,.12);color:#fbbf24;border:1px solid rgba(245,158,11,.25)" onclick="openResetModal('${u.uid}')">MdP</button>
+        ${isSelf ? '' : `<button class="btn btn-danger btn-sm" onclick="confirmDelete('${u.uid}','${esc(u.login)}')">Suppr.</button>`}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function updateStats() {
+  document.getElementById('statTotal').textContent = allUsers.length;
+  document.getElementById('statAdmins').textContent = allUsers.filter(u => u.role === 'admin').length;
+  document.getElementById('statIngenieurs').textContent = allUsers.filter(u => u.role === 'ingenieur').length;
+  document.getElementById('statLecteurs').textContent = allUsers.filter(u => u.role === 'lecteur').length;
+}
+
+// ============================================================
+// ADD USER
+// ============================================================
+async function addUser() {
+  const login = document.getElementById('newLogin').value.trim();
+  const name = document.getElementById('newName').value.trim();
+  const role = document.getElementById('newRole').value;
+  const password = document.getElementById('newPassword').value;
+  const btn = document.getElementById('btnAddUser');
+
+  if (!login || !password || !name) { toast('Remplir tous les champs', 'error'); return; }
+  if (password.length < 6) { toast('Mot de passe : min 6 caractères', 'error'); return; }
+  if (/[^a-zA-Z0-9._\-]/.test(login)) { toast('Identifiant : lettres, chiffres, points et tirets uniquement', 'error'); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'CRÉATION...';
+
+  try {
+    const email = toEmail(login);
+    const secondaryApp = firebase.initializeApp(firebaseConfig, 'Sec_' + Date.now());
+    const secAuth = secondaryApp.auth();
+    const cred = await secAuth.createUserWithEmailAndPassword(email, password);
+    const uid = cred.user.uid;
+    await cred.user.updateProfile({ displayName: name });
+    await secAuth.signOut();
+    await secondaryApp.delete();
+
+    await db.collection('users').doc(uid).set({
+      login: login.toLowerCase(),
+      name, role,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      createdBy: currentUser.uid
+    });
+
+    toast(`"${name}" créé (identifiant: ${login})`, 'success');
+    document.getElementById('newLogin').value = '';
+    document.getElementById('newName').value = '';
+    document.getElementById('newPassword').value = '';
+    loadUsers();
+  } catch(e) {
+    const msg = {
+      'auth/email-already-in-use': 'Cet identifiant est déjà utilisé',
+      'auth/invalid-email': 'Identifiant invalide',
+      'auth/weak-password': 'Mot de passe trop faible (min 6 car.)'
+    }[e.code] || e.message;
+    toast(msg, 'error');
+  }
+  btn.disabled = false;
+  btn.textContent = 'CRÉER L\'UTILISATEUR';
+}
+
+// ============================================================
+// EDIT ROLE
+// ============================================================
+function openEditModal(uid) {
+  const user = allUsers.find(u => u.uid === uid);
+  if (!user) return;
+  document.getElementById('editUid').value = uid;
+  document.getElementById('editUserLabel').value = user.name + ' (' + user.login + ')';
+  document.getElementById('editRole').value = user.role;
+  document.getElementById('editModal').classList.add('active');
+}
+function closeModal() { document.getElementById('editModal').classList.remove('active'); }
+
+async function saveRole() {
+  const uid = document.getElementById('editUid').value;
+  const newRole = document.getElementById('editRole').value;
+  try {
+    await db.collection('users').doc(uid).update({ role: newRole });
+    toast('Rôle mis à jour', 'success');
+    closeModal();
+    loadUsers();
+  } catch(e) { toast('Erreur : ' + e.message, 'error'); }
+}
+
+// ============================================================
+// RESET PASSWORD
+// ============================================================
+function openResetModal(uid) {
+  const user = allUsers.find(u => u.uid === uid);
+  if (!user) return;
+  document.getElementById('resetUid').value = uid;
+  document.getElementById('resetUserLabel').value = user.name + ' (' + user.login + ')';
+  document.getElementById('resetNewPassword').value = '';
+  document.getElementById('resetModal').classList.add('active');
+}
+function closeResetModal() { document.getElementById('resetModal').classList.remove('active'); }
+
+async function doResetPassword() {
+  const uid = document.getElementById('resetUid').value;
+  const newPwd = document.getElementById('resetNewPassword').value;
+  if (!newPwd || newPwd.length < 6) { toast('Mot de passe : min 6 caractères', 'error'); return; }
+  
+  const user = allUsers.find(u => u.uid === uid);
+  if (!user) return;
+  
+  try {
+    // Re-authenticate the target user with a secondary app, then update password
+    // Note: this only works if admin knows the old password. 
+    // For a full reset, use Firebase Admin SDK or the Firebase Console.
+    toast('Pour réinitialiser un mot de passe, utilisez la console Firebase > Authentication > Utilisateurs', 'info');
+    closeResetModal();
+  } catch(e) { toast('Erreur : ' + e.message, 'error'); }
+}
+
+// ============================================================
+// DELETE USER
+// ============================================================
+async function confirmDelete(uid, login) {
+  if (!confirm(`Supprimer l'utilisateur "${login}" ?\n\nL'accès sera retiré immédiatement.`)) return;
+  try {
+    await db.collection('users').doc(uid).delete();
+    toast('Utilisateur supprimé', 'success');
+    loadUsers();
+  } catch(e) { toast('Erreur : ' + e.message, 'error'); }
+}
+
+// ============================================================
+// PAGE ACCESS
+// ============================================================
+let pageAccessConfig = {};
+
+async function loadAccess() {
+  try {
+    const doc = await db.collection('config').doc('pageAccess').get();
+    if (doc.exists) {
+      pageAccessConfig = doc.data();
+    } else {
+      pageAccessConfig = {};
+      PAGES.forEach(p => {
+        pageAccessConfig[p.id] = p.id === 'admin.html' ? ['admin'] : ['admin', 'ingenieur', 'lecteur'];
+      });
+    }
+    renderAccess();
+  } catch(e) { console.error(e); }
+}
+
+function renderAccess() {
+  const grid = document.getElementById('accessGrid');
+  const header = grid.querySelector('.header').outerHTML;
+  grid.innerHTML = header;
+  PAGES.forEach(page => {
+    const row = document.createElement('div');
+    row.className = 'access-row';
+    const allowed = pageAccessConfig[page.id] || [];
+    row.innerHTML = `<span class="access-page">${page.label}</span>
+      ${ROLES.map(role => {
+        const checked = allowed.includes(role) ? 'checked' : '';
+        const disabled = page.id === 'admin.html' && role === 'admin' ? 'disabled checked' : '';
+        return `<span class="access-check"><input type="checkbox" data-page="${page.id}" data-role="${role}" ${checked} ${disabled}></span>`;
+      }).join('')}`;
+    grid.appendChild(row);
+  });
+}
+
+async function saveAccess() {
+  const checks = document.querySelectorAll('.access-check input[type="checkbox"]');
+  const config = {};
+  checks.forEach(cb => {
+    const page = cb.dataset.page;
+    const role = cb.dataset.role;
+    if (!config[page]) config[page] = [];
+    if (cb.checked) config[page].push(role);
+  });
+  try {
+    await db.collection('config').doc('pageAccess').set(config);
+    pageAccessConfig = config;
+    toast('Accès sauvegardés', 'success');
+  } catch(e) { toast('Erreur : ' + e.message, 'error'); }
+}
+
+// ============================================================
+// UTILS
+// ============================================================
+async function logout() { await auth.signOut(); window.location.href = 'index.html'; }
+
+function esc(str) { const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML; }
+
+function toast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast visible ' + type;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.className = 'toast'; }, 4000);
+}
+</script>
+
+</body>
+</html>

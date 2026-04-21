@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A.L.GOMES — Administration</title>
+<script>
+if(window.self!==window.top){
+  document.addEventListener('DOMContentLoaded',function(){
+    var tb=document.querySelector('.topbar');if(tb)tb.style.display='none';
+    var main=document.querySelector('.main');if(main)main.style.paddingTop='20px';
+  });
+}
+</script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+  :root{--bg:#0a0a0f;--card:rgba(18,18,30,.95);--border:rgba(120,50,255,.18);--accent:#7832ff;--accent2:#5a1ecc;--text:#e0d8ff;--text2:rgba(180,160,255,.6);--radius:12px}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{min-height:100vh;font-family:'Rajdhani',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
+  body::before{content:'';position:fixed;inset:0;background:repeating-conic-gradient(#111 0% 25%,#0d0d12 0% 50%) 0 0/4px 4px,radial-gradient(ellipse at 20% 10%,rgba(120,50,255,.06) 0%,transparent 50%);z-index:0;pointer-events:none}
+  .topbar{height:60px;background:rgba(10,10,18,.95);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 28px;z-index:100;backdrop-filter:blur(16px)}
+  .topbar-left{display:flex;align-items:center;gap:14px}
+  .topbar-logo{font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;letter-spacing:3px;background:linear-gradient(135deg,#fff,#b388ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .topbar-badge{padding:4px 12px;background:rgba(120,50,255,.15);border:1px solid rgba(120,50,255,.3);border-radius:6px;font-size:11px;font-weight:700;color:#b388ff;letter-spacing:2px;text-transform:uppercase}
+  .topbar-right{display:flex;align-items:center;gap:16px}
+  .topbar-user{font-size:14px;color:var(--text2);font-weight:500}
+  .btn-nav{padding:8px 16px;background:rgba(120,50,255,.12);border:1px solid rgba(120,50,255,.25);border-radius:8px;color:#b388ff;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:600;letter-spacing:1px;cursor:pointer;transition:all .3s;text-decoration:none}
+  .btn-nav:hover{background:rgba(120,50,255,.25)}
+  .btn-logout{border-color:rgba(239,68,68,.3);color:#f87171;background:rgba(239,68,68,.08)}
+  .btn-logout:hover{background:rgba(239,68,68,.2)}
+  .main{position:relative;z-index:1;padding:80px 28px 40px;max-width:1200px;margin:0 auto}
+  h2{font-family:'Orbitron',sans-serif;font-size:20px;font-weight:700;letter-spacing:2px;margin-bottom:20px;color:#fff}
+  h2 span{color:var(--accent);margin-right:8px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:28px;margin-bottom:28px;box-shadow:0 4px 30px rgba(0,0,0,.3);animation:fadeUp .5s ease}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  thead th{text-align:left;padding:10px 12px;font-size:11px;font-weight:700;color:var(--text2);letter-spacing:2px;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap}
+  tbody td{padding:10px 12px;border-bottom:1px solid rgba(120,50,255,.06);vertical-align:middle}
+  tbody tr:hover{background:rgba(120,50,255,.04)}
+  .role-badge{display:inline-block;padding:2px 8px;border-radius:5px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+  .form-row.four{grid-template-columns:1fr 1fr 1fr 1fr}
+  .form-row.three{grid-template-columns:1fr 1fr 1fr}
+  @media(max-width:800px){.form-row,.form-row.four,.form-row.three{grid-template-columns:1fr 1fr}}
+  @media(max-width:500px){.form-row,.form-row.four,.form-row.three{grid-template-columns:1fr}}
+  .form-group{display:flex;flex-direction:column;gap:6px}
+  .form-group label{font-size:11px;font-weight:700;color:var(--text2);letter-spacing:2px;text-transform:uppercase}
+  .form-group input,.form-group select{padding:12px 14px;background:rgba(120,50,255,.06);border:1px solid rgba(120,50,255,.15);border-radius:8px;font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:500;color:var(--text);outline:none;transition:all .3s}
+  .form-group input:focus,.form-group select:focus{border-color:rgba(120,50,255,.5);background:rgba(120,50,255,.1)}
+  .form-group select option{background:#1a1a2e;color:#e0d8ff}
+  .form-group input[type="color"]{padding:4px;width:50px;height:40px;cursor:pointer;border-radius:8px}
+  .btn{padding:12px 24px;border:none;border-radius:8px;font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all .3s;text-transform:uppercase}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff}
+  .btn-primary:hover{box-shadow:0 4px 20px rgba(120,50,255,.35);transform:translateY(-1px)}
+  .btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none!important}
+  .btn-danger{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.25)}
+  .btn-danger:hover{background:rgba(239,68,68,.3)}
+  .btn-warn{background:rgba(245,158,11,.12);color:#fbbf24;border:1px solid rgba(245,158,11,.25)}
+  .btn-warn:hover{background:rgba(245,158,11,.25)}
+  .btn-success{background:rgba(34,197,94,.12);color:#4ade80;border:1px solid rgba(34,197,94,.25)}
+  .btn-success:hover{background:rgba(34,197,94,.25)}
+  .btn-sm{padding:5px 12px;font-size:10px;letter-spacing:1px;font-family:'Rajdhani',sans-serif;font-weight:700}
+  .btn-xs{padding:4px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:600;border-radius:6px}
+  .actions{display:flex;gap:6px;flex-wrap:wrap}
+  .roles-list{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px}
+  .role-chip{display:flex;align-items:center;gap:8px;padding:8px 14px;background:rgba(120,50,255,.04);border:1px solid var(--border);border-radius:10px}
+  .role-chip:hover{background:rgba(120,50,255,.08)}
+  .role-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+  .role-chip-name{font-weight:600;font-size:14px}
+  .role-chip-id{font-size:11px;color:var(--text2)}
+  .access-grid{display:grid;gap:8px}
+  .access-row{display:grid;align-items:center;padding:10px 0;border-bottom:1px solid rgba(120,50,255,.06);gap:8px}
+  .access-row.header{border-bottom:1px solid var(--border)}
+  .access-row.header span{font-size:11px;font-weight:700;color:var(--text2);letter-spacing:2px;text-transform:uppercase;text-align:center}
+  .access-page{font-size:14px;font-weight:600}
+  .access-check{display:flex;justify-content:center}
+  .access-check input{width:20px;height:20px;cursor:pointer;accent-color:var(--accent)}
+  .ip-info{font-size:11px;color:var(--text2);line-height:1.4}
+  .ip-info strong{color:var(--text);font-weight:600}
+  .status-online{color:#4ade80}
+  .status-offline{color:#666}
+  .status-banned{color:#ff4466;font-weight:700}
+  .session-row{font-size:12px;padding:8px 12px;border-bottom:1px solid rgba(120,50,255,.04)}
+  .session-row:hover{background:rgba(120,50,255,.03)}
+  /* ═══ Signatures library ═══ */
+  .sig-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-bottom:18px}
+  .sig-card{background:rgba(120,50,255,.04);border:1px solid var(--border);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px;transition:all .2s}
+  .sig-card:hover{border-color:rgba(120,50,255,.4);background:rgba(120,50,255,.08)}
+  .sig-preview{background:#fff;border-radius:8px;height:110px;display:flex;align-items:center;justify-content:center;padding:8px;overflow:hidden}
+  .sig-preview img{max-width:100%;max-height:100%;object-fit:contain}
+  .sig-meta{display:flex;flex-direction:column;gap:3px;min-height:42px}
+  .sig-meta .sig-owner{font-size:13px;font-weight:700;color:var(--text)}
+  .sig-meta .sig-label{font-size:11px;color:var(--text2)}
+  .sig-meta .sig-role{font-size:10px;letter-spacing:1px;text-transform:uppercase;font-weight:600;margin-top:2px}
+  .sig-actions{display:flex;gap:6px;justify-content:flex-end}
+  .sig-empty{text-align:center;color:var(--text2);padding:30px 20px;font-style:italic;border:1px dashed var(--border);border-radius:12px}
+  .sig-upload{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;padding:14px;background:rgba(120,50,255,.03);border:1px dashed rgba(120,50,255,.3);border-radius:12px}
+  .sig-upload .form-group{margin-bottom:0;flex:1;min-width:180px}
+  .sig-dropzone{display:flex;align-items:center;justify-content:center;min-width:180px;height:48px;padding:0 16px;background:rgba(120,50,255,.08);border:1px dashed rgba(120,50,255,.4);border-radius:8px;color:var(--text2);font-size:12px;letter-spacing:1px;cursor:pointer;transition:all .2s;text-align:center}
+  .sig-dropzone:hover,.sig-dropzone.over{background:rgba(120,50,255,.18);color:#b388ff;border-color:rgba(120,50,255,.6)}
+  .sig-dropzone input{display:none}
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+  .modal-overlay.active{display:flex}
+  .modal{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:32px;width:440px;max-width:92vw;animation:pop .3s ease}
+  @keyframes pop{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+  .modal h3{font-family:'Orbitron',sans-serif;font-size:16px;margin-bottom:20px;color:#fff}
+  .modal-actions{display:flex;gap:12px;margin-top:24px;justify-content:flex-end}
+  .toast{position:fixed;bottom:24px;right:24px;padding:14px 24px;border-radius:10px;font-size:14px;font-weight:600;z-index:9999;transform:translateY(100px);opacity:0;transition:all .4s}
+  .toast.visible{transform:translateY(0);opacity:1}
+  .toast.success{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:#4ade80}
+  .toast.error{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#f87171}
+  .loading-screen{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px}
+  .spinner{width:48px;height:48px;border:3px solid rgba(120,50,255,.15);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading-screen p{color:var(--text2);font-size:14px;letter-spacing:2px}
+  .quick-links{display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="loading-screen" id="loadingScreen"><div class="spinner"></div><p>Chargement...</p></div>
+
+<div class="topbar">
+  <div class="topbar-left"><span class="topbar-logo">A.L.GOMES</span><span class="topbar-badge">Admin</span></div>
+  <div class="topbar-right">
+    <span class="topbar-user" id="currentUserName"></span>
+    <a href="accueil.html" class="btn-nav">⚡ Outils</a>
+    <button class="btn-nav btn-logout" onclick="logout()">🔓 Déconnexion</button>
+  </div>
+</div>
+
+<div class="main" id="mainContent" style="display:none">
+  <div class="quick-links">
+    <a href="https://console.firebase.google.com/project/algomes-a4e46/authentication/users" target="_blank" class="btn-nav" style="text-decoration:none">🔥 Console Firebase</a>
+    <a href="https://github.com/jerome93190/AL-GOMES" target="_blank" class="btn-nav" style="text-decoration:none">🐙 Dépôt GitHub</a>
+  </div>
+
+  <!-- USERS + IP -->
+  <div class="card">
+    <h2><span>👥</span> Utilisateurs & Connexions</h2>
+    <div style="overflow-x:auto"><table><thead><tr>
+      <th>Identifiant</th><th>Nom</th><th>Rôle</th><th>Statut</th><th>IP / Localisation</th><th>Dernière connexion</th><th>Actions</th>
+    </tr></thead>
+    <tbody id="userTableBody"><tr><td colspan="7" style="text-align:center;padding:24px"><div class="spinner" style="width:32px;height:32px;margin:0 auto"></div></td></tr></tbody></table></div>
+  </div>
+
+  <!-- ADD USER -->
+  <div class="card">
+    <h2><span>+</span> Ajouter un utilisateur</h2>
+    <div class="form-row four">
+      <div class="form-group"><label>Identifiant</label><input type="text" id="newLogin" placeholder="ex: jean.dupont"></div>
+      <div class="form-group"><label>Nom complet</label><input type="text" id="newName" placeholder="Jean Dupont"></div>
+      <div class="form-group"><label>Mot de passe</label><input type="password" id="newPassword" placeholder="Min. 6 caractères"></div>
+      <div class="form-group"><label>Rôle</label><select id="newUserRole"></select></div>
+    </div>
+    <button class="btn btn-primary" id="btnAddUser" onclick="addUser()">Créer l'utilisateur</button>
+  </div>
+
+  <!-- SESSION LOG -->
+  <div class="card">
+    <h2><span>📋</span> Journal des connexions</h2>
+    <div style="overflow-x:auto;max-height:400px;overflow-y:auto" id="sessionLog">
+      <div style="text-align:center;padding:20px;color:var(--text2)">Chargement...</div>
+    </div>
+  </div>
+
+  <!-- IP TRACKING -->
+  <div class="card">
+    <h2><span>🌐</span> Suivi des IP par utilisateur</h2>
+    <div style="overflow-x:auto" id="ipTrackingTable">
+      <div style="text-align:center;padding:20px;color:var(--text2)">Chargement...</div>
+    </div>
+  </div>
+
+  <!-- ROLES -->
+  <div class="card">
+    <h2><span>🏷</span> Gestion des rôles</h2>
+    <div class="roles-list" id="rolesList"></div>
+    <div class="form-row three" style="margin-bottom:0">
+      <div class="form-group"><label>Identifiant</label><input type="text" id="newRoleId" placeholder="ex: technicien"></div>
+      <div class="form-group"><label>Nom affiché</label><input type="text" id="newRoleLabel" placeholder="ex: Technicien"></div>
+      <div class="form-group"><label>Couleur</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="color" id="newRoleColor" value="#3b82f6">
+          <button class="btn btn-primary btn-sm" onclick="addRole()">+ Ajouter</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACCESS -->
+  <div class="card">
+    <h2><span>🔐</span> Accès par rôle</h2>
+    <div class="access-grid" id="accessGrid"></div>
+    <div style="margin-top:20px"><button class="btn btn-primary" onclick="saveAccess()">Sauvegarder les accès</button></div>
+  </div>
+
+  <!-- SIGNATURES -->
+  <div class="card">
+    <h2><span>✍️</span> Bibliothèque de signatures</h2>
+    <div style="font-size:12px;color:var(--text2);margin:-8px 0 18px">Images PNG (signature + cachet scannés). Utilisées dans les attestations et documents. Taille max : 500 Ko par fichier.</div>
+
+    <div id="sigList" class="sig-grid"></div>
+
+    <div class="sig-upload">
+      <div class="form-group">
+        <label>Propriétaire</label>
+        <select id="sigOwnerSelect"></select>
+      </div>
+      <div class="form-group">
+        <label>Libellé (facultatif)</label>
+        <input type="text" id="sigLabel" placeholder="ex: Signature + cachet">
+      </div>
+      <label class="sig-dropzone" id="sigDropzone">
+        <input type="file" id="sigFileInput" accept="image/png">
+        <span id="sigDropzoneText">📎 Cliquer ou glisser un PNG</span>
+      </label>
+      <button class="btn btn-primary btn-sm" id="btnAddSig" onclick="addSignature()" disabled>+ Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT USER ROLE MODAL -->
+<div class="modal-overlay" id="editModal"><div class="modal">
+  <h3>Modifier le rôle</h3>
+  <input type="hidden" id="editUid">
+  <div class="form-group"><label>Utilisateur</label><input type="text" id="editUserLabel" disabled></div>
+  <div class="form-group" style="margin-top:12px"><label>Nouveau rôle</label><select id="editRole"></select></div>
+  <div class="modal-actions">
+    <button class="btn btn-danger btn-sm" onclick="closeModal('editModal')">Annuler</button>
+    <button class="btn btn-primary btn-sm" onclick="saveUserRole()">Enregistrer</button>
+  </div>
+</div></div>
+
+<!-- RENAME ROLE MODAL -->
+<div class="modal-overlay" id="renameModal"><div class="modal">
+  <h3>Renommer le rôle</h3>
+  <input type="hidden" id="rnId">
+  <div class="form-group"><label>Identifiant (fixe)</label><input type="text" id="rnIdLabel" disabled></div>
+  <div class="form-group" style="margin-top:12px"><label>Nom affiché</label><input type="text" id="rnLabel"></div>
+  <div class="form-group" style="margin-top:12px"><label>Couleur</label><input type="color" id="rnColor"></div>
+  <div class="modal-actions">
+    <button class="btn btn-danger btn-sm" onclick="closeModal('renameModal')">Annuler</button>
+    <button class="btn btn-primary btn-sm" onclick="saveRename()">Enregistrer</button>
+  </div>
+</div></div>
+
+<!-- PASSWORD CHANGE MODAL -->
+<div class="modal-overlay" id="pwdModal"><div class="modal">
+  <h3>Changer le mot de passe</h3>
+  <input type="hidden" id="pwdUid">
+  <div class="form-group"><label>Utilisateur</label><input type="text" id="pwdUserLabel" disabled></div>
+  <div class="form-group" style="margin-top:12px"><label>Mot de passe actuel</label><input type="password" id="pwdOld" placeholder="Mot de passe actuel de l'utilisateur"></div>
+  <div class="form-group" style="margin-top:12px"><label>Nouveau mot de passe</label><input type="password" id="pwdNew" placeholder="Min. 6 caractères"></div>
+  <div style="margin-top:12px;font-size:12px;color:var(--text2)">Le mot de passe actuel est nécessaire pour la modification. Si vous ne le connaissez pas, utilisez la <a href="https://console.firebase.google.com/project/algomes-a4e46/authentication/users" target="_blank" style="color:#b388ff">Console Firebase</a>.</div>
+  <div class="modal-actions">
+    <button class="btn btn-danger btn-sm" onclick="closeModal('pwdModal')">Annuler</button>
+    <button class="btn btn-primary btn-sm" id="btnChangePwd" onclick="doChangePwd()">Changer</button>
+  </div>
+</div></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const FC={apiKey:"AIzaSyAXuLjl6_yZNB28anBGSPP6PptugpkDJ4k",authDomain:"algomes-a4e46.firebaseapp.com",projectId:"algomes-a4e46",storageBucket:"algomes-a4e46.firebasestorage.app",messagingSenderId:"827799257472",appId:"1:827799257472:web:b2248e501a5f72b63ec165"};
+firebase.initializeApp(FC);
+const auth=firebase.auth(), db=firebase.firestore();
+const toEmail=l=>l.toLowerCase().trim().replace(/\s+/g,'')+'@algomes.local';
+const hex2rgba=(h,a)=>{const r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);return`rgba(${r},${g},${b},${a})`};
+const esc=s=>{const d=document.createElement('div');d.textContent=s||'';return d.innerHTML};
+const fmtDate=ts=>ts?new Date(ts.seconds*1000).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
+
+let me=null, users=[], roles=[], access={}, presenceData={};
+const PAGES=[
+  {id:'accueil.html',label:'Accueil'},{id:'Derivations-TGBT.html',label:'Dérivations & TGBT'},
+  {id:'CALCUL_SECTION_CABLE.html',label:'Calcul Section Câble'},{id:'TABLEAU-ABONNE.html',label:'Tableau Abonné'},
+  {id:'ATTESTATIONS.html',label:'Attestations'},
+  {id:'PLANNING.html',label:'Planning'},{id:'liseuse-normes.html',label:'Liseuse Normes'},{id:'admin.html',label:'Administration'}
+];
+const DEFROLES=[{id:'admin',label:'Administrateur',color:'#7832ff'},{id:'conducteur',label:'Conducteur de travaux',color:'#22c55e'},{id:'lecteur',label:'Lecteur',color:'#f59e0b'}];
+
+// AUTH
+auth.onAuthStateChanged(async u=>{
+  if(!u){location.href='index.html';return}
+  try{
+    const d=await db.collection('users').doc(u.uid).get();
+    if(!d.exists||d.data().role!=='admin'){location.href='accueil.html';return}
+    me={uid:u.uid,...d.data()};
+    document.getElementById('currentUserName').textContent=me.name||me.login;
+    document.getElementById('loadingScreen').style.display='none';
+    document.getElementById('mainContent').style.display='block';
+    await loadRoles(); await loadUsers(); await loadPresence(); await loadAccess(); loadSessions(); loadIpTracking(); loadSignatures();
+  }catch(e){console.error(e);toast('Erreur','error')}
+});
+
+// PRESENCE (real-time)
+async function loadPresence(){
+  db.collection('presence').onSnapshot(snap=>{
+    presenceData={};
+    snap.forEach(doc=>{presenceData[doc.id]=doc.data()});
+    renderUsers();
+  });
+}
+
+// USERS
+async function loadUsers(){
+  const s=await db.collection('users').orderBy('createdAt','desc').get();
+  users=[];s.forEach(d=>users.push({uid:d.id,...d.data()}));
+  renderUsers();
+}
+
+function renderUsers(){
+  const tb=document.getElementById('userTableBody');
+  if(!users.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text2)">Aucun</td></tr>';return}
+  tb.innerHTML=users.map(u=>{
+    const r=ri(u.role),self=u.uid===me.uid;
+    const p=presenceData[u.uid]||{};
+    const now=Date.now();
+    const isOnline=p.online&&p.lastSeen&&(now-p.lastSeen.seconds*1000)<300000;
+    const statusClass=u.banned?'status-banned':isOnline?'status-online':'status-offline';
+    const statusText=u.banned?'🚫 BLOQUÉ':isOnline?'🟢 En ligne':'⚫ Hors ligne';
+    const ipInfo=p.ip?`<div class="ip-info"><strong>${esc(p.ip)}</strong><br>${esc(p.city||'')} ${esc(p.country||'')}</div>`:'<span style="color:var(--text2)">—</span>';
+    const banBtn=u.banned
+      ?`<button class="btn btn-success btn-sm" onclick="toggleBan('${u.uid}',false)">Débloquer</button>`
+      :`<button class="btn btn-warn btn-sm" onclick="toggleBan('${u.uid}',true)">Bloquer</button>`;
+    return`<tr${u.banned?' style="opacity:.5"':''}>
+      <td><strong style="color:${r.color}">${esc(u.login||'—')}</strong></td>
+      <td>${esc(u.name||'—')}</td>
+      <td><span class="role-badge" style="background:${hex2rgba(r.color,.12)};color:${r.color};border:1px solid ${hex2rgba(r.color,.3)}">${esc(r.label)}</span></td>
+      <td><span class="${statusClass}">${statusText}</span></td>
+      <td>${ipInfo}</td>
+      <td style="font-size:12px">${fmtDate(p.lastSeen)}</td>
+      <td class="actions">
+        <button class="btn btn-primary btn-sm" onclick="openEdit('${u.uid}')">Rôle</button>
+        <button class="btn btn-sm" style="background:rgba(59,130,246,.12);color:#60a5fa;border:1px solid rgba(59,130,246,.25)" onclick="openPwdModal('${u.uid}')">MdP</button>
+        ${self?'':banBtn}
+        ${self?'':`<button class="btn btn-danger btn-sm" onclick="delUser('${u.uid}','${esc(u.login)}')">Suppr.</button>`}
+      </td>
+    </tr>`}).join('');
+}
+
+// BAN/UNBAN
+async function toggleBan(uid, ban){
+  const action=ban?'bloquer':'débloquer';
+  const user=users.find(u=>u.uid===uid);
+  if(!confirm(`${ban?'Bloquer':'Débloquer'} "${user?user.login:uid}" ?`))return;
+  try{
+    await db.collection('users').doc(uid).update({banned:ban});
+    if(ban) await db.collection('presence').doc(uid).update({online:false});
+    users.find(u=>u.uid===uid).banned=ban;
+    renderUsers();
+    toast(`Utilisateur ${ban?'bloqué':'débloqué'}`,'success');
+  }catch(e){toast('Erreur: '+e.message,'error')}
+}
+
+// SESSIONS LOG
+async function loadSessions(){
+  try{
+    const snap=await db.collection('sessions').orderBy('timestamp','desc').limit(50).get();
+    const el=document.getElementById('sessionLog');
+    if(snap.empty){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text2)">Aucune session enregistrée</div>';return}
+    let html='<table style="width:100%"><thead><tr><th>Date</th><th>Identifiant</th><th>Nom</th><th>IP</th><th>Localisation</th></tr></thead><tbody>';
+    snap.forEach(doc=>{
+      const s=doc.data();
+      html+=`<tr class="session-row">
+        <td style="font-size:12px;white-space:nowrap">${fmtDate(s.timestamp)}</td>
+        <td><strong>${esc(s.login||'—')}</strong></td>
+        <td>${esc(s.name||'—')}</td>
+        <td style="font-family:monospace;font-size:12px">${esc(s.ip||'—')}</td>
+        <td style="font-size:12px">${esc(s.city||'')} ${esc(s.country||'')}</td>
+      </tr>`;
+    });
+    html+='</tbody></table>';
+    el.innerHTML=html;
+  }catch(e){console.error(e)}
+}
+
+async function addUser(){
+  const l=document.getElementById('newLogin').value.trim(),n=document.getElementById('newName').value.trim();
+  const r=document.getElementById('newUserRole').value,p=document.getElementById('newPassword').value;
+  const btn=document.getElementById('btnAddUser');
+  if(!l||!p||!n){toast('Remplir tous les champs','error');return}
+  if(p.length<6){toast('Mot de passe min 6 car.','error');return}
+  btn.disabled=true;btn.textContent='CRÉATION...';
+  try{
+    const sec=firebase.initializeApp(FC,'S_'+Date.now());
+    const c=await sec.auth().createUserWithEmailAndPassword(toEmail(l),p);
+    await c.user.updateProfile({displayName:n});await sec.auth().signOut();await sec.delete();
+    await db.collection('users').doc(c.user.uid).set({login:l.toLowerCase(),name:n,role:r,banned:false,createdAt:firebase.firestore.FieldValue.serverTimestamp(),createdBy:me.uid});
+    toast(n+' créé','success');
+    document.getElementById('newLogin').value='';document.getElementById('newName').value='';document.getElementById('newPassword').value='';
+    loadUsers();
+  }catch(e){toast(({'auth/email-already-in-use':'Identifiant déjà utilisé','auth/weak-password':'MdP trop faible'})[e.code]||e.message,'error')}
+  btn.disabled=false;btn.textContent='CRÉER L\'UTILISATEUR';
+}
+
+function openEdit(uid){
+  const u=users.find(x=>x.uid===uid);if(!u)return;fillSelects();
+  document.getElementById('editUid').value=uid;
+  document.getElementById('editUserLabel').value=u.name+' ('+u.login+')';
+  document.getElementById('editRole').value=u.role;
+  document.getElementById('editModal').classList.add('active');
+}
+async function saveUserRole(){
+  await db.collection('users').doc(document.getElementById('editUid').value).update({role:document.getElementById('editRole').value});
+  toast('Rôle mis à jour','success');closeModal('editModal');loadUsers();
+}
+async function delUser(uid,login){
+  if(!confirm('Supprimer "'+login+'" ?'))return;
+  await db.collection('users').doc(uid).delete();
+  await db.collection('presence').doc(uid).delete().catch(()=>{});
+  toast('Supprimé','success');loadUsers();
+}
+
+// ROLES
+async function loadRoles(){
+  const d=await db.collection('config').doc('roles').get();
+  roles=(d.exists&&d.data().list)?d.data().list:DEFROLES;
+  if(!d.exists) await db.collection('config').doc('roles').set({list:roles});
+  renderRoles();fillSelects();
+}
+function ri(id){return roles.find(r=>r.id===id)||{id,label:id,color:'#888'}}
+function renderRoles(){
+  document.getElementById('rolesList').innerHTML=roles.map(r=>{
+    const adm=r.id==='admin';
+    return`<div class="role-chip">
+      <div class="role-dot" style="background:${r.color}"></div>
+      <div><div class="role-chip-name" style="color:${r.color}">${esc(r.label)}</div><div class="role-chip-id">${esc(r.id)}${adm?' 🔒':''}</div></div>
+      <div style="display:flex;gap:4px;margin-left:6px">
+        <button class="btn btn-primary btn-xs" onclick="openRename('${r.id}')">Renommer</button>
+        ${adm?'':`<button class="btn btn-danger btn-xs" onclick="delRole('${r.id}')">Suppr.</button>`}
+      </div>
+    </div>`}).join('');
+}
+function fillSelects(){
+  ['newUserRole','editRole'].forEach(id=>{
+    const s=document.getElementById(id);if(!s)return;
+    const v=s.value;
+    s.innerHTML=roles.map(r=>`<option value="${r.id}">${esc(r.label)}</option>`).join('');
+    if(v&&roles.find(r=>r.id===v))s.value=v;
+  });
+}
+async function addRole(){
+  const id=document.getElementById('newRoleId').value.trim().toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
+  const label=document.getElementById('newRoleLabel').value.trim();
+  const color=document.getElementById('newRoleColor').value;
+  if(!id||!label){toast('Remplir identifiant et nom','error');return}
+  if(roles.find(r=>r.id===id)){toast('Ce rôle existe déjà','error');return}
+  roles.push({id,label,color});
+  await db.collection('config').doc('roles').set({list:roles});
+  renderRoles();fillSelects();renderAccess();
+  document.getElementById('newRoleId').value='';document.getElementById('newRoleLabel').value='';
+  toast(`Rôle "${label}" créé`,'success');
+}
+function openRename(id){
+  const r=ri(id);
+  document.getElementById('rnId').value=id;document.getElementById('rnIdLabel').value=id;
+  document.getElementById('rnLabel').value=r.label;document.getElementById('rnColor').value=r.color;
+  document.getElementById('renameModal').classList.add('active');
+}
+async function saveRename(){
+  const id=document.getElementById('rnId').value,nl=document.getElementById('rnLabel').value.trim(),nc=document.getElementById('rnColor').value;
+  if(!nl){toast('Nom requis','error');return}
+  const i=roles.findIndex(r=>r.id===id);if(i<0)return;
+  roles[i].label=nl;roles[i].color=nc;
+  await db.collection('config').doc('roles').set({list:roles});
+  renderRoles();fillSelects();renderUsers();renderAccess();
+  closeModal('renameModal');toast(`"${nl}" mis à jour`,'success');
+}
+async function delRole(id){
+  if(id==='admin'){toast('Impossible','error');return}
+  if(users.filter(u=>u.role===id).length>0){toast('Des utilisateurs ont ce rôle','error');return}
+  if(!confirm('Supprimer "'+ri(id).label+'" ?'))return;
+  roles=roles.filter(r=>r.id!==id);
+  await db.collection('config').doc('roles').set({list:roles});
+  renderRoles();fillSelects();renderAccess();toast('Supprimé','success');
+}
+
+// ACCESS
+async function loadAccess(){
+  const d=await db.collection('config').doc('pageAccess').get();
+  if(d.exists){access=d.data()}else{access={};PAGES.forEach(p=>{access[p.id]=p.id==='admin.html'?['admin']:roles.map(r=>r.id)})}
+  renderAccess();
+}
+function renderAccess(){
+  const g=document.getElementById('accessGrid');
+  g.innerHTML=`<div class="access-row header" style="grid-template-columns:200px repeat(${roles.length},1fr)">
+    <span>Page</span>${roles.map(r=>`<span style="color:${r.color}">${esc(r.label)}</span>`).join('')}</div>`;
+  PAGES.forEach(p=>{
+    const al=access[p.id]||[];
+    const row=document.createElement('div');row.className='access-row';
+    row.style.gridTemplateColumns=`200px repeat(${roles.length},1fr)`;
+    row.innerHTML=`<span class="access-page">${p.label}</span>${roles.map(r=>{
+      const ck=al.includes(r.id)?'checked':'';
+      const dis=p.id==='admin.html'&&r.id==='admin'?'disabled checked':'';
+      return`<span class="access-check"><input type="checkbox" data-page="${p.id}" data-role="${r.id}" ${ck} ${dis}></span>`}).join('')}`;
+    g.appendChild(row);
+  });
+}
+async function saveAccess(){
+  const cfg={};
+  document.querySelectorAll('.access-check input').forEach(cb=>{
+    if(!cfg[cb.dataset.page])cfg[cb.dataset.page]=[];
+    if(cb.checked)cfg[cb.dataset.page].push(cb.dataset.role);
+  });
+  await db.collection('config').doc('pageAccess').set(cfg);access=cfg;toast('Accès sauvegardés','success');
+}
+
+// UTILS
+function closeModal(id){document.getElementById(id).classList.remove('active')}
+async function logout(){await auth.signOut();location.href='index.html'}
+function toast(m,t){const e=document.getElementById('toast');e.textContent=m;e.className='toast visible '+t;clearTimeout(e._t);e._t=setTimeout(()=>e.className='toast',4000)}
+
+// PASSWORD CHANGE
+function openPwdModal(uid){
+  const u=users.find(x=>x.uid===uid);if(!u)return;
+  document.getElementById('pwdUid').value=uid;
+  document.getElementById('pwdUserLabel').value=u.name+' ('+u.login+')';
+  document.getElementById('pwdOld').value='';
+  document.getElementById('pwdNew').value='';
+  document.getElementById('pwdModal').classList.add('active');
+}
+
+async function doChangePwd(){
+  const uid=document.getElementById('pwdUid').value;
+  const oldPwd=document.getElementById('pwdOld').value;
+  const newPwd=document.getElementById('pwdNew').value;
+  const btn=document.getElementById('btnChangePwd');
+  const user=users.find(u=>u.uid===uid);
+  if(!user){toast('Utilisateur introuvable','error');return}
+  if(!oldPwd){toast('Mot de passe actuel requis','error');return}
+  if(!newPwd||newPwd.length<6){toast('Nouveau mot de passe : min 6 caractères','error');return}
+  btn.disabled=true;btn.textContent='...';
+  try{
+    const API_KEY=FC.apiKey;
+    const email=toEmail(user.login);
+    // Sign in via REST API
+    const signIn=await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key='+API_KEY,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email,password:oldPwd,returnSecureToken:true})
+    });
+    const signInData=await signIn.json();
+    if(signInData.error){toast(signInData.error.message==='INVALID_LOGIN_CREDENTIALS'?'Mot de passe actuel incorrect':signInData.error.message,'error');btn.disabled=false;btn.textContent='Changer';return}
+    // Update password via REST API
+    const update=await fetch('https://identitytoolkit.googleapis.com/v1/accounts:update?key='+API_KEY,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({idToken:signInData.idToken,password:newPwd,returnSecureToken:false})
+    });
+    const updateData=await update.json();
+    if(updateData.error){toast('Erreur: '+updateData.error.message,'error');btn.disabled=false;btn.textContent='Changer';return}
+    toast('Mot de passe modifié pour '+user.login,'success');
+    closeModal('pwdModal');
+  }catch(e){toast('Erreur: '+e.message,'error')}
+  btn.disabled=false;btn.textContent='Changer';
+}
+
+// IP TRACKING TABLE
+async function loadIpTracking(){
+  try{
+    const snap=await db.collection('sessions').orderBy('timestamp','desc').limit(500).get();
+    const ipMap={};
+    snap.forEach(doc=>{
+      const s=doc.data();
+      if(!s.login||!s.ip)return;
+      if(!ipMap[s.login])ipMap[s.login]={name:s.name||s.login,ips:{}};
+      if(!ipMap[s.login].ips[s.ip])ipMap[s.login].ips[s.ip]={count:0,city:s.city||'',country:s.country||'',last:null};
+      ipMap[s.login].ips[s.ip].count++;
+      if(!ipMap[s.login].ips[s.ip].last||(s.timestamp&&s.timestamp.seconds>ipMap[s.login].ips[s.ip].last))
+        ipMap[s.login].ips[s.ip].last=s.timestamp?s.timestamp.seconds:0;
+    });
+    const el=document.getElementById('ipTrackingTable');
+    if(!Object.keys(ipMap).length){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text2)">Aucune donnée IP</div>';return}
+    let html='<table><thead><tr><th>Utilisateur</th><th>Nb IP</th><th>Adresses IP</th><th>Localisation</th><th>Connexions</th><th>Dernière vue</th></tr></thead><tbody>';
+    for(const login of Object.keys(ipMap).sort()){
+      const u=ipMap[login];
+      const ips=Object.entries(u.ips).sort((a,b)=>b[1].count-a[1].count);
+      const nbIps=ips.length;
+      const warnColor=nbIps>3?'color:#ff4466;font-weight:700':nbIps>1?'color:#fbbf24':'color:#4ade80';
+      ips.forEach((([ip,data],i)=>{
+        html+=`<tr class="session-row">`;
+        if(i===0)html+=`<td rowspan="${nbIps}"><strong>${esc(u.name)}</strong><br><span style="font-size:11px;color:var(--text2)">${esc(login)}</span></td><td rowspan="${nbIps}" style="${warnColor};font-size:18px;text-align:center;font-weight:700">${nbIps}</td>`;
+        html+=`<td style="font-family:monospace;font-size:12px">${esc(ip)}</td>`;
+        html+=`<td style="font-size:12px">${esc(data.city)} ${esc(data.country)}</td>`;
+        html+=`<td style="text-align:center">${data.count}</td>`;
+        html+=`<td style="font-size:12px">${data.last?new Date(data.last*1000).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'—'}</td>`;
+        html+=`</tr>`;
+      }));
+    }
+    html+='</tbody></table>';
+    el.innerHTML=html;
+  }catch(e){console.error(e)}
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SIGNATURES LIBRARY
+// Collection `signatures` : { ownerUid, ownerName, ownerRole, label, png, createdAt, createdBy }
+// Stockage PNG en base64 dans Firestore (limite Firestore : 1 Mo par doc → PNG max 500 Ko raisonnable)
+// ═══════════════════════════════════════════════════════════════════════
+let signatures = [];
+let pendingSigData = null;       // base64 du fichier en attente d'upload
+let pendingSigFilename = null;
+
+async function loadSignatures(){
+  try{
+    const snap = await db.collection('signatures').orderBy('createdAt','desc').get();
+    signatures = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch(e){
+    console.warn('loadSignatures failed (probably no index/collection yet)', e);
+    // fallback sans tri
+    try {
+      const snap = await db.collection('signatures').get();
+      signatures = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch(e2){ console.error(e2); signatures = []; }
+  }
+  renderSignatures();
+  fillSigOwnerSelect();
+  setupSigDropzone();
+}
+
+function fillSigOwnerSelect(){
+  const sel = document.getElementById('sigOwnerSelect');
+  if(!sel) return;
+  sel.innerHTML = users.map(u => {
+    const r = ri(u.role);
+    return `<option value="${u.uid}">${esc(u.name||u.login)} — ${esc(r.label)}</option>`;
+  }).join('');
+  // Préselection : l'admin connecté
+  if(me && users.find(u => u.uid === me.uid)) sel.value = me.uid;
+}
+
+function renderSignatures(){
+  const el = document.getElementById('sigList');
+  if(!el) return;
+  if(!signatures.length){
+    el.innerHTML = '<div class="sig-empty" style="grid-column:1/-1">Aucune signature enregistrée pour le moment.<br>Ajoutez un PNG ci-dessous.</div>';
+    return;
+  }
+  el.innerHTML = signatures.map(s => {
+    const r = ri(s.ownerRole || '');
+    const owner = esc(s.ownerName || '—');
+    const lbl = s.label ? esc(s.label) : 'Signature';
+    const png = s.png || '';
+    return `<div class="sig-card">
+      <div class="sig-preview">${png ? `<img src="${png}" alt="${owner}">` : '<span style="color:#888;font-size:11px">PNG manquant</span>'}</div>
+      <div class="sig-meta">
+        <div class="sig-owner">${owner}</div>
+        <div class="sig-label">${lbl}</div>
+        <div class="sig-role" style="color:${r.color}">${esc(r.label)}</div>
+      </div>
+      <div class="sig-actions">
+        <button class="btn btn-primary btn-xs" onclick="downloadSignature('${s.id}')">Télécharger</button>
+        <button class="btn btn-danger btn-xs" onclick="deleteSignature('${s.id}')">Supprimer</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setupSigDropzone(){
+  const dz    = document.getElementById('sigDropzone');
+  const input = document.getElementById('sigFileInput');
+  if(!dz || !input || dz._init) return;
+  dz._init = true;
+
+  input.addEventListener('change', e => handleSigFile(e.target.files[0]));
+  dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('over'); });
+  dz.addEventListener('dragleave', e => dz.classList.remove('over'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.classList.remove('over');
+    if(e.dataTransfer.files && e.dataTransfer.files[0]){
+      handleSigFile(e.dataTransfer.files[0]);
+    }
+  });
+}
+
+function handleSigFile(file){
+  if(!file) return;
+  if(file.type !== 'image/png'){
+    toast('Le fichier doit être un PNG', 'error'); return;
+  }
+  if(file.size > 500 * 1024){
+    toast('PNG trop volumineux (max 500 Ko)', 'error'); return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    pendingSigData = reader.result; // data:image/png;base64,...
+    pendingSigFilename = file.name;
+    document.getElementById('sigDropzoneText').textContent = '✓ ' + file.name + ' (' + Math.round(file.size/1024) + ' Ko)';
+    document.getElementById('btnAddSig').disabled = false;
+  };
+  reader.onerror = () => toast('Erreur de lecture du fichier', 'error');
+  reader.readAsDataURL(file);
+}
+
+async function addSignature(){
+  if(!pendingSigData){ toast('Sélectionnez un PNG', 'error'); return; }
+  const ownerUid = document.getElementById('sigOwnerSelect').value;
+  const label    = document.getElementById('sigLabel').value.trim();
+  const owner    = users.find(u => u.uid === ownerUid);
+  if(!owner){ toast('Propriétaire invalide', 'error'); return; }
+
+  const btn = document.getElementById('btnAddSig');
+  btn.disabled = true; btn.textContent = '…';
+
+  try {
+    await db.collection('signatures').add({
+      ownerUid:   owner.uid,
+      ownerName:  owner.name || owner.login || '',
+      ownerLogin: owner.login || '',
+      ownerRole:  owner.role || '',
+      label:      label || 'Signature',
+      png:        pendingSigData,
+      filename:   pendingSigFilename,
+      createdAt:  firebase.firestore.FieldValue.serverTimestamp(),
+      createdBy:  me.uid
+    });
+    toast('Signature ajoutée', 'success');
+    // Reset formulaire
+    pendingSigData = null; pendingSigFilename = null;
+    document.getElementById('sigFileInput').value = '';
+    document.getElementById('sigLabel').value = '';
+    document.getElementById('sigDropzoneText').textContent = '📎 Cliquer ou glisser un PNG';
+    await loadSignatures();
+  } catch(e){
+    console.error(e);
+    toast('Erreur lors de l\'ajout : ' + (e.message || ''), 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '+ Ajouter';
+  }
+}
+
+async function deleteSignature(id){
+  const s = signatures.find(x => x.id === id);
+  if(!s) return;
+  if(!confirm(`Supprimer la signature de "${s.ownerName || '?'}" ?`)) return;
+  try {
+    await db.collection('signatures').doc(id).delete();
+    toast('Signature supprimée', 'success');
+    await loadSignatures();
+  } catch(e){
+    console.error(e);
+    toast('Erreur : ' + (e.message || ''), 'error');
+  }
+}
+
+function downloadSignature(id){
+  const s = signatures.find(x => x.id === id);
+  if(!s || !s.png) return;
+  const a = document.createElement('a');
+  a.href = s.png;
+  // Nom de fichier propre
+  const safe = (s.ownerName || 'signature').replace(/[^a-zA-Z0-9\-_]/g,'_').substring(0,40);
+  a.download = s.filename || `signature_${safe}.png`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+// Rafraîchir la liste des propriétaires quand les utilisateurs changent
+const _origRenderUsers = renderUsers;
+renderUsers = function(){
+  _origRenderUsers.apply(this, arguments);
+  fillSigOwnerSelect();
+};
+</script>
+</body>
+</html>

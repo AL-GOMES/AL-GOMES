@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A.L.GOMES — Bureau d'études</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;overflow:hidden;background:#0a0a0f;font-family:'Rajdhani',sans-serif;color:#e0d8ff;display:flex;flex-direction:column}
+
+  /* TOPBAR */
+  .topbar{height:50px;min-height:50px;background:rgba(10,10,18,.97);border-bottom:1px solid rgba(120,50,255,.15);display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:100;backdrop-filter:blur(16px)}
+  .topbar-left{display:flex;align-items:center;gap:12px}
+  .topbar-logo{font-family:'Orbitron',sans-serif;font-size:16px;font-weight:900;letter-spacing:3px;background:linear-gradient(135deg,#fff,#b388ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;cursor:pointer}
+  .btn-admin-nav{display:none;align-items:center;gap:5px;padding:4px 12px;border:1px solid rgba(120,50,255,.25);border-radius:6px;background:rgba(120,50,255,.08);color:#b388ff;font-size:12px;font-weight:600;cursor:pointer;transition:all .3s;font-family:'Rajdhani',sans-serif;letter-spacing:1px}
+  .btn-admin-nav:hover{background:rgba(120,50,255,.2)}
+  .btn-admin-nav svg{width:13px;height:13px}
+  .topbar-center{display:flex;align-items:center;gap:10px}
+  .topbar-presence{display:flex;align-items:center;gap:8px;font-size:12px;color:rgba(180,165,200,.6)}
+  .presence-dot{width:7px;height:7px;background:#22c55e;border-radius:50%;box-shadow:0 0 6px rgba(34,197,94,.5);animation:dotPulse 2s ease-in-out infinite}
+  @keyframes dotPulse{0%,100%{opacity:1}50%{opacity:.5}}
+  .presence-avatars{display:flex;gap:4px}
+  .p-avatar{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;text-transform:uppercase;cursor:default;position:relative}
+  .p-avatar:hover::after{content:attr(title);position:absolute;top:calc(100% + 4px);left:50%;transform:translateX(-50%);background:rgba(10,10,18,.95);border:1px solid rgba(120,50,255,.3);border-radius:5px;padding:3px 8px;font-size:10px;color:#e0d8ff;white-space:nowrap;z-index:200;text-transform:none;font-weight:500}
+  .topbar-right{display:flex;align-items:center;gap:12px}
+  .topbar-clock{display:flex;align-items:center;gap:12px;font-size:12px;color:rgba(180,165,200,.5)}
+  .topbar-time{font-size:14px;font-weight:600;color:rgba(220,210,235,.8);font-variant-numeric:tabular-nums;letter-spacing:1px}
+  .topbar-sep{width:1px;height:16px;background:rgba(120,50,255,.12)}
+  .btn-logout{display:flex;align-items:center;gap:5px;padding:5px 12px;border:1px solid rgba(239,68,68,.2);border-radius:6px;background:rgba(239,68,68,.06);color:rgba(248,113,113,.8);font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;letter-spacing:1px;cursor:pointer;transition:all .3s}
+  .btn-logout:hover{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.4)}
+  .btn-logout svg{width:14px;height:14px}
+
+  /* NAV TABS */
+  .navbar{height:40px;min-height:40px;background:rgba(14,14,20,.95);border-bottom:1px solid rgba(120,50,255,.1);display:flex;align-items:center;padding:0 20px;gap:4px;z-index:99;overflow-x:auto;backdrop-filter:blur(12px)}
+  .navbar::-webkit-scrollbar{display:none}
+  .nav-tab{padding:8px 16px;font-size:13px;font-weight:600;color:rgba(180,165,200,.5);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;transition:all .3s;white-space:nowrap;font-family:'Rajdhani',sans-serif;letter-spacing:1px}
+  .nav-tab:hover{color:rgba(220,210,235,.8)}
+  .nav-tab.active{color:#b388ff;border-bottom-color:#7832ff}
+
+  /* CONTENT IFRAME */
+  .content-frame{flex:1;width:100%;border:none;margin:0;padding:0;display:block}
+
+  /* LOADING */
+  .loading-screen{position:fixed;inset:0;z-index:9999;background:#0a0a0f;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px}
+  .spinner{width:48px;height:48px;border:3px solid rgba(120,50,255,.15);border-top-color:#7832ff;border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading-screen p{color:rgba(180,160,255,.5);font-size:14px;letter-spacing:2px}
+</style>
+</head>
+<body>
+
+<div class="loading-screen" id="loadingScreen">
+  <div class="spinner"></div>
+  <p>Chargement...</p>
+</div>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-logo" onclick="navigateTo('home.html')">⚡ A.L.GOMES</span>
+    <button class="btn-admin-nav" id="btnAdmin" onclick="navigateTo('admin.html')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      Admin
+    </button>
+  </div>
+  <div class="topbar-center">
+    <div class="topbar-presence">
+      <span class="presence-dot"></span>
+      <span id="presenceCount">—</span>
+      <div class="presence-avatars" id="presenceAvatars"></div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="topbar-clock">
+      <span id="topDate"></span>
+      <div class="topbar-sep"></div>
+      <span class="topbar-time" id="topTime"></span>
+    </div>
+    <div class="topbar-sep"></div>
+    <button class="btn-logout" onclick="doLogout()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Déconnexion
+    </button>
+  </div>
+</div>
+
+<!-- NAV TABS -->
+<div class="navbar" id="navbar"></div>
+
+<!-- CONTENT -->
+<iframe class="content-frame" id="contentFrame" src="home.html" width="100%" frameborder="0" allowfullscreen></iframe>
+
+<script>
+// ============================================================
+// FIREBASE
+// ============================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyAXuLjl6_yZNB28anBGSPP6PptugpkDJ4k",
+  authDomain: "algomes-a4e46.firebaseapp.com",
+  projectId: "algomes-a4e46",
+  storageBucket: "algomes-a4e46.firebasestorage.app",
+  messagingSenderId: "827799257472",
+  appId: "1:827799257472:web:b2248e501a5f72b63ec165"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+let currentUserData = null;
+
+const ALL_PAGES = [
+  { id: 'home.html', label: 'Accueil', icon: '🏠' },
+  { id: 'Derivations-TGBT.html', label: 'Dérivations & TGBT', icon: '⚡' },
+  { id: 'CALCUL_SECTION_CABLE.html', label: 'Calcul Câble', icon: '📐' },
+  { id: 'TABLEAU-ABONNE.html', label: 'Tableau Abonné', icon: '📋' },
+  { id: 'PLANNING.html', label: 'Planning', icon: '📅' },
+  { id: 'liseuse-normes.html', label: 'Normes', icon: '📖' }
+];
+
+// ============================================================
+// AUTH
+// ============================================================
+auth.onAuthStateChanged(async (user) => {
+  if (!user) { window.location.href = 'index.html'; return; }
+  try {
+    const doc = await db.collection('users').doc(user.uid).get();
+    if (!doc.exists) { await auth.signOut(); window.location.href = 'index.html'; return; }
+    const userData = doc.data();
+    
+    // Check if banned
+    if (userData.banned) {
+      await auth.signOut();
+      document.getElementById('loadingScreen').innerHTML = '<div style="text-align:center;color:#ff4466;font-family:Rajdhani,sans-serif"><div style="font-size:24px;margin-bottom:12px">Accès bloqué</div><div style="font-size:14px;color:#888">Votre compte a été suspendu par l\'administrateur.</div><a href="index.html" style="color:#b388ff;margin-top:20px;display:inline-block">Retour</a></div>';
+      return;
+    }
+    
+    currentUserData = { uid: user.uid, ...userData };
+    window._algomesUser = currentUserData;
+
+    document.getElementById('loadingScreen').style.display = 'none';
+
+    // Show admin button only for admins
+    if (currentUserData.role === 'admin') {
+      document.getElementById('btnAdmin').style.display = 'flex';
+    }
+
+    buildNavTabs();
+    initClock();
+    initPresence();
+  } catch(e) {
+    console.error(e);
+    window.location.href = 'index.html';
+  }
+});
+
+// ============================================================
+// NAV TABS
+// ============================================================
+let currentPage = 'home.html';
+
+async function buildNavTabs() {
+  const navbar = document.getElementById('navbar');
+  let allowedPages = ALL_PAGES;
+
+  // Check page access config
+  try {
+    const cfgDoc = await db.collection('config').doc('pageAccess').get();
+    if (cfgDoc.exists) {
+      const access = cfgDoc.data();
+      const role = currentUserData.role;
+      allowedPages = ALL_PAGES.filter(p => {
+        const pageKey = p.id === 'home.html' ? 'accueil.html' : p.id;
+        const allowed = access[pageKey] || ['admin','conducteur','lecteur'];
+        return allowed.includes(role);
+      });
+    }
+  } catch(e) { console.error(e); }
+
+  navbar.innerHTML = allowedPages.map(p => 
+    `<button class="nav-tab${p.id === currentPage ? ' active' : ''}" data-page="${p.id}" onclick="navigateTo('${p.id}')">
+      ${p.icon} ${p.label}
+    </button>`
+  ).join('');
+}
+
+function navigateTo(page) {
+  currentPage = page;
+  document.getElementById('contentFrame').src = page;
+
+  // Update active tab
+  document.querySelectorAll('.nav-tab').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.page === page);
+  });
+
+  // Update title
+  const pageInfo = ALL_PAGES.find(p => p.id === page);
+  document.title = 'A.L.GOMES — ' + (pageInfo ? pageInfo.label : 'Bureau d\'études');
+}
+
+// Make navigateTo available to iframes
+window.navigateTo = navigateTo;
+
+// ============================================================
+// CLOCK
+// ============================================================
+function initClock() {
+  function update() {
+    const now = new Date();
+    const days = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+    const months = ['janv.','fév.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+    document.getElementById('topDate').textContent = days[now.getDay()] + ' ' + now.getDate() + ' ' + months[now.getMonth()];
+    document.getElementById('topTime').textContent = now.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+  }
+  update();
+  setInterval(update, 30000);
+}
+
+// ============================================================
+// PRESENCE
+// ============================================================
+function initPresence() {
+  const user = currentUserData;
+  const presRef = db.collection('presence').doc(user.uid);
+
+  const presData = {
+    name: user.name || user.login || 'Inconnu',
+    login: user.login || '',
+    role: user.role,
+    online: true,
+    lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+  };
+
+  // Fetch IP & geolocation
+  fetch('https://ipapi.co/json/').then(r => r.json()).then(geo => {
+    presData.ip = geo.ip || '';
+    presData.city = geo.city || '';
+    presData.region = geo.region || '';
+    presData.country = geo.country_name || '';
+    presData.lat = geo.latitude || null;
+    presData.lon = geo.longitude || null;
+    presRef.set(presData, { merge: true });
+    // Log session
+    db.collection('sessions').add({
+      uid: user.uid,
+      login: user.login,
+      name: user.name,
+      ip: geo.ip,
+      city: geo.city,
+      region: geo.region,
+      country: geo.country_name,
+      lat: geo.latitude,
+      lon: geo.longitude,
+      userAgent: navigator.userAgent,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  }).catch(() => {
+    presRef.set(presData, { merge: true });
+  });
+
+  window.addEventListener('beforeunload', () => {
+    navigator.sendBeacon && presRef.update({ online: false }).catch(() => {});
+  });
+
+  setInterval(() => {
+    presRef.update({ lastSeen: firebase.firestore.FieldValue.serverTimestamp(), online: true }).catch(() => {});
+  }, 120000);
+
+  // Load roles for colors
+  db.collection('config').doc('roles').get().then(rolesDoc => {
+    const rolesList = (rolesDoc.exists && rolesDoc.data().list) ? rolesDoc.data().list : [];
+    const getColor = (roleId) => {
+      const r = rolesList.find(x => x.id === roleId);
+      return r ? r.color : '#888';
+    };
+
+    // Listen
+    db.collection('presence').where('online', '==', true).onSnapshot(snap => {
+      const online = [];
+      const now = Date.now();
+      snap.forEach(doc => {
+        const d = doc.data();
+        if (d.lastSeen && d.lastSeen.seconds && (now - d.lastSeen.seconds * 1000) > 300000) return;
+        online.push({ name: d.name, login: d.login, role: d.role });
+      });
+
+      document.getElementById('presenceCount').textContent = online.length + ' en ligne';
+      document.getElementById('presenceAvatars').innerHTML = online.map(u => {
+        const initials = (u.name || u.login || '?').split(' ').map(w => w[0]).join('').substring(0, 2);
+        const c = getColor(u.role);
+        return `<div class="p-avatar" title="${u.name} (${u.role})" style="background:${c}22;border:1px solid ${c}55;color:${c}">${initials}</div>`;
+      }).join('');
+    });
+  });
+}
+
+// ============================================================
+// LOGOUT
+// ============================================================
+function doLogout() {
+  const user = currentUserData;
+  if (user) {
+    db.collection('presence').doc(user.uid).update({ online: false })
+      .then(() => auth.signOut())
+      .then(() => { window.location.href = 'index.html'; })
+      .catch(() => auth.signOut().then(() => { window.location.href = 'index.html'; }));
+  } else {
+    auth.signOut().then(() => { window.location.href = 'index.html'; });
+  }
+}
+</script>
+</body>
+</html>

@@ -154,37 +154,10 @@ tr:hover .rd{opacity:1}.rd:hover{color:#FF6B6B}
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="js/firebase-init.js"></script>
+<script src="js/auth-guard.js"></script>
 </head>
 <body>
-<script>
-(function(){
-  var fc={apiKey:"AIzaSyAXuLjl6_yZNB28anBGSPP6PptugpkDJ4k",authDomain:"algomes-a4e46.firebaseapp.com",projectId:"algomes-a4e46",storageBucket:"algomes-a4e46.firebasestorage.app",messagingSenderId:"827799257472",appId:"1:827799257472:web:b2248e501a5f72b63ec165"};
-  if(!firebase.apps.length) firebase.initializeApp(fc);
-  var auth=firebase.auth(), db=firebase.firestore();
-  var page=window.location.pathname.split('/').pop()||'accueil.html';
-  document.documentElement.style.visibility='hidden';
-  auth.onAuthStateChanged(function(user){
-    if(!user){try{parent.location.href='index.html'}catch(e){window.location.href='index.html'}return}
-    db.collection('users').doc(user.uid).get().then(function(doc){
-      if(!doc.exists){auth.signOut();window.location.href='index.html';return}
-      var data=doc.data();
-      if(data.banned){auth.signOut();document.documentElement.style.visibility='visible';document.body.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;font-family:sans-serif;background:#0A0816"><div style="font-size:20px;color:#ff4466;margin-bottom:12px">Compte bloqué</div><div style="font-size:13px;color:#888">Contactez l\'administrateur.</div></div>';return}
-      var role=data.role;
-      db.collection('config').doc('pageAccess').get().then(function(cfgDoc){
-        var access=cfgDoc.exists?cfgDoc.data():{};
-        var allowed=access[page]||['admin','ingenieur','lecteur'];
-        if(!allowed.includes(role)){
-          document.documentElement.style.visibility='visible';
-          document.body.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;font-family:sans-serif;background:#0A0816"><div style="font-size:20px;color:#E74C3C;margin-bottom:12px">Accès refusé</div></div>';
-          return}
-        document.documentElement.style.visibility='visible';
-        window._algomesUser={uid:user.uid,role:role,login:data.login,name:data.name};
-      }).catch(function(){document.documentElement.style.visibility='visible'});
-    }).catch(function(){auth.signOut();window.location.href='index.html'});
-  });
-})();
-</script>
-
 <div class="topbar">
   <div class="topbar-left">
     <a class="btn-top" href="accueil.html">

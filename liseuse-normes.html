@@ -1326,7 +1326,159 @@ h4{font-size:14px;font-weight:600;color:var(--t1);margin:16px 0 8px;padding-bott
 <tr><td class="val">4×25</td><td>18-36</td><td class="val">Ø 50</td><td class="val">Ø 63</td><td class="val">Ø 63</td></tr>
 <tr><td class="val">4×35</td><td>18-36</td><td class="val">Ø 50</td><td class="val">Ø 63</td><td class="val">Ø 63</td></tr>
 </tbody></table>
-<div class="note note-danger"><strong>Règles DI :</strong> ne doit comporter que les conducteurs du branchement + communication comptage. Conducteur vert-jaune interdit. Le parcours ne doit pas empiéter sur des locaux privés autres que celui desservi. Tracé rectiligne, coudes ≥ 120° sans angle vif aux extrémités.</div>
+
+<h4>Cheminement de la DI — Parcours autorisé</h4>
+<div style="margin:12px 0;overflow-x:auto">
+<svg viewBox="0 0 900 460" xmlns="http://www.w3.org/2000/svg" style="max-width:900px;width:100%;background:linear-gradient(180deg,rgba(8,8,15,.95),rgba(12,12,20,.95));border-radius:12px;border:1px solid rgba(100,80,160,.25)">
+<rect x="0" y="0" width="900" height="32" fill="rgba(100,80,160,.08)"/>
+<text x="450" y="21" fill="rgba(167,139,219,.9)" font-size="12" text-anchor="middle" font-weight="700" font-family="DM Sans" letter-spacing="2">DÉRIVATION INDIVIDUELLE — VUE EN COUPE & VUE EN PLAN</text>
+
+<!-- ============= VUE EN COUPE (gauche) ============= -->
+<text x="225" y="56" fill="rgba(167,139,219,.7)" font-size="11" text-anchor="middle" font-weight="600" font-family="DM Sans">VUE EN COUPE (logement R+1)</text>
+
+<!-- Limite logement -->
+<rect x="80" y="70" width="290" height="350" fill="rgba(100,80,160,.025)" stroke="rgba(100,80,160,.18)" stroke-width="1"/>
+<text x="225" y="85" fill="rgba(167,139,219,.45)" font-size="9" text-anchor="middle" font-family="DM Sans">Logement (limite privative)</text>
+
+<!-- Sol & plafond logement -->
+<line x1="80" y1="385" x2="370" y2="385" stroke="rgba(167,139,219,.45)" stroke-width="2"/>
+<line x1="80" y1="100" x2="370" y2="100" stroke="rgba(167,139,219,.25)" stroke-width="1"/>
+
+<!-- Gaine technique (à gauche) -->
+<rect x="90" y="100" width="50" height="285" fill="rgba(251,191,36,.05)" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="3,3"/>
+<text x="115" y="170" fill="rgba(251,191,36,.65)" font-size="9" text-anchor="middle" font-weight="600" transform="rotate(-90,115,170)" font-family="DM Sans">Gaine colonne</text>
+
+<!-- Distributeur niveau (CPF 428) -->
+<rect x="98" y="280" width="34" height="22" rx="3" fill="rgba(96,165,250,.15)" stroke="#60a5fa" stroke-width="1.5"/>
+<text x="115" y="294" fill="#60a5fa" font-size="9" text-anchor="middle" font-weight="700" font-family="JetBrains Mono">428</text>
+<!-- CCPI (porte-fusible) -->
+<rect x="142" y="282" width="14" height="18" rx="2" fill="#f87171"/>
+<text x="149" y="294" fill="#fff" font-size="8" text-anchor="middle" font-weight="700" font-family="JetBrains Mono">F</text>
+
+<!-- Trajet DI : sortie horizontale puis verticale puis horizontale jusqu'au panneau -->
+<path d="M 156 291 L 215 291 L 215 145 L 320 145" fill="none" stroke="#4ade80" stroke-width="3" stroke-linecap="round"/>
+<!-- Coude 1 (en bas droite) -->
+<circle cx="215" cy="291" r="4" fill="#4ade80" opacity="0.8"/>
+<text x="222" y="288" fill="#4ade80" font-size="8" font-family="DM Sans">120° mini</text>
+<!-- Coude 2 (en haut) -->
+<circle cx="215" cy="145" r="4" fill="#4ade80" opacity="0.8"/>
+<text x="222" y="142" fill="#4ade80" font-size="8" font-family="DM Sans">120° mini</text>
+
+<!-- Annotation conduit ICTA -->
+<text x="248" y="280" fill="rgba(74,222,128,.6)" font-size="8" font-family="DM Sans">Sous conduit ICTA</text>
+<text x="248" y="291" fill="rgba(74,222,128,.5)" font-size="7" font-family="DM Sans">non-propagateur, IK ≥ 07</text>
+
+<!-- Panneau de contrôle (compteur + AGCP) -->
+<rect x="320" y="115" width="46" height="58" rx="4" fill="rgba(74,222,128,.08)" stroke="#4ade80" stroke-width="2"/>
+<text x="343" y="135" fill="#4ade80" font-size="9" text-anchor="middle" font-weight="700" font-family="DM Sans">Panneau</text>
+<text x="343" y="148" fill="#4ade80" font-size="9" text-anchor="middle" font-weight="700" font-family="DM Sans">contrôle</text>
+<text x="343" y="161" fill="rgba(74,222,128,.55)" font-size="7" text-anchor="middle" font-family="DM Sans">Compteur</text>
+<text x="343" y="170" fill="rgba(74,222,128,.55)" font-size="7" text-anchor="middle" font-family="DM Sans">+ AGCP</text>
+
+<!-- Cote hauteur AGCP -->
+<line x1="380" y1="115" x2="395" y2="115" stroke="rgba(167,139,219,.4)" stroke-width="1"/>
+<line x1="380" y1="173" x2="395" y2="173" stroke="rgba(167,139,219,.4)" stroke-width="1"/>
+<line x1="388" y1="115" x2="388" y2="173" stroke="rgba(167,139,219,.4)" stroke-width="1"/>
+<text x="395" y="148" fill="rgba(167,139,219,.55)" font-size="8" font-family="JetBrains Mono">0,70-1,80 m</text>
+<text x="395" y="158" fill="rgba(167,139,219,.4)" font-size="7" font-family="DM Sans">PMR : 0,75-1,30 m</text>
+
+<!-- Niveau sol -->
+<line x1="320" y1="385" x2="370" y2="385" stroke="rgba(167,139,219,.6)" stroke-width="2"/>
+<text x="345" y="400" fill="rgba(167,139,219,.45)" font-size="8" text-anchor="middle" font-family="DM Sans">Sol fini</text>
+
+<!-- Cote longueur DI -->
+<line x1="160" y1="410" x2="320" y2="410" stroke="rgba(74,222,128,.4)" stroke-width="1"/>
+<line x1="160" y1="406" x2="160" y2="414" stroke="rgba(74,222,128,.4)" stroke-width="1"/>
+<line x1="320" y1="406" x2="320" y2="414" stroke="rgba(74,222,128,.4)" stroke-width="1"/>
+<text x="240" y="424" fill="rgba(74,222,128,.7)" font-size="9" text-anchor="middle" font-weight="600" font-family="JetBrains Mono">Longueur DI ≤ 30 m (Type 1)</text>
+
+<!-- Séparateur vertical -->
+<line x1="450" y1="50" x2="450" y2="430" stroke="rgba(100,80,160,.18)" stroke-width="1" stroke-dasharray="3,3"/>
+
+<!-- ============= VUE EN PLAN (droite) ============= -->
+<text x="675" y="56" fill="rgba(167,139,219,.7)" font-size="11" text-anchor="middle" font-weight="600" font-family="DM Sans">VUE EN PLAN (logement)</text>
+
+<!-- Limite logement (en plan) -->
+<rect x="490" y="80" width="380" height="320" fill="rgba(100,80,160,.025)" stroke="rgba(100,80,160,.4)" stroke-width="2"/>
+
+<!-- Couloir / entrée -->
+<rect x="600" y="270" width="80" height="40" fill="rgba(167,139,219,.04)" stroke="rgba(167,139,219,.18)" stroke-width="1" stroke-dasharray="2,2"/>
+<text x="640" y="295" fill="rgba(167,139,219,.4)" font-size="8" text-anchor="middle" font-family="DM Sans">Entrée logement</text>
+
+<!-- Porte (entrée) -->
+<line x1="600" y1="310" x2="630" y2="310" stroke="rgba(167,139,219,.6)" stroke-width="3"/>
+<path d="M 600 310 Q 630 280 630 310" fill="none" stroke="rgba(167,139,219,.4)" stroke-width="1" stroke-dasharray="2,2"/>
+
+<!-- Gaine colonne (logement adjacent) -->
+<rect x="490" y="200" width="60" height="60" fill="rgba(251,191,36,.06)" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="3,3"/>
+<text x="520" y="235" fill="rgba(251,191,36,.7)" font-size="8" text-anchor="middle" font-weight="600" font-family="DM Sans">Gaine</text>
+<text x="520" y="247" fill="rgba(251,191,36,.5)" font-size="7" text-anchor="middle" font-family="DM Sans">colonne</text>
+
+<!-- CCPI -->
+<rect x="538" y="222" width="12" height="16" rx="1" fill="#f87171"/>
+<text x="544" y="234" fill="#fff" font-size="7" text-anchor="middle" font-weight="700" font-family="JetBrains Mono">F</text>
+
+<!-- Trajet DI vu en plan : sortie de la gaine + chemin -->
+<path d="M 550 230 L 590 230 L 590 350 L 760 350" fill="none" stroke="#4ade80" stroke-width="3" stroke-linecap="round"/>
+<circle cx="590" cy="230" r="4" fill="#4ade80" opacity="0.8"/>
+<circle cx="590" cy="350" r="4" fill="#4ade80" opacity="0.8"/>
+<circle cx="760" cy="350" r="4" fill="#4ade80" opacity="0.8"/>
+
+<!-- Annotation -->
+<text x="600" y="225" fill="rgba(74,222,128,.7)" font-size="8" font-family="DM Sans">120° mini</text>
+<text x="595" y="345" fill="rgba(74,222,128,.7)" font-size="8" font-family="DM Sans">120° mini</text>
+
+<!-- Panneau de contrôle (en plan) -->
+<rect x="755" y="335" width="40" height="36" rx="3" fill="rgba(74,222,128,.08)" stroke="#4ade80" stroke-width="2"/>
+<text x="775" y="350" fill="#4ade80" font-size="8" text-anchor="middle" font-weight="700" font-family="DM Sans">Panneau</text>
+<text x="775" y="361" fill="#4ade80" font-size="8" text-anchor="middle" font-weight="700" font-family="DM Sans">+ AGCP</text>
+
+<!-- ETEL/GTL annotation -->
+<text x="775" y="385" fill="rgba(74,222,128,.5)" font-size="7" text-anchor="middle" font-family="DM Sans">dans ETEL/GTL</text>
+
+<!-- Locaux interdits -->
+<rect x="700" y="100" width="160" height="80" fill="rgba(248,113,113,.06)" stroke="#f87171" stroke-width="1.5" stroke-dasharray="4,3"/>
+<text x="780" y="135" fill="#f87171" font-size="11" text-anchor="middle" font-weight="700" font-family="DM Sans">CHAMBRE / SDB</text>
+<text x="780" y="155" fill="rgba(248,113,113,.6)" font-size="8" text-anchor="middle" font-family="DM Sans">Le tracé ne doit pas</text>
+<text x="780" y="167" fill="rgba(248,113,113,.6)" font-size="8" text-anchor="middle" font-family="DM Sans">traverser ces pièces</text>
+
+<!-- Trajet interdit (croix rouge) -->
+<line x1="555" y1="125" x2="700" y2="125" stroke="#f87171" stroke-width="2" stroke-dasharray="6,4" opacity="0.55"/>
+<text x="625" y="120" fill="#f87171" font-size="11" text-anchor="middle" font-weight="700">✕</text>
+
+<!-- Légende bas -->
+<g transform="translate(40,440)">
+  <line x1="0" y1="0" x2="20" y2="0" stroke="#4ade80" stroke-width="2.5"/>
+  <text x="25" y="3" fill="rgba(74,222,128,.8)" font-size="8" font-family="DM Sans">Tracé DI autorisé</text>
+  <line x1="160" y1="0" x2="180" y2="0" stroke="#f87171" stroke-width="2" stroke-dasharray="4,3"/>
+  <text x="185" y="3" fill="rgba(248,113,113,.8)" font-size="8" font-family="DM Sans">Tracé interdit (autres locaux privés)</text>
+  <circle cx="430" cy="0" r="4" fill="#4ade80"/>
+  <text x="440" y="3" fill="rgba(74,222,128,.8)" font-size="8" font-family="DM Sans">Coude (≥ 120°, jamais d'angle vif aux extrémités)</text>
+</g>
+</svg>
+</div>
+
+<h4>Règles de cheminement</h4>
+<table class="norm-table"><thead><tr><th>Règle</th><th>Détail</th></tr></thead><tbody>
+<tr><td>Longueur maximale</td><td><strong>≤ 30 m</strong> en branchement <strong>Type 1</strong> (compteur chez le client). Au-delà : passage en Type 2 (comptage en limite de propriété)</td></tr>
+<tr><td>Tracé général</td><td>Le plus rectiligne possible, parcours <strong>vertical</strong> (gaine technique) puis <strong>horizontal</strong> jusqu'au panneau</td></tr>
+<tr><td>Coudes / changements de direction</td><td>Angle <strong>≥ 120°</strong> obligatoire. <strong>Angle vif interdit</strong> aux extrémités (entrée et sortie de la DI)</td></tr>
+<tr><td>Locaux traversés</td><td>Ne doit empiéter <strong>que</strong> sur le local privé desservi. Interdit de traverser d'autres logements ou parties privatives. Toléré : parties communes, parkings, caves (avec mode de pose adapté)</td></tr>
+<tr><td>Conducteurs admis</td><td><strong>Uniquement</strong> les conducteurs du branchement (phase + neutre, parfois 4×) + le câble de communication comptage (téléreport / Linky)</td></tr>
+<tr><td>Conducteur vert-jaune</td><td><span class="tag tag-red">Strictement INTERDIT</span> dans la DI (la DI est en amont de l'AGCP, schéma TT du distributeur)</td></tr>
+<tr><td>Mode de pose principal</td><td>Sous <strong>conduit ICTA</strong> non propagateur de la flamme, IK 07 mini. Encastré dans paroi maçonnée ou apparent en gaine technique</td></tr>
+<tr><td>Section de raccordement CCPI</td><td><strong>≤ 35 mm²</strong> (puissance limitée jusqu'à 36 kVA tri ou 12 kVA mono)</td></tr>
+<tr><td>Section ≥ tronçon collectif</td><td>Toujours <strong>inférieure ou égale</strong> à la section de la canalisation collective amont (sécurité de protection)</td></tr>
+<tr><td>Chute de tension dans la DI</td><td><strong>≤ 1 %</strong> (conventionnellement). Cumul colonne + DI ≤ 1,5 % global pour le client le plus mal alimenté</td></tr>
+<tr><td>Mutualisation interdite</td><td>Une DI = un client. Plusieurs DI dans le même conduit interdit (sauf cas spécifique de reprise d'existant en accord avec Enedis)</td></tr>
+<tr><td>Repérage</td><td>Identification claire en chaque extrémité (nom du logement, n° d'appartement) — feutre indélébile ou étiquette</td></tr>
+</tbody></table>
+
+<div class="note note-info"><strong>Cas spécifique des parties communes :</strong> si la DI emprunte un parking, une cave ou un couloir collectif, elle doit être posée selon le <strong>mode de pose E</strong> (conduit isolant IK 10, tirage possible sans pénétrer dans le local desservi). Les distances réglementaires (≥ 3 cm) sont à respecter par rapport aux autres canalisations (eau, gaz).</div>
+
+<div class="note note-warn"><strong>Cas dérogatoires (rare) :</strong> traversée d'un local privé tiers possible <strong>uniquement</strong> avec accord écrit du propriétaire ET d'Enedis, et avec mode de pose E (conduit étanche, marquage, accès indépendant pour intervention).</div>
+
+<div class="note note-danger"><strong>Règle DI synthétique :</strong> ne doit comporter que les conducteurs du branchement + communication comptage. Conducteur vert-jaune interdit. Le parcours ne doit pas empiéter sur des locaux privés autres que celui desservi. Tracé rectiligne, coudes ≥ 120° sans angle vif aux extrémités.</div>
 </div></div>
 
 <div class="section"><div class="section-header" onclick="toggleSection(this)"><span class="icon">📋</span><h3>7 — Panneau de contrôle</h3><span class="chevron">▶</span></div><div class="section-body">

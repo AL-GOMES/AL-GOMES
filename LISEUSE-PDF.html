@@ -72,7 +72,7 @@ html, body {
 .app {
   display: grid;
   grid-template-columns: 220px 1fr 300px;
-  grid-template-rows: 44px 1fr 28px;
+  grid-template-rows: minmax(44px, auto) 1fr 28px;
   grid-template-areas:
     "topbar topbar topbar"
     "left main right"
@@ -87,21 +87,19 @@ html, body {
   border-bottom: 1px solid var(--panel-border);
   display: flex;
   align-items: center;
-  padding: 0 12px;
+  padding: 4px 12px;
   gap: 4px;
-  /* Scrollable horizontalement quand la fenêtre est trop étroite,
-     pour qu'aucun bouton ne soit coupé/caché. */
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: thin;
-  scrollbar-color: var(--bg-4) transparent;
+  /* Si la fenêtre est trop étroite pour aligner tous les boutons, ils
+     passent automatiquement à la ligne suivante. */
+  flex-wrap: wrap;
+  row-gap: 4px;
+  min-height: 44px;
 }
-.topbar::-webkit-scrollbar { height: 4px; }
-.topbar::-webkit-scrollbar-track { background: transparent; }
-.topbar::-webkit-scrollbar-thumb { background: var(--bg-4); border-radius: 2px; }
-.topbar::-webkit-scrollbar-thumb:hover { background: var(--accent-d); }
 /* Empêche l'écrasement des éléments enfants : ils gardent leur largeur naturelle. */
 .topbar > * { flex-shrink: 0; }
+/* Le spacer (.spacer) ne pousse les boutons à droite que sur la 1ère ligne ;
+   quand le contenu wrappe, on évite qu'il créé une 2e ligne vide. */
+.topbar .spacer { flex: 1 1 0; min-width: 0; }
 
 .logo {
   font-weight: 700;

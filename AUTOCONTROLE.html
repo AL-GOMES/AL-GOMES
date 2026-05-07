@@ -716,9 +716,11 @@ main{padding:24px;max-width:1400px;margin:0 auto}
     <div id="genStats" class="summary-grid mb-12"></div>
     <div class="row-flex mb-12">
       <button class="btn primary" id="btnGenPDF" onclick="generateOfficialPDF(true)">📥 Télécharger le PDF officiel rempli</button>
-      <button class="btn" onclick="schedulePreview()">🔄 Régénérer l'aperçu</button>
+      <button class="btn" onclick="schedulePreview()">👁️ Afficher l'aperçu</button>
     </div>
-    <iframe id="pdfPreview" style="width:100%;height:85vh;border:1px solid var(--line);border-radius:8px;background:#fff" title="Aperçu PDF officiel"></iframe>
+    <div id="pdfPreviewWrap" style="width:100%;height:85vh;border:1px solid var(--line);border-radius:8px;background:var(--panel);display:flex;align-items:center;justify-content:center;color:var(--txt-3);font-size:13px;text-align:center;padding:20px">
+      Cliquez sur « 👁️ Afficher l'aperçu » pour générer un aperçu du PDF dans cette zone, ou directement sur « 📥 Télécharger… » pour récupérer le fichier.
+    </div>
   </div>
 </section>
 
@@ -2469,7 +2471,14 @@ async function generateOfficialPDF(download=true){
     // Libère l'ancienne URL si présente
     if(_previewURL) URL.revokeObjectURL(_previewURL);
     _previewURL = URL.createObjectURL(blob);
-    document.getElementById('pdfPreview').src = _previewURL;
+
+    // Injecte un <embed> dans le wrapper (plus fiable que <iframe> pour le rendu PDF inline)
+    const wrap = document.getElementById('pdfPreviewWrap');
+    if(wrap){
+      wrap.style.padding = '0';
+      wrap.style.display = 'block';
+      wrap.innerHTML = `<embed id="pdfPreview" type="application/pdf" src="${_previewURL}" style="width:100%;height:100%;border:none">`;
+    }
 
     if(download){
       const a = document.createElement('a');
@@ -2550,8 +2559,8 @@ function renderOfficiel(){
     const tplStatus = document.getElementById('tplStatus');
     if(tplStatus) tplStatus.textContent = _customPdfBytes ? 'PDF maison utilisé' : 'PDF officiel intégré ✓';
   }
-  // génère l'aperçu automatiquement
-  schedulePreview();
+  // L'aperçu n'est PAS généré automatiquement (le navigateur peut télécharger le PDF
+  // au lieu de l'afficher selon ses réglages). L'utilisateur clique sur le bouton dédié.
 }
 
 </script>

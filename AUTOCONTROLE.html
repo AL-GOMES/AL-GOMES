@@ -963,12 +963,31 @@ function defaultFicheState(code){
     C1_TELEREPORT.forEach(k=> obj.telereport[k]={value:initVal,status:STATUS.CF,note:''});
     return obj;
   }
+  // Statuts par défaut spécifiques à la fiche D1 (C4) — repris d'un dossier
+  // de référence type « AUTOCONTROLE_C4_PARKING » pour pré-cocher les cases
+  // les plus courantes côté client.
+  const D1_DEFAULTS = {
+    'Pose du coffret':                                      STATUS.CF,
+    'Présence des TC':                                      STATUS.CF,
+    'Pose du sectionnement':                                STATUS.CF,
+    'Pose du panneau':                                      STATUS.SO,
+    'Profondeur de pose des câbles, remblai, revêtement':   STATUS.SO,
+    'Dispositif avertisseur':                               STATUS.SO,
+    'Section des câbles':                                   STATUS.CF,
+    'Câble de téléreport':                                  STATUS.SO,
+    'Câbles de déport du compteur':                         STATUS.SO,
+    'Liaison réseau RTC - panneau de comptage':             STATUS.CF,
+    'Connexion du câble de téléreport':                     STATUS.CF,
+    'Mise à la terre du drain du câble de téléreport':      STATUS.SO
+  };
   const def = FICHE_DEF[code];
   const out = { items:{} };
   def.sections.forEach(sec => {
     sec.items.forEach(it => {
-      // For A3 (telereport), default to "sans objet" because it's not always installed
-      const defaultStatus = (code==='A3') ? STATUS.SO : STATUS.CF;
+      let defaultStatus;
+      if(code==='A3')      defaultStatus = STATUS.SO; // téléreport pas toujours installé
+      else if(code==='D1') defaultStatus = D1_DEFAULTS[it] || STATUS.CF;
+      else                 defaultStatus = STATUS.CF;
       out.items[it] = { status: defaultStatus, note:'' };
     });
   });

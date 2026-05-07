@@ -262,7 +262,7 @@ main{padding:24px;max-width:1400px;margin:0 auto}
   font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:1px;
   padding:8px 10px;
 }
-.check-table tbody tr:hover td:not(.so):not(.cf):not(.nc){background:rgba(139,92,246,.04)}
+.check-table tbody tr:hover td:not(.pe):not(.so):not(.cf):not(.nc){background:rgba(139,92,246,.04)}
 .check-table td.label-col{padding-left:14px}
 .check-table td.status-col{
   text-align:center;cursor:pointer;
@@ -270,6 +270,7 @@ main{padding:24px;max-width:1400px;margin:0 auto}
   user-select:none;
 }
 .check-table td.status-col:hover{background:rgba(139,92,246,.08)}
+.check-table td.status-col.active.pe{background:rgba(245,158,11,.2);color:#f59e0b}
 .check-table td.status-col.active.so{background:rgba(168,168,184,.18);color:var(--txt-2)}
 .check-table td.status-col.active.cf{background:rgba(34,197,94,.2);color:var(--green)}
 .check-table td.status-col.active.nc{background:rgba(239,68,68,.2);color:var(--red)}
@@ -361,7 +362,8 @@ main{padding:24px;max-width:1400px;margin:0 auto}
 .print-table{width:100%;border-collapse:collapse;font-size:10px;margin-bottom:10px}
 .print-table th, .print-table td{border:1px solid #999;padding:4px 6px;vertical-align:middle;color:#000}
 .print-table thead th{background:#f0f0f5;font-size:9px;text-transform:uppercase;font-weight:700}
-.print-table .so-col, .print-table .cf-col, .print-table .nc-col{width:42px;text-align:center;font-weight:700}
+.print-table .pe-col, .print-table .so-col, .print-table .cf-col, .print-table .nc-col{width:42px;text-align:center;font-weight:700}
+.print-table .pe-col.on{background:#fef3c7}
 .print-table .so-col.on{background:#e6e6ee}
 .print-table .cf-col.on{background:#d4f4dd}
 .print-table .nc-col.on{background:#fad4d4}
@@ -431,6 +433,22 @@ main{padding:24px;max-width:1400px;margin:0 auto}
 
 <!-- ============================== VIEW: PROJET ============================== -->
 <section class="view active" id="view-projet">
+  <div class="panel" id="attestationTypePanel">
+    <div class="panel-title">
+      Type d'attestation
+      <span class="right">Choix de départ — adapte fiches & PDF</span>
+    </div>
+    <div class="field">
+      <div class="radio-group">
+        <label><input type="radio" name="attestationType" value="colonne" checked> <span>🏢 Colonne électrique (collectif — A1/A2/A3/B1/C1)</span></label>
+        <label><input type="radio" name="attestationType" value="c4"> <span>⚡ Branchement C4 — Puissance surveillée (individuel)</span></label>
+      </div>
+      <div class="hint" style="margin-top:8px;font-size:12px;color:var(--txt-3)">
+        Le type sélectionné détermine la structure du projet (escaliers/niveaux pour Colonne, branchements simples pour C4) et le PDF généré.
+      </div>
+    </div>
+  </div>
+
   <div class="panel">
     <div class="panel-title">
       Référence du chantier
@@ -459,7 +477,7 @@ main{padding:24px;max-width:1400px;margin:0 auto}
       </div>
     </div>
 
-    <div class="grid cols-3 mt-12">
+    <div class="grid cols-1 mt-12">
       <div class="field">
         <label>Type d'opération</label>
         <div class="radio-group">
@@ -468,24 +486,97 @@ main{padding:24px;max-width:1400px;margin:0 auto}
           <label><input type="radio" name="typeOp" value="autre"> <span>Autre</span></label>
         </div>
       </div>
+    </div>
+
+    <!-- Champs spécifiques COLONNE (logements / SG) -->
+    <div class="colonne-only">
+      <div class="grid cols-2 mt-12">
+        <div class="field">
+          <label>Nb de logements (total chantier)</label>
+          <input type="number" min="0" id="f_nbLogts" placeholder="14">
+        </div>
+        <div class="field">
+          <label>P / logement</label>
+          <input type="text" id="f_pLogts" placeholder="Ex : 12 kVA mono">
+        </div>
+      </div>
+
+      <div class="grid cols-2 mt-12">
+        <div class="field">
+          <label>Nb de Services Généraux</label>
+          <input type="number" min="0" id="f_nbSG" placeholder="2">
+        </div>
+        <div class="field">
+          <label>P / SG</label>
+          <input type="text" id="f_pSG" placeholder="Ex : COMMERCE = 12 kVA / SGX-A = 12 kVA">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== PANEL SPÉCIFIQUE C4 ====== -->
+  <div class="panel c4-only" id="c4FieldsPanel">
+    <div class="panel-title">
+      Caractéristiques du branchement C4
+      <span class="right">SéQuélec GP 04 — NF C 14-100</span>
+    </div>
+
+    <div class="grid cols-3">
       <div class="field">
-        <label>Nb de logements (total chantier)</label>
-        <input type="number" min="0" id="f_nbLogts" placeholder="14">
+        <label>Puissance souscrite (kVA)</label>
+        <input type="number" min="36" max="250" step="1" id="f_c4_puissance" placeholder="Ex : 120">
       </div>
       <div class="field">
-        <label>P / logement</label>
-        <input type="text" id="f_pLogts" placeholder="Ex : 12 kVA mono">
+        <label>Dimensionnement</label>
+        <div class="radio-group">
+          <label><input type="radio" name="c4_dimensionnement" value="100"> <span>100 A (≤ 59 kVA)</span></label>
+          <label><input type="radio" name="c4_dimensionnement" value="200"> <span>200 A (60–119 kVA)</span></label>
+          <label><input type="radio" name="c4_dimensionnement" value="400"> <span>400 A (120–250 kVA)</span></label>
+        </div>
+      </div>
+      <div class="field">
+        <label>Usage</label>
+        <input type="text" id="f_c4_usage" placeholder="Ex : Tertiaire / Industrie / Commerce">
+      </div>
+    </div>
+
+    <div class="grid cols-1 mt-12">
+      <div class="field">
+        <label>Type de raccordement</label>
+        <div class="radio-group">
+          <label><input type="radio" name="c4_typeRaccord" value="plein_reseau"> <span>Plein réseau (dérivation BT existant, &lt; 120 kVA)</span></label>
+          <label><input type="radio" name="c4_typeRaccord" value="extension"> <span>Extension / création réseau BT (&lt; 120 kVA)</span></label>
+          <label><input type="radio" name="c4_typeRaccord" value="depart_direct"> <span>Départ direct du poste HTA/BT (≥ 120 kVA ou perturbateur)</span></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid cols-3 mt-12">
+      <div class="field">
+        <label>N° PDL (Point De Livraison)</label>
+        <input type="text" id="f_c4_pdl" placeholder="14 chiffres">
+      </div>
+      <div class="field">
+        <label>N° de poste HTA/BT</label>
+        <input type="text" id="f_c4_poste" placeholder="Si départ direct">
+      </div>
+      <div class="field">
+        <label>Type de coffret</label>
+        <div class="radio-group">
+          <label><input type="radio" name="c4_coffret" value="type1"> <span>Type 1 (TC en local client)</span></label>
+          <label><input type="radio" name="c4_coffret" value="type2"> <span>Type 2 (TC en armoire ext.)</span></label>
+        </div>
       </div>
     </div>
 
     <div class="grid cols-2 mt-12">
       <div class="field">
-        <label>Nb de Services Généraux</label>
-        <input type="number" min="0" id="f_nbSG" placeholder="2">
+        <label>Section / type câble dérivation individuelle</label>
+        <input type="text" id="f_c4_cableDI" placeholder="Ex : 3x150+70 mm² Alu (NF C 33-210)">
       </div>
       <div class="field">
-        <label>P / SG</label>
-        <input type="text" id="f_pSG" placeholder="Ex : COMMERCE = 12 kVA / SGX-A = 12 kVA">
+        <label>Longueur dérivation individuelle (m)</label>
+        <input type="number" min="0" step="1" id="f_c4_longueurDI" placeholder="Ex : 25">
       </div>
     </div>
   </div>
@@ -584,12 +675,12 @@ main{padding:24px;max-width:1400px;margin:0 auto}
 
 <!-- ============================== VIEW: BÂTIMENTS ============================== -->
 <section class="view" id="view-batiments">
-  <div class="info-banner">
+  <div class="info-banner" id="batimentsBanner">
     <strong>Branchement collectif.</strong> Créez un bâtiment par escalier électrique distinct (un CCPC = un escalier). Pour chaque escalier, indiquez le nombre de niveaux ; les fiches A1/A2/A3/B1/C1 seront synthétiques sur l'ensemble (le document SéQuélec stipule&nbsp;: <em>« Ce contrôle doit être effectué à chaque niveau, ce tableau synthétise les observations »</em>).
   </div>
 
   <div class="row-flex mb-12">
-    <button class="btn primary" onclick="addBuilding()">➕ Ajouter un bâtiment</button>
+    <button class="btn primary" id="btnAddBuilding" onclick="addBuilding()">➕ Ajouter un bâtiment</button>
     <span class="spacer"></span>
     <span id="buildCount" class="tag violet">0 bâtiment</span>
   </div>
@@ -615,11 +706,12 @@ main{padding:24px;max-width:1400px;margin:0 auto}
 
   <div id="ficheEditor" style="display:none">
     <div class="fiche-tabs" id="ficheTabs">
-      <button class="fiche-tab active" data-fiche="A1">FICHE A1 — Génie Civil</button>
-      <button class="fiche-tab" data-fiche="A2">FICHE A2 — Matériel Électrique</button>
-      <button class="fiche-tab" data-fiche="A3">FICHE A3 — Téléreport</button>
-      <button class="fiche-tab" data-fiche="B1">FICHE B1 — Connexions</button>
-      <button class="fiche-tab" data-fiche="C1">FICHE C1 — Isolement</button>
+      <button class="fiche-tab active" data-fiche="A1" data-mode="colonne">FICHE A1 — Génie Civil</button>
+      <button class="fiche-tab" data-fiche="A2" data-mode="colonne">FICHE A2 — Matériel Électrique</button>
+      <button class="fiche-tab" data-fiche="A3" data-mode="colonne">FICHE A3 — Téléreport</button>
+      <button class="fiche-tab" data-fiche="B1" data-mode="colonne">FICHE B1 — Connexions</button>
+      <button class="fiche-tab" data-fiche="C1" data-mode="colonne">FICHE C1 — Isolement</button>
+      <button class="fiche-tab" data-fiche="D1" data-mode="c4">FICHE C4 — Auto-contrôle Puissance Surveillée</button>
     </div>
 
     <div id="ficheBody"></div>
@@ -633,7 +725,7 @@ main{padding:24px;max-width:1400px;margin:0 auto}
 
 <!-- ============================== VIEW: PDF OFFICIEL ============================== -->
 <section class="view" id="view-officiel">
-  <div class="info-banner">
+  <div class="info-banner" id="officielBanner">
     <strong>📑 Document officiel SéQuélec — annexe GP10 / GP11.</strong> L'aperçu ci-dessous est régénéré automatiquement à chaque ouverture de cet onglet ou changement de modèle. Pour chaque (bâtiment, escalier), un jeu complet de fiches A1, A2, A3, B1, C1 est ajouté au PDF.
   </div>
 
@@ -732,8 +824,8 @@ main{padding:24px;max-width:1400px;margin:0 auto}
 /* ==================== STORAGE & STATE ==================== */
 const STORAGE_KEY = 'algomes_autocontrole_v1';
 
-const STATUS = { SO:'so', CF:'cf', NC:'nc', NONE:'' };
-const STATUS_LABEL = { so:'Sans objet', cf:'Conforme', nc:'Non conforme', '':'—' };
+const STATUS = { PE:'pe', SO:'so', CF:'cf', NC:'nc', NONE:'' };
+const STATUS_LABEL = { pe:'Par ERDF', so:'Sans objet', cf:'Conforme', nc:'Non conforme', '':'—' };
 
 /* ----- Référentiel des fiches (lignes du formulaire SéQuélec) ----- */
 const FICHE_DEF = {
@@ -849,6 +941,49 @@ const FICHE_DEF = {
         'Contrôle de non-inversion des BUS'
       ]
     }]
+  },
+  D1: {
+    title: 'FICHE D\'AUTO-CONTRÔLE DESTINÉE AUX CLIENTS — Partie destinée aux Clients (domaine privatif)',
+    note: 'Reproduction fidèle du document officiel SéQuélec GP 04 (page 37) — Branchement individuel à puissance surveillée (NF C 14-100).',
+    sections: [
+      {
+        title: 'Coffret de puissance comptage',
+        items: [
+          'Pose du coffret',
+          'Présence des TC'
+        ]
+      },
+      {
+        title: 'Sectionnement aval',
+        items: [
+          'Pose du sectionnement'
+        ]
+      },
+      {
+        title: 'Panneau de comptage',
+        items: [
+          'Pose du panneau'
+        ]
+      },
+      {
+        title: 'Liaison CCPI - Point de livraison',
+        items: [
+          'Profondeur de pose des câbles, remblai, revêtement',
+          'Dispositif avertisseur',
+          'Section des câbles',
+          'Câble de téléreport',
+          'Câbles de déport du compteur'
+        ]
+      },
+      {
+        title: 'Circuit de communication',
+        items: [
+          'Liaison réseau RTC - panneau de comptage',
+          'Connexion du câble de téléreport',
+          'Mise à la terre du drain du câble de téléreport'
+        ]
+      }
+    ]
   }
 };
 
@@ -861,9 +996,23 @@ const C1_PRELIM = ['Contrôle visuel de l\'absence de connexions non autorisées
 /* ==================== STATE ==================== */
 let state = {
   project: {},
-  buildings: [], // {id, name, escaliers:[{id, name, levels, fiches:{A1:{},A2:{},A3:{},B1:{},C1:{}}}]}
+  buildings: [], // {id, name, escaliers:[{id, name, levels, fiches:{A1:{},A2:{},A3:{},B1:{},C1:{},D1:{}}}]}
   ui: { selBatId:null, selEscId:null, currentFiche:'A1' }
 };
+
+/* ----- Type d'attestation : 'colonne' (défaut) ou 'c4' ----- */
+function getAttestationType(){
+  return (state.project && state.project.attestationType) || 'colonne';
+}
+function isC4(){ return getAttestationType() === 'c4'; }
+
+/* Codes des fiches actives selon le type */
+function activeFicheCodes(){
+  return isC4() ? ['D1'] : ['A1','A2','A3','B1','C1'];
+}
+function defaultFicheCode(){
+  return isC4() ? 'D1' : 'A1';
+}
 
 function uid(){ return 'id_'+Math.random().toString(36).slice(2,9); }
 
@@ -894,22 +1043,38 @@ function defaultFicheState(code){
 }
 
 function newStaircase(name, levels){
+  // En mode C4 on n'a qu'une fiche D1, en mode Colonne les 5 classiques.
+  const fiches = isC4()
+    ? { D1: defaultFicheState('D1') }
+    : {
+        A1: defaultFicheState('A1'),
+        A2: defaultFicheState('A2'),
+        A3: defaultFicheState('A3'),
+        B1: defaultFicheState('B1'),
+        C1: defaultFicheState('C1')
+      };
   return {
     id: uid(),
     name: name||'1',
     levels: levels||1,
-    fiches: {
-      A1: defaultFicheState('A1'),
-      A2: defaultFicheState('A2'),
-      A3: defaultFicheState('A3'),
-      B1: defaultFicheState('B1'),
-      C1: defaultFicheState('C1')
-    }
+    fiches: fiches
   };
 }
 
 function newBuilding(name){
-  return { id:uid(), name:name||'A', escaliers:[ newStaircase('1',5) ] };
+  // En mode C4 : 1 branchement = 1 escalier auto-créé (sans niveaux pertinents)
+  const defName = isC4() ? '1' : '1';
+  const defLevels = isC4() ? 1 : 5;
+  return { id:uid(), name:name||'A', escaliers:[ newStaircase(defName, defLevels) ] };
+}
+
+/* Garantit qu'un escalier a toutes les fiches du mode courant */
+function ensureFichesForMode(esc){
+  if(!esc) return;
+  if(!esc.fiches) esc.fiches = {};
+  activeFicheCodes().forEach(code => {
+    if(!esc.fiches[code]) esc.fiches[code] = defaultFicheState(code);
+  });
 }
 
 /* ==================== PERSISTENCE ==================== */
@@ -959,7 +1124,11 @@ function bindProjectForm(){
     f_moe_societe:'moe_societe', f_moe_nom:'moe_nom', f_moe_tel:'moe_tel',
     f_er_societe:'er_societe', f_er_nom:'er_nom', f_er_tel:'er_tel',
     f_grd_nom:'grd_nom', f_grd_tel:'grd_tel', f_grd_fax:'grd_fax',
-    f_rep_nom:'rep_nom', f_rep_qualite:'rep_qualite', f_date:'date'
+    f_rep_nom:'rep_nom', f_rep_qualite:'rep_qualite', f_date:'date',
+    /* ----- Champs spécifiques C4 ----- */
+    f_c4_puissance:'c4_puissance', f_c4_usage:'c4_usage',
+    f_c4_pdl:'c4_pdl', f_c4_poste:'c4_poste',
+    f_c4_cableDI:'c4_cableDI', f_c4_longueurDI:'c4_longueurDI'
   };
   Object.entries(map).forEach(([id,key])=>{
     const el = document.getElementById(id);
@@ -975,6 +1144,86 @@ function bindProjectForm(){
       if(r.checked){ state.project.typeOp = r.value; save(); }
     });
   });
+  /* ----- Radios spécifiques C4 ----- */
+  ['c4_dimensionnement','c4_typeRaccord','c4_coffret'].forEach(name=>{
+    document.querySelectorAll(`input[name=${name}]`).forEach(r=>{
+      if(state.project[name] && r.value===state.project[name]) r.checked = true;
+      r.addEventListener('change', ()=>{
+        if(r.checked){ state.project[name] = r.value; save(); }
+      });
+    });
+  });
+  /* ----- Sélecteur Type d'attestation (Colonne / C4) ----- */
+  document.querySelectorAll('input[name=attestationType]').forEach(r=>{
+    const cur = getAttestationType();
+    r.checked = (r.value === cur);
+    r.addEventListener('change', ()=>{
+      if(!r.checked) return;
+      const newType = r.value;
+      const oldType = getAttestationType();
+      if(newType === oldType) return;
+      // Avertir si des données existent
+      const hasData = state.buildings && state.buildings.length > 0;
+      if(hasData){
+        const ok = confirm(
+          'Changer le type d\'attestation va adapter les fiches de tous les bâtiments existants.\n\n' +
+          'Les données déjà saisies pour les fiches du nouveau type seront conservées si elles existent ; ' +
+          'celles du type abandonné restent stockées en arrière-plan (non perdues si vous revenez en arrière).\n\n' +
+          'Continuer ?'
+        );
+        if(!ok){
+          // restaurer la coche
+          document.querySelectorAll('input[name=attestationType]').forEach(x => x.checked = (x.value === oldType));
+          return;
+        }
+      }
+      state.project.attestationType = newType;
+      // S'assurer que toutes les fiches du nouveau mode existent sur chaque escalier
+      (state.buildings||[]).forEach(b => (b.escaliers||[]).forEach(e => ensureFichesForMode(e)));
+      // Reset onglet de fiche actif vers le défaut du nouveau mode
+      state.ui.currentFiche = defaultFicheCode();
+      save();
+      applyAttestationTypeUI();
+      renderBuildings();
+      renderFiches();
+      toast('Type d\'attestation : ' + (newType==='c4' ? 'Branchement C4' : 'Colonne électrique'), 'success');
+    });
+  });
+  applyAttestationTypeUI();
+}
+
+/* Adapte l'UI (libellés, onglets, panels) selon le type d'attestation actif */
+function applyAttestationTypeUI(){
+  const c4 = isC4();
+  // Onglets de fiches : ne montrer que ceux du mode actif
+  document.querySelectorAll('.fiche-tab').forEach(t=>{
+    const m = t.dataset.mode;
+    t.style.display = (m === (c4?'c4':'colonne')) ? '' : 'none';
+  });
+  // Champs spécifiques par type (panels et blocs marqués .colonne-only / .c4-only)
+  document.querySelectorAll('.colonne-only').forEach(el=>{
+    el.style.display = c4 ? 'none' : '';
+  });
+  document.querySelectorAll('.c4-only').forEach(el=>{
+    el.style.display = c4 ? '' : 'none';
+  });
+  // Bouton "Ajouter un bâtiment"
+  const btnAdd = document.getElementById('btnAddBuilding');
+  if(btnAdd) btnAdd.textContent = c4 ? '➕ Ajouter un branchement C4' : '➕ Ajouter un bâtiment';
+  // Banner Bâtiments
+  const banBat = document.getElementById('batimentsBanner');
+  if(banBat){
+    banBat.innerHTML = c4
+      ? '<strong>Branchement individuel C4 — Puissance surveillée.</strong> Créez un branchement par installation à puissance surveillée (36 à 250 kVA, conforme NF C 14-100). Une fiche unique d\'auto-contrôle est associée à chaque branchement.'
+      : '<strong>Branchement collectif.</strong> Créez un bâtiment par escalier électrique distinct (un CCPC = un escalier). Pour chaque escalier, indiquez le nombre de niveaux ; les fiches A1/A2/A3/B1/C1 seront synthétiques sur l\'ensemble (le document SéQuélec stipule&nbsp;: <em>« Ce contrôle doit être effectué à chaque niveau, ce tableau synthétise les observations »</em>).';
+  }
+  // Banner PDF officiel
+  const banOff = document.getElementById('officielBanner');
+  if(banOff){
+    banOff.innerHTML = c4
+      ? '<strong>📑 Auto-contrôle Branchement C4.</strong> Le PDF est généré nativement à partir du modèle SéQuélec GP 04 — Branchements individuels à puissance surveillée. Une fiche d\'auto-contrôle est produite par branchement.'
+      : '<strong>📑 Document officiel SéQuélec — annexe GP10 / GP11.</strong> L\'aperçu ci-dessous est régénéré automatiquement à chaque ouverture de cet onglet ou changement de modèle. Pour chaque (bâtiment, escalier), un jeu complet de fiches A1, A2, A3, B1, C1 est ajouté au PDF.';
+  }
 }
 
 function saveProject(){ save(); toast('Projet enregistré','success'); }
@@ -1010,12 +1259,36 @@ function resetAll(){
 /* ==================== BÂTIMENTS ==================== */
 function renderBuildings(){
   const el = document.getElementById('buildingsList');
-  document.getElementById('buildCount').textContent = state.buildings.length + (state.buildings.length>1?' bâtiments':' bâtiment');
+  const c4 = isC4();
+  const word = c4 ? 'branchement' : 'bâtiment';
+  document.getElementById('buildCount').textContent = state.buildings.length + ' ' + word + (state.buildings.length>1?'s':'');
   if(state.buildings.length===0){
-    el.innerHTML = `<div class="empty-state"><div class="icon">🏢</div><p>Aucun bâtiment. Cliquez sur <em>Ajouter un bâtiment</em> pour démarrer.</p></div>`;
+    const icon = c4 ? '⚡' : '🏢';
+    const label = c4 ? 'Ajouter un branchement C4' : 'Ajouter un bâtiment';
+    el.innerHTML = `<div class="empty-state"><div class="icon">${icon}</div><p>Aucun ${word}. Cliquez sur <em>${label}</em> pour démarrer.</p></div>`;
     return;
   }
   el.innerHTML = state.buildings.map(b=>{
+    if(c4){
+      // En mode C4 : pas d'escaliers visibles, on liste directement la fiche d'auto-contrôle
+      const e = (b.escaliers && b.escaliers[0]) || null;
+      ensureFichesForMode(e);
+      const prog = e ? computeProgress(e) : {D1:0};
+      const p = prog.D1 || 0;
+      const cls = p===1?'done':p>0?'partial':'';
+      const escId = e ? e.id : '';
+      return `
+        <div class="building-card">
+          <div class="building-head">
+            <span class="name">⚡ Branchement ${esc(b.name)}</span>
+            <span class="meta">Auto-contrôle C4 : <span class="progress-dot ${cls}" data-tip="${Math.round(p*100)}% rempli"></span> ${Math.round(p*100)}%</span>
+            <button class="btn sm" onclick="goEditFiches('${b.id}','${escId}')">✏️ Éditer la fiche</button>
+            <button class="btn sm" onclick="renameBuilding('${b.id}')">✎ Renommer</button>
+            <button class="btn sm danger" onclick="removeBuilding('${b.id}')">✕</button>
+          </div>
+        </div>`;
+    }
+    // Mode COLONNE — comportement original
     const escs = b.escaliers.map(e=>{
       const prog = computeProgress(e);
       const dots = ['A1','A2','A3','B1','C1'].map(c=>{
@@ -1049,7 +1322,9 @@ function renderBuildings(){
 
 function computeProgress(esc){
   const prog = {};
-  ['A1','A2','A3','B1'].forEach(c=>{
+  if(!esc || !esc.fiches){ return prog; }
+  // Standard fiches (items map)
+  ['A1','A2','A3','B1','D1'].forEach(c=>{
     const f = esc.fiches[c]; if(!f){prog[c]=0;return}
     const items = Object.values(f.items||{});
     if(items.length===0){prog[c]=0;return}
@@ -1139,17 +1414,22 @@ function goEditFiches(batId,escId){
 
 /* ==================== FICHES EDITOR ==================== */
 function renderFiches(){
+  const c4 = isC4();
   const selBat = document.getElementById('selBat');
   const selEsc = document.getElementById('selEsc');
   if(state.buildings.length===0){
     document.getElementById('ficheSelectorWrap').style.display='none';
     document.getElementById('ficheEditor').style.display='none';
-    document.getElementById('ficheEmpty').innerHTML = `<div class="icon">🏢</div><p>Créez d'abord au moins un bâtiment et un escalier dans l'onglet Bâtiments.</p>`;
+    const icon = c4 ? '⚡' : '🏢';
+    const word = c4 ? 'branchement C4' : 'bâtiment et un escalier';
+    document.getElementById('ficheEmpty').innerHTML = `<div class="icon">${icon}</div><p>Créez d'abord au moins un ${word} dans l'onglet ${c4?'Branchements':'Bâtiments'}.</p>`;
     document.getElementById('ficheEmpty').style.display='block';
     return;
   }
   document.getElementById('ficheSelectorWrap').style.display='block';
-  selBat.innerHTML = state.buildings.map(b=>`<option value="${b.id}">Bâtiment ${esc(b.name)}</option>`).join('');
+  // Libellé du select bâtiment selon mode
+  const batLabel = c4 ? 'Branchement' : 'Bâtiment';
+  selBat.innerHTML = state.buildings.map(b=>`<option value="${b.id}">${batLabel} ${esc(b.name)}</option>`).join('');
   if(state.ui.selBatId && state.buildings.find(b=>b.id===state.ui.selBatId)){
     selBat.value = state.ui.selBatId;
   } else {
@@ -1157,21 +1437,46 @@ function renderFiches(){
     selBat.value = state.ui.selBatId;
   }
   const b = state.buildings.find(x=>x.id===selBat.value);
-  selEsc.innerHTML = b.escaliers.map(e=>`<option value="${e.id}">Esc. ${esc(e.name)} — ${e.levels} niv.</option>`).join('');
-  if(state.ui.selEscId && b.escaliers.find(e=>e.id===state.ui.selEscId)){
-    selEsc.value = state.ui.selEscId;
+  // En mode C4 on cache la sélection d'escalier (1 seul auto-créé)
+  const escFieldWrap = selEsc.closest('.field');
+  const labelTitle = document.querySelector('#ficheSelectorWrap .panel-title');
+  if(c4){
+    if(escFieldWrap) escFieldWrap.style.display='none';
+    if(labelTitle) labelTitle.firstChild.textContent = 'Sélection du branchement à contrôler';
+    // S'assure qu'il y a un escalier (on en crée un si manquant)
+    if(!b.escaliers || b.escaliers.length===0){
+      b.escaliers = [ newStaircase('1',1) ];
+    }
+    state.ui.selEscId = b.escaliers[0].id;
   } else {
-    state.ui.selEscId = b.escaliers[0]?.id || null;
-    if(state.ui.selEscId) selEsc.value = state.ui.selEscId;
+    if(escFieldWrap) escFieldWrap.style.display='';
+    if(labelTitle) labelTitle.firstChild.textContent = 'Sélection de l\'escalier à contrôler';
+    selEsc.innerHTML = b.escaliers.map(e=>`<option value="${e.id}">Esc. ${esc(e.name)} — ${e.levels} niv.</option>`).join('');
+    if(state.ui.selEscId && b.escaliers.find(e=>e.id===state.ui.selEscId)){
+      selEsc.value = state.ui.selEscId;
+    } else {
+      state.ui.selEscId = b.escaliers[0]?.id || null;
+      if(state.ui.selEscId) selEsc.value = state.ui.selEscId;
+    }
   }
   if(!state.ui.selEscId){
     document.getElementById('ficheEditor').style.display='none';
-    document.getElementById('ficheEmpty').innerHTML = `<div class="icon">📋</div><p>Aucun escalier dans ce bâtiment.</p>`;
+    document.getElementById('ficheEmpty').innerHTML = `<div class="icon">📋</div><p>${c4?'Aucun branchement':'Aucun escalier dans ce bâtiment'}.</p>`;
     document.getElementById('ficheEmpty').style.display='block';
     return;
   }
+  // S'assure que les fiches du mode courant existent sur cet escalier
+  const curEsc = b.escaliers.find(e=>e.id===state.ui.selEscId);
+  ensureFichesForMode(curEsc);
+  // Si le code de fiche actif n'appartient pas au mode, le remettre au défaut
+  const codes = activeFicheCodes();
+  if(!codes.includes(state.ui.currentFiche)){
+    state.ui.currentFiche = defaultFicheCode();
+  }
   document.getElementById('ficheEditor').style.display='block';
   document.getElementById('ficheEmpty').style.display='none';
+  // applique la visibilité des onglets (au cas où le mode a changé)
+  applyAttestationTypeUI();
   // bind fiche tabs
   document.querySelectorAll('.fiche-tab').forEach(t=>{
     t.classList.toggle('active', t.dataset.fiche===state.ui.currentFiche);
@@ -1208,42 +1513,55 @@ function renderFicheBody(){
 function renderStandardFiche(code, esc){
   const def = FICHE_DEF[code];
   const f = esc.fiches[code];
+  const isD1 = (code==='D1');
+  const colspan = isD1 ? 6 : 5;
   let rows = '';
   def.sections.forEach((sec,si)=>{
     if(sec.title){
-      rows += `<tr class="section-row"><td colspan="5">${esc_html(sec.title)}</td></tr>`;
+      rows += `<tr class="section-row"><td colspan="${colspan}">${esc_html(sec.title)}</td></tr>`;
     }
     sec.items.forEach((it,ii)=>{
       const cur = f.items[it] || {status:'',note:''};
+      const peCol = isD1
+        ? `<td class="status-col ${cur.status==='pe'?'active pe':''}" data-set="pe"><span class="mark">${cur.status==='pe'?'✓':''}</span></td>`
+        : '';
       rows += `
         <tr data-item="${esc_html(it)}">
           <td class="label-col">${esc_html(it)}</td>
+          ${peCol}
           <td class="status-col ${cur.status==='so'?'active so':''}" data-set="so"><span class="mark">${cur.status==='so'?'✓':''}</span></td>
           <td class="status-col ${cur.status==='cf'?'active cf':''}" data-set="cf"><span class="mark">${cur.status==='cf'?'✓':''}</span></td>
           <td class="status-col ${cur.status==='nc'?'active nc':''}" data-set="nc"><span class="mark">${cur.status==='nc'?'✓':''}</span></td>
-          <td class="note-col"><input type="text" value="${esc_html(cur.note||'')}" placeholder="Objet de la non-conformité…"></td>
+          <td class="note-col"><input type="text" value="${esc_html(cur.note||'')}" placeholder="Objet de la non-conformité ou observations…"></td>
         </tr>`;
     });
   });
+  const peHeader = isD1 ? `<th class="status-col">Par ERDF</th>` : '';
+  const peButton = isD1 ? `<button class="btn sm" onclick="bulkSet('${code}','pe')">⚡ Tout Par ERDF</button>` : '';
+  const noteHeader = isD1 ? 'Objet de la non-conformité ou observations' : 'Objet de la non-conformité';
   return `
     <div class="info-banner">
       <strong>${esc_html(def.title)}</strong><br>
-      <em>${esc_html(def.note)}</em> — Bâtiment <strong>${esc_html(getCurrentEsc().bat.name)}</strong>, Escalier <strong>${esc_html(esc.name)}</strong> (${esc.levels} niveaux).
+      <em>${esc_html(def.note)}</em> — ${isC4()
+        ? `Branchement <strong>${esc_html(getCurrentEsc().bat.name)}</strong>.`
+        : `Bâtiment <strong>${esc_html(getCurrentEsc().bat.name)}</strong>, Escalier <strong>${esc_html(esc.name)}</strong> (${esc.levels} niveaux).`}
     </div>
     <div class="fiche-toolbar">
       <span class="label">Actions rapides</span>
       <button class="btn sm success" onclick="bulkSet('${code}','cf')">✓ Tout Conforme</button>
       <button class="btn sm" onclick="bulkSet('${code}','so')">○ Tout Sans objet</button>
+      ${peButton}
       <button class="btn sm gold" onclick="bulkSet('${code}','')">↺ Tout réinitialiser</button>
     </div>
     <table class="check-table">
       <thead>
         <tr>
           <th class="label-col">Point de contrôle</th>
+          ${peHeader}
           <th class="status-col">Sans objet</th>
           <th class="status-col">Conforme</th>
           <th class="status-col">Non conforme</th>
-          <th class="note-col">Objet de la non-conformité</th>
+          <th class="note-col">${noteHeader}</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
@@ -1960,6 +2278,325 @@ function fillC1Page2(page, b, e, font){
 }
 
 /* ====================================================================
+   PDF C4 — généré nativement avec pdf-lib (pas de template)
+   ==================================================================== */
+
+/* Encodage WinAnsi compatible Helvetica (remplace les caractères non supportés) */
+function safeWA(s){
+  if(s == null) return '';
+  return String(s)
+    .replace(/[\u00A0]/g,' ')
+    // Tirets / dashes
+    .replace(/[\u2010\u2011\u2012\u2013\u2014\u2015]/g,'-')
+    // Apostrophes / guillemets simples
+    .replace(/[\u2018\u2019\u201A\u201B\u02BC\u2032]/g,"'")
+    // Guillemets doubles
+    .replace(/[\u201C\u201D\u201E\u201F\u2033]/g,'"')
+    // Points de suite
+    .replace(/[\u2026]/g,'...')
+    // Puces / bullets
+    .replace(/[\u2022\u2023\u25E6\u2043]/g,'-')
+    // Ligatures œ/Œ → oe/OE (Helvetica WinAnsi standard ne les a pas systématiquement)
+    .replace(/\u0153/g,'oe').replace(/\u0152/g,'OE')
+    .replace(/\u00E6/g,'ae').replace(/\u00C6/g,'AE')
+    // Espaces fines
+    .replace(/[\u2000-\u200B\u202F\u205F]/g,' ')
+    // Caractères Latin-1 non ASCII : passent tels quels (Helvetica WinAnsi les gère)
+    // Tout autre caractère hors Latin-1 → ?
+    .replace(/[^\x20-\x7E\u00A1-\u00FF]/g,'?');
+}
+
+/* Coupe une chaîne pour qu'elle tienne dans `maxWidth` à la taille `size`, retourne array de lignes */
+function wrapText(font, text, maxWidth, size){
+  const words = String(text).split(/\s+/);
+  const lines = []; let cur = '';
+  for(const w of words){
+    const test = cur ? cur+' '+w : w;
+    const wWidth = font.widthOfTextAtSize(test, size);
+    if(wWidth > maxWidth && cur){
+      lines.push(cur); cur = w;
+    } else {
+      cur = test;
+    }
+  }
+  if(cur) lines.push(cur);
+  return lines;
+}
+
+async function buildC4PDF(){
+  const doc = await PDFLib.PDFDocument.create();
+  const helv = await doc.embedFont(PDFLib.StandardFonts.Helvetica);
+  const helvB = await doc.embedFont(PDFLib.StandardFonts.HelveticaBold);
+
+  const PW = 595, PH = 842;          // A4 portrait
+  const ML = 35, MR = 35, MT = 40;   // marges
+  const VIOLET = PDFLib.rgb(0.42, 0.20, 0.70);     // #6b33b3 ~ AL GOMES
+  const VIOLET_LIGHT = PDFLib.rgb(0.94, 0.90, 0.99);
+  const SECTION_BG = PDFLib.rgb(0.99, 0.79, 0.32); // orange/jaune SéQuélec
+  const BORDER = PDFLib.rgb(0.55, 0.55, 0.65);
+  const TXT = PDFLib.rgb(0.10, 0.10, 0.15);
+  const TXT_LIGHT = PDFLib.rgb(0.40, 0.40, 0.50);
+  const NC_RED = PDFLib.rgb(0.85, 0.15, 0.15);
+  const CF_GREEN = PDFLib.rgb(0.10, 0.55, 0.20);
+  const SO_GRAY = PDFLib.rgb(0.45, 0.45, 0.55);
+  const PE_AMBER = PDFLib.rgb(0.90, 0.55, 0.05);
+
+  // Helpers de dessin (y exprimé en "y depuis le haut")
+  const T = y => PH - y; // convertit y-top en y-bas (référentiel pdf-lib)
+
+  function drawTextLine(page, str, x, yTop, opts={}){
+    const font = opts.bold ? helvB : helv;
+    const size = opts.size || 10;
+    const color = opts.color || TXT;
+    page.drawText(safeWA(str), { x, y: T(yTop) - size, size, font, color });
+  }
+  function drawRect(page, x, yTop, w, h, opts={}){
+    page.drawRectangle({
+      x, y: T(yTop+h), width: w, height: h,
+      color: opts.fill || undefined,
+      borderColor: opts.border || undefined,
+      borderWidth: opts.borderWidth != null ? opts.borderWidth : (opts.border ? 0.5 : 0)
+    });
+  }
+  function drawCheck(page, cx, cyTop, color){
+    // V de coche : 3 segments
+    const s = 4;
+    page.drawLine({ start:{x:cx-s+0.5, y:T(cyTop+0)}, end:{x:cx-1, y:T(cyTop+s-1)}, color, thickness:1.5 });
+    page.drawLine({ start:{x:cx-1, y:T(cyTop+s-1)}, end:{x:cx+s, y:T(cyTop-s+1)}, color, thickness:1.5 });
+  }
+
+  // En-tête commune (bandeau violet)
+  function drawHeader(page, pageNum, totalPages){
+    drawRect(page, 0, 0, PW, 40, { fill: VIOLET });
+    drawTextLine(page, 'A.L. GOMES', ML, 14, { bold:true, size:16, color: PDFLib.rgb(1,1,1) });
+    drawTextLine(page, 'Bureau d\'études techniques Électricité', ML, 30, { size:9, color: PDFLib.rgb(0.92,0.86,1) });
+    drawTextLine(page, 'AUTO-CONTRÔLE C4', PW-ML-130, 14, { bold:true, size:13, color: PDFLib.rgb(1,1,1) });
+    drawTextLine(page, 'Branchement à puissance surveillée', PW-ML-150, 30, { size:8, color: PDFLib.rgb(0.92,0.86,1) });
+    // pied de page
+    drawTextLine(page, `Page ${pageNum}/${totalPages}`, PW/2-15, PH-18, { size:8, color: TXT_LIGHT });
+    drawTextLine(page, 'Conforme NF C 14-100 — guide SéQuélec GP 04', ML, PH-18, { size:8, color: TXT_LIGHT });
+  }
+
+  // Bloc projet (page de couverture du branchement)
+  function drawProjectBlock(page, branchName, yStart){
+    let y = yStart;
+    drawTextLine(page, `Branchement C4 — ${branchName}`, ML, y, { bold:true, size:16, color: VIOLET });
+    y += 22;
+    const p = state.project || {};
+
+    // Libellés humains pour les radios
+    const dimLbl = { '100':'100 A (≤ 59 kVA)', '200':'200 A (60–119 kVA)', '400':'400 A (120–250 kVA)' };
+    const racLbl = {
+      'plein_reseau':'Plein réseau (dérivation BT existant)',
+      'extension':'Extension / création réseau BT',
+      'depart_direct':'Départ direct du poste HTA/BT'
+    };
+    const cofLbl = { 'type1':'Type 1 (TC en local client)', 'type2':'Type 2 (TC en armoire extérieure)' };
+
+    const lines = [
+      [ 'N° d\'affaire',     p.numAffaire || '—'],
+      [ 'Libellé',           p.libelle    || '—'],
+      [ 'Adresse',           ((p.adresse||'') + (p.commune?' — '+p.commune:'')) || '—'],
+      [ 'Type d\'opération', p.typeOp || '—'],
+      [ '— CARACTÉRISTIQUES C4 —', ''],
+      [ 'Puissance souscrite', p.c4_puissance ? (p.c4_puissance + ' kVA') : '—'],
+      [ 'Dimensionnement',   dimLbl[p.c4_dimensionnement] || '—'],
+      [ 'Type de raccordement', racLbl[p.c4_typeRaccord] || '—'],
+      [ 'Type de coffret',   cofLbl[p.c4_coffret] || '—'],
+      [ 'Usage',             p.c4_usage || '—'],
+      [ 'N° PDL',            p.c4_pdl || '—'],
+      [ 'N° poste HTA/BT',   p.c4_poste || '—'],
+      [ 'Câble dérivation',  p.c4_cableDI || '—'],
+      [ 'Longueur dérivation', p.c4_longueurDI ? (p.c4_longueurDI + ' m') : '—'],
+      [ '— INTERVENANTS —', ''],
+      [ 'Maître d\'ouvrage', (p.mo_societe||'—') + (p.mo_nom?' — '+p.mo_nom:'')],
+      [ 'Maître d\'œuvre',   (p.moe_societe||'—') + (p.moe_nom?' — '+p.moe_nom:'')],
+      [ 'Entreprise',        (p.er_societe||'AL GOMES') + (p.er_nom?' — '+p.er_nom:'')],
+      [ 'Gestionnaire RD',   (p.grd_nom||'Enedis')],
+      [ 'Date',              p.date || '—'],
+    ];
+    for(const [lbl, val] of lines){
+      // Lignes de séparation (—...—) en violet, sans valeur
+      if(/^—.*—$/.test(lbl)){
+        y += 4;
+        drawTextLine(page, lbl, ML, y, { bold:true, size:9, color: VIOLET });
+        y += 14;
+        continue;
+      }
+      drawTextLine(page, lbl + ' :', ML, y, { bold:true, size:9.5, color: TXT });
+      drawTextLine(page, String(val), ML+115, y, { size:9.5, color: TXT });
+      y += 13;
+    }
+    return y + 6;
+  }
+
+  // Pré-calcul des "rangées" à dessiner (sections + items)
+  const def = FICHE_DEF.D1;
+  const rows = [];
+  def.sections.forEach(sec=>{
+    rows.push({ kind:'section', label: sec.title });
+    sec.items.forEach(it => rows.push({ kind:'item', label: it }));
+  });
+
+  // Géométrie du tableau (4 colonnes de statut conformément au document officiel SéQuélec GP 04)
+  const COL_LBL_W = 210, COL_STAT_W = 38, COL_NOTE_W = PW - ML - MR - COL_LBL_W - 4*COL_STAT_W;
+  const ROW_H_ITEM = 24;
+  const ROW_H_SECTION = 18;
+  const TBL_X = ML;
+  const TBL_W = PW - ML - MR;
+
+  // Texte centré horizontalement dans une boîte
+  function drawTextCenteredH(page, str, boxX, boxW, yTop, opts={}){
+    const font = opts.bold ? helvB : helv;
+    const size = opts.size || 9;
+    const w = font.widthOfTextAtSize(safeWA(str), size);
+    const x = boxX + (boxW - w)/2;
+    drawTextLine(page, str, x, yTop, opts);
+  }
+
+  function drawTableHeader(page, yTop){
+    const H = 22;
+    drawRect(page, TBL_X, yTop, TBL_W, H, { fill: VIOLET, border: VIOLET, borderWidth:0.5 });
+    const yText = yTop + (H - 8)/2;
+    // séparateurs verticaux pour clarté
+    let x = TBL_X;
+    [COL_LBL_W, COL_STAT_W, COL_STAT_W, COL_STAT_W, COL_STAT_W].forEach((w,i)=>{
+      x += w;
+      page.drawLine({ start:{x, y:T(yTop)}, end:{x, y:T(yTop+H)}, color: PDFLib.rgb(1,1,1), thickness:0.4 });
+    });
+    drawTextLine(page, 'Point de contrôle', TBL_X+6, yText, { bold:true, size:9.5, color: PDFLib.rgb(1,1,1) });
+    drawTextCenteredH(page, 'Par ERDF',    TBL_X + COL_LBL_W,                  COL_STAT_W, yText, { bold:true, size:7.8, color: PDFLib.rgb(1,1,1) });
+    drawTextCenteredH(page, 'Sans objet',  TBL_X + COL_LBL_W + COL_STAT_W,     COL_STAT_W, yText, { bold:true, size:7.8, color: PDFLib.rgb(1,1,1) });
+    drawTextCenteredH(page, 'Conforme',    TBL_X + COL_LBL_W + 2*COL_STAT_W,   COL_STAT_W, yText, { bold:true, size:7.8, color: PDFLib.rgb(1,1,1) });
+    drawTextCenteredH(page, 'Non conforme',TBL_X + COL_LBL_W + 3*COL_STAT_W,   COL_STAT_W, yText, { bold:true, size:7.8, color: PDFLib.rgb(1,1,1) });
+    drawTextCenteredH(page, 'Objet de la non-conformité ou observations', TBL_X + COL_LBL_W + 4*COL_STAT_W, COL_NOTE_W, yText, { bold:true, size:7.5, color: PDFLib.rgb(1,1,1) });
+    return yTop + H;
+  }
+
+  function drawSectionRow(page, label, yTop){
+    drawRect(page, TBL_X, yTop, TBL_W, ROW_H_SECTION, { fill: SECTION_BG, border: BORDER, borderWidth:0.4 });
+    // centrage vertical : pour size=9.5, top = yTop + (h-size)/2 = yTop + 4.25
+    const yText = yTop + (ROW_H_SECTION - 9.5)/2;
+    drawTextLine(page, label, TBL_X+8, yText, { bold:true, size:9.5, color: TXT });
+    return yTop + ROW_H_SECTION;
+  }
+
+  function drawItemRow(page, label, status, note, yTop){
+    drawRect(page, TBL_X, yTop, TBL_W, ROW_H_ITEM, { border: BORDER, borderWidth:0.4 });
+    // séparateurs verticaux
+    [COL_LBL_W, COL_LBL_W+COL_STAT_W, COL_LBL_W+2*COL_STAT_W, COL_LBL_W+3*COL_STAT_W, COL_LBL_W+4*COL_STAT_W].forEach(off=>{
+      const x = TBL_X + off;
+      page.drawLine({ start:{x, y:T(yTop)}, end:{x, y:T(yTop+ROW_H_ITEM)}, color: BORDER, thickness:0.4 });
+    });
+    // Label (avec wrapping si trop long), centré verticalement
+    const lblSize = 9;
+    const lineHeight = 11;
+    const lines = wrapText(helv, label, COL_LBL_W-12, lblSize);
+    const totalH = lines.length * lineHeight;
+    const startY = yTop + (ROW_H_ITEM - totalH)/2;
+    lines.forEach((ln,i)=> drawTextLine(page, ln, TBL_X+6, startY + i*lineHeight, { size:lblSize, color: TXT }));
+    // Coches centrées dans leur cellule
+    const cellMidY = yTop + ROW_H_ITEM/2 - 1;
+    if(status === 'pe') drawCheck(page, TBL_X + COL_LBL_W + COL_STAT_W/2,     cellMidY, PE_AMBER);
+    if(status === 'so') drawCheck(page, TBL_X + COL_LBL_W + 1.5*COL_STAT_W,   cellMidY, SO_GRAY);
+    if(status === 'cf') drawCheck(page, TBL_X + COL_LBL_W + 2.5*COL_STAT_W,   cellMidY, CF_GREEN);
+    if(status === 'nc') drawCheck(page, TBL_X + COL_LBL_W + 3.5*COL_STAT_W,   cellMidY, NC_RED);
+    // Note (max 2 lignes)
+    if(note){
+      const noteX = TBL_X + COL_LBL_W + 4*COL_STAT_W;
+      const noteSize = 8.5;
+      const noteLH = 10;
+      const noteLines = wrapText(helv, note, COL_NOTE_W-8, noteSize).slice(0,2);
+      const nTotal = noteLines.length * noteLH;
+      const sy = yTop + (ROW_H_ITEM - nTotal)/2;
+      noteLines.forEach((ln,i)=> drawTextLine(page, ln, noteX+4, sy + i*noteLH, { size:noteSize, color: TXT }));
+    }
+    return yTop + ROW_H_ITEM;
+  }
+
+  // Génère les pages pour un branchement (1 page projet + 1+ pages tableau)
+  function pagesForBranchment(b){
+    // Construit la liste des pages "logiques"
+    // Première page : couverture projet + début tableau si la place le permet
+    // Pages suivantes : tableau (continue)
+    const result = [];
+    // Page 1 : projet + en-tête tableau
+    result.push({ kind:'project', branch: b });
+    // Pages tableau : on remplit ROW_H_ITEM par ligne, donc on calcule combien de lignes par page
+    const HEADER_RESERVED = 70; // bandeau + marge
+    const TABLE_HEADER_H = 24;
+    const FOOTER_RESERVED = 30;
+    const usableH = PH - HEADER_RESERVED - FOOTER_RESERVED;
+    let pageRows = []; let usedH = 0;
+    rows.forEach((r,idx)=>{
+      const h = (r.kind==='section') ? ROW_H_SECTION : ROW_H_ITEM;
+      if(usedH + h + (pageRows.length===0 ? TABLE_HEADER_H : 0) > usableH){
+        result.push({ kind:'table', branch: b, rows: pageRows });
+        pageRows = []; usedH = 0;
+      }
+      if(pageRows.length===0) usedH += TABLE_HEADER_H;
+      pageRows.push(r);
+      usedH += h;
+    });
+    if(pageRows.length){
+      result.push({ kind:'table', branch: b, rows: pageRows });
+    }
+    return result;
+  }
+
+  // Construit la liste de toutes les pages
+  let allPages = [];
+  for(const b of state.buildings){
+    const e = (b.escaliers && b.escaliers[0]); if(!e) continue;
+    ensureFichesForMode(e);
+    allPages = allPages.concat(pagesForBranchment(b));
+  }
+  if(allPages.length === 0){
+    // Pas de branchement : créer une page d'avertissement
+    const page = doc.addPage([PW, PH]);
+    drawHeader(page, 1, 1);
+    drawTextLine(page, 'Aucun branchement C4 défini', PW/2-100, 200, { bold:true, size:14, color: TXT });
+    drawTextLine(page, 'Créez un branchement dans l\'onglet Branchements pour générer le document.', ML, 230, { size:10, color: TXT_LIGHT });
+    return doc.save();
+  }
+
+  const total = allPages.length;
+  allPages.forEach((spec, idx)=>{
+    const pageNum = idx + 1;
+    const page = doc.addPage([PW, PH]);
+    drawHeader(page, pageNum, total);
+    if(spec.kind === 'project'){
+      let y = 60;
+      y = drawProjectBlock(page, spec.branch.name, y);
+      y += 8;
+      drawTextLine(page, 'Fiche d\'auto-contrôle (extrait)', ML, y, { bold:true, size:11, color: VIOLET });
+      y += 16;
+      drawTextLine(page, 'Le détail des points de contrôle figure dans les pages suivantes,', ML, y, { size:9, color: TXT_LIGHT });
+      y += 12;
+      drawTextLine(page, 'organisé selon les sections du guide SéQuélec GP 04.', ML, y, { size:9, color: TXT_LIGHT });
+    } else {
+      // table page
+      let y = 60;
+      drawTextLine(page, `Auto-contrôle — Branchement ${spec.branch.name}`, ML, y, { bold:true, size:12, color: VIOLET });
+      y += 18;
+      y = drawTableHeader(page, y);
+      const e = spec.branch.escaliers[0];
+      const f = e.fiches.D1;
+      spec.rows.forEach(r=>{
+        if(r.kind==='section'){
+          y = drawSectionRow(page, r.label, y);
+        } else {
+          const cur = (f && f.items && f.items[r.label]) || {status:'',note:''};
+          y = drawItemRow(page, r.label, cur.status, cur.note, y);
+        }
+      });
+    }
+  });
+
+  return doc.save();
+}
+
+/* ====================================================================
    Génération principale + aperçu
    ==================================================================== */
 
@@ -2008,7 +2645,8 @@ async function generateOfficialPDF(download=true){
   if(btn) btn.disabled = true;
   if(prog) prog.textContent = '⏳ Génération en cours…';
   try{
-    const bytes = await buildFilledPDF();
+    // Router selon le type d'attestation
+    const bytes = isC4() ? await buildC4PDF() : await buildFilledPDF();
     const blob = new Blob([bytes], {type:'application/pdf'});
 
     // Libère l'ancienne URL si présente
@@ -2020,7 +2658,8 @@ async function generateOfficialPDF(download=true){
       const a = document.createElement('a');
       a.href = _previewURL;
       const ref = (state.project.numAffaire||'autocontrole').replace(/[^\w-]/g,'_');
-      a.download = `AUTOCONTROLE_${ref}_${new Date().toISOString().slice(0,10)}.pdf`;
+      const prefix = isC4() ? 'AUTOCONTROLE_C4' : 'AUTOCONTROLE';
+      a.download = `${prefix}_${ref}_${new Date().toISOString().slice(0,10)}.pdf`;
       a.click();
     }
 
@@ -2070,14 +2709,30 @@ function resetTemplate(){
 
 /* stats du panneau Officiel + déclenche l'aperçu */
 function renderOfficiel(){
+  const c4 = isC4();
   const totalEsc = state.buildings.reduce((s,b)=>s+b.escaliers.length, 0);
-  const totalPages = 3 + (totalEsc * 7);
-  document.getElementById('genStats').innerHTML = `
-    <div class="summary-card"><span class="lbl">Bâtiments</span><span class="val">${state.buildings.length}</span></div>
-    <div class="summary-card"><span class="lbl">Escaliers</span><span class="val">${totalEsc}</span></div>
-    <div class="summary-card"><span class="lbl">Pages totales (sortie)</span><span class="val">${totalPages}</span></div>
-    <div class="summary-card"><span class="lbl">Modèle</span><span class="val" style="font-size:14px">${_customPdfBytes?'Maison':'Officiel'}</span></div>
-  `;
+  if(c4){
+    // En C4 : on compte seulement les branchements (1 esc par bâtiment)
+    const nb = state.buildings.length;
+    document.getElementById('genStats').innerHTML = `
+      <div class="summary-card"><span class="lbl">Branchements C4</span><span class="val">${nb}</span></div>
+      <div class="summary-card"><span class="lbl">Pages estimées</span><span class="val">~${nb*3}</span></div>
+      <div class="summary-card"><span class="lbl">Modèle</span><span class="val" style="font-size:14px">Natif (GP 04)</span></div>
+    `;
+    // En mode C4, masquer les boutons "PDF maison" qui ne s'appliquent pas au natif
+    const tplStatus = document.getElementById('tplStatus');
+    if(tplStatus) tplStatus.textContent = 'PDF natif C4 (généré sans template)';
+  } else {
+    const totalPages = 3 + (totalEsc * 7);
+    document.getElementById('genStats').innerHTML = `
+      <div class="summary-card"><span class="lbl">Bâtiments</span><span class="val">${state.buildings.length}</span></div>
+      <div class="summary-card"><span class="lbl">Escaliers</span><span class="val">${totalEsc}</span></div>
+      <div class="summary-card"><span class="lbl">Pages totales (sortie)</span><span class="val">${totalPages}</span></div>
+      <div class="summary-card"><span class="lbl">Modèle</span><span class="val" style="font-size:14px">${_customPdfBytes?'Maison':'Officiel'}</span></div>
+    `;
+    const tplStatus = document.getElementById('tplStatus');
+    if(tplStatus) tplStatus.textContent = _customPdfBytes ? 'PDF maison utilisé' : 'PDF officiel intégré ✓';
+  }
   // génère l'aperçu automatiquement
   schedulePreview();
 }

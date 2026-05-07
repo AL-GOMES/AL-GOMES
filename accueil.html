@@ -147,6 +147,11 @@
       Signature
     </button>
     <div class="topbar-sep"></div>
+    <button class="btn-sig" onclick="openDevicePrompt()" title="Donner un surnom à ce poste (visible côté admin)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><line x1="8" y1="20" x2="16" y2="20"/><line x1="12" y1="16" x2="12" y2="20"/></svg>
+      Poste
+    </button>
+    <div class="topbar-sep"></div>
     <button class="btn-logout" onclick="doLogout()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       Déconnexion
@@ -441,26 +446,95 @@ function initClock() {
 // ============================================================
 // PRESENCE
 // ============================================================
+
+// Parse User-Agent → { os, browser } pour identifier facilement le poste
+function parseUA(ua){
+  const u = (ua||'').toLowerCase();
+  let os = 'OS inconnu', browser = 'Navigateur inconnu';
+  // OS
+  if (/windows nt 10\.0/.test(u)) os = 'Windows 10/11';
+  else if (/windows nt 6\.3/.test(u)) os = 'Windows 8.1';
+  else if (/windows nt 6\.2/.test(u)) os = 'Windows 8';
+  else if (/windows nt 6\.1/.test(u)) os = 'Windows 7';
+  else if (/windows/.test(u)) os = 'Windows';
+  else if (/iphone|ipad|ipod/.test(u)) os = 'iOS';
+  else if (/android/.test(u)) os = 'Android';
+  else if (/mac os x ([\d_\.]+)/.test(u)) {
+    const m = u.match(/mac os x ([\d_]+)/);
+    os = m ? 'macOS ' + m[1].replace(/_/g,'.').split('.').slice(0,2).join('.') : 'macOS';
+  }
+  else if (/linux/.test(u)) os = 'Linux';
+  // Browser
+  if (/edg\/(\d+)/.test(u)) browser = 'Edge ' + u.match(/edg\/(\d+)/)[1];
+  else if (/opr\/(\d+)/.test(u)) browser = 'Opera ' + u.match(/opr\/(\d+)/)[1];
+  else if (/firefox\/(\d+)/.test(u)) browser = 'Firefox ' + u.match(/firefox\/(\d+)/)[1];
+  else if (/chrome\/(\d+)/.test(u)) browser = 'Chrome ' + u.match(/chrome\/(\d+)/)[1];
+  else if (/safari\//.test(u) && /version\/(\d+)/.test(u)) browser = 'Safari ' + u.match(/version\/(\d+)/)[1];
+  return { os, browser };
+}
+
+// Reverse DNS via DNS over HTTPS (Google) — donne le hostname réseau (FAI/serveur)
+async function reverseDns(ip){
+  if (!ip || !/^(\d{1,3}\.){3}\d{1,3}$/.test(ip)) return '';
+  try {
+    const p = ip.split('.');
+    const ptr = `${p[3]}.${p[2]}.${p[1]}.${p[0]}.in-addr.arpa`;
+    const r = await fetch('https://dns.google/resolve?name='+ptr+'&type=PTR').then(r=>r.json());
+    if (r && r.Answer && r.Answer[0] && r.Answer[0].data) {
+      return r.Answer[0].data.replace(/\.$/,'');
+    }
+  } catch(e){}
+  return '';
+}
+
+// Surnom personnalisé du poste — saisi par l'utilisateur, persisté dans localStorage
+const DEVICE_NAME_KEY = 'algomes_device_name';
+function getDeviceName(){
+  return (localStorage.getItem(DEVICE_NAME_KEY) || '').trim();
+}
+function setDeviceName(name){
+  const v = (name || '').trim().slice(0, 60);
+  if (v) localStorage.setItem(DEVICE_NAME_KEY, v);
+  else localStorage.removeItem(DEVICE_NAME_KEY);
+}
+window.openDevicePrompt = function(){
+  const cur = getDeviceName();
+  const v = prompt('Surnom de ce poste (visible dans la console admin) :', cur);
+  if (v === null) return;
+  setDeviceName(v);
+  alert(v ? 'Poste enregistré : ' + v : 'Surnom supprimé.');
+};
+
 function initPresence() {
   const user = currentUserData;
   const presRef = db.collection('presence').doc(user.uid);
+
+  const ua = navigator.userAgent;
+  const { os, browser } = parseUA(ua);
+  const deviceName = getDeviceName();
 
   const presData = {
     name: user.name || user.login || 'Inconnu',
     login: user.login || '',
     role: user.role,
     online: true,
+    deviceName: deviceName,
+    os: os,
+    browser: browser,
     lastSeen: firebase.firestore.FieldValue.serverTimestamp()
   };
 
   // Fetch IP & geolocation
-  fetch('https://ipapi.co/json/').then(r => r.json()).then(geo => {
+  fetch('https://ipapi.co/json/').then(r => r.json()).then(async geo => {
     presData.ip = geo.ip || '';
     presData.city = geo.city || '';
     presData.region = geo.region || '';
     presData.country = geo.country_name || '';
     presData.lat = geo.latitude || null;
     presData.lon = geo.longitude || null;
+    // Reverse DNS (best-effort)
+    const hostname = await reverseDns(geo.ip);
+    presData.hostname = hostname;
     presRef.set(presData, { merge: true });
     // Log session
     db.collection('sessions').add({
@@ -473,7 +547,11 @@ function initPresence() {
       country: geo.country_name,
       lat: geo.latitude,
       lon: geo.longitude,
-      userAgent: navigator.userAgent,
+      userAgent: ua,
+      os: os,
+      browser: browser,
+      hostname: hostname,
+      deviceName: deviceName,
       timestamp: firebase.firestore.FieldValue.serverTimestamp()
     });
   }).catch(() => {

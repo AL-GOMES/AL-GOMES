@@ -734,15 +734,26 @@ async function loadIpTracking(){
       const s=doc.data();
       if(!s.login||!s.ip)return;
       if(!ipMap[s.login])ipMap[s.login]={name:s.name||s.login,ips:{}};
-      if(!ipMap[s.login].ips[s.ip])ipMap[s.login].ips[s.ip]={count:0,city:s.city||'',country:s.country||'',last:null};
-      ipMap[s.login].ips[s.ip].count++;
-      if(!ipMap[s.login].ips[s.ip].last||(s.timestamp&&s.timestamp.seconds>ipMap[s.login].ips[s.ip].last))
-        ipMap[s.login].ips[s.ip].last=s.timestamp?s.timestamp.seconds:0;
+      if(!ipMap[s.login].ips[s.ip])ipMap[s.login].ips[s.ip]={count:0,city:s.city||'',country:s.country||'',last:null,deviceName:'',os:'',browser:'',hostname:''};
+      const e=ipMap[s.login].ips[s.ip];
+      e.count++;
+      // Garde toujours la dernière info connue (sessions ordonnées desc → la plus récente arrive en 1ère)
+      if(!e.last && s.deviceName) e.deviceName = s.deviceName;
+      if(!e.last && s.os) e.os = s.os;
+      if(!e.last && s.browser) e.browser = s.browser;
+      if(!e.last && s.hostname) e.hostname = s.hostname;
+      if(!e.last||(s.timestamp&&s.timestamp.seconds>e.last)){
+        e.last=s.timestamp?s.timestamp.seconds:0;
+        if(s.deviceName) e.deviceName = s.deviceName;
+        if(s.os) e.os = s.os;
+        if(s.browser) e.browser = s.browser;
+        if(s.hostname) e.hostname = s.hostname;
+      }
     });
     const el=document.getElementById('ipTrackingTable');
     if(!Object.keys(ipMap).length){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text2)">Aucune donnée IP</div>';return}
     const bannedSet = new Set(bannedIps.map(b=>b.ip));
-    let html='<table><thead><tr><th>Utilisateur</th><th>Nb IP</th><th>Adresses IP</th><th>Localisation</th><th>Connexions</th><th>Dernière vue</th><th>Action</th></tr></thead><tbody>';
+    let html='<table><thead><tr><th>Utilisateur</th><th>Nb IP</th><th>Adresses IP</th><th>Poste / Système</th><th>Hostname réseau</th><th>Localisation</th><th>Connexions</th><th>Dernière vue</th><th>Action</th></tr></thead><tbody>';
     for(const login of Object.keys(ipMap).sort()){
       const u=ipMap[login];
       const ips=Object.entries(u.ips).sort((a,b)=>b[1].count-a[1].count);
@@ -750,9 +761,13 @@ async function loadIpTracking(){
       const warnColor=nbIps>3?'color:#ff4466;font-weight:700':nbIps>1?'color:#fbbf24':'color:#4ade80';
       ips.forEach((([ip,data],i)=>{
         const banned = bannedSet.has(ip);
+        const sysLine = [data.os, data.browser].filter(Boolean).join(' • ') || '<span style="color:var(--text2)">—</span>';
+        const nick = data.deviceName ? `<strong style="color:#a78bdb">${esc(data.deviceName)}</strong><br>` : '';
         html+=`<tr class="session-row"${banned?' style="background:rgba(239,68,68,.06)"':''}>`;
         if(i===0)html+=`<td rowspan="${nbIps}"><strong>${esc(u.name)}</strong><br><span style="font-size:11px;color:var(--text2)">${esc(login)}</span></td><td rowspan="${nbIps}" style="${warnColor};font-size:18px;text-align:center;font-weight:700">${nbIps}</td>`;
         html+=`<td style="font-family:monospace;font-size:12px">${esc(ip)}${banned?' <span style="color:#ff4466;font-weight:700">🚫</span>':''}</td>`;
+        html+=`<td style="font-size:11px">${nick}<span style="color:var(--text2)">${typeof sysLine==='string'?sysLine:sysLine}</span></td>`;
+        html+=`<td style="font-family:monospace;font-size:11px;color:var(--text2);max-width:200px;word-break:break-all">${data.hostname?esc(data.hostname):'<span>—</span>'}</td>`;
         html+=`<td style="font-size:12px">${esc(data.city)} ${esc(data.country)}</td>`;
         html+=`<td style="text-align:center">${data.count}</td>`;
         html+=`<td style="font-size:12px">${data.last?new Date(data.last*1000).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'—'}</td>`;
@@ -1152,12 +1167,19 @@ async function loadIpMap(){
     snap.forEach(doc => {
       const s = doc.data();
       if(!s.ip || s.lat == null || s.lon == null) return;
-      if(!agg[s.ip]) agg[s.ip] = { ip:s.ip, lat:s.lat, lon:s.lon, city:s.city||'', country:s.country||'', users:new Set(), logins:new Set(), count:0, last:null };
-      agg[s.ip].users.add(s.name || s.login || '?');
-      if(s.login) agg[s.ip].logins.add(s.login);
-      agg[s.ip].count++;
-      if(s.timestamp && (!agg[s.ip].last || s.timestamp.seconds > agg[s.ip].last))
-        agg[s.ip].last = s.timestamp.seconds;
+      if(!agg[s.ip]) agg[s.ip] = { ip:s.ip, lat:s.lat, lon:s.lon, city:s.city||'', country:s.country||'', users:new Set(), logins:new Set(), count:0, last:null, devices:new Set(), os:'', browser:'', hostname:'' };
+      const a = agg[s.ip];
+      a.users.add(s.name || s.login || '?');
+      if(s.login) a.logins.add(s.login);
+      if(s.deviceName) a.devices.add(s.deviceName);
+      a.count++;
+      // Conserve les dernières infos système/hostname connues
+      if(s.timestamp && (!a.last || s.timestamp.seconds > a.last)){
+        a.last = s.timestamp.seconds;
+        if(s.os) a.os = s.os;
+        if(s.browser) a.browser = s.browser;
+        if(s.hostname) a.hostname = s.hostname;
+      }
     });
     const bannedSet = new Set(bannedIps.map(b => b.ip));
     Object.values(agg).forEach(d => {
@@ -1183,10 +1205,15 @@ async function loadIpMap(){
       const onlineBadge = isOnline
         ? `<span style="display:inline-block;background:#22c55e;color:#fff;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;margin-left:6px">🟢 EN LIGNE</span>`
         : '';
+      const sysLine = [d.os, d.browser].filter(Boolean).join(' • ');
+      const devicesList = [...d.devices].slice(0,4).map(x=>esc(x)).join(', ');
       m.bindPopup(`
-        <div style="font-family:Rajdhani,sans-serif;color:#1a1a2e;min-width:200px">
+        <div style="font-family:Rajdhani,sans-serif;color:#1a1a2e;min-width:230px">
           <div style="font-size:14px;font-weight:700;margin-bottom:4px">${ipEsc} ${isBanned?'<span style="color:#ff4466">🚫 BANNIE</span>':''}${onlineBadge}</div>
           <div style="font-size:12px;margin-bottom:4px">${esc(d.city)} ${esc(d.country)}</div>
+          ${d.hostname?`<div style="font-size:10px;color:#555;font-family:monospace;margin-bottom:4px;word-break:break-all">🌐 ${esc(d.hostname)}</div>`:''}
+          ${sysLine?`<div style="font-size:11px;color:#555;margin-bottom:4px">💻 ${esc(sysLine)}</div>`:''}
+          ${devicesList?`<div style="font-size:11px;color:#7832ff;margin-bottom:4px"><strong>📱 ${devicesList}</strong></div>`:''}
           <div style="font-size:11px;color:#555;margin-bottom:4px">${d.count} connexion(s) — Dernière : ${lastTxt}</div>
           <div style="font-size:11px;color:#555;margin-bottom:8px">Utilisateurs : ${usersList}</div>
           ${isBanned

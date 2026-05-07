@@ -254,6 +254,9 @@ function canvasToGray(canvas) {
   for (let i = 0; i < N; i++) {
     const o = i << 2;
     // Luminance
+    // Pixels transparents → blanc (255), sinon luminance Rec.601 (alpha-aware)
+    const a = img.data[o + 3];
+    if (a < 128) { g[i] = 255; continue; }
     g[i] = 0.299 * img.data[o] + 0.587 * img.data[o + 1] + 0.114 * img.data[o + 2];
   }
   return g;
@@ -882,6 +885,11 @@ async function detectAll() {
  * - Non-max suppression pour dédupliquer
  */
 async function detectNCC(img, W, H, tpl, tw, th, threshold) {
+  // Validation des entrées
+  if (!img || !tpl) { console.warn('detectNCC: img ou tpl null'); return []; }
+  if (!W || !H || !tw || !th) { console.warn('detectNCC: dimensions invalides', {W,H,tw,th}); return []; }
+  if (tw > W || th > H) { console.warn('detectNCC: template plus grand que image'); return []; }
+  if (tw * th === 0 || W * H === 0) return [];
   // Stats du template (constantes)
   const tN = tw * th;
   let tSum = 0, tSumSq = 0;
@@ -1035,10 +1043,13 @@ function exportCSV() {
   }
   csv += `"TOTAL";${total};\n`;
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
+  a.href = url;
   a.download = 'comptage_symboles_' + new Date().toISOString().slice(0,10) + '.csv';
   a.click();
+  // Libère le blob après le téléchargement (évite leak mémoire)
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 /* Init */

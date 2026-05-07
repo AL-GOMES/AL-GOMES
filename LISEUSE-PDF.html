@@ -2805,7 +2805,10 @@ class PDFViewer {
       } else if (a.type === 'signature') {
         typeName = 'SIGNATURE';
         const w = Math.round(a.w || 160);
-        content = '<div style="display:flex;align-items:center;gap:8px"><img src="' + (a.src || '') + '" alt="Signature" style="max-height:32px;max-width:90px;background:#fff;border:1px solid var(--panel-border);border-radius:3px;padding:2px"><span style="color:var(--text-2);font-size:10px">' + w + ' px</span></div>';
+        // Validation stricte : seules les data: URLs PNG/JPEG sont acceptées (pas d'http: ni de javascript:)
+        const rawSrc = String(a.src || '');
+        const safeSrc = /^data:image\/(png|jpe?g);base64,[A-Za-z0-9+/=]+$/.test(rawSrc) ? rawSrc : '';
+        content = '<div style="display:flex;align-items:center;gap:8px"><img src="' + escapeHtml(safeSrc) + '" alt="Signature" style="max-height:32px;max-width:90px;background:#fff;border:1px solid var(--panel-border);border-radius:3px;padding:2px"><span style="color:var(--text-2);font-size:10px">' + w + ' px</span></div>';
       }
       item.innerHTML =
         '<div class="annot-header">' +

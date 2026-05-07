@@ -641,15 +641,18 @@ function buildTemplateButtons(){
     </button>`
   ).join('');
 
+  // Filtre stricte sur les IDs (caractères Firestore valides) pour bloquer toute injection
+  const safeId = id => String(id || '').replace(/[^a-zA-Z0-9_-]/g, '');
   let custom = '';
   if(_customTemplates.length){
-    custom = '<div class="tpl-sep">Mes modèles</div>' + _customTemplates.map(t =>
-      `<button class="tpl-btn tpl-btn-custom" onclick="applyCustomTemplate('${t.id}')" title="${escAttr(t.label)}">
+    custom = '<div class="tpl-sep">Mes modèles</div>' + _customTemplates.map(t => {
+      const id = safeId(t.id);
+      return `<button class="tpl-btn tpl-btn-custom" onclick="applyCustomTemplate('${id}')" title="${escAttr(t.label)}">
         <span class="tpl-ico">${escAttr(t.icon || '📝')}</span>
         <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escAttr(t.label)}</span>
-        <button class="tpl-del" onclick="event.stopPropagation();deleteCustomTemplate('${t.id}')" title="Supprimer">🗑</button>
-      </button>`
-    ).join('');
+        <button class="tpl-del" onclick="event.stopPropagation();deleteCustomTemplate('${id}')" title="Supprimer">🗑</button>
+      </button>`;
+    }).join('');
   }
   host.innerHTML = builtIn + custom;
 }
@@ -738,7 +741,8 @@ function render(){
   // Destinataire
   if(dest){
     $('p_destinataire_wrap').style.display = '';
-    $('p_destinataire').innerHTML = dest.replace(/\n/g, '<br>');
+    // Escape HTML d'abord, puis remplacement \n → <br> sécurisé
+    $('p_destinataire').innerHTML = escapeHtml(dest).replace(/\n/g, '<br>');
   } else {
     $('p_destinataire_wrap').style.display = 'none';
   }

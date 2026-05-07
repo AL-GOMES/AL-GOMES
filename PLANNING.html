@@ -120,10 +120,24 @@ function pad(n){return String(n).padStart(2,'0')}
 function wL(n){return'SEMAINE '+pad(n)}
 function getCarried(wn){return TASKS.filter(t=>t.isReport&&t.reportTo===wL(wn))}
 
-function deleteTask(id){TASKS.splice(TASKS.findIndex(t=>t.id===id),1);confirmDelete=null;render()}
-function saveTask(d){if(d.id!==undefined){Object.assign(TASKS.find(x=>x.id===d.id),d)}else{d.id=nextId++;TASKS.push(d)}modal=null;render()}
-function setDate(id,d){const t=TASKS.find(x=>x.id===id);if(d){t.date=d;t.isReport=false;t.reportTo=''}render()}
-function toggleStatus(id){const t=TASKS.find(x=>x.id===id);if(t.isReport){t.isReport=false;t.reportTo='';t.date=new Date().toISOString().slice(0,10)}else{t.isReport=true;t.date='';t.reportTo=wL(t.week+1)}render()}
+/* Persistance localStorage — préserve les tâches et reports entre sessions */
+const PLANNING_STORAGE_KEY = 'algomes_planning_v1';
+function persist(){ try { localStorage.setItem(PLANNING_STORAGE_KEY, JSON.stringify({ TASKS, nextId })); } catch(e){} }
+function restore(){
+  try {
+    const raw = localStorage.getItem(PLANNING_STORAGE_KEY);
+    if(!raw) return;
+    const d = JSON.parse(raw);
+    if(Array.isArray(d.TASKS)) TASKS = d.TASKS;
+    if(typeof d.nextId === 'number') nextId = d.nextId;
+  } catch(e){}
+}
+restore();
+
+function deleteTask(id){TASKS.splice(TASKS.findIndex(t=>t.id===id),1);confirmDelete=null;persist();render()}
+function saveTask(d){if(d.id!==undefined){Object.assign(TASKS.find(x=>x.id===d.id),d)}else{d.id=nextId++;TASKS.push(d)}modal=null;persist();render()}
+function setDate(id,d){const t=TASKS.find(x=>x.id===id);if(d){t.date=d;t.isReport=false;t.reportTo=''}persist();render()}
+function toggleStatus(id){const t=TASKS.find(x=>x.id===id);if(t.isReport){t.isReport=false;t.reportTo='';t.date=new Date().toISOString().slice(0,10)}else{t.isReport=true;t.date='';t.reportTo=wL(t.week+1)}persist();render()}
 
 function openAddWeek(){const w=GW();modal={mode:'addWeek',weekNum:w.length?w[w.length-1]+1:1};render()}
 function confirmAddWeek(){

@@ -392,7 +392,7 @@ document.getElementById('canvasStack').addEventListener('mousemove', e => {
   ctx.strokeRect(dragStart.x, dragStart.y, p.x - dragStart.x, p.y - dragStart.y);
   ctx.setLineDash([]);
 });
-document.getElementById('canvasStack').addEventListener('mouseup', e => {
+document.getElementById('canvasStack').addEventListener('mouseup', async e => {
   if (!dragStart) return;
   const end = canvasCoords(e);
   const x = Math.min(dragStart.x, end.x), y = Math.min(dragStart.y, end.y);
@@ -400,10 +400,21 @@ document.getElementById('canvasStack').addEventListener('mouseup', e => {
   const wasMode = STATE.mode;
   dragStart = null;
   if (w < 5 || h < 5) { redrawOverlay(); return; }
-  if (wasMode === 'template')      saveTemplate(x, y, w, h);
-  else if (wasMode === 'legend')   scanLegend(x, y, w, h);
   setMode('view');
   redrawOverlay();
+  if (wasMode === 'template') {
+    saveTemplate(x, y, w, h);
+  } else if (wasMode === 'legend') {
+    const before = STATE.categories.length;
+    await scanLegend(x, y, w, h);
+    const created = STATE.categories.length - before;
+    // Si scan textuel a réussi (sans avoir déclenché detectAll lui-même)
+    if (created > 0 && STATE.categories.every(c => c.markers.length === 0)) {
+      setStatus(`✓ ${created} symboles extraits — lancement de la détection…`);
+      await sleep(150);
+      await detectAll();
+    }
+  }
 });
 
 function saveTemplate(x, y, w, h) {
@@ -475,8 +486,10 @@ async function autoPipeline() {
   console.log('[autoPipeline] items texte total :', itemsCount);
 
   if (itemsCount === 0) {
-    alert(`Le PDF ne contient pas de texte vectoriel exploitable (probablement une image scannée).\n\nUtilisez le mode manuel : « 🔍 Scanner légende » + rectangle, ou « ✂ Définir template ».`);
-    setStatus('❌ Aucun texte dans le PDF');
+    // PDF sans texte vectoriel : on bascule en mode "Scanner légende".
+    // Le scan visuel sera utilisé automatiquement quand l'utilisateur trace le rectangle.
+    setMode('legend');
+    setStatus('ℹ️ PDF sans texte (CAD vectorisé). Tracez un rectangle autour de la légende — l\'app analysera visuellement.');
     return;
   }
 
@@ -484,12 +497,9 @@ async function autoPipeline() {
   console.log('[autoPipeline] régions de légende détectées :', regions);
 
   if (!regions.length) {
-    // Affiche les premiers items pour aider au debug
-    const samples = STATE.textContent.items
-      .filter(i => i.str && i.str.trim()).slice(0, 8)
-      .map(i => '• ' + i.str.trim().slice(0, 30)).join('\n');
-    alert(`Légende non trouvée automatiquement.\n\n${itemsCount} items texte présents dans le PDF, mais aucun ne contient les mots-clés (APPAREILLAGE, LÉGENDE, NOMENCLATURE, SYMBOLES).\n\nÉchantillons :\n${samples}\n\nUtilisez « 🔍 Scanner légende » et tracez un rectangle autour de la zone légende.`);
-    setStatus('⚠️ Légende non trouvée — passez en manuel');
+    // Pas d'ancre trouvée : on bascule en mode "Scanner légende" silencieusement
+    setMode('legend');
+    setStatus('ℹ️ Légende non détectée par mots-clés. Tracez un rectangle autour de la légende.');
     return;
   }
 
@@ -616,6 +626,93 @@ function getTextRotation(t) {
   return 0; // fallback
 }
 
+/**
+ * Scan visuel de la légende (sans texte) :
+ * - Seuille en binaire (encre vs blanc)
+ * - Calcule la projection horizontale (somme de pixels noirs par ligne)
+ * - Sépare les lignes par les blancs
+ * - Pour chaque ligne, prend la zone gauche (icône) comme template
+ */
+function visualScanLegend(rx, ry, rw, rh) {
+  rx = Math.floor(rx); ry = Math.floor(ry);
+  const w = Math.floor(rw), h = Math.floor(rh);
+  if (w < 20 || h < 20) return 0;
+
+  // Seuillage binaire de la zone
+  const region = new Uint8Array(w * h);
+  for (let j = 0; j < h; j++) {
+    for (let i = 0; i < w; i++) {
+      const v = STATE.pageImageGray[(ry + j) * STATE.pageW + (rx + i)];
+      region[j * w + i] = v < 200 ? 1 : 0;
+    }
+  }
+  // Projection horizontale
+  const proj = new Int32Array(h);
+  for (let j = 0; j < h; j++) {
+    let s = 0;
+    for (let i = 0; i < w; i++) s += region[j * w + i];
+    proj[j] = s;
+  }
+  // Détection des lignes : plages contiguës où proj > seuil
+  const minDark = Math.max(2, Math.floor(w * 0.03));
+  const rows = [];
+  let inRow = false, rs = 0;
+  for (let j = 0; j < h; j++) {
+    if (proj[j] >= minDark) {
+      if (!inRow) { inRow = true; rs = j; }
+    } else if (inRow) {
+      const rh2 = j - rs;
+      if (rh2 >= 8 && rh2 <= 80) rows.push({ y: rs, h: rh2 });
+      inRow = false;
+    }
+  }
+  if (inRow) {
+    const rh2 = h - rs;
+    if (rh2 >= 8 && rh2 <= 80) rows.push({ y: rs, h: rh2 });
+  }
+  console.log('[visualScanLegend]', rows.length, 'lignes détectées');
+  if (!rows.length) return 0;
+
+  // Pour chaque ligne, extrait l'icône à gauche (1ères dark pixels)
+  let created = 0;
+  const ICON_W = 32;
+  const startTime = Date.now();
+  for (const row of rows) {
+    let firstX = -1, lastX = -1;
+    for (let j = row.y; j < row.y + row.h; j++) {
+      for (let i = 0; i < w; i++) {
+        if (region[j * w + i]) {
+          if (firstX === -1 || i < firstX) firstX = i;
+          if (i > lastX) lastX = i;
+        }
+      }
+    }
+    if (firstX === -1) continue;
+    let sw = Math.min(ICON_W, w - firstX, Math.max(20, lastX - firstX + 1));
+    let sh = row.h;
+    let sx = rx + firstX, sy = ry + row.y;
+    sw = Math.max(8, Math.floor(sw));
+    sh = Math.max(8, Math.floor(sh));
+    if (sw < 8 || sh < 8) continue;
+
+    const id = 'c' + startTime + '_' + created;
+    const color = PALETTE[(STATE.categories.length + created) % PALETTE.length];
+    const gray = new Float32Array(sw * sh);
+    for (let j = 0; j < sh; j++)
+      for (let i = 0; i < sw; i++)
+        gray[j * sw + i] = STATE.pageImageGray[(sy + j) * STATE.pageW + (sx + i)];
+    STATE.categories.push({
+      id,
+      name: 'Symbole ' + (created + 1),
+      color,
+      template: { w: sw, h: sh, gray },
+      markers: []
+    });
+    created++;
+  }
+  return created;
+}
+
 async function scanLegend(rx, ry, rw, rh) {
   if (!STATE.textContent || !STATE.viewport) {
     alert('Texte de la page non disponible.'); return;
@@ -640,7 +737,19 @@ async function scanLegend(rx, ry, rw, rh) {
   console.log('[scanLegend] items trouvés:', items.length, 'rotations:', rotCounts);
 
   if (!items.length) {
-    alert('Aucun texte trouvé dans la zone sélectionnée.\n\nCauses possibles :\n• La légende est une image scannée (pas de texte vectoriel)\n• Le rectangle ne couvre pas la zone\n\nUtilisez le mode manuel : créez chaque catégorie + définissez le template avec « ✂ Définir template ».');
+    // Fallback : analyse visuelle (segmentation par projection horizontale)
+    setStatus('Pas de texte dans la zone — analyse visuelle…');
+    const created = visualScanLegend(rx, ry, rw, rh);
+    if (created > 0) {
+      STATE.activeCatId = STATE.categories[STATE.categories.length - 1].id;
+      renderCategories();
+      setStatus(`✓ ${created} symboles extraits (analyse visuelle) — détection en cours…`);
+      await sleep(150);
+      await detectAll();
+    } else {
+      alert('Aucun symbole détecté visuellement non plus. Essayez un rectangle plus serré sur la zone légende.');
+      setStatus('⚠️ Aucun symbole détecté');
+    }
     return;
   }
 

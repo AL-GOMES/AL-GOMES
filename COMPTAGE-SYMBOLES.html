@@ -78,6 +78,7 @@ input[type=file]{display:none}
     <span id="pageInfo" style="font-size:11px;color:var(--txt2);min-width:60px;text-align:center">— / —</span>
     <button class="btn" id="btnNext" onclick="goPage(1)" disabled>›</button>
     <span style="width:1px;height:20px;background:var(--line)"></span>
+    <button class="btn primary" id="btnAuto" onclick="manualAuto()" disabled style="background:#22c55e;border-color:#22c55e">🚀 Auto</button>
     <button class="btn" id="btnLegend" onclick="setMode('legend')" disabled>🔍 Scanner légende</button>
     <button class="btn" id="btnTpl" onclick="setMode('template')" disabled>✂ Définir template</button>
     <button class="btn primary" id="btnDetect" onclick="runDetection()" disabled>🎯 Détecter</button>
@@ -159,13 +160,16 @@ const STATE = {
   pdf: null,
   pageNum: 1,
   numPages: 0,
-  scale: 2.5,                      // rendering DPI multiplier
-  mode: 'view',                    // 'view' | 'template' | 'add' | 'remove'
-  categories: [],                  // [{id, name, color, template:{w,h,gray}, markers:[{x,y,score}]}]
+  scale: 2.0,                      // rendering DPI multiplier (auto-ajusté pour gros plans)
+  mode: 'view',                    // 'view' | 'template' | 'legend' | 'add' | 'remove'
+  categories: [],
   activeCatId: null,
   threshold: 0.78,
-  pageImageGray: null,             // Float32Array of current page (grayscale)
+  pageImageGray: null,
   pageW: 0, pageH: 0,
+  currentPdfPage: null,
+  viewport: null,
+  textContent: null,
 };
 
 const PALETTE = ['#7c5fd6','#22c55e','#f59e0b','#ef4444','#06b6d4','#ec4899','#8b5cf6','#10b981','#f97316'];
@@ -175,26 +179,47 @@ const PALETTE = ['#7c5fd6','#22c55e','#f59e0b','#ef4444','#06b6d4','#ec4899','#8
    ============================================================ */
 document.getElementById('pdfFile').onchange = async (e) => {
   const f = e.target.files[0]; if (!f) return;
-  // Reset éventuelles anciennes catégories
   STATE.categories = [];
   STATE.activeCatId = null;
   setStatus('Chargement PDF…');
-  const buf = await f.arrayBuffer();
-  STATE.pdf = await pdfjsLib.getDocument({ data: buf }).promise;
-  STATE.numPages = STATE.pdf.numPages;
-  STATE.pageNum = 1;
-  document.getElementById('welcomeBanner').style.display = 'none';
-  document.getElementById('canvasStack').style.display = 'inline-block';
-  await renderPage();
-  enableUI();
-  // 🚀 Pipeline 100 % automatique : trouve la légende, scanne les symboles, détecte sur le plan
-  await autoPipeline();
+  try {
+    const buf = await f.arrayBuffer();
+    STATE.pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+    STATE.numPages = STATE.pdf.numPages;
+    STATE.pageNum = 1;
+    document.getElementById('welcomeBanner').style.display = 'none';
+    document.getElementById('canvasStack').style.display = 'inline-block';
+    await renderPage();
+    enableUI();
+  } catch (err) {
+    console.error(err);
+    alert('Erreur de chargement du PDF :\n' + (err.message || err));
+    setStatus('❌ Erreur chargement');
+    return;
+  }
+  // 🚀 Pipeline 100 % auto (en sécurité dans try/catch)
+  try {
+    await autoPipeline();
+  } catch (err) {
+    console.error(err);
+    setStatus('❌ Auto-pipeline : ' + (err.message || err));
+    alert('L\'auto-pipeline a échoué :\n' + (err.message || err) + '\n\nVous pouvez utiliser « 🔍 Scanner légende » manuellement.');
+  }
 };
 
 async function renderPage() {
   setStatus('Rendu page ' + STATE.pageNum + '/' + STATE.numPages + '…');
   const page = await STATE.pdf.getPage(STATE.pageNum);
-  const vp = page.getViewport({ scale: STATE.scale });
+  // Auto-ajuste le scale pour ne pas dépasser ~16 Mpx (sécurité mémoire)
+  const baseVp = page.getViewport({ scale: 1 });
+  let scale = STATE.scale;
+  const MAX_PIXELS = 16e6;
+  if (baseVp.width * baseVp.height * scale * scale > MAX_PIXELS) {
+    scale = Math.sqrt(MAX_PIXELS / (baseVp.width * baseVp.height));
+    console.log('[renderPage] scale réduit auto à', scale.toFixed(2), 'pour rester sous', MAX_PIXELS, 'pixels');
+    STATE.scale = scale;
+  }
+  const vp = page.getViewport({ scale });
   STATE.pageW = Math.floor(vp.width);
   STATE.pageH = Math.floor(vp.height);
   STATE.currentPdfPage = page;
@@ -204,9 +229,7 @@ async function renderPage() {
   c.width = o.width = STATE.pageW;
   c.height = o.height = STATE.pageH;
   await page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
-  // Récupère le contenu texte (positions PDF → canvas) pour la détection de légende
   STATE.textContent = await page.getTextContent();
-  // Pré-calcul du grayscale pour la détection
   STATE.pageImageGray = canvasToGray(c);
   document.getElementById('pageInfo').textContent = STATE.pageNum + ' / ' + STATE.numPages;
   document.getElementById('btnPrev').disabled = STATE.pageNum <= 1;
@@ -441,13 +464,38 @@ async function runDetection() {
    3) Lance la détection NCC sur tout le plan
    ============================================================ */
 async function autoPipeline() {
-  setStatus('🔎 Recherche automatique de la légende…');
-  const regions = autoFindLegendRegions();
-  if (!regions.length) {
-    setStatus('⚠️ Légende non trouvée automatiquement. Utilisez « 🔍 Scanner légende » pour la sélectionner manuellement.');
+  setStatus('🔎 Étape 1/3 : recherche de la légende…');
+  await sleep(50);
+
+  if (!STATE.textContent || !STATE.viewport) {
+    alert('Le contenu texte du PDF n\'est pas disponible. Essayez de recharger.');
     return;
   }
-  // Pour chaque région détectée, scanne les symboles
+  const itemsCount = STATE.textContent.items.filter(i => i.str && i.str.trim()).length;
+  console.log('[autoPipeline] items texte total :', itemsCount);
+
+  if (itemsCount === 0) {
+    alert(`Le PDF ne contient pas de texte vectoriel exploitable (probablement une image scannée).\n\nUtilisez le mode manuel : « 🔍 Scanner légende » + rectangle, ou « ✂ Définir template ».`);
+    setStatus('❌ Aucun texte dans le PDF');
+    return;
+  }
+
+  const regions = autoFindLegendRegions();
+  console.log('[autoPipeline] régions de légende détectées :', regions);
+
+  if (!regions.length) {
+    // Affiche les premiers items pour aider au debug
+    const samples = STATE.textContent.items
+      .filter(i => i.str && i.str.trim()).slice(0, 8)
+      .map(i => '• ' + i.str.trim().slice(0, 30)).join('\n');
+    alert(`Légende non trouvée automatiquement.\n\n${itemsCount} items texte présents dans le PDF, mais aucun ne contient les mots-clés (APPAREILLAGE, LÉGENDE, NOMENCLATURE, SYMBOLES).\n\nÉchantillons :\n${samples}\n\nUtilisez « 🔍 Scanner légende » et tracez un rectangle autour de la zone légende.`);
+    setStatus('⚠️ Légende non trouvée — passez en manuel');
+    return;
+  }
+
+  setStatus(`Étape 2/3 : extraction des symboles (${regions.length} zone(s) légende)…`);
+  await sleep(50);
+
   let totalSymbols = 0;
   for (const r of regions) {
     const before = STATE.categories.length;
@@ -455,12 +503,13 @@ async function autoPipeline() {
     totalSymbols += STATE.categories.length - before;
   }
   if (totalSymbols === 0) {
-    setStatus('⚠️ Légende détectée mais aucun symbole exploitable extrait. Utilisez « 🔍 Scanner légende » manuellement.');
+    alert(`Légende(s) détectée(s) (${regions.length}) mais aucun symbole exploitable extrait.\n\nLe pictogramme ne se trouve probablement pas à l'endroit attendu (à gauche du libellé). Utilisez « 🔍 Scanner légende » manuellement avec un rectangle plus serré.`);
+    setStatus('⚠️ Aucun symbole extrait');
     return;
   }
-  setStatus(`✓ ${totalSymbols} symboles extraits — lancement de la détection sur le plan…`);
+
+  setStatus(`✓ ${totalSymbols} symboles extraits — Étape 3/3 : détection sur le plan…`);
   await sleep(150);
-  // Détection automatique sur le plan
   await detectAll();
 }
 
@@ -848,9 +897,21 @@ function esc(s) { return String(s).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt
 function escAttr(s) { return esc(s).replace(/"/g, '&quot;'); }
 
 function enableUI() {
-  ['btnLegend','btnTpl','btnDetect','btnDetectAll','btnAdd','btnRem','threshold','btnExport'].forEach(id => {
+  ['btnAuto','btnLegend','btnTpl','btnDetect','btnDetectAll','btnAdd','btnRem','threshold','btnExport'].forEach(id => {
     document.getElementById(id).disabled = false;
   });
+}
+
+async function manualAuto() {
+  STATE.categories = [];
+  STATE.activeCatId = null;
+  renderCategories();
+  redrawOverlay();
+  try { await autoPipeline(); }
+  catch (err) {
+    console.error(err);
+    alert('Auto-pipeline : ' + (err.message || err));
+  }
 }
 
 /* ============================================================

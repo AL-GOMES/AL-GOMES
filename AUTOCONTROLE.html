@@ -514,73 +514,6 @@ main{padding:24px;max-width:1400px;margin:0 auto}
     </div>
   </div>
 
-  <!-- ====== PANEL SPÉCIFIQUE C4 ====== -->
-  <div class="panel c4-only" id="c4FieldsPanel">
-    <div class="panel-title">
-      Caractéristiques du branchement C4
-      <span class="right">SéQuélec GP 04 — NF C 14-100</span>
-    </div>
-
-    <div class="grid cols-3">
-      <div class="field">
-        <label>Puissance souscrite (kVA)</label>
-        <input type="number" min="36" max="250" step="1" id="f_c4_puissance" placeholder="Ex : 120">
-      </div>
-      <div class="field">
-        <label>Dimensionnement</label>
-        <div class="radio-group">
-          <label><input type="radio" name="c4_dimensionnement" value="100"> <span>100 A (≤ 59 kVA)</span></label>
-          <label><input type="radio" name="c4_dimensionnement" value="200"> <span>200 A (60–119 kVA)</span></label>
-          <label><input type="radio" name="c4_dimensionnement" value="400"> <span>400 A (120–250 kVA)</span></label>
-        </div>
-      </div>
-      <div class="field">
-        <label>Usage</label>
-        <input type="text" id="f_c4_usage" placeholder="Ex : Tertiaire / Industrie / Commerce">
-      </div>
-    </div>
-
-    <div class="grid cols-1 mt-12">
-      <div class="field">
-        <label>Type de raccordement</label>
-        <div class="radio-group">
-          <label><input type="radio" name="c4_typeRaccord" value="plein_reseau"> <span>Plein réseau (dérivation BT existant, &lt; 120 kVA)</span></label>
-          <label><input type="radio" name="c4_typeRaccord" value="extension"> <span>Extension / création réseau BT (&lt; 120 kVA)</span></label>
-          <label><input type="radio" name="c4_typeRaccord" value="depart_direct"> <span>Départ direct du poste HTA/BT (≥ 120 kVA ou perturbateur)</span></label>
-        </div>
-      </div>
-    </div>
-
-    <div class="grid cols-3 mt-12">
-      <div class="field">
-        <label>N° PDL (Point De Livraison)</label>
-        <input type="text" id="f_c4_pdl" placeholder="14 chiffres">
-      </div>
-      <div class="field">
-        <label>N° de poste HTA/BT</label>
-        <input type="text" id="f_c4_poste" placeholder="Si départ direct">
-      </div>
-      <div class="field">
-        <label>Type de coffret</label>
-        <div class="radio-group">
-          <label><input type="radio" name="c4_coffret" value="type1"> <span>Type 1 (TC en local client)</span></label>
-          <label><input type="radio" name="c4_coffret" value="type2"> <span>Type 2 (TC en armoire ext.)</span></label>
-        </div>
-      </div>
-    </div>
-
-    <div class="grid cols-2 mt-12">
-      <div class="field">
-        <label>Section / type câble dérivation individuelle</label>
-        <input type="text" id="f_c4_cableDI" placeholder="Ex : 3x150+70 mm² Alu (NF C 33-210)">
-      </div>
-      <div class="field">
-        <label>Longueur dérivation individuelle (m)</label>
-        <input type="number" min="0" step="1" id="f_c4_longueurDI" placeholder="Ex : 25">
-      </div>
-    </div>
-  </div>
-
   <div class="panel">
     <div class="panel-title">Intervenants</div>
 
@@ -1124,11 +1057,7 @@ function bindProjectForm(){
     f_moe_societe:'moe_societe', f_moe_nom:'moe_nom', f_moe_tel:'moe_tel',
     f_er_societe:'er_societe', f_er_nom:'er_nom', f_er_tel:'er_tel',
     f_grd_nom:'grd_nom', f_grd_tel:'grd_tel', f_grd_fax:'grd_fax',
-    f_rep_nom:'rep_nom', f_rep_qualite:'rep_qualite', f_date:'date',
-    /* ----- Champs spécifiques C4 ----- */
-    f_c4_puissance:'c4_puissance', f_c4_usage:'c4_usage',
-    f_c4_pdl:'c4_pdl', f_c4_poste:'c4_poste',
-    f_c4_cableDI:'c4_cableDI', f_c4_longueurDI:'c4_longueurDI'
+    f_rep_nom:'rep_nom', f_rep_qualite:'rep_qualite', f_date:'date'
   };
   Object.entries(map).forEach(([id,key])=>{
     const el = document.getElementById(id);
@@ -1142,15 +1071,6 @@ function bindProjectForm(){
     }
     r.addEventListener('change', ()=>{
       if(r.checked){ state.project.typeOp = r.value; save(); }
-    });
-  });
-  /* ----- Radios spécifiques C4 ----- */
-  ['c4_dimensionnement','c4_typeRaccord','c4_coffret'].forEach(name=>{
-    document.querySelectorAll(`input[name=${name}]`).forEach(r=>{
-      if(state.project[name] && r.value===state.project[name]) r.checked = true;
-      r.addEventListener('change', ()=>{
-        if(r.checked){ state.project[name] = r.value; save(); }
-      });
     });
   });
   /* ----- Sélecteur Type d'attestation (Colonne / C4) ----- */

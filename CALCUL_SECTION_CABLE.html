@@ -316,6 +316,77 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
       <b>Protection différentielle :</b> 30 mA obligatoire pour les circuits desservant les locaux d'habitation (§771), classes A/AC/F selon usages.
     </div>
   </div>
+
+  <!-- ═══════════ TUTO COS φ + K ═══════════ -->
+  <div class="panel">
+    <div class="sec-label">Comment renseigner cos φ et K ?</div>
+
+    <div class="notice-text" style="margin-bottom:14px">
+      <b style="color:var(--accent-l)">cos φ</b> — facteur de puissance du circuit. C'est le rapport entre la puissance utile (kW) et la puissance apparente (kVA). En habitat il dépend du type d'appareil :
+    </div>
+    <div class="cal-row" style="margin-bottom:14px">
+      <div class="cal-cell"><div class="cal-hd">Résistif (chauffage, chauffe-eau, plaque)</div><div class="cal-val">1,0</div></div>
+      <div class="cal-cell"><div class="cal-hd">LED moderne</div><div class="cal-val">0,9 – 1,0</div></div>
+      <div class="cal-cell"><div class="cal-hd" style="color:var(--accent-l)">Habitat général (mix)</div><div class="cal-val" style="color:var(--accent-l)">0,85 ★</div></div>
+      <div class="cal-cell"><div class="cal-hd">Moteurs (lave-linge, ventilation)</div><div class="cal-val">0,7 – 0,8</div></div>
+      <div class="cal-cell"><div class="cal-hd">Tubes fluo non compensés</div><div class="cal-val">0,5</div></div>
+    </div>
+    <div class="notice-text" style="margin-bottom:18px;font-style:italic;color:var(--t3)">
+      ★ Valeur par défaut. Saisissez 1,0 pour un circuit purement résistif (chauffe-eau, radiateur), 0,8 pour un départ moteur.
+    </div>
+
+    <div class="notice-sep"></div>
+
+    <div class="notice-text" style="margin:14px 0">
+      <b style="color:var(--accent-l)">K = K<sub>1</sub> × K<sub>2</sub> × K<sub>3</sub></b> — coefficient correctif d'installation (NF C 15-100 §523). Il réduit l'intensité admissible du câble selon la pose, la température et le voisinage.
+    </div>
+
+    <div class="notice-text" style="margin:8px 0 6px"><b>K<sub>1</sub></b> — mode de pose :</div>
+    <div class="cal-row" style="margin-bottom:14px">
+      <div class="cal-cell"><div class="cal-hd">Conduit encastré dans isolant</div><div class="cal-val">0,77</div></div>
+      <div class="cal-cell"><div class="cal-hd" style="color:var(--accent-l)">Conduit en paroi maçonnée (B1) ★</div><div class="cal-val" style="color:var(--accent-l)">0,95</div></div>
+      <div class="cal-cell"><div class="cal-hd">Câble fixé sur paroi (C)</div><div class="cal-val">1,0</div></div>
+      <div class="cal-cell"><div class="cal-hd">Câble dans goulotte / gaine sol</div><div class="cal-val">0,9</div></div>
+      <div class="cal-cell"><div class="cal-hd">Câble enterré sous fourreau</div><div class="cal-val">0,8</div></div>
+    </div>
+
+    <div class="notice-text" style="margin:8px 0 6px"><b>K<sub>2</sub></b> — température ambiante (PVC, air) :</div>
+    <div class="cal-row" style="margin-bottom:14px">
+      <div class="cal-cell"><div class="cal-hd">25 °C</div><div class="cal-val">1,06</div></div>
+      <div class="cal-cell"><div class="cal-hd" style="color:var(--accent-l)">30 °C ★</div><div class="cal-val" style="color:var(--accent-l)">1,0</div></div>
+      <div class="cal-cell"><div class="cal-hd">35 °C</div><div class="cal-val">0,94</div></div>
+      <div class="cal-cell"><div class="cal-hd">40 °C</div><div class="cal-val">0,87</div></div>
+      <div class="cal-cell"><div class="cal-hd">45 °C</div><div class="cal-val">0,79</div></div>
+      <div class="cal-cell"><div class="cal-hd">50 °C</div><div class="cal-val">0,71</div></div>
+    </div>
+
+    <div class="notice-text" style="margin:8px 0 6px"><b>K<sub>3</sub></b> — groupement (nombre de circuits côte à côte) :</div>
+    <div class="cal-row" style="margin-bottom:14px">
+      <div class="cal-cell"><div class="cal-hd" style="color:var(--accent-l)">1 circuit ★</div><div class="cal-val" style="color:var(--accent-l)">1,0</div></div>
+      <div class="cal-cell"><div class="cal-hd">2</div><div class="cal-val">0,80</div></div>
+      <div class="cal-cell"><div class="cal-hd">3</div><div class="cal-val">0,70</div></div>
+      <div class="cal-cell"><div class="cal-hd">4</div><div class="cal-val">0,65</div></div>
+      <div class="cal-cell"><div class="cal-hd">6</div><div class="cal-val">0,57</div></div>
+      <div class="cal-cell"><div class="cal-hd">≥ 9</div><div class="cal-val">0,50</div></div>
+    </div>
+
+    <div class="notice-sep"></div>
+
+    <div class="notice-text" style="margin-top:14px">
+      <b style="color:var(--ok)">Exemples concrets</b><br>
+      • Logement classique, câble en conduit dans cloison maçonnée, 1 circuit, 30 °C :
+        <span class="notice-code">K = 0,95 × 1,0 × 1,0 = <b>0,95</b></span><br>
+      • Tableau divisionnaire, 4 circuits côte à côte en goulotte, 30 °C :
+        <span class="notice-code">K = 1,0 × 1,0 × 0,65 = <b>0,65</b></span><br>
+      • Câble dans combles non isolés (40 °C), 2 circuits voisins, mode B1 :
+        <span class="notice-code">K = 0,95 × 0,87 × 0,80 ≈ <b>0,66</b></span><br>
+      • Câble en conduit encastré dans isolant (laine), 1 circuit, 30 °C :
+        <span class="notice-code">K = 0,77 × 1,0 × 1,0 = <b>0,77</b></span>
+    </div>
+    <div class="notice-text" style="margin-top:10px;color:var(--t3);font-style:italic">
+      ★ Cas par défaut (K = 1,0) : circuit unique, pose normale en cloison maçonnée, 30 °C. En cas de doute, garder 1,0 — la chute de tension reste vérifiée mais la marge sur Iz disparaît.
+    </div>
+  </div>
 </div>
 
 <script>

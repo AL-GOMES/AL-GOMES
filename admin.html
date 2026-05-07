@@ -15,6 +15,8 @@ if(window.self!==window.top){
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
   :root{--bg:#0a0a0f;--card:rgba(18,18,30,.95);--border:rgba(120,50,255,.18);--accent:#7832ff;--accent2:#5a1ecc;--text:#e0d8ff;--text2:rgba(180,160,255,.6);--radius:12px}
@@ -187,6 +189,32 @@ if(window.self!==window.top){
     </div>
   </div>
 
+  <!-- IP MAP -->
+  <div class="card">
+    <h2><span>🗺</span> Carte des connexions</h2>
+    <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+      <button class="btn btn-primary btn-sm" onclick="loadIpMap()">↻ Rafraîchir</button>
+      <button class="btn btn-danger btn-sm" onclick="resetAllIps()">⚠ Réinitialiser toutes les IP</button>
+      <span id="ipMapCount" style="font-size:12px;color:var(--text2)">—</span>
+    </div>
+    <div id="ipMap" style="width:100%;height:480px;border-radius:10px;border:1px solid var(--border);background:#0d0d18"></div>
+    <div style="margin-top:10px;font-size:11px;color:var(--text2);display:flex;gap:18px;flex-wrap:wrap">
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#7832ff;margin-right:6px;vertical-align:middle"></span>IP active</span>
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ff4466;margin-right:6px;vertical-align:middle"></span>IP bannie</span>
+      <span>Cliquer sur un point pour bannir/débloquer.</span>
+    </div>
+  </div>
+
+  <!-- BANNED IPs -->
+  <div class="card">
+    <h2><span>🚫</span> IP bannies</h2>
+    <div id="bannedIpsList" style="margin-bottom:18px;overflow-x:auto"></div>
+    <div class="form-row" style="margin-bottom:0;grid-template-columns:1fr auto;align-items:end">
+      <div class="form-group"><label>Bannir une IP manuellement</label><input type="text" id="newBanIp" placeholder="ex: 82.123.45.6"></div>
+      <div class="form-group"><label>&nbsp;</label><button class="btn btn-warn btn-sm" onclick="banIp()">+ Bannir</button></div>
+    </div>
+  </div>
+
   <!-- ROLES -->
   <div class="card">
     <h2><span>🏷</span> Gestion des rôles</h2>
@@ -338,6 +366,7 @@ auth.onAuthStateChanged(async u=>{
     document.getElementById('loadingScreen').style.display='none';
     document.getElementById('mainContent').style.display='block';
     await loadRoles(); await loadUsers(); await loadPresence(); await loadAccess(); loadSessions(); loadIpTracking(); loadSignatures();
+    await loadBannedIps(); loadIpMap();
   }catch(e){console.error(e);toast('Erreur','error')}
 });
 
@@ -703,19 +732,24 @@ async function loadIpTracking(){
     });
     const el=document.getElementById('ipTrackingTable');
     if(!Object.keys(ipMap).length){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text2)">Aucune donnée IP</div>';return}
-    let html='<table><thead><tr><th>Utilisateur</th><th>Nb IP</th><th>Adresses IP</th><th>Localisation</th><th>Connexions</th><th>Dernière vue</th></tr></thead><tbody>';
+    const bannedSet = new Set(bannedIps.map(b=>b.ip));
+    let html='<table><thead><tr><th>Utilisateur</th><th>Nb IP</th><th>Adresses IP</th><th>Localisation</th><th>Connexions</th><th>Dernière vue</th><th>Action</th></tr></thead><tbody>';
     for(const login of Object.keys(ipMap).sort()){
       const u=ipMap[login];
       const ips=Object.entries(u.ips).sort((a,b)=>b[1].count-a[1].count);
       const nbIps=ips.length;
       const warnColor=nbIps>3?'color:#ff4466;font-weight:700':nbIps>1?'color:#fbbf24':'color:#4ade80';
       ips.forEach((([ip,data],i)=>{
-        html+=`<tr class="session-row">`;
+        const banned = bannedSet.has(ip);
+        html+=`<tr class="session-row"${banned?' style="background:rgba(239,68,68,.06)"':''}>`;
         if(i===0)html+=`<td rowspan="${nbIps}"><strong>${esc(u.name)}</strong><br><span style="font-size:11px;color:var(--text2)">${esc(login)}</span></td><td rowspan="${nbIps}" style="${warnColor};font-size:18px;text-align:center;font-weight:700">${nbIps}</td>`;
-        html+=`<td style="font-family:monospace;font-size:12px">${esc(ip)}</td>`;
+        html+=`<td style="font-family:monospace;font-size:12px">${esc(ip)}${banned?' <span style="color:#ff4466;font-weight:700">🚫</span>':''}</td>`;
         html+=`<td style="font-size:12px">${esc(data.city)} ${esc(data.country)}</td>`;
         html+=`<td style="text-align:center">${data.count}</td>`;
         html+=`<td style="font-size:12px">${data.last?new Date(data.last*1000).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'—'}</td>`;
+        html+=`<td>${banned
+          ?`<button class="btn btn-success btn-sm" onclick="unbanIp('${esc(ip)}')">Débloquer</button>`
+          :`<button class="btn btn-danger btn-sm" onclick="banIp('${esc(ip)}')">Bannir</button>`}</td>`;
         html+=`</tr>`;
       }));
     }
@@ -992,6 +1026,147 @@ function schedClearAll(){
     row.querySelector('input[type="checkbox"]').checked = false;
     schedToggleDay(row.dataset.day, false);
   });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// CARTE DES IP + BANNISSEMENT IP + RESET
+// Collection `bannedIps` : doc id = IP avec . et : remplacés par _
+// { ip, bannedAt, bannedBy, bannedByName }
+// ═══════════════════════════════════════════════════════════════════════
+let bannedIps = [];
+let ipLeafletMap = null;
+let ipMarkers = [];
+const ipDocId = ip => String(ip).replace(/[.:]/g,'_');
+
+async function loadBannedIps(){
+  try{
+    const snap = await db.collection('bannedIps').get();
+    bannedIps = snap.docs.map(d => ({id:d.id, ...d.data()}));
+  }catch(e){ console.error(e); bannedIps = []; }
+  renderBannedIps();
+}
+
+function renderBannedIps(){
+  const el = document.getElementById('bannedIpsList');
+  if(!el) return;
+  if(!bannedIps.length){
+    el.innerHTML = '<div style="color:var(--text2);font-style:italic;padding:8px 0">Aucune IP bannie pour le moment.</div>';
+    return;
+  }
+  el.innerHTML = '<table><thead><tr><th>IP</th><th>Date du bannissement</th><th>Par</th><th>Action</th></tr></thead><tbody>'+
+    bannedIps.map(b => `<tr class="session-row">
+      <td style="font-family:monospace;font-weight:700;color:#ff4466">${esc(b.ip||b.id)}</td>
+      <td style="font-size:12px">${b.bannedAt?fmtDate(b.bannedAt):'—'}</td>
+      <td style="font-size:12px">${esc(b.bannedByName||'—')}</td>
+      <td><button class="btn btn-success btn-sm" onclick="unbanIp('${esc(b.ip||b.id)}')">Débloquer</button></td>
+    </tr>`).join('') + '</tbody></table>';
+}
+
+async function banIp(ipFromUI){
+  const ip = (typeof ipFromUI === 'string' ? ipFromUI : (document.getElementById('newBanIp')?.value || '')).trim();
+  if(!ip){ toast('Saisir une IP','error'); return; }
+  if(!confirm(`Bannir l'IP ${ip} ?\n\nLes connexions futures depuis cette IP seront refusées.`)) return;
+  try{
+    await db.collection('bannedIps').doc(ipDocId(ip)).set({
+      ip,
+      bannedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      bannedBy: me.uid,
+      bannedByName: me.name || me.login || ''
+    });
+    const inp = document.getElementById('newBanIp'); if(inp) inp.value = '';
+    toast(`IP ${ip} bannie`, 'success');
+    await loadBannedIps();
+    loadIpTracking();
+    loadIpMap();
+  }catch(e){ toast('Erreur : '+e.message,'error'); }
+}
+
+async function unbanIp(ip){
+  if(!confirm(`Débloquer l'IP ${ip} ?`)) return;
+  try{
+    await db.collection('bannedIps').doc(ipDocId(ip)).delete();
+    toast('IP débloquée','success');
+    await loadBannedIps();
+    loadIpTracking();
+    loadIpMap();
+  }catch(e){ toast('Erreur : '+e.message,'error'); }
+}
+
+async function resetAllIps(){
+  if(!confirm("⚠ Réinitialiser TOUT l'historique des IP ?\n\nCela supprime tous les enregistrements de la collection 'sessions' (journal des connexions).\n\nAction irréversible.")) return;
+  if(!confirm("Confirmer une seconde fois : vider tout l'historique IP ?")) return;
+  try{
+    const snap = await db.collection('sessions').get();
+    if(snap.empty){ toast('Aucune session à supprimer','info'); return; }
+    let batch = db.batch();
+    let count = 0;
+    const commits = [];
+    snap.forEach(doc => {
+      batch.delete(doc.ref);
+      count++;
+      if(count % 450 === 0){ commits.push(batch.commit()); batch = db.batch(); }
+    });
+    commits.push(batch.commit());
+    await Promise.all(commits);
+    toast(`${snap.size} sessions supprimées`,'success');
+    loadSessions();
+    loadIpTracking();
+    loadIpMap();
+  }catch(e){ toast('Erreur : '+e.message,'error'); }
+}
+
+async function loadIpMap(){
+  const host = document.getElementById('ipMap');
+  if(!host || typeof L === 'undefined') return;
+  if(!ipLeafletMap){
+    ipLeafletMap = L.map('ipMap', { worldCopyJump:true, scrollWheelZoom:true }).setView([46.5, 2.5], 5);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap',
+      maxZoom: 18
+    }).addTo(ipLeafletMap);
+  }
+  ipMarkers.forEach(m => ipLeafletMap.removeLayer(m));
+  ipMarkers = [];
+  try{
+    const snap = await db.collection('sessions').orderBy('timestamp','desc').limit(500).get();
+    const agg = {};
+    snap.forEach(doc => {
+      const s = doc.data();
+      if(!s.ip || s.lat == null || s.lon == null) return;
+      if(!agg[s.ip]) agg[s.ip] = { ip:s.ip, lat:s.lat, lon:s.lon, city:s.city||'', country:s.country||'', users:new Set(), count:0, last:null };
+      agg[s.ip].users.add(s.name || s.login || '?');
+      agg[s.ip].count++;
+      if(s.timestamp && (!agg[s.ip].last || s.timestamp.seconds > agg[s.ip].last))
+        agg[s.ip].last = s.timestamp.seconds;
+    });
+    const bannedSet = new Set(bannedIps.map(b => b.ip));
+    Object.values(agg).forEach(d => {
+      const isBanned = bannedSet.has(d.ip);
+      const color = isBanned ? '#ff4466' : '#7832ff';
+      const m = L.circleMarker([d.lat, d.lon], {
+        radius: Math.min(6 + Math.log2(d.count+1) * 2, 18),
+        fillColor: color, color: '#fff', weight: 1.5, fillOpacity: .85
+      }).addTo(ipLeafletMap);
+      const usersList = [...d.users].slice(0,8).map(u => esc(u)).join(', ');
+      const lastTxt = d.last ? new Date(d.last*1000).toLocaleString('fr-FR') : '—';
+      const ipEsc = esc(d.ip);
+      m.bindPopup(`
+        <div style="font-family:Rajdhani,sans-serif;color:#1a1a2e;min-width:200px">
+          <div style="font-size:14px;font-weight:700;margin-bottom:4px">${ipEsc} ${isBanned?'<span style="color:#ff4466">🚫 BANNIE</span>':''}</div>
+          <div style="font-size:12px;margin-bottom:4px">${esc(d.city)} ${esc(d.country)}</div>
+          <div style="font-size:11px;color:#555;margin-bottom:4px">${d.count} connexion(s) — Dernière : ${lastTxt}</div>
+          <div style="font-size:11px;color:#555;margin-bottom:8px">Utilisateurs : ${usersList}</div>
+          ${isBanned
+            ? `<button onclick="unbanIp('${ipEsc}')" style="padding:5px 12px;border:none;border-radius:5px;background:#22c55e;color:#fff;cursor:pointer;font-weight:700;font-size:12px">Débloquer</button>`
+            : `<button onclick="banIp('${ipEsc}')" style="padding:5px 12px;border:none;border-radius:5px;background:#ef4444;color:#fff;cursor:pointer;font-weight:700;font-size:12px">Bannir cette IP</button>`}
+        </div>
+      `);
+      ipMarkers.push(m);
+    });
+    const cnt = document.getElementById('ipMapCount');
+    if(cnt) cnt.textContent = `${Object.keys(agg).length} IP unique(s) — ${snap.size} session(s) analysées`;
+    setTimeout(() => ipLeafletMap.invalidateSize(), 100);
+  }catch(e){ console.error(e); }
 }
 
 async function doSaveSchedule(){

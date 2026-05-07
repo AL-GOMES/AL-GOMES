@@ -220,6 +220,14 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
         </div>
         <span class="chk-label">Calibres<span class="chk-tag">AL GOMES</span></span>
       </div>
+      <div class="param-group">
+        <div class="param-label">cos φ</div>
+        <input type="number" id="inCosPhi" value="0.85" step="0.05" min="0.3" max="1" class="cell-input" style="width:70px;padding:5px 6px">
+      </div>
+      <div class="param-group">
+        <div class="param-label">K (K1×K2×K3)</div>
+        <input type="number" id="inK" value="1" step="0.05" min="0.3" max="1.5" class="cell-input" style="width:70px;padding:5px 6px">
+      </div>
       <div class="mode-tag" id="modeLabel">AL GOMES</div>
     </div>
     <div class="legend-row">
@@ -231,12 +239,12 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
     <div class="grid grid-main">
       <div class="cell hd" id="hPhase">TRI</div>
       <div class="cell hd" id="hType">Force</div>
-      <div class="cell hd">Puissance<br>kVA</div>
-      <div class="cell hd">Longueur<br>ml</div>
-      <div class="cell hd">Tension calcul<br>× cos φ 0,8</div>
-      <div class="cell hd">Intensité</div>
-      <div class="cell hd">Calibre</div>
-      <div class="cell hd">ΔU max</div>
+      <div class="cell hd">Puissance<br>(kVA)</div>
+      <div class="cell hd">Longueur<br>(ml)</div>
+      <div class="cell hd">Tension<br>nominale</div>
+      <div class="cell hd">Intensité<br>I<sub>b</sub></div>
+      <div class="cell hd">Calibre<br>I<sub>n</sub></div>
+      <div class="cell hd">I<sub>z</sub> requis<br>(I<sub>n</sub>/K)</div>
       <div class="cell lab" id="dPhase">TRI</div>
       <div class="cell lab" id="dDrop">5 %</div>
       <div class="cell in"><input type="number" class="cell-input" id="inP" value="8" step="0.1" min="0"></div>
@@ -271,36 +279,59 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
   <div class="panel">
     <div class="sec-label">Notice</div>
     <div class="notice-text">
-      <b>Résistivité :</b> <span class="notice-code">U1000R2V = 0,0175 Ω·mm²/m</span> &nbsp;|&nbsp; <span class="notice-code">U1000R02V = 0,028 Ω·mm²/m</span><br>
-      <b>Chute de tension :</b> <span class="notice-code">3 %</span> éclairage &nbsp;|&nbsp; <span class="notice-code">5 %</span> force — NF C 15-100<br>
-      <b>Tension de calcul :</b> <span class="notice-code">230 V</span> mono &nbsp;|&nbsp; <span class="notice-code">400×√3</span> tri — × cos φ (0,8)
+      <b>Résistivité (cuivre) :</b> <span class="notice-code">ρ = 0,0175 Ω·mm²/m</span> à 20 °C — <b>(alu)</b> <span class="notice-code">ρ = 0,028 Ω·mm²/m</span><br>
+      <b>Chute de tension max (NF C 15-100 §525) :</b> <span class="notice-code">3 %</span> éclairage &nbsp;|&nbsp; <span class="notice-code">5 %</span> autres usages<br>
+      <b>Formule chute de tension :</b> mono <span class="notice-code">ΔU = 2·ρ·L·I·cosφ / S</span> — tri <span class="notice-code">ΔU = √3·ρ·L·I·cosφ / S</span><br>
+      <b>Intensité d'emploi :</b> mono <span class="notice-code">I<sub>b</sub> = P/U</span> — tri <span class="notice-code">I<sub>b</sub> = P/(√3·U)</span> avec U = 230 / 400 V (P en VA)<br>
+      <b>Coefficient K (NF C 15-100 §523) :</b> K = K1 × K2 × K3 (mode de pose × température × groupement). I<sub>z</sub> requis = I<sub>n</sub> / K
       <div class="notice-sep"></div>
-      <b>Perso :</b> mini 2×10 A — mini 1,5 mm² — Tranches : 10 / 20 / 25 / 32 / 40 / 63 A<br>
+      <b>Tableau 52H habitat (NF C 15-100 §771) :</b> PC 16 A → 1,5 mm² | PC 20 A → 2,5 mm² | Lave-linge / chauffe-eau 20 A → 2,5 mm² | Plaque cuisson 32 A → 6 mm² | Branchement 63 A → 16 mm²<br>
+      <b>Perso :</b> mini 1,5 mm² — Tranches : 10 / 16 / 20 / 25 / 32 / 40 / 50 / 63 A<br>
       <b>AL Gomes Force :</b> mini 2×20 A / 4×20 A — mini 2,5 mm² — Tranches : 20 / 40 / 63 A<br>
       <b>AL Gomes Éclairage :</b> mini 2×10 A / 4×10 A — mini 1,5 mm² — Tranches : 10 / 20 / 40 / 63 A
     </div>
     <div class="cal-row">
       <div class="cal-cell"><div class="cal-hd">10 A</div><div class="cal-val">1,5 <span class="cal-unit">mm²</span></div></div>
+      <div class="cal-cell"><div class="cal-hd">16 A</div><div class="cal-val">1,5 <span class="cal-unit">mm²</span></div></div>
       <div class="cal-cell"><div class="cal-hd">20 A</div><div class="cal-val">2,5 <span class="cal-unit">mm²</span></div></div>
       <div class="cal-cell"><div class="cal-hd">25 A</div><div class="cal-val">4 <span class="cal-unit">mm²</span></div></div>
       <div class="cal-cell"><div class="cal-hd">32 A</div><div class="cal-val">6 <span class="cal-unit">mm²</span></div></div>
       <div class="cal-cell"><div class="cal-hd">40 A</div><div class="cal-val">10 <span class="cal-unit">mm²</span></div></div>
+      <div class="cal-cell"><div class="cal-hd">50 A</div><div class="cal-val">10 <span class="cal-unit">mm²</span></div></div>
       <div class="cal-cell"><div class="cal-hd">63 A</div><div class="cal-val">16 <span class="cal-unit">mm²</span></div></div>
     </div>
   </div>
 
   <div class="panel">
-    <div class="sec-label">Vérification</div>
+    <div class="sec-label">Vérification — extrait Tableau 52H NF C 15-100 (habitat)</div>
     <div id="verifC"></div>
+  </div>
+
+  <div class="panel">
+    <div class="sec-label">Sécurité — vérifications complémentaires NF C 15-100</div>
+    <div class="notice-text" id="securityInfo">
+      <b>Tenue thermique du conducteur (§434) :</b> <span class="notice-code">k²·S² ≥ I<sub>cc</sub>²·t</span> — k = 115 (Cu PVC), 76 (Alu PVC). Vérifier que la section choisie supporte l'I<sub>cc</sub> max au point d'installation pendant le temps de coupure du dispositif de protection.<br>
+      <b>Contacts indirects (§413) :</b> <span class="notice-code">Z<sub>s</sub> × I<sub>a</sub> ≤ U<sub>0</sub></span> — la boucle de défaut doit garantir le déclenchement instantané de la protection (I<sub>a</sub> = courant de fonctionnement magnétique : 5×I<sub>n</sub> en courbe B, 10×I<sub>n</sub> en C, 20×I<sub>n</sub> en D).<br>
+      <b>Sélectivité :</b> calibres et courbes des protections amont/aval doivent assurer la sélectivité (rapport ≥ 1,6 entre calibres en pratique).<br>
+      <b>Protection différentielle :</b> 30 mA obligatoire pour les circuits desservant les locaux d'habitation (§771), classes A/AC/F selon usages.
+    </div>
   </div>
 </div>
 
 <script>
 // =====================================================
-// STATE
+// STATE  (cos φ et K sont lus depuis le DOM à chaque calcul)
 // =====================================================
 const S = { phase:'tri', type:'force', alg:true };
-const RCU = 0.0175, RALU = 0.028, CP = 0.8;
+const RCU = 0.0175, RALU = 0.028;
+function getCosPhi(){
+  const v = parseFloat(document.getElementById('inCosPhi').value);
+  return (isFinite(v) && v > 0 && v <= 1) ? v : 0.85;
+}
+function getK(){
+  const v = parseFloat(document.getElementById('inK').value);
+  return (isFinite(v) && v > 0) ? v : 1;
+}
 
 // =====================================================
 // CLOCK
@@ -330,194 +361,202 @@ function toggleALG(){
 }
 
 // =====================================================
-// EXACT EXCEL FORMULA REPLICAS
+// CALCULS NF C 15-100 — formules normalisées
+// Sections normalisées NF C 32-201 : 1.5, 2.5, 4, 6, 10, 16, 25, 35, 50, 70…
+// Calibres NF C 15-100 §771 : 10, 16, 20, 25, 32, 40, 50, 63 A
 // =====================================================
 
-// --- Calibre (L5) ---
-// Exact replica of L5 formula
-function pickCalibre(I, isTri, isForce, alg) {
-  // OR(L7=FALSE, G6=FALSE) → allow 10A
-  const allow10 = !alg || !isForce;
-  if (isTri) {
-    // "4x" prefix
-    if (I <= 10 && allow10) return 10;
-    if (I <= 20) return 20;
-    if (I <= 25 && !alg) return 25;
-    if (I <= 32 && !alg) return 32;
-    if (I <= 40) return 40;
-    return 63;
+// --- Calibre standard NF C 15-100 (avec 16 A en habitat) ---
+function pickCalibre(I, isTri, isForce, alg){
+  const allow10 = !alg || !isForce;     // AL GOMES Force exclut le 10 A
+  // Tranches selon le mode choisi
+  let calibres;
+  if (alg){
+    calibres = isForce ? [20, 40, 63] : [10, 20, 40, 63];
   } else {
-    // mono, suffix "+N"
-    if (I <= 10 && allow10) return 10;
-    if (I <= 20) return 20;
-    if (I <= 25 && !alg) return 25;
-    if (I <= 32 && !alg) return 32;
-    if (I <= 40) return 40;
-    return 63;
+    // Perso : tous les calibres NFC 15-100 incluant 16 A et 50 A
+    calibres = [10, 16, 20, 25, 32, 40, 50, 63];
   }
+  if (!allow10) calibres = calibres.filter(c => c >= 16);
+  for (const c of calibres) if (I <= c) return c;
+  return calibres[calibres.length-1];
 }
 
-// --- Section by voltage drop (first branch of MAX in M5/N5/M6/N6) ---
-// Drop sections: 1.5, 2.5, 4, 6, 10, 20, 25, 35  (NO 16!)
-function dropSection(needed, alg, isForce) {
-  const allow15 = !alg || !isForce; // OR(L7=FALSE, G6=FALSE)
-  if (needed <= 1.5 && allow15) return 1.5;
-  if (needed <= 2.5) return 2.5;
-  if (needed <= 4) return 4;
-  if (needed <= 6) return 6;
-  if (needed <= 10) return 10;
-  if (needed <= 20) return 20;
-  if (needed <= 25) return 25;
-  return 35;
+// --- Section normalisée par chute de tension ---
+// Sections NF C 32-201 : 1.5, 2.5, 4, 6, 10, 16, 25, 35
+function dropSection(needed, alg, isForce){
+  const allow15 = !alg || !isForce;
+  const sections = [1.5, 2.5, 4, 6, 10, 16, 25, 35, 50];
+  for (const s of sections){
+    if (s === 1.5 && !allow15) continue;
+    if (needed <= s) return s;
+  }
+  return 70;
 }
 
-// --- Section by intensity/calibre (second branch of MAX in M5/N5/M6/N6) ---
-// Intensity sections: 1.5, 2.5, 4, 6, 10, 16, 25  (NO 20, NO 35!)
-function intensitySection(I, alg, isForce) {
-  const allow15 = !alg || !isForce; // OR(L7=FALSE, G6=FALSE)
-  if (I <= 10 && allow15) return 1.5;
-  if (I <= 20) return 2.5;
-  if (I <= 25 && !alg) return 4;   // AND(K5<=25, L7=FALSE)
-  if (I <= 32 && !alg) return 6;   // AND(K5<=32, L7=FALSE)
-  if (I <= 40) return 10;
-  if (I <= 50) return 16;
-  return 25;
+// --- Section minimale par calibre (Tableau 52H NF C 15-100 habitat, mode B1) ---
+// Le câble doit pouvoir supporter le calibre du disjoncteur amont (Iz_table ≥ In)
+function intensitySection(In, alg, isForce){
+  const allow15 = !alg || !isForce;
+  if (alg){
+    // Mode AL GOMES (plus conservatif)
+    if (In <= 10 && allow15) return 1.5;
+    if (In <= 20) return 2.5;
+    if (In <= 40) return 10;
+    return 16;                          // 63 A → 16 mm²
+  }
+  // Perso — Tableau 52H NF C 15-100 §771 (habitat)
+  if (In <= 16 && allow15) return 1.5;  // PC 16 A → 1,5 mm²
+  if (In <= 20) return 2.5;             // PC 20 A, lave-linge, chauffe-eau
+  if (In <= 25) return 4;
+  if (In <= 32) return 6;               // plaque cuisson, four
+  if (In <= 50) return 10;
+  return 16;                            // 63 A → 16 mm²
 }
 
-// --- Final section = MAX(dropSection, intensitySection) ---
-// This is M6/N6
+// --- Chute de tension réelle pour une section donnée ---
+// mono : ΔU = 2·ρ·L·I·cosφ / S
+// tri  : ΔU = √3·ρ·L·I·cosφ / S
+function calcDrop(I, L, rho, section, U_nominal, cosPhi, isTri){
+  const factor = isTri ? Math.sqrt(3) : 2;
+  const dU = (factor * rho * L * I * cosPhi) / section;
+  return Math.round((dU / U_nominal) * 100 * 100) / 100;
+}
 
-// --- Actual voltage drop % ---
-// ROUND(((K5 * (2*I5) * (rho / section)) / J5) * 100, 2)
-function calcDrop(I, L, rho, section, Vcalc) {
-  return Math.round(((I * (2 * L) * (rho / section)) / Vcalc) * 100 * 100) / 100;
+// --- Section nécessaire pour respecter ΔU% max ---
+function neededSectionByDrop(I, L, rho, deltaU_pct, U_nominal, cosPhi, isTri){
+  const factor = isTri ? Math.sqrt(3) : 2;
+  return (factor * rho * L * I * cosPhi) / ((deltaU_pct/100) * U_nominal);
 }
 
 // =====================================================
-// VERIFICATION (uses rho=0.018, formula: (2*0.018*L*I)/(0.02*U))
-// Exact replica of M28/M31 formulas
+// VÉRIFICATION — extrait Tableau 52H NF C 15-100 (habitat)
+// Utilise les MÊMES formules et constantes que le calcul principal.
 // =====================================================
-function verifSection(P_kva, L, U) {
-  const I_verif = (P_kva * 1000) / U;
-  const needed = (2 * 0.018 * L * I_verif) / (0.02 * U);
-  // Drop sections for verification: 1.5,2.5,4,6,10,20,25,35
-  const secs = [1.5,2.5,4,6,10,20,25,35];
-  let dropSec = 35;
-  for (const s of secs) { if (needed <= s) { dropSec = s; break; } }
-  // Intensity sections for verification: 1.5,2.5,4,6,10,16,25
-  let intSec = 25;
-  if (I_verif <= 10) intSec = 1.5;
-  else if (I_verif <= 20) intSec = 2.5;
-  else if (I_verif <= 25) intSec = 4;
-  else if (I_verif <= 32) intSec = 6;
-  else if (I_verif <= 40) intSec = 10;
-  else if (I_verif <= 50) intSec = 16;
-  return { I: I_verif, section: Math.max(dropSec, intSec) };
+function verifSection(P_kva, L, U_nominal, isTri, deltaU_pct, cosPhi){
+  const I = isTri
+    ? (P_kva * 1000) / (Math.sqrt(3) * U_nominal)
+    : (P_kva * 1000) / U_nominal;
+  const needed = neededSectionByDrop(I, L, RCU, deltaU_pct, U_nominal, cosPhi, isTri);
+  const dropSec = dropSection(needed, false, false); // mode habitat
+  // Section par calibre = on dimensionne sur le calibre normalisé immédiatement supérieur à I
+  const In = pickCalibreHabitat(I);
+  const intSec = intensitySection(In, false, false);
+  return { I, In, section: Math.max(dropSec, intSec) };
 }
-function verifCalibre(I_verif) {
-  if (I_verif <= 10) return '10 A';
-  if (I_verif <= 20) return '20 A';
-  if (I_verif <= 25) return '25 A';
-  if (I_verif <= 32) return '32 A';
-  if (I_verif <= 40) return '40 A';
-  return '63 A';
+function pickCalibreHabitat(I){
+  const cals = [10, 16, 20, 25, 32, 40, 50, 63];
+  for (const c of cals) if (I <= c) return c;
+  return 80;
+}
+function verifCalibre(I){
+  return pickCalibreHabitat(I) + ' A';
 }
 
 // =====================================================
 // MAIN COMPUTE
 // =====================================================
-function compute() {
-  const P = parseFloat(document.getElementById('inP').value);
+function compute(){
+  const P_kva = parseFloat(document.getElementById('inP').value);
   const L = parseFloat(document.getElementById('inL').value);
+  const cosPhi = getCosPhi();
+  const K = getK();
   const tri = S.phase === 'tri';
   const force = S.type === 'force';
   const alg = S.alg;
-  const md = force ? 5 : 3;
+  const md = force ? 5 : 3;       // ΔU max NFC 15-100 §525
+  const U = tri ? 400 : 230;       // tension nominale entre phases (tri) ou phase-N (mono)
   const pfx = tri ? '4x' : '2x';
   const sfx = tri ? '' : '+N';
-  const cg = tri ? '5G ' : '3G ';
+  const cg  = tri ? '5G ' : '3G ';
 
   document.getElementById('hPhase').textContent = tri ? 'TRI' : 'MONO';
-  document.getElementById('hType').textContent = force ? 'Force' : 'Éclairage';
+  document.getElementById('hType').textContent  = force ? 'Force' : 'Éclairage';
   document.getElementById('dPhase').textContent = tri ? 'TRI' : 'MONO';
-  document.getElementById('dDrop').textContent = md + ' %';
+  document.getElementById('dDrop').textContent  = md + ' %';
 
-  if (!P || !L || P <= 0 || L <= 0) {
+  if (!P_kva || !L || P_kva <= 0 || L <= 0){
     ['oT','oI','oC','oD'].forEach(i => document.getElementById(i).textContent = '—');
-    document.getElementById('oCu').innerHTML = '—';
+    document.getElementById('oCu').innerHTML  = '—';
     document.getElementById('oAlu').innerHTML = '—';
     document.getElementById('bars').style.display = 'none';
     document.getElementById('verifC').innerHTML = '';
     return;
   }
 
-  // Tension de calcul (J5)
-  const V = tri ? 400 * Math.sqrt(3) * CP : 230 * CP;
-  // Intensité (K5)
-  const I = (P * 1000) / V;
-  // Calibre (L5)
-  const cal = pickCalibre(I, tri, force, alg);
+  // ---- INTENSITÉ D'EMPLOI Ib (apparente, à partir de kVA) ----
+  // mono : Ib = S / U      (S = P_kva × 1000 VA)
+  // tri  : Ib = S / (√3·U)
+  const Ib = tri ? (P_kva * 1000) / (Math.sqrt(3) * U) : (P_kva * 1000) / U;
 
-  // ---- CUIVRE (M5/M6) ----
-  const neededCu = (2 * RCU * L * I) / ((md / 100) * V);
+  // ---- CALIBRE In ----
+  const In = pickCalibre(Ib, tri, force, alg);
+
+  // ---- Iz REQUIS (admissible câble après coefficient K) ----
+  // NF C 15-100 §523 : Ib ≤ In ≤ Iz × K  →  Iz ≥ In / K
+  const Iz_requis = In / K;
+
+  // ---- CUIVRE ----
+  const neededCu  = neededSectionByDrop(Ib, L, RCU, md, U, cosPhi, tri);
   const dropSecCu = dropSection(neededCu, alg, force);
-  const intSecCu = intensitySection(I, alg, force);
-  const sCu = Math.max(dropSecCu, intSecCu); // M6
-  const dCu = calcDrop(I, L, RCU, sCu, V);
+  const intSecCu  = intensitySection(In, alg, force);  // dimensionnement sur le calibre, pas Ib
+  const sCu       = Math.max(dropSecCu, intSecCu);
+  const dCu       = calcDrop(Ib, L, RCU, sCu, U, cosPhi, tri);
 
-  // ---- ALU (N5/N6) ----
-  const neededAlu = (2 * RALU * L * I) / ((md / 100) * V);
-  const dropSecAlu = dropSection(neededAlu, alg, force);
-  const intSecAlu = intensitySection(I, alg, force);
-  const sAlu = Math.max(dropSecAlu, intSecAlu); // N6
-  const dAlu = calcDrop(I, L, RALU, sAlu, V);
+  // ---- ALU ----
+  const neededAlu = neededSectionByDrop(Ib, L, RALU, md, U, cosPhi, tri);
+  const dropSecAl = dropSection(neededAlu, alg, force);
+  const intSecAl  = intensitySection(In, alg, force);
+  const sAlu      = Math.max(dropSecAl, intSecAl);
+  const dAlu      = calcDrop(Ib, L, RALU, sAlu, U, cosPhi, tri);
 
-  // ---- DISPLAY ----
-  document.getElementById('oT').textContent = V.toFixed(2) + ' V';
-  document.getElementById('oI').textContent = I.toFixed(2) + ' A';
-  document.getElementById('oC').textContent = pfx + cal + ' A' + sfx;
-  document.getElementById('oD').textContent = md + ' %';
+  // ---- AFFICHAGE ----
+  document.getElementById('oT').textContent = U + ' V' + (tri ? ' (entre phases)' : '');
+  document.getElementById('oI').textContent = Ib.toFixed(2) + ' A';
+  document.getElementById('oC').textContent = pfx + In + ' A' + sfx;
+  document.getElementById('oD').textContent = Iz_requis.toFixed(1) + ' A';
 
-  // Cuivre
   const cuW = dCu > md;
   const cuC = cuW ? 'drop-bad' : dCu > md * 0.8 ? 'drop-warn' : 'drop-ok';
   document.getElementById('oCu').innerHTML =
     `<span class="cable-sec cu">${cg}${sCu} mm²</span>` +
-    `<span class="cable-drop ${cuC}">${cuW ? '⚠ ' : ''}${dCu.toFixed(2)} %</span>`;
+    `<span class="cable-drop ${cuC}">${cuW ? '⚠ ' : ''}ΔU = ${dCu.toFixed(2)} %</span>`;
 
-  // Alu
   const alW = dAlu > md;
   const alC = alW ? 'drop-bad' : dAlu > md * 0.8 ? 'drop-warn' : 'drop-ok';
   document.getElementById('oAlu').innerHTML =
     `<span class="cable-sec al">${cg}${sAlu} mm²</span>` +
-    `<span class="cable-drop ${alC}">${alW ? '⚠ ' : ''}${dAlu.toFixed(2)} %</span>`;
+    `<span class="cable-drop ${alC}">${alW ? '⚠ ' : ''}ΔU = ${dAlu.toFixed(2)} %</span>`;
 
-  // Bars
+  // Barres
   const bx = md * 1.3;
   document.getElementById('bars').style.display = 'block';
   setBar('bCu','lCu','pCu', dCu, md, bx, cuC);
   setBar('bAlu','lAlu','pAlu', dAlu, md, bx, alC);
 
-  // ---- VERIFICATION ----
-  const Pv = (V * I) / 1000;
-  const vMono = verifSection(P, L, 230);
-  const vTri = verifSection(P, L, 400 * Math.sqrt(3));
+  // ---- VÉRIFICATION (Tableau 52H habitat — mono ET tri pour comparaison) ----
+  const formuleMono = `<b>I<sub>b</sub></b> = P/U = ${(P_kva*1000).toFixed(0)} / ${U} = <b>${(P_kva*1000/U).toFixed(2)} A</b>`;
+  const formuleTri  = `<b>I<sub>b</sub></b> = P/(√3·U) = ${(P_kva*1000).toFixed(0)} / (1,732×${U}) = <b>${(P_kva*1000/(Math.sqrt(3)*U)).toFixed(2)} A</b>`;
+  const vMono = verifSection(P_kva, L, 230, false, md, cosPhi);
+  const vTri  = verifSection(P_kva, L, 400, true,  md, cosPhi);
   document.getElementById('verifC').innerHTML = `
-    <div class="verif-formula">P = U × I × cos φ = ${V.toFixed(2)} × ${I.toFixed(2)} = <b>${Pv.toFixed(2)} kVA</b></div>
+    <div class="verif-formula">${tri ? formuleTri : formuleMono} — calcul actif : <b style="color:var(--accent-l)">${tri?'TRI 400 V':'MONO 230 V'}</b>, cos φ = ${cosPhi.toFixed(2)}, ΔU max = ${md}%</div>
     <div class="verif-cards">
       <div class="verif-card">
-        <div class="verif-tag">Mono — extrait tableau 52W NFC 15-100</div>
-        <div class="verif-row"><span>Puissance</span><span>${P} kVA</span></div>
+        <div class="verif-tag">Mono — référence 230 V</div>
+        <div class="verif-row"><span>Puissance</span><span>${P_kva} kVA</span></div>
         <div class="verif-row"><span>Longueur</span><span>${L} ml</span></div>
-        <div class="verif-row"><span>Calibre</span><span>${verifCalibre(vMono.I)}</span></div>
-        <div class="verif-row"><span>Section cuivre</span><span>${vMono.section} mm²</span></div>
+        <div class="verif-row"><span>I<sub>b</sub></span><span>${vMono.I.toFixed(2)} A</span></div>
+        <div class="verif-row"><span>Calibre I<sub>n</sub></span><span>${verifCalibre(vMono.I)}</span></div>
+        <div class="verif-row"><span>Section Cu</span><span>${vMono.section} mm²</span></div>
       </div>
       <div class="verif-card">
-        <div class="verif-tag">Tri — extrait tableau 52W NFC 15-100</div>
-        <div class="verif-row"><span>Puissance</span><span>${P} kVA</span></div>
+        <div class="verif-tag">Tri — référence 400 V</div>
+        <div class="verif-row"><span>Puissance</span><span>${P_kva} kVA</span></div>
         <div class="verif-row"><span>Longueur</span><span>${L} ml</span></div>
-        <div class="verif-row"><span>Calibre</span><span>${verifCalibre(vTri.I)}</span></div>
-        <div class="verif-row"><span>Section cuivre</span><span>${vTri.section} mm²</span></div>
+        <div class="verif-row"><span>I<sub>b</sub></span><span>${vTri.I.toFixed(2)} A</span></div>
+        <div class="verif-row"><span>Calibre I<sub>n</sub></span><span>${verifCalibre(vTri.I)}</span></div>
+        <div class="verif-row"><span>Section Cu</span><span>${vTri.section} mm²</span></div>
       </div>
     </div>`;
 }
@@ -532,8 +571,9 @@ function setBar(bId, lId, pId, d, md, bx, cls) {
   document.getElementById(pId).innerHTML = `<span class="${cls}">${d.toFixed(2)} %</span>`;
 }
 
-document.getElementById('inP').addEventListener('input', compute);
-document.getElementById('inL').addEventListener('input', compute);
+['inP','inL','inCosPhi','inK'].forEach(id =>
+  document.getElementById(id).addEventListener('input', compute)
+);
 compute();
 </script>
 </body>

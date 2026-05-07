@@ -2332,7 +2332,12 @@ async function buildC4PDF(){
   const ML = 35, MR = 35, MT = 40;   // marges
   const VIOLET = PDFLib.rgb(0.42, 0.20, 0.70);     // #6b33b3 ~ AL GOMES
   const VIOLET_LIGHT = PDFLib.rgb(0.94, 0.90, 0.99);
-  const SECTION_BG = PDFLib.rgb(0.99, 0.79, 0.32); // orange/jaune SéQuélec
+  // Palette SéQuélec officielle (reproduit l'apparence du document GP 04)
+  const SQ_YELLOW   = PDFLib.rgb(0.99, 0.83, 0.18); // bannière jaune SéQuélec
+  const SQ_ORANGE   = PDFLib.rgb(0.97, 0.62, 0.13); // section / table header orange
+  const SQ_CREAM    = PDFLib.rgb(1.00, 0.97, 0.85); // fond cellules items
+  const SQ_FOOTER   = PDFLib.rgb(0.20, 0.20, 0.30);
+  const SECTION_BG  = SQ_ORANGE;
   const BORDER = PDFLib.rgb(0.55, 0.55, 0.65);
   const TXT = PDFLib.rgb(0.10, 0.10, 0.15);
   const TXT_LIGHT = PDFLib.rgb(0.40, 0.40, 0.50);
@@ -2365,16 +2370,42 @@ async function buildC4PDF(){
     page.drawLine({ start:{x:cx-1, y:T(cyTop+s-1)}, end:{x:cx+s, y:T(cyTop-s+1)}, color, thickness:1.5 });
   }
 
-  // En-tête commune (bandeau violet)
-  function drawHeader(page, pageNum, totalPages){
+  // En-tête + pied de page « projet/couverture » (charte AL GOMES)
+  function drawCoverHeader(page, pageNum, totalPages){
     drawRect(page, 0, 0, PW, 40, { fill: VIOLET });
     drawTextLine(page, 'A.L. GOMES', ML, 14, { bold:true, size:16, color: PDFLib.rgb(1,1,1) });
     drawTextLine(page, 'Bureau d\'études techniques Électricité', ML, 30, { size:9, color: PDFLib.rgb(0.92,0.86,1) });
     drawTextLine(page, 'AUTO-CONTRÔLE C4', PW-ML-130, 14, { bold:true, size:13, color: PDFLib.rgb(1,1,1) });
     drawTextLine(page, 'Branchement à puissance surveillée', PW-ML-150, 30, { size:8, color: PDFLib.rgb(0.92,0.86,1) });
-    // pied de page
     drawTextLine(page, `Page ${pageNum}/${totalPages}`, PW/2-15, PH-18, { size:8, color: TXT_LIGHT });
     drawTextLine(page, 'Conforme NF C 14-100 — guide SéQuélec GP 04', ML, PH-18, { size:8, color: TXT_LIGHT });
+  }
+
+  // En-tête + pied de page « fiche officielle » (reproduit la charte SéQuélec GP 04)
+  function drawSequelecHeader(page, pageNum, totalPages){
+    // Logo SéQuélec stylisé (haut gauche) sur fond blanc
+    drawTextLine(page, 'l\'électricité', ML, 22, { size:8, color: TXT });
+    // « Sé » jaune + « Quélec » violet
+    drawTextLine(page, 'Sé', ML, 36, { bold:true, size:14, color: SQ_YELLOW });
+    drawTextLine(page, 'Quélec', ML+18, 36, { bold:true, size:14, color: VIOLET });
+
+    // Bannière jaune arrondie : « Partie destinée aux Clients (domaine privatif) »
+    const BANNER_X = ML + 130, BANNER_Y = 22, BANNER_W = PW - ML - MR - 130, BANNER_H = 44;
+    drawRect(page, BANNER_X, BANNER_Y, BANNER_W, BANNER_H, { fill: SQ_YELLOW, border: SQ_ORANGE, borderWidth: 0.8 });
+    drawTextCenteredH(page, 'Partie destinée aux Clients',     BANNER_X, BANNER_W, BANNER_Y + 9,  { bold:true, size:14, color: TXT });
+    drawTextCenteredH(page, '(domaine privatif)',              BANNER_X, BANNER_W, BANNER_Y + 27, { bold:true, size:14, color: TXT });
+
+    // Pied de page : Copyright | page X sur Y | Référence GP 04
+    const footerY = PH - 30;
+    drawRect(page, 0, footerY, PW, 30, { fill: PDFLib.rgb(0.97, 0.97, 0.99) });
+    drawTextLine(page, '© Copyright SéQuélec 2012',  ML,                footerY + 10, { size:7.5, color: SQ_FOOTER });
+    drawTextCenteredH(page, `${pageNum} sur ${totalPages}`, 0, PW,      footerY + 10, { size:7.5, color: SQ_FOOTER });
+    drawTextLine(page, 'Référence : GP 04',           PW - ML - 80,     footerY + 10, { size:7.5, color: SQ_FOOTER });
+    drawTextCenteredH(page, 'ÉLECTRICITÉ RÉSEAU DISTRIBUTION FRANCE', 0, PW, footerY + 21, { bold:true, size:7, color: VIOLET });
+  }
+
+  function drawHeader(page, pageNum, totalPages){
+    drawCoverHeader(page, pageNum, totalPages);
   }
 
   // Bloc projet (page de couverture du branchement)
@@ -2455,34 +2486,43 @@ async function buildC4PDF(){
   }
 
   function drawTableHeader(page, yTop){
-    const H = 22;
-    drawRect(page, TBL_X, yTop, TBL_W, H, { fill: VIOLET, border: VIOLET, borderWidth:0.5 });
-    const yText = yTop + (H - 8)/2;
-    // séparateurs verticaux pour clarté
+    const H = 32; // plus haut pour libellés sur 2 lignes comme dans l'officiel
+    drawRect(page, TBL_X, yTop, TBL_W, H, { fill: SQ_ORANGE, border: SQ_ORANGE, borderWidth:0.5 });
+    // séparateurs verticaux blancs
     let x = TBL_X;
     [COL_LBL_W, COL_STAT_W, COL_STAT_W, COL_STAT_W, COL_STAT_W].forEach((w,i)=>{
       x += w;
       page.drawLine({ start:{x, y:T(yTop)}, end:{x, y:T(yTop+H)}, color: PDFLib.rgb(1,1,1), thickness:0.4 });
     });
-    drawTextLine(page, 'Point de contrôle', TBL_X+6, yText, { bold:true, size:9.5, color: PDFLib.rgb(1,1,1) });
-    drawTextCenteredH(page, 'Par ERDF',    TBL_X + COL_LBL_W,                  COL_STAT_W, yText, { bold:true, size:7.8, color: PDFLib.rgb(1,1,1) });
-    drawTextCenteredH(page, 'Sans objet',  TBL_X + COL_LBL_W + COL_STAT_W,     COL_STAT_W, yText, { bold:true, size:7.8, color: PDFLib.rgb(1,1,1) });
-    drawTextCenteredH(page, 'Conforme',    TBL_X + COL_LBL_W + 2*COL_STAT_W,   COL_STAT_W, yText, { bold:true, size:7.8, color: PDFLib.rgb(1,1,1) });
-    drawTextCenteredH(page, 'Non conforme',TBL_X + COL_LBL_W + 3*COL_STAT_W,   COL_STAT_W, yText, { bold:true, size:7.8, color: PDFLib.rgb(1,1,1) });
-    drawTextCenteredH(page, 'Objet de la non-conformité ou observations', TBL_X + COL_LBL_W + 4*COL_STAT_W, COL_NOTE_W, yText, { bold:true, size:7.5, color: PDFLib.rgb(1,1,1) });
+    // Label gauche centré verticalement
+    drawTextLine(page, 'Point de contrôle', TBL_X+6, yTop + (H-9)/2, { bold:true, size:9.5, color: PDFLib.rgb(1,1,1) });
+    // Statuts : « Par ERDF » et « Sans objet » sur 2 lignes possibles, autres sur 1 ligne centrée
+    const yMid = yTop + (H-9)/2;
+    drawTextCenteredH(page, 'Par',           TBL_X + COL_LBL_W,                  COL_STAT_W, yTop + 8,  { bold:true, size:8, color: PDFLib.rgb(1,1,1) });
+    drawTextCenteredH(page, 'ERDF',          TBL_X + COL_LBL_W,                  COL_STAT_W, yTop + 19, { bold:true, size:8, color: PDFLib.rgb(1,1,1) });
+    drawTextCenteredH(page, 'Sans',          TBL_X + COL_LBL_W + COL_STAT_W,     COL_STAT_W, yTop + 8,  { bold:true, size:8, color: PDFLib.rgb(1,1,1) });
+    drawTextCenteredH(page, 'objet',         TBL_X + COL_LBL_W + COL_STAT_W,     COL_STAT_W, yTop + 19, { bold:true, size:8, color: PDFLib.rgb(1,1,1) });
+    drawTextCenteredH(page, 'Conforme',      TBL_X + COL_LBL_W + 2*COL_STAT_W,   COL_STAT_W, yMid,      { bold:true, size:8, color: PDFLib.rgb(1,1,1) });
+    drawTextCenteredH(page, 'Non',           TBL_X + COL_LBL_W + 3*COL_STAT_W,   COL_STAT_W, yTop + 8,  { bold:true, size:8, color: PDFLib.rgb(1,1,1) });
+    drawTextCenteredH(page, 'conforme',      TBL_X + COL_LBL_W + 3*COL_STAT_W,   COL_STAT_W, yTop + 19, { bold:true, size:8, color: PDFLib.rgb(1,1,1) });
+    drawTextCenteredH(page, 'Objet de la',                  TBL_X + COL_LBL_W + 4*COL_STAT_W, COL_NOTE_W, yTop + 5,  { bold:true, size:8, color: PDFLib.rgb(1,1,1) });
+    drawTextCenteredH(page, 'non-conformité ou',             TBL_X + COL_LBL_W + 4*COL_STAT_W, COL_NOTE_W, yTop + 15, { bold:true, size:8, color: PDFLib.rgb(1,1,1) });
+    drawTextCenteredH(page, 'observations',                  TBL_X + COL_LBL_W + 4*COL_STAT_W, COL_NOTE_W, yTop + 25, { bold:true, size:8, color: PDFLib.rgb(1,1,1) });
     return yTop + H;
   }
 
   function drawSectionRow(page, label, yTop){
-    drawRect(page, TBL_X, yTop, TBL_W, ROW_H_SECTION, { fill: SECTION_BG, border: BORDER, borderWidth:0.4 });
-    // centrage vertical : pour size=9.5, top = yTop + (h-size)/2 = yTop + 4.25
-    const yText = yTop + (ROW_H_SECTION - 9.5)/2;
-    drawTextLine(page, label, TBL_X+8, yText, { bold:true, size:9.5, color: TXT });
+    // Bandeau orange comme l'officiel
+    drawRect(page, TBL_X, yTop, TBL_W, ROW_H_SECTION, { fill: SQ_ORANGE, border: SQ_ORANGE, borderWidth:0.4 });
+    const yText = yTop + (ROW_H_SECTION - 10)/2;
+    drawTextLine(page, label, TBL_X+8, yText, { bold:true, size:10, color: PDFLib.rgb(1,1,1) });
     return yTop + ROW_H_SECTION;
   }
 
   function drawItemRow(page, label, status, note, yTop){
-    drawRect(page, TBL_X, yTop, TBL_W, ROW_H_ITEM, { border: BORDER, borderWidth:0.4 });
+    // Fond crème pour la cellule label (comme l'officiel SéQuélec)
+    drawRect(page, TBL_X, yTop, COL_LBL_W, ROW_H_ITEM, { fill: SQ_CREAM, border: BORDER, borderWidth:0.4 });
+    drawRect(page, TBL_X + COL_LBL_W, yTop, TBL_W - COL_LBL_W, ROW_H_ITEM, { border: BORDER, borderWidth:0.4 });
     // séparateurs verticaux
     [COL_LBL_W, COL_LBL_W+COL_STAT_W, COL_LBL_W+2*COL_STAT_W, COL_LBL_W+3*COL_STAT_W, COL_LBL_W+4*COL_STAT_W].forEach(off=>{
       const x = TBL_X + off;
@@ -2523,9 +2563,9 @@ async function buildC4PDF(){
     // Page 1 : projet + en-tête tableau
     result.push({ kind:'project', branch: b });
     // Pages tableau : on remplit ROW_H_ITEM par ligne, donc on calcule combien de lignes par page
-    const HEADER_RESERVED = 70; // bandeau + marge
-    const TABLE_HEADER_H = 24;
-    const FOOTER_RESERVED = 30;
+    const HEADER_RESERVED = 100; // logo SéQuélec + bannière + titre fiche
+    const TABLE_HEADER_H = 32;
+    const FOOTER_RESERVED = 40;  // bandeau pied de page
     const usableH = PH - HEADER_RESERVED - FOOTER_RESERVED;
     let pageRows = []; let usedH = 0;
     rows.forEach((r,idx)=>{
@@ -2564,8 +2604,8 @@ async function buildC4PDF(){
   allPages.forEach((spec, idx)=>{
     const pageNum = idx + 1;
     const page = doc.addPage([PW, PH]);
-    drawHeader(page, pageNum, total);
     if(spec.kind === 'project'){
+      drawCoverHeader(page, pageNum, total);
       let y = 60;
       y = drawProjectBlock(page, spec.branch.name, y);
       y += 8;
@@ -2573,12 +2613,15 @@ async function buildC4PDF(){
       y += 16;
       drawTextLine(page, 'Le détail des points de contrôle figure dans les pages suivantes,', ML, y, { size:9, color: TXT_LIGHT });
       y += 12;
-      drawTextLine(page, 'organisé selon les sections du guide SéQuélec GP 04.', ML, y, { size:9, color: TXT_LIGHT });
+      drawTextLine(page, 'reproduisant fidèlement la fiche officielle SéQuélec GP 04 (page 37).', ML, y, { size:9, color: TXT_LIGHT });
     } else {
-      // table page
-      let y = 60;
-      drawTextLine(page, `Auto-contrôle — Branchement ${spec.branch.name}`, ML, y, { bold:true, size:12, color: VIOLET });
-      y += 18;
+      // table page : reproduit la mise en page officielle SéQuélec
+      drawSequelecHeader(page, pageNum, total);
+      let y = 78;
+      drawTextLine(page, 'I. Fiche d\'auto-contrôle destinée aux clients', ML, y, { bold:true, size:12, color: TXT });
+      y += 6;
+      drawTextLine(page, `Branchement ${spec.branch.name}`, PW - ML - 120, y - 6, { bold:true, size:9.5, color: VIOLET });
+      y += 14;
       y = drawTableHeader(page, y);
       const e = spec.branch.escaliers[0];
       const f = e.fiches.D1;

@@ -78,8 +78,10 @@ input[type=file]{display:none}
     <span id="pageInfo" style="font-size:11px;color:var(--txt2);min-width:60px;text-align:center">— / —</span>
     <button class="btn" id="btnNext" onclick="goPage(1)" disabled>›</button>
     <span style="width:1px;height:20px;background:var(--line)"></span>
+    <button class="btn" id="btnLegend" onclick="setMode('legend')" disabled>🔍 Scanner légende</button>
     <button class="btn" id="btnTpl" onclick="setMode('template')" disabled>✂ Définir template</button>
     <button class="btn primary" id="btnDetect" onclick="runDetection()" disabled>🎯 Détecter</button>
+    <button class="btn primary" id="btnDetectAll" onclick="detectAll()" disabled style="background:#22c55e;border-color:#22c55e">🚀 Détecter TOUT</button>
     <button class="btn" id="btnAdd" onclick="setMode('add')" disabled>+ Ajouter</button>
     <button class="btn" id="btnRem" onclick="setMode('remove')" disabled>– Retirer</button>
     <span class="range">
@@ -107,11 +109,17 @@ input[type=file]{display:none}
       <div class="section">
         <h4>Aide rapide</h4>
         <div class="help">
+          <b>Mode automatique</b><br>
           <b>1.</b> Ouvrez un PDF<br>
-          <b>2.</b> Créez une catégorie (ex. PC 16 A)<br>
-          <b>3.</b> Cliquez <b>« Définir template »</b> et tracez un rectangle autour d'un exemple du symbole<br>
-          <b>4.</b> Cliquez <b>« Détecter »</b><br>
-          <b>5.</b> Ajustez le seuil ou ajoutez/retirez manuellement<br>
+          <b>2.</b> Cliquez <b>« 🔍 Scanner légende »</b> et tracez un rectangle autour de la zone légende<br>
+          <b>3.</b> Cliquez <b>« 🚀 Détecter TOUT »</b><br>
+          <hr style="margin:8px 0;border-color:var(--line)">
+          <b>Mode manuel (1 symbole)</b><br>
+          <b>1.</b> Créez une catégorie<br>
+          <b>2.</b> <b>« ✂ Définir template »</b> + rectangle<br>
+          <b>3.</b> <b>« 🎯 Détecter »</b><br>
+          <hr style="margin:8px 0;border-color:var(--line)">
+          Ajustez le seuil ou ajoutez/retirez manuellement.<br>
           <kbd>+</kbd>/<kbd>-</kbd> zoom · <kbd>Esc</kbd> annuler
         </div>
       </div>
@@ -187,11 +195,15 @@ async function renderPage() {
   const vp = page.getViewport({ scale: STATE.scale });
   STATE.pageW = Math.floor(vp.width);
   STATE.pageH = Math.floor(vp.height);
+  STATE.currentPdfPage = page;
+  STATE.viewport = vp;
   const c = document.getElementById('pdfCanvas');
   const o = document.getElementById('overlayCanvas');
   c.width = o.width = STATE.pageW;
   c.height = o.height = STATE.pageH;
   await page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+  // Récupère le contenu texte (positions PDF → canvas) pour la détection de légende
+  STATE.textContent = await page.getTextContent();
   // Pré-calcul du grayscale pour la détection
   STATE.pageImageGray = canvasToGray(c);
   document.getElementById('pageInfo').textContent = STATE.pageNum + ' / ' + STATE.numPages;
@@ -293,17 +305,19 @@ function refreshTemplateBox() {
    ============================================================ */
 function setMode(m) {
   STATE.mode = m;
-  ['btnTpl','btnAdd','btnRem'].forEach(b => document.getElementById(b).classList.remove('on'));
+  ['btnTpl','btnAdd','btnRem','btnLegend'].forEach(b => document.getElementById(b).classList.remove('on'));
   if (m === 'template') document.getElementById('btnTpl').classList.add('on');
   if (m === 'add')      document.getElementById('btnAdd').classList.add('on');
   if (m === 'remove')   document.getElementById('btnRem').classList.add('on');
+  if (m === 'legend')   document.getElementById('btnLegend').classList.add('on');
   const vp = document.getElementById('viewport');
   vp.classList.remove('cursor-template','cursor-add','cursor-remove');
-  if (m === 'template') vp.classList.add('cursor-template');
+  if (m === 'template' || m === 'legend') vp.classList.add('cursor-template');
   if (m === 'add') vp.classList.add('cursor-add');
   if (m === 'remove') vp.classList.add('cursor-remove');
   document.getElementById('statusMode').textContent = 'Mode : ' + ({
-    view:'visualisation', template:'définir template', add:'ajout manuel', remove:'retrait manuel'
+    view:'visualisation', template:'définir template', legend:'scanner la légende',
+    add:'ajout manuel', remove:'retrait manuel'
   })[m];
 }
 
@@ -325,12 +339,14 @@ function canvasCoords(ev) {
 }
 
 document.getElementById('canvasStack').addEventListener('mousedown', e => {
-  if (!activeCat() && STATE.mode !== 'view') {
+  // Le mode 'legend' n'a pas besoin de catégorie pré-existante (il en crée)
+  const needsCat = ['template','add','remove'].includes(STATE.mode);
+  if (needsCat && !activeCat()) {
     alert('Créez d\'abord une catégorie.');
     return;
   }
   const p = canvasCoords(e);
-  if (STATE.mode === 'template') {
+  if (STATE.mode === 'template' || STATE.mode === 'legend') {
     dragStart = p;
   } else if (STATE.mode === 'add') {
     activeCat().markers.push({ x: p.x, y: p.y, score: 1.0, manual: true });
@@ -356,9 +372,11 @@ document.getElementById('canvasStack').addEventListener('mouseup', e => {
   const end = canvasCoords(e);
   const x = Math.min(dragStart.x, end.x), y = Math.min(dragStart.y, end.y);
   const w = Math.abs(end.x - dragStart.x), h = Math.abs(end.y - dragStart.y);
+  const wasMode = STATE.mode;
   dragStart = null;
   if (w < 5 || h < 5) { redrawOverlay(); return; }
-  saveTemplate(x, y, w, h);
+  if (wasMode === 'template')      saveTemplate(x, y, w, h);
+  else if (wasMode === 'legend')   scanLegend(x, y, w, h);
   setMode('view');
   redrawOverlay();
 });
@@ -412,6 +430,121 @@ async function runDetection() {
   setTimeout(() => document.getElementById('progress').style.width = '0%', 800);
   renderCategories();
   redrawOverlay();
+}
+
+/* ============================================================
+   LEGEND SCAN — extraction automatique des symboles + libellés
+   ============================================================ */
+async function scanLegend(rx, ry, rw, rh) {
+  if (!STATE.textContent || !STATE.viewport) {
+    alert('Texte de la page non disponible.'); return;
+  }
+  setStatus('Analyse de la légende…');
+
+  // 1) Convertit chaque item de texte PDF en coords canvas + filtre dans le rectangle
+  const items = [];
+  const vp = STATE.viewport;
+  for (const it of STATE.textContent.items) {
+    if (!it.str || !it.str.trim()) continue;
+    // it.transform = [a, b, c, d, e, f] — (e, f) est l'origine du texte en coords PDF
+    const tx = it.transform[4], ty = it.transform[5];
+    const [cx, cy] = vp.convertToViewportPoint(tx, ty);
+    if (cx < rx || cx > rx + rw || cy < ry || cy > ry + rh) continue;
+    // Largeur réelle en canvas : it.width en unités PDF × scale
+    const widthCanvas = (it.width || 0) * STATE.scale;
+    items.push({ str: it.str.trim(), x: cx, y: cy, w: widthCanvas });
+  }
+
+  if (!items.length) {
+    alert('Aucun texte trouvé dans la zone sélectionnée. Vérifiez que c\'est bien la légende et que le PDF contient du texte vectoriel (pas une image scannée).');
+    return;
+  }
+
+  // 2) Regroupe les items par ligne (même Y, à ±10 px près)
+  items.sort((a, b) => a.y - b.y);
+  const ROW_TOL = 10;
+  const rows = [];
+  let cur = [], curY = -1e9;
+  for (const it of items) {
+    if (Math.abs(it.y - curY) > ROW_TOL) {
+      if (cur.length) rows.push(cur);
+      cur = [it];
+      curY = it.y;
+    } else {
+      cur.push(it);
+    }
+  }
+  if (cur.length) rows.push(cur);
+
+  // 3) Pour chaque ligne, déduit le symbole = zone à gauche du libellé
+  let created = 0;
+  const SYM_W = 28;     // largeur estimée du pictogramme en canvas px
+  const SYM_PAD_X = 4;  // marge entre symbole et texte
+  const SYM_H_BUFFER = 4;
+  const minTextLen = 2;
+
+  for (const row of rows) {
+    row.sort((a, b) => a.x - b.x);
+    const text = row.map(r => r.str).join(' ').trim();
+    if (text.length < minTextLen) continue;
+    // Filtre : ignore les titres très longs (en-têtes type "APPAREILLAGE LOGEMENTS")
+    if (/^APPAREILLAGE/i.test(text) || /^LEGENDE/i.test(text) || /^LÉGENDE/i.test(text)) continue;
+    // Filtre : ignore les lignes purement numériques (cotes, dates)
+    if (/^[\d\s\/.,;:-]+$/.test(text)) continue;
+
+    const xMinText = row[0].x;
+    const yBase = row.reduce((s, r) => s + r.y, 0) / row.length; // baseline moyen
+
+    // Symbole : à gauche du texte, vertical centré sur le baseline
+    let sx = Math.max(rx, xMinText - SYM_W - SYM_PAD_X);
+    let sw = Math.min(SYM_W, xMinText - sx - SYM_PAD_X);
+    if (sw < 8) continue;
+    const sh = 26;
+    let sy = Math.max(ry, yBase - sh + SYM_H_BUFFER);
+    if (sy + sh > ry + rh) sy = ry + rh - sh;
+
+    // Crée la catégorie + sa template
+    const id = 'c' + Date.now() + '_' + created;
+    const color = PALETTE[(STATE.categories.length + created) % PALETTE.length];
+    const gray = new Float32Array(sw * sh);
+    for (let j = 0; j < sh; j++)
+      for (let i = 0; i < sw; i++)
+        gray[j*sw + i] = STATE.pageImageGray[(sy + j) * STATE.pageW + (sx + i)];
+    STATE.categories.push({
+      id,
+      name: text.length > 40 ? text.slice(0, 40) + '…' : text,
+      color,
+      template: { w: sw, h: sh, gray },
+      markers: []
+    });
+    created++;
+  }
+
+  if (!created) {
+    alert('Aucune ligne de symbole exploitable trouvée dans la zone.');
+    return;
+  }
+  STATE.activeCatId = STATE.categories[STATE.categories.length - 1].id;
+  renderCategories();
+  setStatus(`${created} symboles extraits de la légende. Cliquez « 🚀 Détecter TOUT » pour lancer la recherche.`);
+}
+
+/* ============================================================
+   DETECT ALL — lance la détection NCC sur toutes les catégories
+   ============================================================ */
+async function detectAll() {
+  const cats = STATE.categories.filter(c => c.template);
+  if (!cats.length) { alert('Aucune catégorie avec template.'); return; }
+  const t0 = performance.now();
+  for (let i = 0; i < cats.length; i++) {
+    setStatus(`Détection ${i + 1}/${cats.length} : ${cats[i].name}…`);
+    STATE.activeCatId = cats[i].id;
+    renderCategories();
+    await runDetection();
+  }
+  const t1 = performance.now();
+  const total = STATE.categories.reduce((s, c) => s + c.markers.length, 0);
+  setStatus(`✓ Détection terminée — ${total} symboles au total en ${((t1 - t0) / 1000).toFixed(1)} s`);
 }
 
 /**
@@ -545,7 +678,7 @@ function esc(s) { return String(s).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt
 function escAttr(s) { return esc(s).replace(/"/g, '&quot;'); }
 
 function enableUI() {
-  ['btnTpl','btnDetect','btnAdd','btnRem','threshold','btnExport'].forEach(id => {
+  ['btnLegend','btnTpl','btnDetect','btnDetectAll','btnAdd','btnRem','threshold','btnExport'].forEach(id => {
     document.getElementById(id).disabled = false;
   });
 }

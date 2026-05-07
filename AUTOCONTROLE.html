@@ -385,6 +385,30 @@ main{padding:24px;max-width:1400px;margin:0 auto}
 .row-flex{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .spacer{flex:1}
 .mt-8{margin-top:8px}.mt-12{margin-top:12px}.mt-16{margin-top:16px}
+/* Signature placement widget */
+.sig-page-mock{
+  position:relative;width:210px;height:297px; /* A4 portrait, ratio exact */
+  background:#fff;border:1px solid #999;border-radius:2px;
+  margin:10px auto;box-shadow:0 4px 16px rgba(0,0,0,.4);
+  background-image:linear-gradient(rgba(0,0,0,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,.03) 1px,transparent 1px);
+  background-size:21px 21px;
+}
+.sig-page-mock::before{
+  content:'A4';position:absolute;top:6px;right:8px;font-size:9px;color:#aaa;font-family:monospace;letter-spacing:1px;
+}
+.sig-draggable{
+  position:absolute;cursor:move;user-select:none;
+  border:1.5px dashed transparent;border-radius:2px;
+  transition:border-color .15s;
+}
+.sig-draggable:hover, .sig-draggable.active{border-color:var(--violet)}
+.sig-draggable img{width:100%;height:100%;object-fit:contain;pointer-events:none;display:block}
+.sig-resize-handle{
+  position:absolute;bottom:-6px;right:-6px;
+  width:12px;height:12px;background:var(--violet);
+  border:2px solid #fff;border-radius:50%;
+  cursor:nwse-resize;box-shadow:0 1px 3px rgba(0,0,0,.4);
+}
 .mb-8{margin-bottom:8px}.mb-12{margin-bottom:12px}
 .tag{display:inline-block;padding:2px 8px;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;border-radius:10px;background:var(--panel-2);color:var(--txt-2);border:1px solid var(--line-2)}
 .tag.violet{background:var(--violet-glow);color:var(--violet-2);border-color:var(--violet-3)}
@@ -705,6 +729,45 @@ main{padding:24px;max-width:1400px;margin:0 auto}
           <option value="gt500">&gt; 500 MΩ</option>
         </select>
       </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">
+      Signature personnelle
+      <span class="right" style="font-weight:400;color:var(--txt-3)" id="sigStatus">Aucune signature chargée</span>
+    </div>
+    <div class="grid cols-2">
+      <div class="field">
+        <label>
+          <input type="checkbox" id="sigEnabled" onchange="onSigToggle()"> Insérer ma signature dans le PDF
+        </label>
+      </div>
+      <div class="field">
+        <label>Page d'application</label>
+        <select id="sigPage" onchange="onSigPageChange()">
+          <option value="last">Dernière page (fiche d'auto-contrôle)</option>
+          <option value="cover">Première page (page de couverture)</option>
+        </select>
+      </div>
+    </div>
+    <div id="sigWidget" style="display:none">
+      <div style="font-size:12px;color:var(--txt-3);margin:6px 0 8px">
+        Glissez la signature pour la déplacer, tirez le coin pour la redimensionner. La position et la taille sont enregistrées.
+      </div>
+      <div class="sig-page-mock" id="sigPageMock">
+        <div class="sig-draggable" id="sigDraggable">
+          <img id="sigImgPreview" alt="signature" draggable="false">
+          <div class="sig-resize-handle" title="Redimensionner"></div>
+        </div>
+      </div>
+      <div class="row-flex" style="justify-content:center;gap:8px;margin-top:8px">
+        <button class="btn sm" onclick="resetSigPosition()">↺ Position par défaut</button>
+        <button class="btn sm gold" onclick="removeSig()">✕ Retirer la signature</button>
+      </div>
+    </div>
+    <div id="sigEmpty" style="display:none;font-size:12px;color:var(--txt-3);padding:14px 0">
+      Aucune signature trouvée pour votre compte. Créez-en une via le bouton « Signature » dans la barre du haut, puis revenez ici.
     </div>
   </div>
 
@@ -2412,6 +2475,7 @@ async function buildC4PDF(){
     }
   }
 
+  await embedSignatureOnDocument(out);
   return out.save();
 }
 
@@ -2455,6 +2519,7 @@ async function buildFilledPDF(){
     }
   }
 
+  await embedSignatureOnDocument(out);
   return out.save();
 }
 
@@ -2561,6 +2626,224 @@ function renderOfficiel(){
   }
   // L'aperçu n'est PAS généré automatiquement (le navigateur peut télécharger le PDF
   // au lieu de l'afficher selon ses réglages). L'utilisateur clique sur le bouton dédié.
+
+  // Initialise le widget signature (chargement + drag/resize)
+  initSignatureWidget();
+}
+
+/* ====================================================================
+   Widget Signature personnelle
+   ==================================================================== */
+let _sigImageDataUrl = null;        // PNG dataURL chargé depuis Firestore
+let _sigImgAspect    = 3;            // ratio largeur/hauteur de la signature
+
+function getFirebase(){
+  try { return window.parent && window.parent.firebase; } catch(e){ return null; }
+}
+
+function defaultSigConfig(){
+  return { enabled:false, page:'last', x:0.60, y:0.82, w:0.25 };
+}
+
+function getSigConfig(){
+  if(!state.project) state.project = {};
+  if(!state.project.signature) state.project.signature = defaultSigConfig();
+  return state.project.signature;
+}
+
+async function initSignatureWidget(){
+  const cfg = getSigConfig();
+  document.getElementById('sigEnabled').checked = !!cfg.enabled;
+  document.getElementById('sigPage').value = cfg.page || 'last';
+
+  // Charger la signature depuis Firestore (si pas déjà chargée)
+  if(!_sigImageDataUrl){
+    await loadMySignature();
+  }
+  refreshSigUI();
+}
+
+async function loadMySignature(){
+  const fb = getFirebase();
+  if(!fb || !fb.firestore || !fb.auth){ return; }
+  const auth = fb.auth();
+  const u = auth.currentUser;
+  if(!u){ return; }
+  try {
+    const snap = await fb.firestore().collection('signatures').where('ownerUid','==', u.uid).get();
+    if(snap.empty) return;
+    const docs = snap.docs.map(d=>d.data()).filter(d=>d.png)
+      .sort((a,b)=> (b.createdAt && b.createdAt.seconds || 0) - (a.createdAt && a.createdAt.seconds || 0));
+    if(!docs.length) return;
+    _sigImageDataUrl = docs[0].png;
+    // Récupère l'aspect ratio
+    await new Promise(res => {
+      const im = new Image();
+      im.onload = ()=>{ if(im.naturalHeight) _sigImgAspect = im.naturalWidth / im.naturalHeight; res(); };
+      im.onerror = res;
+      im.src = _sigImageDataUrl;
+    });
+  } catch(e){ console.warn('loadMySignature', e); }
+}
+
+function refreshSigUI(){
+  const cfg = getSigConfig();
+  const status = document.getElementById('sigStatus');
+  const widget = document.getElementById('sigWidget');
+  const empty  = document.getElementById('sigEmpty');
+  if(_sigImageDataUrl){
+    status.textContent = 'Signature chargée ✓';
+    document.getElementById('sigImgPreview').src = _sigImageDataUrl;
+    if(cfg.enabled){
+      widget.style.display = 'block';
+      empty.style.display = 'none';
+      // Init drag handlers une seule fois
+      if(!widget.dataset.bound){ setupSigDragResize(); widget.dataset.bound = '1'; }
+      applySigPositionToUI();
+    } else {
+      widget.style.display = 'none';
+      empty.style.display = 'none';
+    }
+  } else {
+    status.textContent = 'Aucune signature chargée';
+    widget.style.display = 'none';
+    empty.style.display = cfg.enabled ? 'block' : 'none';
+  }
+}
+
+function applySigPositionToUI(){
+  const drag = document.getElementById('sigDraggable');
+  const mock = document.getElementById('sigPageMock');
+  if(!drag || !mock) return;
+  const cfg = getSigConfig();
+  const W = mock.clientWidth, H = mock.clientHeight;
+  const sw = Math.max(0.05, Math.min(0.9, cfg.w || 0.25));
+  const sx = Math.max(0, Math.min(1 - sw, cfg.x !== undefined ? cfg.x : 0.6));
+  const sy = Math.max(0, Math.min(1, cfg.y !== undefined ? cfg.y : 0.82));
+  drag.style.width  = (sw * W) + 'px';
+  drag.style.height = ((sw * W) / _sigImgAspect) + 'px';
+  drag.style.left   = (sx * W) + 'px';
+  drag.style.top    = (sy * H) + 'px';
+}
+
+function saveSigPositionFromUI(){
+  const drag = document.getElementById('sigDraggable');
+  const mock = document.getElementById('sigPageMock');
+  if(!drag || !mock) return;
+  const cfg = getSigConfig();
+  cfg.x = drag.offsetLeft / mock.clientWidth;
+  cfg.y = drag.offsetTop  / mock.clientHeight;
+  cfg.w = drag.offsetWidth / mock.clientWidth;
+  save();
+}
+
+function setupSigDragResize(){
+  const drag   = document.getElementById('sigDraggable');
+  const handle = drag.querySelector('.sig-resize-handle');
+  const mock   = document.getElementById('sigPageMock');
+
+  // Drag (clic sur la signature mais pas sur le handle)
+  drag.addEventListener('mousedown', e => {
+    if(e.target === handle) return;
+    e.preventDefault();
+    drag.classList.add('active');
+    const startX = e.clientX, startY = e.clientY;
+    const startLeft = drag.offsetLeft, startTop = drag.offsetTop;
+    const onMove = ev => {
+      const W = mock.clientWidth, H = mock.clientHeight;
+      const nl = Math.max(0, Math.min(W - drag.offsetWidth,  startLeft + (ev.clientX - startX)));
+      const nt = Math.max(0, Math.min(H - drag.offsetHeight, startTop  + (ev.clientY - startY)));
+      drag.style.left = nl + 'px';
+      drag.style.top  = nt + 'px';
+    };
+    const onUp = () => {
+      drag.classList.remove('active');
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      saveSigPositionFromUI();
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+
+  // Resize (clic sur le handle)
+  handle.addEventListener('mousedown', e => {
+    e.preventDefault(); e.stopPropagation();
+    drag.classList.add('active');
+    const startX = e.clientX;
+    const startW = drag.offsetWidth;
+    const onMove = ev => {
+      const W = mock.clientWidth, H = mock.clientHeight;
+      let nw = Math.max(20, Math.min(W - drag.offsetLeft, startW + (ev.clientX - startX)));
+      let nh = nw / _sigImgAspect;
+      if(drag.offsetTop + nh > H){ nh = H - drag.offsetTop; nw = nh * _sigImgAspect; }
+      drag.style.width  = nw + 'px';
+      drag.style.height = nh + 'px';
+    };
+    const onUp = () => {
+      drag.classList.remove('active');
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      saveSigPositionFromUI();
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+}
+
+function onSigToggle(){
+  const cfg = getSigConfig();
+  cfg.enabled = document.getElementById('sigEnabled').checked;
+  save();
+  refreshSigUI();
+}
+
+function onSigPageChange(){
+  const cfg = getSigConfig();
+  cfg.page = document.getElementById('sigPage').value;
+  save();
+}
+
+function resetSigPosition(){
+  const cfg = getSigConfig();
+  cfg.x = 0.60; cfg.y = 0.82; cfg.w = 0.25;
+  save();
+  applySigPositionToUI();
+}
+
+function removeSig(){
+  const cfg = getSigConfig();
+  cfg.enabled = false;
+  save();
+  document.getElementById('sigEnabled').checked = false;
+  refreshSigUI();
+}
+
+// Embed la signature sur une page du PDFDocument généré.
+// Appelée à la fin de buildC4PDF et buildFilledPDF.
+async function embedSignatureOnDocument(out){
+  const cfg = (state.project && state.project.signature) || null;
+  if(!cfg || !cfg.enabled || !_sigImageDataUrl) return;
+  try {
+    const isPng = _sigImageDataUrl.startsWith('data:image/png');
+    const isJpg = _sigImageDataUrl.startsWith('data:image/jpeg') || _sigImageDataUrl.startsWith('data:image/jpg');
+    if(!isPng && !isJpg) return;
+    const b64 = _sigImageDataUrl.split(',')[1];
+    const bytes = base64ToUint8(b64);
+    const img = isPng ? await out.embedPng(bytes) : await out.embedJpg(bytes);
+
+    const pages = out.getPages();
+    if(pages.length === 0) return;
+    const idx = (cfg.page === 'cover') ? 0 : (pages.length - 1);
+    const page = pages[idx];
+    const { width: PW, height: PH } = page.getSize();
+    const sw = Math.max(0.05, Math.min(0.9, cfg.w || 0.25)) * PW;
+    const sh = sw / (img.width / img.height);
+    const sx = Math.max(0, Math.min(1 - cfg.w, cfg.x || 0.6)) * PW;
+    // Repère PDF : origine en bas à gauche
+    const sy = PH - (cfg.y || 0.82) * PH - sh;
+    page.drawImage(img, { x:sx, y:sy, width:sw, height:sh });
+  } catch(e){ console.warn('embedSignature', e); }
 }
 
 </script>

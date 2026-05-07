@@ -98,6 +98,13 @@ if(window.self!==window.top){
   .status-online{color:#4ade80}
   .status-offline{color:#666}
   .status-banned{color:#ff4466;font-weight:700}
+  /* Pulsation des marqueurs IP en ligne sur la carte */
+  @keyframes ipPulse{
+    0%   { stroke-opacity:1;   stroke-width:2.5; }
+    50%  { stroke-opacity:.4;  stroke-width:6;   }
+    100% { stroke-opacity:1;   stroke-width:2.5; }
+  }
+  .ip-marker-online{ animation: ipPulse 1.6s ease-in-out infinite; }
   .session-row{font-size:12px;padding:8px 12px;border-bottom:1px solid rgba(120,50,255,.04)}
   .session-row:hover{background:rgba(120,50,255,.03)}
   /* ═══ Signatures library ═══ */
@@ -376,6 +383,8 @@ async function loadPresence(){
     presenceData={};
     snap.forEach(doc=>{presenceData[doc.id]=doc.data()});
     renderUsers();
+    // Met à jour la carte IP en temps réel pour refléter qui est en ligne
+    if(typeof ipLeafletMap !== 'undefined' && ipLeafletMap) loadIpMap();
   });
 }
 
@@ -1129,12 +1138,23 @@ async function loadIpMap(){
   ipMarkers = [];
   try{
     const snap = await db.collection('sessions').orderBy('timestamp','desc').limit(500).get();
+    // login → uid pour pouvoir interroger presenceData
+    const loginToUid = {};
+    (users||[]).forEach(u => { if(u.login) loginToUid[u.login] = u.uid; });
+    const now = Date.now();
+    const isUserOnline = (login) => {
+      const uid = loginToUid[login]; if(!uid) return false;
+      const p = presenceData[uid]; if(!p) return false;
+      return !!(p.online && p.lastSeen && (now - p.lastSeen.seconds*1000) < 300000);
+    };
+
     const agg = {};
     snap.forEach(doc => {
       const s = doc.data();
       if(!s.ip || s.lat == null || s.lon == null) return;
-      if(!agg[s.ip]) agg[s.ip] = { ip:s.ip, lat:s.lat, lon:s.lon, city:s.city||'', country:s.country||'', users:new Set(), count:0, last:null };
+      if(!agg[s.ip]) agg[s.ip] = { ip:s.ip, lat:s.lat, lon:s.lon, city:s.city||'', country:s.country||'', users:new Set(), logins:new Set(), count:0, last:null };
       agg[s.ip].users.add(s.name || s.login || '?');
+      if(s.login) agg[s.ip].logins.add(s.login);
       agg[s.ip].count++;
       if(s.timestamp && (!agg[s.ip].last || s.timestamp.seconds > agg[s.ip].last))
         agg[s.ip].last = s.timestamp.seconds;
@@ -1142,17 +1162,30 @@ async function loadIpMap(){
     const bannedSet = new Set(bannedIps.map(b => b.ip));
     Object.values(agg).forEach(d => {
       const isBanned = bannedSet.has(d.ip);
-      const color = isBanned ? '#ff4466' : '#7832ff';
+      const onlineLogins = [...d.logins].filter(isUserOnline);
+      const isOnline = onlineLogins.length > 0;
+      // Code couleur :
+      //   - rouge si l'IP est bannie
+      //   - vert (pulsé) si au moins un utilisateur est actuellement connecté depuis cette IP
+      //   - violet sinon
+      const color = isBanned ? '#ff4466' : (isOnline ? '#22c55e' : '#7832ff');
       const m = L.circleMarker([d.lat, d.lon], {
         radius: Math.min(6 + Math.log2(d.count+1) * 2, 18),
-        fillColor: color, color: '#fff', weight: 1.5, fillOpacity: .85
+        fillColor: color,
+        color: isOnline ? '#bbf7d0' : '#fff',
+        weight: isOnline ? 2.5 : 1.5,
+        fillOpacity: isOnline ? .95 : .85,
+        className: isOnline ? 'ip-marker-online' : ''
       }).addTo(ipLeafletMap);
       const usersList = [...d.users].slice(0,8).map(u => esc(u)).join(', ');
       const lastTxt = d.last ? new Date(d.last*1000).toLocaleString('fr-FR') : '—';
       const ipEsc = esc(d.ip);
+      const onlineBadge = isOnline
+        ? `<span style="display:inline-block;background:#22c55e;color:#fff;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;margin-left:6px">🟢 EN LIGNE</span>`
+        : '';
       m.bindPopup(`
         <div style="font-family:Rajdhani,sans-serif;color:#1a1a2e;min-width:200px">
-          <div style="font-size:14px;font-weight:700;margin-bottom:4px">${ipEsc} ${isBanned?'<span style="color:#ff4466">🚫 BANNIE</span>':''}</div>
+          <div style="font-size:14px;font-weight:700;margin-bottom:4px">${ipEsc} ${isBanned?'<span style="color:#ff4466">🚫 BANNIE</span>':''}${onlineBadge}</div>
           <div style="font-size:12px;margin-bottom:4px">${esc(d.city)} ${esc(d.country)}</div>
           <div style="font-size:11px;color:#555;margin-bottom:4px">${d.count} connexion(s) — Dernière : ${lastTxt}</div>
           <div style="font-size:11px;color:#555;margin-bottom:8px">Utilisateurs : ${usersList}</div>
@@ -1164,7 +1197,10 @@ async function loadIpMap(){
       ipMarkers.push(m);
     });
     const cnt = document.getElementById('ipMapCount');
-    if(cnt) cnt.textContent = `${Object.keys(agg).length} IP unique(s) — ${snap.size} session(s) analysées`;
+    if(cnt){
+      const onlineCount = Object.values(agg).filter(d => [...d.logins].some(isUserOnline)).length;
+      cnt.textContent = `${Object.keys(agg).length} IP unique(s) — ${onlineCount} en ligne — ${snap.size} session(s) analysées`;
+    }
     setTimeout(() => ipLeafletMap.invalidateSize(), 100);
   }catch(e){ console.error(e); }
 }

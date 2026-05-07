@@ -247,6 +247,22 @@ async function handleLogin() {
         return;
       }
 
+      // Vérification IP bannie
+      try {
+        const geo = await fetch('https://ipapi.co/json/').then(r => r.json());
+        if (geo && geo.ip) {
+          const ipDocId = String(geo.ip).replace(/[.:]/g, '_');
+          const banDoc = await db.collection('bannedIps').doc(ipDocId).get();
+          if (banDoc.exists) {
+            await auth.signOut();
+            showMsg('Connexion refusée : votre adresse IP est bloquée.', 'error');
+            btn.disabled = false;
+            btn.textContent = 'CONNEXION';
+            return;
+          }
+        }
+      } catch (_) { /* erreur réseau geoloc : on laisse passer */ }
+
       showMsg('Connexion réussie !', 'success');
       btn.textContent = '✓ CONNECTÉ';
       btn.style.background = 'linear-gradient(135deg, #22c55e, #16a34a)';

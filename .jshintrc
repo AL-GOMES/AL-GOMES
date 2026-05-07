@@ -1,0 +1,18 @@
+{
+  "esversion": 11,
+  "browser": true,
+  "globalstrict": false,
+  "undef": true,
+  "unused": false,
+  "globals": {
+    "firebase": true,
+    "auth": true,
+    "db": true,
+    "_algomesUser": true,
+    "algomesUtil": true,
+    "L": true,
+    "pdfjsLib": true,
+    "PDFLib": true,
+    "console": true
+  }
+}

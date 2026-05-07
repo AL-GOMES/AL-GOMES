@@ -1,0 +1,38 @@
+name: Lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  htmlhint:
+    name: HTMLHint (validation HTML basique)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install HTMLHint
+        run: npm install -g htmlhint
+      - name: Run HTMLHint
+        run: |
+          htmlhint --config .htmlhintrc.json "*.html" || true
+        # Note: on ne fait pas échouer la CI sur HTML legacy.
+        # Quand le code sera nettoyé, retirer le `|| true`.
+
+  jshint:
+    name: JSHint (validation JS basique)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install JSHint
+        run: npm install -g jshint
+      - name: Run JSHint on shared scripts
+        run: |
+          jshint --config .jshintrc js/ || true

@@ -119,7 +119,7 @@
 // ═══════════════════════════════════════════════════════════════════════
 // HISTORIQUE DES ATTESTATIONS
 // Lecture de la collection Firestore 'attestationsHistory', filtres en JS,
-// actions : regénérer Word/PDF (via redirection ATTESTATIONS.html?replay=...)
+// actions : regénérer le PDF (via redirection ATTESTATIONS.html?replay=...)
 // et supprimer (admin + auteur uniquement).
 // ═══════════════════════════════════════════════════════════════════════
 function getFirestore(){
@@ -251,7 +251,6 @@ function render(){
       <td>${dateFR} ${formatBadge}</td>
       <td class="actions">
         <button class="action-btn" onclick="replayAs('${e.id}', 'pdf')" title="Régénérer le PDF">PDF</button>
-        <button class="action-btn" onclick="replayAs('${e.id}', 'word')" title="Régénérer le Word">Word</button>
         ${canDelete ? `<button class="action-btn danger" onclick="deleteEntry('${e.id}')" title="Supprimer">🗑</button>` : ''}
       </td>
     </tr>`;

@@ -139,8 +139,6 @@ body{font-family:'Rajdhani',sans-serif;background:var(--bg);color:var(--text);mi
 .btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(120,50,255,.35)}
 .btn-secondary{background:var(--surface2);color:var(--text2)}
 .btn-secondary:hover{background:var(--surface3);color:var(--text);border-color:var(--text3)}
-.btn-word{background:linear-gradient(135deg,#2b579a,#1e3a6f);border-color:#2b579a;color:#fff}
-.btn-word:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(43,87,154,.35)}
 .btn-ghost{background:transparent;color:var(--text3);border:1px dashed var(--border)}
 .btn-ghost:hover{color:var(--accent);border-color:var(--accent)}
 
@@ -404,10 +402,6 @@ body{font-family:'Rajdhani',sans-serif;background:var(--bg);color:var(--text);mi
       <button class="btn btn-secondary" onclick="resetForm()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9"/><polyline points="3 3 3 9 9 9"/></svg>
         Réinit.
-      </button>
-      <button class="btn btn-word" onclick="downloadWord()" title="Télécharger au format Word (.doc)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h2l.5 3 1-4 1 4 .5-3h2"/></svg>
-        Word
       </button>
       <button class="btn btn-primary" onclick="printPDF()" title="Imprimer ou enregistrer en PDF">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
@@ -946,299 +940,6 @@ function printPDF(){
   setTimeout(() => window.print(), 200);
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-// EXPORT WORD (.docx) — utilise la librairie `docx` (chargée à la demande)
-// Produit un vrai fichier .docx (ZIP de XML) ouvrable par Word /
-// LibreOffice / Google Docs sans avertissement de sécurité.
-// ═══════════════════════════════════════════════════════════════════════
-const DOCX_CDN = 'https://unpkg.com/docx@8.5.0/build/index.umd.js';
-
-function loadDocxLib(){
-  return new Promise((resolve, reject) => {
-    if(window.docx) return resolve(window.docx);
-    const s = document.createElement('script');
-    s.src = DOCX_CDN;
-    s.onload = () => window.docx ? resolve(window.docx) : reject(new Error('docx non chargé'));
-    s.onerror = () => reject(new Error('Impossible de charger docx depuis Internet'));
-    document.head.appendChild(s);
-  });
-}
-
-// Convertit une chaîne base64 en Uint8Array (pour l'image du logo)
-function b64ToBytes(b64){
-  const bin = atob(b64);
-  const arr = new Uint8Array(bin.length);
-  for(let i=0;i<bin.length;i++) arr[i] = bin.charCodeAt(i);
-  return arr;
-}
-
-async function downloadWord(){
-  // Garde-fous
-  const missing = [];
-  if(!$('f_nom').value.trim()) missing.push('Nom du signataire');
-  if(!$('f_corps').value.trim()) missing.push('Corps du texte');
-  if(missing.length){
-    if(!confirm("Champs manquants :\n\n• " + missing.join('\n• ') + "\n\nExporter quand même ?")) return;
-  }
-
-  try {
-    showToast('Génération du document Word…', 'info');
-    const D = await loadDocxLib();
-    const {
-      Document, Paragraph, TextRun, ImageRun, AlignmentType,
-      BorderStyle, Packer, HeadingLevel, LevelFormat
-    } = D;
-
-    // Récupérer les valeurs du formulaire
-    const affaire  = $('f_affaire').value.trim();
-    const objet    = $('f_objet').value.trim();
-    const corps    = $('f_corps').value.trim();
-    const nom      = $('f_nom').value.trim() || '[nom]';
-    const fonction = $('f_fonction').value.trim() || '[fonction]';
-    const dest     = $('f_destinataire').value.trim();
-    const societe  = $('f_societe').value.trim() || 'A.L. GOMES';
-    const adresse  = $('f_adresse').value.trim();
-    const cp       = $('f_cp').value.trim();
-    const ville    = $('f_ville').value.trim();
-    const tel      = $('f_tel').value.trim();
-    const email    = $('f_email').value.trim();
-    const lieu     = $('f_lieu').value.trim() || 'Villemomble';
-    const dateFR   = fmtDate($('f_date').value);
-
-    // Convertir le logo en Uint8Array
-    const logoSrc = $('p_logo').src;
-    const logoBytes = b64ToBytes(logoSrc.split(',')[1]);
-
-    // Couleurs
-    const VIOLET = '4A2D7A';
-    const GREY_DARK = '555555';
-    const GREY_FOOT = '888888';
-
-    // Récupère le scale actuel de l'aperçu pour que le Word reflète
-    // exactement la même mise à l'échelle (auto-fit A4)
-    let scale = 1;
-    try {
-      const v = getComputedStyle($('letter')).getPropertyValue('--auto-scale').trim();
-      if(v) scale = parseFloat(v) || 1;
-    } catch(e){}
-    // Arrondi à 0,01 près
-    scale = Math.max(0.55, Math.min(1, Math.round(scale * 100) / 100));
-    // S(n)  : applique le scale aux tailles de police, minimum 1 demi-point
-    // SP(n) : applique le scale aux spacings (positifs, arrondis à l'entier)
-    const S  = (n) => Math.max(1, Math.round(n * scale));
-    const SP = (n) => Math.max(0, Math.round(n * scale));
-
-    // Helpers
-    // Tailles en demi-points : 12pt = 24, 18pt = 36, 10.5pt = 21, 11.5pt = 23, 8.5pt = 17
-    const run = (text, opts={}) => {
-      // Si size est passée, la mettre à l'échelle aussi
-      if(opts.size) opts = Object.assign({}, opts, { size: S(opts.size) });
-      return new TextRun(Object.assign({ text, font: 'Times New Roman', size: S(24) }, opts));
-    };
-    const para = (runs, opts={}) => new Paragraph(Object.assign({
-      children: Array.isArray(runs) ? runs : [runs],
-    }, opts));
-
-    const children = [];
-
-    // ═════ EN-TÊTE : logo + adresse alignés à gauche ═════
-    children.push(new Paragraph({
-      alignment: AlignmentType.LEFT,
-      children: [new ImageRun({
-        data: logoBytes,
-        transformation: { width: Math.round(120 * scale), height: Math.round(58 * scale) },
-        type: 'png'
-      })],
-      spacing: { after: SP(120) }
-    }));
-    if(adresse) children.push(para(run(adresse, { size: 21 }), { alignment: AlignmentType.LEFT }));
-    const cpVille = [cp, ville].filter(Boolean).join(' ');
-    // Construire la liste des lignes d'en-tête et mettre l'espacement après la dernière
-    const senderLines = [];
-    if(cpVille) senderLines.push(cpVille);
-    if(tel)     senderLines.push('Tél : ' + tel);
-    if(email)   senderLines.push('Email : ' + email);
-    senderLines.forEach((line, i) => {
-      const isLast = i === senderLines.length - 1;
-      children.push(para(run(line, { size: 21 }), {
-        alignment: AlignmentType.LEFT,
-        spacing: isLast ? { after: SP(600) } : undefined
-      }));
-    });
-
-    // ═════ DESTINATAIRE (optionnel, aligné à droite) ═════
-    if(dest){
-      dest.split('\n').forEach(line => {
-        children.push(para(run(line, { size: 22 }), {
-          alignment: AlignmentType.RIGHT,
-          spacing: { line: SP(280) }
-        }));
-      });
-      children.push(para(run(''), { spacing: { after: SP(400) } }));
-    }
-
-    // ═════ TITRE avec bordures violettes ═════
-    children.push(new Paragraph({
-      alignment: AlignmentType.CENTER,
-      spacing: { before: SP(240), after: SP(400) },
-      border: {
-        top:    { style: BorderStyle.SINGLE, size: 12, color: VIOLET, space: 8 },
-        bottom: { style: BorderStyle.SINGLE, size: 12, color: VIOLET, space: 8 }
-      },
-      children: [ run("ATTESTATION SUR L'HONNEUR", {
-        bold: true, size: 36, color: VIOLET, characterSpacing: 60
-      }) ]
-    }));
-
-    // ═════ META : Affaire / Objet ═════
-    if(affaire){
-      children.push(para([
-        run('Affaire : ', { bold: true, size: 23 }),
-        run(affaire, { size: 23 })
-      ], { spacing: { after: SP(80) } }));
-    }
-    if(objet){
-      children.push(para([
-        run('Objet : ', { bold: true, size: 23 }),
-        run(objet, { size: 23 })
-      ], { spacing: { after: SP(400) } }));
-    }
-
-    // ═════ CORPS : formule d'introduction ═════
-    children.push(para([
-      run('Je soussigné, '),
-      run(nom, { bold: true }),
-      run(', agissant en qualité de '),
-      run(fonction, { italics: true }),
-      run(' au sein de la société '),
-      run(societe, { bold: true }),
-      run(', située ' + (adresse || '') + ' à ' + (ville || '') + ',')
-    ], {
-      alignment: AlignmentType.JUSTIFIED,
-      spacing: { after: SP(240), line: SP(360) }
-    }));
-
-    // ═════ "atteste sur l'honneur que :" ═════
-    children.push(para(
-      run("atteste sur l'honneur que :", { bold: true, italics: true }),
-      { spacing: { after: SP(240), line: SP(360) } }
-    ));
-
-    // ═════ CORPS PRINCIPAL (multi-lignes) ═════
-    corps.split('\n').forEach(line => {
-      children.push(para(run(line || ' '), {
-        alignment: AlignmentType.JUSTIFIED,
-        spacing: { line: SP(360), after: SP(80) }
-      }));
-    });
-
-    // ═════ FORMULE DE CLÔTURE ═════
-    children.push(para(
-      run('Cette attestation est délivrée pour servir et valoir ce que de droit.', { italics: true }),
-      { spacing: { before: SP(240), after: SP(600), line: SP(360) } }
-    ));
-
-    // ═════ BLOC SIGNATURE (décalé à droite par indentation gauche) ═════
-    const sigIndent = { left: 5700 }; // ~100mm (indentation toujours en positions fixes)
-    const hasSig = !!window._signatureDataUrl;
-    children.push(para(run('Fait à ' + lieu + ',', { size: 23 }), { indent: sigIndent }));
-    // Espace après la date : petit si on va insérer la signature, grand sinon
-    children.push(para(run('Le ' + (dateFR || '…'), { size: 23 }), {
-      indent: sigIndent,
-      spacing: { after: hasSig ? SP(160) : SP(1000) }
-    }));
-    // Signature image (si disponible)
-    if(hasSig){
-      try {
-        const sigBytes = b64ToBytes(window._signatureDataUrl.split(',')[1]);
-        // Taille cible : max 55mm × 30mm (200 × 110 px à 96dpi)
-        children.push(new Paragraph({
-          indent: sigIndent,
-          children: [ new ImageRun({
-            data: sigBytes,
-            transformation: { width: Math.round(200 * scale), height: Math.round(110 * scale) },
-            type: 'png'
-          }) ],
-          spacing: { after: SP(80) }
-        }));
-      } catch(e){
-        console.warn('Insertion signature Word échouée :', e);
-      }
-    }
-    children.push(para(run(nom, { bold: true, size: 23 }), { indent: sigIndent }));
-    children.push(para(run(fonction, { italics: true, size: 21, color: GREY_DARK }), {
-      indent: sigIndent, spacing: { after: SP(400) }
-    }));
-
-    // ═════ FOOTER ═════ (valeur saisie dans le formulaire)
-    const footer = $('f_footer').value.trim();
-    if(footer){
-      const lines = footer.split('\n');
-      lines.forEach((line, i) => {
-        const isFirst = i === 0;
-        const isLast  = i === lines.length - 1;
-        const paraOpts = {
-          alignment: AlignmentType.CENTER,
-          children: [ run(line, { italics: true, size: 17, color: GREY_FOOT }) ]
-        };
-        // Espace avant le bloc + bordure supérieure uniquement sur la 1re ligne
-        if(isFirst){
-          paraOpts.spacing = { before: SP(1200), after: isLast ? 0 : SP(40) };
-          paraOpts.border = { top: { style: BorderStyle.SINGLE, size: 4, color: 'DDDDDD', space: 8 } };
-        } else if(!isLast){
-          paraOpts.spacing = { after: SP(40) };
-        }
-        children.push(new Paragraph(paraOpts));
-      });
-    }
-
-    // ═════ DOCUMENT ═════
-    // A4 = 11906 × 16838 twips ; 22 mm ≈ 1247 twips
-    const doc = new Document({
-      creator: 'A.L.GOMES',
-      title: "Attestation sur l'honneur",
-      description: affaire || '',
-      styles: {
-        default: { document: { run: { font: 'Times New Roman', size: S(24) } } }
-      },
-      sections: [{
-        properties: {
-          page: {
-            size: { width: 11906, height: 16838 },
-            margin: { top: 1247, bottom: 1247, left: 1247, right: 1247 }
-          }
-        },
-        children: children
-      }]
-    });
-
-    // ═════ Packaging & téléchargement ═════
-    const blob = await Packer.toBlob(doc);
-
-    // Nom de fichier
-    const dateRaw = $('f_date').value || new Date().toISOString().slice(0,10);
-    const cleanAffaire = affaire
-      ? '_' + affaire.normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-          .replace(/[^a-zA-Z0-9\-]/g,'_').replace(/_+/g,'_').replace(/^_|_$/g,'').substring(0,40)
-      : '';
-    const filename = `Attestation${cleanAffaire}_${dateRaw}.docx`;
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 2000);
-
-    showToast('Document Word (.docx) téléchargé');
-    // Enregistrer dans l'historique (non-bloquant)
-    saveToHistory('docx').catch(err => console.warn('saveToHistory Word échoué', err));
-  } catch(e){
-    console.error('Erreur Word :', e);
-    alert("Erreur lors de la génération du fichier Word :\n\n" + (e.message || e) + "\n\nVous pouvez utiliser l'export PDF à la place.");
-  }
-}
 
 function showToast(text, type){
   const t = $('toast');
@@ -1349,7 +1050,7 @@ function setupRoleBasedFonction(user){
 // de l'utilisateur connecté depuis la collection `signatures` Firestore
 // et l'affiche sous la date dans le bloc signature de l'attestation.
 // ═══════════════════════════════════════════════════════════════════════
-// Exposé globalement pour que downloadWord() puisse y accéder
+// Exposé globalement pour le bloc d'aperçu / les fonctions d'export
 window._signatureDataUrl = null;
 
 function loadUserSignature(user){
@@ -1399,7 +1100,7 @@ function loadUserSignature(user){
 // ═══════════════════════════════════════════════════════════════════════
 // HISTORIQUE — enregistrement automatique à chaque export
 // Collection Firestore 'attestationsHistory' : on stocke les DONNÉES
-// (pas le PDF/Word final) pour pouvoir regénérer à volonté.
+// (pas le PDF final) pour pouvoir regénérer à volonté.
 // ═══════════════════════════════════════════════════════════════════════
 async function saveToHistory(generatedAs){
   let fb = null, user = null;
@@ -1450,7 +1151,7 @@ async function saveToHistory(generatedAs){
 (async function handleReplay(){
   const params = new URLSearchParams(location.search);
   const replayId = params.get('replay');
-  const auto = params.get('auto'); // 'word' | 'pdf'
+  const auto = params.get('auto'); // 'pdf'
   if(!replayId) return;
 
   window._replayMode = true;
@@ -1501,9 +1202,7 @@ async function saveToHistory(generatedAs){
     document.querySelector('.app').style.marginTop = '40px';
 
     // Déclencher export automatique si demandé
-    if(auto === 'word'){
-      setTimeout(() => downloadWord(), 500);
-    } else if(auto === 'pdf'){
+    if(auto === 'pdf'){
       setTimeout(() => printPDF(), 500);
     }
   } catch(err){

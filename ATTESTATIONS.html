@@ -880,6 +880,14 @@ function applyDefaults(){
     const cur = $(id).value;
     if(!cur || !cur.trim()) $(id).value = val;
   });
+  // Garde-fou : si l'email ne ressemble pas à un email (pas de '@'),
+  // on considère que c'est une saisie erronée (par ex. confusion avec le
+  // champ "Lieu" juste à côté) qui a persisté via localStorage, et on
+  // remet la valeur par défaut.
+  const emailEl = $('f_email');
+  if(emailEl && emailEl.value.trim() && !emailEl.value.includes('@')){
+    emailEl.value = DEFAULTS.f_email;
+  }
   if(!$('f_date').value) $('f_date').value = new Date().toISOString().slice(0,10);
 }
 

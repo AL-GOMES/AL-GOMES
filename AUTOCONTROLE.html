@@ -1615,11 +1615,19 @@ function attachStandardEvents(code, esc){
 function bulkSet(code, status){
   const ctx = getCurrentEsc(); if(!ctx) return;
   const f = ctx.esc.fiches[code];
+  if(!f){ console.warn('bulkSet: fiche', code, 'absente'); return; }
+  // Helper safe : ignore les groupes manquants ou les items sans .status
+  const setAll = (group) => {
+    if(!group) return;
+    Object.keys(group).forEach(k => {
+      if(group[k] && typeof group[k] === 'object') group[k].status = status;
+    });
+  };
   if(code==='C1'){
-    Object.keys(f.preliminaires).forEach(k=> f.preliminaires[k].status = status);
-    Object.keys(f.puissanceTerre).forEach(k=> f.puissanceTerre[k].status = status);
-    Object.keys(f.puissanceInter).forEach(k=> f.puissanceInter[k].status = status);
-    Object.keys(f.telereport).forEach(k=> f.telereport[k].status = status);
+    setAll(f.preliminaires);
+    setAll(f.puissanceTerre);
+    setAll(f.puissanceInter);
+    setAll(f.telereport);
   } else {
     Object.keys(f.items).forEach(k=> f.items[k].status = status);
   }
@@ -2413,6 +2421,11 @@ async function buildC4PDF(){
 
   const COLOR_BY_STATUS = { pe: PE_AMBER, so: SO_GRAY, cf: CF_GREEN, nc: NC_RED };
 
+  // Validation : le template C4 doit avoir au moins 2 pages (Conception + Fiche)
+  const tplPageCount = tpl.getPageCount();
+  if (tplPageCount < 2) {
+    throw new Error('Template PDF C4 invalide : ' + tplPageCount + ' page(s) au lieu de ≥2 (Conception page 10 + Fiche page 37).');
+  }
   // Une page par branchement
   const branches = state.buildings.filter(b => b.escaliers && b.escaliers[0]);
   if(branches.length === 0){
@@ -2486,6 +2499,11 @@ async function buildC4PDF(){
 async function buildFilledPDF(){
   const tplBytes = _customPdfBytes || base64ToUint8(PDF_TEMPLATE_B64);
   const tpl = await PDFLib.PDFDocument.load(tplBytes);
+  // Validation : le template doit avoir au moins 10 pages (3 communes + 7 par escalier)
+  const tplPageCount = tpl.getPageCount();
+  if (tplPageCount < 10) {
+    throw new Error('Template PDF Colonne invalide : ' + tplPageCount + ' pages au lieu de ≥10. Vérifiez le PDF officiel SéQuélec.');
+  }
   const out = await PDFLib.PDFDocument.create();
   const helv = await out.embedFont(PDFLib.StandardFonts.Helvetica);
 

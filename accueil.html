@@ -576,10 +576,13 @@ function initPresence() {
       });
 
       document.getElementById('presenceCount').textContent = online.length + ' en ligne';
+      const escHtml = (s)=>String(s==null?'':s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+      const safeColor = (c)=>/^#[0-9a-fA-F]{3,8}$/.test(c||'') ? c : '#7c5fd6';
       document.getElementById('presenceAvatars').innerHTML = online.map(u => {
-        const initials = (u.name || u.login || '?').split(' ').map(w => w[0]).join('').substring(0, 2);
-        const c = getColor(u.role);
-        return `<div class="p-avatar" title="${u.name} (${u.role})" style="background:${c}22;border:1px solid ${c}55;color:${c}">${initials}</div>`;
+        const initials = (u.name || u.login || '?').split(' ').map(w => w[0]||'').join('').substring(0, 2);
+        const c = safeColor(getColor(u.role));
+        const title = escHtml((u.name||'') + ' (' + (u.role||'') + ')');
+        return `<div class="p-avatar" title="${title}" style="background:${c}22;border:1px solid ${c}55;color:${c}">${escHtml(initials)}</div>`;
       }).join('');
     });
   });

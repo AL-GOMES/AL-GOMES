@@ -273,8 +273,9 @@ async function handleLogin() {
     
     const messages = {
       'auth/invalid-email': 'Identifiant invalide',
-      'auth/user-not-found': 'Identifiant inconnu',
-      'auth/wrong-password': 'Mot de passe incorrect',
+      // Réponse identique pour user-not-found et wrong-password : évite l'énumération de comptes
+      'auth/user-not-found': 'Identifiant ou mot de passe incorrect',
+      'auth/wrong-password': 'Identifiant ou mot de passe incorrect',
       'auth/invalid-credential': 'Identifiant ou mot de passe incorrect',
       'auth/too-many-requests': 'Trop de tentatives. Réessayez plus tard.',
       'auth/email-already-in-use': 'Cet identifiant est déjà utilisé',

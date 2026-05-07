@@ -197,17 +197,18 @@ h4{font-size:14px;font-weight:600;color:var(--t1);margin:16px 0 8px;padding-bott
 <p>Tous les circuits de l'installation doivent être protégés par un <strong>DDR 30 mA</strong>. Il est obligatoire d'avoir au minimum <strong>2 interrupteurs différentiels</strong> par installation, avec une répartition des circuits d'éclairage et de prises entre au moins 2 DDR (continuité de service).</p>
 <table class="norm-table"><thead><tr><th>Type DDR</th><th>Circuits protégés</th><th>Caractéristique</th></tr></thead><tbody>
 <tr><td><span class="tag tag-green">Type AC</span></td><td>Éclairage, prises de courant classiques, volets roulants, chauffe-eau, autres circuits courants</td><td>Détection des courants alternatifs uniquement</td></tr>
-<tr><td><span class="tag tag-blue">Type A</span></td><td><strong>Obligatoires :</strong> plaque/cuisinière, lave-linge, circuit 6 prises cuisine dédié, circuit IRVE, tout circuit alimentant un équipement à courants pulsés</td><td>Détecte en + les composantes continues pulsées</td></tr>
+<tr><td><span class="tag tag-blue">Type A</span></td><td><strong>Obligatoires :</strong> plaque/cuisinière, lave-linge, circuit 6 prises cuisine dédié, circuit IRVE, tout circuit alimentant un équipement à courants pulsés. <strong>NF C 15-100 éd. août 2024 :</strong> Type A désormais obligatoire sur <strong>l'ensemble des circuits prises de courant</strong> du logement.</td><td>Détecte en + les composantes continues pulsées</td></tr>
 <tr><td><span class="tag tag-purple">Type F / HPI</span></td><td>Recommandé pour pompes à chaleur, climatisation, pompes piscine (variateurs mono) — dénomination <strong>HPI</strong> (Haute Immunité) ou <strong>Si</strong> (Super-immunisé) selon fabricant</td><td>Type A renforcé + immunisé aux perturbations transitoires (foudre, surtensions)</td></tr>
 <tr><td><span class="tag tag-amber">Type B</span></td><td>Équipements alimentés via redresseur triphasé, bornes IRVE rapides DC, variateurs tri</td><td>Détecte courants continus purs (DC)</td></tr>
 </tbody></table>
 <div class="note note-info"><strong>Dénomination fabricants :</strong> Type F = Schneider "Si" = Legrand/Hager "HPI" = ABB "APR". Toutes ces appellations désignent la même catégorie (immunité renforcée). Ne pas confondre avec le type "HI" parfois cité qui est une variante commerciale du type F.</div>
 
-<div class="note note-warn"><strong>Règle des 8 :</strong> Maximum <strong>8 disjoncteurs divisionnaires</strong> en aval d'un interrupteur différentiel. Au-delà, ajouter un DDR supplémentaire.</div>
+<div class="note note-warn"><strong>Règle des 8 :</strong> Maximum <strong>8 disjoncteurs divisionnaires par interrupteur différentiel</strong> (par DDR, et non par tableau). Au-delà, ajouter un DDR supplémentaire. Le calibre du DDR (25/40/63 A) est par ailleurs à dimensionner selon les calibres des disjoncteurs en aval.</div>
 
 <h4>Calibre du DDR</h4>
-<p>Le calibre de l'interrupteur différentiel doit être supérieur ou égal à : <strong>1× la somme des calibres des disjoncteurs chauffage + ECS + IRVE</strong> + <strong>0,5× la somme des calibres des autres disjoncteurs</strong> protégés par ce DDR.</p>
+<p><em>Règle pratique Promotelec / fabricants (non normative stricte) :</em> calibre In du DDR ≥ <strong>1× la somme des calibres des disjoncteurs chauffage + ECS + IRVE</strong> + <strong>0,5× la somme des calibres des autres disjoncteurs</strong> protégés par ce DDR.</p>
 <p>En présence d'un générateur (photovoltaïque) en amont du DDR : In DDR ≥ In AGCP + Ig.</p>
+<div class="note note-info"><strong>Sélection normative stricte (NF C 15-100 §535) :</strong> le DDR doit supporter le courant d'emploi maximal pris en compte (somme des courants probables) — la règle simplifiée ci-dessus est largement appliquée par sécurité.</div>
 
 <h4>Règles complémentaires</h4>
 <p>Les <strong>fusibles sont interdits</strong> en aval d'un DDR 30 mA. Seuls les disjoncteurs divisionnaires sont autorisés. Les DDR à réarmement automatique sont interdits en habitat.</p>
@@ -263,7 +264,7 @@ h4{font-size:14px;font-weight:600;color:var(--t1);margin:16px 0 8px;padding-bott
 <tr><td>Chauffage ≤ 4500W</td><td class="val val-amber">2,5 mm²</td><td class="val">20 A</td><td class="val">—</td></tr>
 <tr><td>Chauffage ≤ 7250W</td><td class="val val-red">6 mm²</td><td class="val">32 A</td><td class="val">—</td></tr>
 <tr><td>Volets roulants</td><td class="val val-green">1,5 mm²</td><td class="val">16 A</td><td class="val">—</td></tr>
-<tr><td>VMC</td><td class="val val-green">1,5 mm²</td><td class="val">2 A (courbe D)</td><td class="val">1</td></tr>
+<tr><td>VMC</td><td class="val val-green">1,5 mm²</td><td class="val">16 A courbe C/D (ou 2 A spécifique)</td><td class="val">1</td></tr>
 <tr><td>Borne recharge VE (IRVE)</td><td class="val val-red">6 à 10 mm²</td><td class="val">32 à 40 A</td><td class="val">1 (DDR 30mA dédié)</td></tr>
 </tbody></table>
 <div class="note note-warn"><strong>Décompte des prises :</strong> chaque socle compte pour 1, même dans un boîtier multipostes. Les 2 modes de câblage (1,5mm²/16A et 2,5mm²/20A) peuvent coexister dans une même installation.</div>
@@ -312,7 +313,7 @@ h4{font-size:14px;font-weight:600;color:var(--t1);margin:16px 0 8px;padding-bott
 <table class="norm-table"><thead><tr><th>Équipement</th><th>Minimum requis</th></tr></thead><tbody>
 <tr><td>Point d'éclairage au plafond (DCL)</td><td class="val val-green">1 (obligatoire au plafond)</td></tr>
 <tr><td>Prises de courant sur circuit dédié (> 4 m²)</td><td class="val val-red">6 dont 4 au-dessus du plan de travail</td></tr>
-<tr><td>Prises de courant sur circuit dédié (≤ 4 m²)</td><td class="val val-amber">3 dont 2 au-dessus du plan de travail</td></tr>
+<tr><td>Prises de courant sur circuit dédié (≤ 4 m²)</td><td class="val val-amber">3 dont 1 au-dessus du plan de travail</td></tr>
 <tr><td>Prise hotte (optionnelle, repérée)</td><td class="val val-accent">1 à h ≥ 1,80 m du sol</td></tr>
 <tr><td>Circuit spécialisé plaque/cuisinière 32A</td><td class="val val-red">1</td></tr>
 <tr><td>Circuits spécialisés 20A (LL, LV, four/SL)</td><td class="val val-amber">3 minimum</td></tr>
@@ -358,7 +359,7 @@ h4{font-size:14px;font-weight:600;color:var(--t1);margin:16px 0 8px;padding-bott
 <tr><td>T2</td><td class="val val-blue">2 séjour + 1 chambre = 3</td></tr>
 <tr><td>T3 et plus</td><td class="val val-blue">2 séjour + 1 par pièce principale supplémentaire</td></tr>
 </tbody></table>
-<p>Chaque prise RJ45 doit être desservie par un câble individuel depuis le tableau de communication de la GTL. Section minimale du cheminement : <span class="val">300 mm²</span> ou conduit de diamètre extérieur minimal de <span class="val">25 mm</span>.</p>
+<p>Chaque prise RJ45 doit être desservie par un câble individuel depuis le tableau de communication de la GTL. Cheminement sous conduit ICTA de diamètre extérieur minimal de <span class="val">Ø 25 mm</span>.</p>
 <p>Les prises de communication ne sont pas admises dans les volumes 0, 1 et 2 des locaux contenant une baignoire ou douche.</p>
 </div></div>
 
@@ -529,7 +530,7 @@ h4{font-size:14px;font-weight:600;color:var(--t1);margin:16px 0 8px;padding-bott
 
 <div class="section open"><div class="section-header" onclick="toggleSection(this)"><span class="icon">📦</span><h3>ETEL — Espace Technique Électrique du Logement</h3><span class="chevron">▶</span></div><div class="section-body">
 <p>Notion introduite par l'amendement A5, l'ETEL est un <strong>volume réservé</strong> aux équipements de puissance, de communication et de gestion technique. Il contient la GTL.</p>
-<p>Dimensions minimales : <span class="val val-amber">600 × 250 mm</span>, du sol au plafond (ou 2,00 m minimum en cas dérogatoire).</p>
+<p>Dimensions minimales : <span class="val val-amber">largeur 600 mm × profondeur 250 mm</span>, hauteur du sol au plafond (et au moins <strong>2,00 m</strong> de hauteur utile en cas dérogatoire).</p>
 <div class="note note-danger"><strong>Interdit dans l'ETEL :</strong> canalisations de gaz, d'eau (sauf alimentation directe du tableau), conduits de fumée. L'ETEL ne doit pas être situé dans un volume de salle de bain. Des distances sont imposées par rapport aux points d'eau, installations gaz et sources de chaleur.</div>
 </div></div>
 
@@ -834,7 +835,7 @@ h4{font-size:14px;font-weight:600;color:var(--t1);margin:16px 0 8px;padding-bott
 </div>
 <p>Les colonnes électriques sont de courant assigné <strong>200A ou 400A</strong>, installées dans des gaines techniques conformément à la NF C 14-100 (édition juillet 2021).</p>
 <table class="norm-table"><thead><tr><th>Câble</th><th>Référence</th><th>Usage</th></tr></thead><tbody>
-<tr><td>Câble aluminium colonne</td><td class="val">HN 33-S-33 / H1 XDV-AS</td><td>Colonne montante standard (ampacité selon NF C 33-210, config. PR3)</td></tr>
+<tr><td>Câble aluminium colonne</td><td class="val">HN 33-S-33 (ancienne dénomination Enedis) / <strong>H1 XDV-AS</strong> (NF actuelle)</td><td>Colonne montante standard (ampacité selon NF C 33-210, config. PR3)</td></tr>
 <tr><td>Câble cuivre dérivation</td><td class="val">U-1000 R2V</td><td>Dérivations individuelles courtes</td></tr>
 </tbody></table>
 <div class="note note-info"><strong>Colonnes montantes :</strong> il est admis de réduire la section du câble depuis le pied jusqu'au sommet, tous les 3 niveaux. Pour les colonnes horizontales ou descendantes, la section reste constante sur toute la longueur.</div>
@@ -903,7 +904,7 @@ h4{font-size:14px;font-weight:600;color:var(--t1);margin:16px 0 8px;padding-bott
 
 <div class="section"><div class="section-header" onclick="toggleSection(this)"><span class="icon">⚡</span><h3>Modes de charge IEC 61851-1</h3><span class="chevron">▶</span></div><div class="section-body">
 <table class="norm-table"><thead><tr><th>Mode</th><th>Description</th><th>Puissance</th><th>Usage</th></tr></thead><tbody>
-<tr><td><span class="tag tag-red">Mode 1</span></td><td>Prise domestique standard, sans contrôle</td><td class="val">≤ 3,7 kW (16A mono)</td><td><strong>Interdit</strong> en neuf (non sécurisé)</td></tr>
+<tr><td><span class="tag tag-red">Mode 1</span></td><td>Prise domestique standard, sans contrôle ni interlock</td><td class="val">≤ 3,7 kW (16A mono)</td><td>Toléré pour usage occasionnel ≤ 8 A — <strong>déconseillé</strong> et non admis en pré-équipement neuf</td></tr>
 <tr><td><span class="tag tag-amber">Mode 2</span></td><td>Prise domestique avec boîtier de contrôle intégré au câble</td><td class="val">2 à 3,7 kW</td><td>Charge occasionnelle, limité en durée</td></tr>
 <tr><td><span class="tag tag-green">Mode 3</span></td><td>Prise/borne dédiée Type 2 avec pilotage (signal CP)</td><td class="val">3,7 à 22 kW</td><td><strong>Standard</strong> résidentiel &amp; tertiaire (AC)</td></tr>
 <tr><td><span class="tag tag-blue">Mode 4</span></td><td>Borne rapide en courant continu (CHAdeMO, CCS)</td><td class="val">≥ 50 kW (jusqu'à 350 kW)</td><td>Stations de recharge publiques</td></tr>
@@ -912,7 +913,7 @@ h4{font-size:14px;font-weight:600;color:var(--t1);margin:16px 0 8px;padding-bott
 
 <div class="section"><div class="section-header" onclick="toggleSection(this)"><span class="icon">🏢</span><h3>Pré-équipement en habitat collectif neuf</h3><span class="chevron">▶</span></div><div class="section-body">
 <table class="norm-table"><thead><tr><th>Type bâtiment</th><th>Obligation</th><th>Puissance réservée</th></tr></thead><tbody>
-<tr><td>Habitat collectif neuf ≥ 2 logements</td><td>Pré-équipement de <strong>100% des places</strong> dédiées aux résidents</td><td class="val val-amber">7,4 kVA par place (32A mono) minimum</td></tr>
+<tr><td>Habitat collectif neuf avec parking &gt; 10 emplacements</td><td>Pré-équipement de <strong>100% des places</strong> dédiées aux résidents (CCH art. R111-14-2)</td><td class="val val-amber">7,4 kVA par place (32A mono) minimum</td></tr>
 <tr><td>Tertiaire neuf &gt; 10 places</td><td>Pré-équipement de <strong>20% des places</strong> (minimum 2)</td><td class="val val-amber">22 kW (32A tri) par place</td></tr>
 <tr><td>Rénovation lourde habitat collectif (&gt; 20 pl)</td><td>Pré-équipement de <strong>20% des places</strong></td><td class="val val-amber">7,4 kVA par place min.</td></tr>
 </tbody></table>
@@ -921,7 +922,7 @@ h4{font-size:14px;font-weight:600;color:var(--t1);margin:16px 0 8px;padding-bott
 
 <div class="section"><div class="section-header" onclick="toggleSection(this)"><span class="icon">📐</span><h3>Dimensionnement et calcul</h3><span class="chevron">▶</span></div><div class="section-body">
 <h4>Coefficient de foisonnement IRVE</h4>
-<p>La simultanéité de recharge des véhicules est prise en compte par un coefficient spécifique (ne pas cumuler avec foisonnement logements) :</p>
+<p>La simultanéité de recharge des véhicules est prise en compte par un coefficient spécifique (ne pas cumuler avec foisonnement logements). <strong>Valeurs indicatives</strong> issues des pratiques GRD (CRE/Strasbourg Réseaux) — <em>ces coefficients ne figurent pas dans NF C 14-100, à valider auprès du gestionnaire de réseau concerné</em> :</p>
 <table class="norm-table"><thead><tr><th>Nombre de points de charge</th><th>Coefficient foisonnement IRVE</th></tr></thead><tbody>
 <tr><td>1 à 5</td><td class="val val-red">1,00</td></tr>
 <tr><td>6 à 10</td><td class="val val-amber">0,80</td></tr>
@@ -990,7 +991,7 @@ h4{font-size:14px;font-weight:600;color:var(--t1);margin:16px 0 8px;padding-bott
 <div class="section"><div class="section-header" onclick="toggleSection(this)"><span class="icon">⚡</span><h3>Tableau électrique &amp; AGCP</h3><span class="chevron">▶</span></div><div class="section-body">
 <table class="norm-table"><thead><tr><th>Élément</th><th>Exigence PMR</th></tr></thead><tbody>
 <tr><td>Hauteur organe de manœuvre AGCP</td><td class="val val-green">0,75 m à 1,30 m du sol fini (avec partie démontable en bas du tableau possible)</td></tr>
-<tr><td>Hauteur compteur (lecture)</td><td class="val val-green">0,90 m à 1,30 m du sol fini</td></tr>
+<tr><td>Hauteur compteur (lecture)</td><td class="val val-green">0,75 m à 1,30 m du sol fini</td></tr>
 <tr><td>Aire de manœuvre devant le tableau</td><td class="val val-amber">Ø 1,50 m minimum (cercle de giration)</td></tr>
 <tr><td>Zone libre d'approche latérale</td><td class="val">0,90 m × 1,30 m minimum</td></tr>
 <tr><td>Espace libre devant le tableau (intervention)</td><td class="val val-accent">0,70 m min. (NF C 14-100 §9.3)</td></tr>

@@ -1675,16 +1675,31 @@ async function hashPdf(file) {
 // =============================================================================
 
 const STORAGE_KEY_PREFIX = 'algomes-liseuse-';
+const STORAGE_VERSION = 1;
+const EMPTY_STATE = () => ({ _v: STORAGE_VERSION, annotations: [], calibration: null });
 
 function loadDocState(docHash) {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_PREFIX + docHash);
-    return raw ? JSON.parse(raw) : { annotations: [], calibration: null };
-  } catch { return { annotations: [], calibration: null }; }
+    if (!raw) return EMPTY_STATE();
+    const parsed = JSON.parse(raw);
+    // Migration / validation : si la version ne correspond pas, on réinitialise
+    if (!parsed || typeof parsed !== 'object') return EMPTY_STATE();
+    if (parsed._v !== STORAGE_VERSION) {
+      console.warn('[loadDocState] version localStorage différente, réinit');
+      return EMPTY_STATE();
+    }
+    if (!Array.isArray(parsed.annotations)) parsed.annotations = [];
+    if (parsed.calibration && (typeof parsed.calibration.pxPerMeter !== 'number' || parsed.calibration.pxPerMeter <= 0)) {
+      parsed.calibration = null;
+    }
+    return parsed;
+  } catch { return EMPTY_STATE(); }
 }
 function saveDocState(docHash, state) {
   try {
-    localStorage.setItem(STORAGE_KEY_PREFIX + docHash, JSON.stringify(state));
+    const payload = Object.assign({}, state, { _v: STORAGE_VERSION });
+    localStorage.setItem(STORAGE_KEY_PREFIX + docHash, JSON.stringify(payload));
   } catch (e) {
     showToast('Sauvegarde locale saturée : ' + e.message, 'err', 4000);
   }
@@ -2692,9 +2707,13 @@ class PDFViewer {
 
   _formatDistance(pxPdf) {
     const cal = this.state.calibration;
-    if (!cal) return pxPdf.toFixed(0) + ' px';
-    const meters = pxPdf / cal.pxPerMeter;
-    if (meters < 1) return (meters * 100).toFixed(1) + ' cm';
+    // Si pas de calibration ou valeur invalide, on retombe sur les pixels
+    if (!cal || !isFinite(cal.pxPerMeter) || cal.pxPerMeter <= 0) {
+      return pxPdf.toFixed(0) + ' px';
+    }
+    const meters = Math.max(0, pxPdf / cal.pxPerMeter);
+    if (meters < 0.01) return (meters * 1000).toFixed(0) + ' mm';
+    if (meters < 1)    return (meters * 100).toFixed(1) + ' cm';
     return meters.toFixed(2) + ' m';
   }
 

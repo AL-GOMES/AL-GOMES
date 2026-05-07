@@ -1051,6 +1051,25 @@ function load(){
   }catch(e){
     console.warn('Load failed', e);
   }
+  // Migration ponctuelle : applique les statuts par défaut « PDF de référence »
+  // sur les fiches D1 existantes (anciennes données toutes Conformes par défaut).
+  if(!state._d1DefaultsMigrated){
+    (state.buildings||[]).forEach(b=>{
+      (b.escaliers||[]).forEach(e=>{
+        const fD1 = e && e.fiches && e.fiches.D1;
+        if(fD1 && fD1.items){
+          // Régénère depuis les défauts officiels (écrase les statuts, conserve les notes)
+          const fresh = defaultFicheState('D1');
+          Object.keys(fresh.items).forEach(k=>{
+            const note = (fD1.items[k] && fD1.items[k].note) || '';
+            fD1.items[k] = { status: fresh.items[k].status, note };
+          });
+        }
+      });
+    });
+    state._d1DefaultsMigrated = true;
+    save();
+  }
 }
 
 /* ==================== TABS ==================== */

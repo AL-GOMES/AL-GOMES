@@ -109,17 +109,14 @@ input[type=file]{display:none}
       <div class="section">
         <h4>Aide rapide</h4>
         <div class="help">
-          <b>Mode automatique</b><br>
-          <b>1.</b> Ouvrez un PDF<br>
-          <b>2.</b> Cliquez <b>« 🔍 Scanner légende »</b> et tracez un rectangle autour de la zone légende<br>
-          <b>3.</b> Cliquez <b>« 🚀 Détecter TOUT »</b><br>
+          <b>🚀 Mode 100 % auto</b><br>
+          Chargez un PDF — l'app trouve la légende, extrait les symboles et les détecte sur le plan.
           <hr style="margin:8px 0;border-color:var(--line)">
-          <b>Mode manuel (1 symbole)</b><br>
-          <b>1.</b> Créez une catégorie<br>
-          <b>2.</b> <b>« ✂ Définir template »</b> + rectangle<br>
-          <b>3.</b> <b>« 🎯 Détecter »</b><br>
+          <b>Si la détection auto échoue :</b><br>
+          • <b>« 🔍 Scanner légende »</b> + rectangle autour de la légende<br>
+          • Ou <b>« ✂ Définir template »</b> manuellement<br>
           <hr style="margin:8px 0;border-color:var(--line)">
-          Ajustez le seuil ou ajoutez/retirez manuellement.<br>
+          Ajustez le seuil, ajoutez/retirez au clic.<br>
           <kbd>+</kbd>/<kbd>-</kbd> zoom · <kbd>Esc</kbd> annuler
         </div>
       </div>
@@ -178,6 +175,9 @@ const PALETTE = ['#7c5fd6','#22c55e','#f59e0b','#ef4444','#06b6d4','#ec4899','#8
    ============================================================ */
 document.getElementById('pdfFile').onchange = async (e) => {
   const f = e.target.files[0]; if (!f) return;
+  // Reset éventuelles anciennes catégories
+  STATE.categories = [];
+  STATE.activeCatId = null;
   setStatus('Chargement PDF…');
   const buf = await f.arrayBuffer();
   STATE.pdf = await pdfjsLib.getDocument({ data: buf }).promise;
@@ -187,6 +187,8 @@ document.getElementById('pdfFile').onchange = async (e) => {
   document.getElementById('canvasStack').style.display = 'inline-block';
   await renderPage();
   enableUI();
+  // 🚀 Pipeline 100 % automatique : trouve la légende, scanne les symboles, détecte sur le plan
+  await autoPipeline();
 };
 
 async function renderPage() {
@@ -433,75 +435,243 @@ async function runDetection() {
 }
 
 /* ============================================================
-   LEGEND SCAN — extraction automatique des symboles + libellés
+   AUTO-PIPELINE — full automatisation au chargement
+   1) Trouve la zone légende par mots-clés
+   2) Extrait les symboles + libellés
+   3) Lance la détection NCC sur tout le plan
    ============================================================ */
+async function autoPipeline() {
+  setStatus('🔎 Recherche automatique de la légende…');
+  const regions = autoFindLegendRegions();
+  if (!regions.length) {
+    setStatus('⚠️ Légende non trouvée automatiquement. Utilisez « 🔍 Scanner légende » pour la sélectionner manuellement.');
+    return;
+  }
+  // Pour chaque région détectée, scanne les symboles
+  let totalSymbols = 0;
+  for (const r of regions) {
+    const before = STATE.categories.length;
+    await scanLegend(r.x, r.y, r.w, r.h);
+    totalSymbols += STATE.categories.length - before;
+  }
+  if (totalSymbols === 0) {
+    setStatus('⚠️ Légende détectée mais aucun symbole exploitable extrait. Utilisez « 🔍 Scanner légende » manuellement.');
+    return;
+  }
+  setStatus(`✓ ${totalSymbols} symboles extraits — lancement de la détection sur le plan…`);
+  await sleep(150);
+  // Détection automatique sur le plan
+  await detectAll();
+}
+
+/**
+ * Trouve les zones de légende sur la page courante via les mots-clés
+ * récurrents en plans électriques français. Renvoie un tableau de
+ * rectangles canvas {x,y,w,h}.
+ */
+function autoFindLegendRegions() {
+  if (!STATE.textContent || !STATE.viewport) return [];
+  const vp = STATE.viewport;
+
+  // Récupère tous les items texte avec leurs coords canvas + rotation
+  const all = [];
+  for (const it of STATE.textContent.items) {
+    if (!it.str || !it.str.trim()) continue;
+    const [cx, cy] = vp.convertToViewportPoint(it.transform[4], it.transform[5]);
+    all.push({
+      str: it.str.trim(),
+      x: cx, y: cy,
+      w: (it.width || 0) * STATE.scale,
+      h: (it.height || 12) * STATE.scale,
+      rot: getTextRotation(it.transform)
+    });
+  }
+  if (!all.length) return [];
+
+  // Mots-clés ancrant la zone légende
+  const KW = /APPAREILLAGE|^L[EÉ]GENDE\b|NOMENCLATURE|^SYMBOLES?\b/i;
+  const anchors = all.filter(it => KW.test(it.str));
+  if (!anchors.length) {
+    console.warn('[autoFindLegendRegions] aucun mot-clé légende trouvé');
+    return [];
+  }
+  console.log('[autoFindLegendRegions] ancres :', anchors.map(a => a.str));
+
+  // Pour chaque ancre, prend la bbox de tous les items texte voisins (≤ RADIUS px)
+  const RADIUS = 450;
+  const rawBoxes = [];
+  for (const a of anchors) {
+    const nearby = all.filter(it =>
+      Math.abs(it.x - a.x) < RADIUS && Math.abs(it.y - a.y) < RADIUS
+    );
+    if (nearby.length < 3) continue; // ancre isolée → ignoré
+    const x1 = Math.min(...nearby.map(i => i.x)) - 30;
+    const y1 = Math.min(...nearby.map(i => i.y)) - 30;
+    const x2 = Math.max(...nearby.map(i => i.x + (i.w || 50))) + 20;
+    const y2 = Math.max(...nearby.map(i => i.y + (i.h || 15))) + 20;
+    rawBoxes.push({
+      x: Math.max(0, x1),
+      y: Math.max(0, y1),
+      w: Math.min(STATE.pageW, x2) - Math.max(0, x1),
+      h: Math.min(STATE.pageH, y2) - Math.max(0, y1)
+    });
+  }
+
+  // Fusionne les bbox qui se chevauchent ou se touchent
+  const merged = [];
+  const used = new Array(rawBoxes.length).fill(false);
+  for (let i = 0; i < rawBoxes.length; i++) {
+    if (used[i]) continue;
+    let cur = { ...rawBoxes[i] };
+    used[i] = true;
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (let j = 0; j < rawBoxes.length; j++) {
+        if (used[j]) continue;
+        const b = rawBoxes[j];
+        if (boxesOverlap(cur, b, 40)) {
+          // Union
+          const x1 = Math.min(cur.x, b.x), y1 = Math.min(cur.y, b.y);
+          const x2 = Math.max(cur.x + cur.w, b.x + b.w);
+          const y2 = Math.max(cur.y + cur.h, b.y + b.h);
+          cur = { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
+          used[j] = true;
+          changed = true;
+        }
+      }
+    }
+    merged.push(cur);
+  }
+  console.log('[autoFindLegendRegions]', rawBoxes.length, 'rect(s) → après fusion :', merged.length);
+  return merged;
+}
+
+function boxesOverlap(a, b, margin) {
+  return !(a.x + a.w + margin < b.x || b.x + b.w + margin < a.x ||
+           a.y + a.h + margin < b.y || b.y + b.h + margin < a.y);
+}
+
+/* ============================================================
+   LEGEND SCAN — extraction automatique des symboles + libellés
+   Gère le texte horizontal ET rotationné (90° / 270°)
+   ============================================================ */
+
+// Détecte l'orientation du texte à partir du transform PDF
+function getTextRotation(t) {
+  const a = t[0], b = t[1], c = t[2], d = t[3];
+  // Pure horizontal :  a>0, d>0, b≈0, c≈0
+  if (Math.abs(b) < 0.01 && Math.abs(c) < 0.01) return (a < 0 ? 180 : 0);
+  // Rotation 90° / 270° : a≈0, d≈0
+  if (Math.abs(a) < 0.01 && Math.abs(d) < 0.01) return (b > 0 ? 90 : 270);
+  return 0; // fallback
+}
+
 async function scanLegend(rx, ry, rw, rh) {
   if (!STATE.textContent || !STATE.viewport) {
     alert('Texte de la page non disponible.'); return;
   }
   setStatus('Analyse de la légende…');
 
-  // 1) Convertit chaque item de texte PDF en coords canvas + filtre dans le rectangle
+  // 1) Filtre les items dans le rectangle + détecte rotation dominante
   const items = [];
   const vp = STATE.viewport;
+  const rotCounts = { 0:0, 90:0, 180:0, 270:0 };
   for (const it of STATE.textContent.items) {
     if (!it.str || !it.str.trim()) continue;
-    // it.transform = [a, b, c, d, e, f] — (e, f) est l'origine du texte en coords PDF
     const tx = it.transform[4], ty = it.transform[5];
     const [cx, cy] = vp.convertToViewportPoint(tx, ty);
     if (cx < rx || cx > rx + rw || cy < ry || cy > ry + rh) continue;
-    // Largeur réelle en canvas : it.width en unités PDF × scale
+    const rot = getTextRotation(it.transform);
+    rotCounts[rot]++;
     const widthCanvas = (it.width || 0) * STATE.scale;
-    items.push({ str: it.str.trim(), x: cx, y: cy, w: widthCanvas });
+    const heightCanvas = (it.height || 12) * STATE.scale;
+    items.push({ str: it.str.trim(), x: cx, y: cy, w: widthCanvas, h: heightCanvas, rot });
   }
+  console.log('[scanLegend] items trouvés:', items.length, 'rotations:', rotCounts);
 
   if (!items.length) {
-    alert('Aucun texte trouvé dans la zone sélectionnée. Vérifiez que c\'est bien la légende et que le PDF contient du texte vectoriel (pas une image scannée).');
+    alert('Aucun texte trouvé dans la zone sélectionnée.\n\nCauses possibles :\n• La légende est une image scannée (pas de texte vectoriel)\n• Le rectangle ne couvre pas la zone\n\nUtilisez le mode manuel : créez chaque catégorie + définissez le template avec « ✂ Définir template ».');
     return;
   }
 
-  // 2) Regroupe les items par ligne (même Y, à ±10 px près)
-  items.sort((a, b) => a.y - b.y);
+  // Rotation dominante
+  const dominantRot = Object.keys(rotCounts).reduce((a,b) => rotCounts[a] >= rotCounts[b] ? a : b);
+  const rotation = parseInt(dominantRot);
+  setStatus(`${items.length} libellés trouvés (orientation ${rotation}°)`);
+
+  // 2) Regroupe les items par ligne (selon rotation) et trie
   const ROW_TOL = 10;
-  const rows = [];
-  let cur = [], curY = -1e9;
+  const lines = [];
+  let cur = [], curKey = -1e9;
+
+  // Pour rotation 0 / 180 : on groupe par Y (lignes horizontales)
+  // Pour rotation 90 / 270 : on groupe par X (colonnes)
+  const groupAxis = (rotation === 0 || rotation === 180) ? 'y' : 'x';
+  items.sort((a, b) => a[groupAxis] - b[groupAxis]);
   for (const it of items) {
-    if (Math.abs(it.y - curY) > ROW_TOL) {
-      if (cur.length) rows.push(cur);
-      cur = [it];
-      curY = it.y;
-    } else {
-      cur.push(it);
-    }
+    const k = it[groupAxis];
+    if (Math.abs(k - curKey) > ROW_TOL) {
+      if (cur.length) lines.push(cur);
+      cur = [it]; curKey = k;
+    } else cur.push(it);
   }
-  if (cur.length) rows.push(cur);
+  if (cur.length) lines.push(cur);
 
-  // 3) Pour chaque ligne, déduit le symbole = zone à gauche du libellé
+  // 3) Pour chaque ligne, déduit le rectangle du symbole
   let created = 0;
-  const SYM_W = 28;     // largeur estimée du pictogramme en canvas px
-  const SYM_PAD_X = 4;  // marge entre symbole et texte
-  const SYM_H_BUFFER = 4;
-  const minTextLen = 2;
+  const SYM_SIZE = 28;       // taille estimée du pictogramme en canvas px
+  const SYM_PAD  = 4;
+  const SYM_H    = 26;
 
-  for (const row of rows) {
-    row.sort((a, b) => a.x - b.x);
+  for (const row of lines) {
+    // Trie selon l'axe de lecture
+    const readAxis = (rotation === 0 || rotation === 180) ? 'x' : 'y';
+    row.sort((a, b) => a[readAxis] - b[readAxis]);
     const text = row.map(r => r.str).join(' ').trim();
-    if (text.length < minTextLen) continue;
-    // Filtre : ignore les titres très longs (en-têtes type "APPAREILLAGE LOGEMENTS")
-    if (/^APPAREILLAGE/i.test(text) || /^LEGENDE/i.test(text) || /^LÉGENDE/i.test(text)) continue;
-    // Filtre : ignore les lignes purement numériques (cotes, dates)
+    if (text.length < 2) continue;
+    if (/^APPAREILLAGE/i.test(text) || /^L[EÉ]GENDE/i.test(text)) continue;
     if (/^[\d\s\/.,;:-]+$/.test(text)) continue;
 
-    const xMinText = row[0].x;
-    const yBase = row.reduce((s, r) => s + r.y, 0) / row.length; // baseline moyen
+    let sx, sy, sw, sh;
 
-    // Symbole : à gauche du texte, vertical centré sur le baseline
-    let sx = Math.max(rx, xMinText - SYM_W - SYM_PAD_X);
-    let sw = Math.min(SYM_W, xMinText - sx - SYM_PAD_X);
-    if (sw < 8) continue;
-    const sh = 26;
-    let sy = Math.max(ry, yBase - sh + SYM_H_BUFFER);
-    if (sy + sh > ry + rh) sy = ry + rh - sh;
+    if (rotation === 0) {
+      // Texte horizontal lu de gauche à droite → symbole À GAUCHE
+      const xMin = row[0].x;
+      const yBase = row.reduce((s, r) => s + r.y, 0) / row.length;
+      sx = Math.max(rx, xMin - SYM_SIZE - SYM_PAD);
+      sw = Math.min(SYM_SIZE, xMin - sx - SYM_PAD);
+      sh = SYM_H;
+      sy = Math.max(ry, yBase - sh + 4);
+    } else if (rotation === 90) {
+      // Texte rotaté 90° (lu de bas en haut) → symbole EN-DESSOUS du début du texte
+      const xAvg = row.reduce((s, r) => s + r.x, 0) / row.length;
+      const yMax = Math.max(...row.map(r => r.y)); // début de lecture (le plus bas en canvas)
+      sw = SYM_H; sh = SYM_SIZE;
+      sx = Math.max(rx, xAvg - sw / 2);
+      sy = Math.min(ry + rh - sh, yMax + SYM_PAD);
+    } else if (rotation === 270) {
+      // Texte rotaté 270° (lu de haut en bas) → symbole AU-DESSUS
+      const xAvg = row.reduce((s, r) => s + r.x, 0) / row.length;
+      const yMin = Math.min(...row.map(r => r.y));
+      sw = SYM_H; sh = SYM_SIZE;
+      sx = Math.max(rx, xAvg - sw / 2);
+      sy = Math.max(ry, yMin - sh - SYM_PAD);
+    } else {
+      // 180° : symbole À DROITE du texte (cas rare)
+      const xMax = Math.max(...row.map(r => r.x + r.w));
+      const yBase = row.reduce((s, r) => s + r.y, 0) / row.length;
+      sx = xMax + SYM_PAD;
+      sw = Math.min(SYM_SIZE, rx + rw - sx);
+      sh = SYM_H;
+      sy = Math.max(ry, yBase - sh + 4);
+    }
+
+    sw = Math.max(8, Math.floor(sw));
+    sh = Math.max(8, Math.floor(sh));
+    sx = Math.floor(sx); sy = Math.floor(sy);
+    if (sw < 8 || sh < 8) continue;
+    if (sx < 0 || sy < 0 || sx + sw > STATE.pageW || sy + sh > STATE.pageH) continue;
 
     // Crée la catégorie + sa template
     const id = 'c' + Date.now() + '_' + created;
@@ -521,12 +691,12 @@ async function scanLegend(rx, ry, rw, rh) {
   }
 
   if (!created) {
-    alert('Aucune ligne de symbole exploitable trouvée dans la zone.');
+    alert(`Aucun symbole exploitable trouvé.\n\n${items.length} libellé(s) trouvé(s) (orientation ${rotation}°), mais l'extraction de la zone du pictogramme a échoué.\n\nEssayez de réduire le rectangle pour qu'il colle plus précisément à la légende.`);
     return;
   }
   STATE.activeCatId = STATE.categories[STATE.categories.length - 1].id;
   renderCategories();
-  setStatus(`${created} symboles extraits de la légende. Cliquez « 🚀 Détecter TOUT » pour lancer la recherche.`);
+  setStatus(`✓ ${created} symboles extraits (orientation texte ${rotation}°). Cliquez « 🚀 Détecter TOUT ».`);
 }
 
 /* ============================================================

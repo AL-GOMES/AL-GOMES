@@ -1454,7 +1454,11 @@ html, body {
       <b>Mesures</b><br>
       Calibrez une fois avec l'outil <b>ÉCHELLE</b>, puis toutes les mesures sont en mètres.<br><br>
       <b>Annotations</b><br>
-      Sauvegardées automatiquement dans ce navigateur. Utilisez <b>EXPORT</b> pour partager.
+      Sauvegardées automatiquement dans ce navigateur. Utilisez <b>EXPORT</b> pour partager.<br><br>
+      <b>Signature posée</b><br>
+      En mode <b>PAN</b>, cliquez sur la signature pour la sélectionner.<br>
+      Glissez le rectangle pour la <b>déplacer</b>, tirez un coin pour la <b>redimensionner</b>.<br>
+      Cliquez le rond rouge ou appuyez sur <b>Suppr</b> pour la <b>supprimer</b>. <b>Échap</b> pour désélectionner.
     </div>
     <div class="modal-actions">
       <button class="btn primary" id="help-close">FERMER</button>
@@ -2216,6 +2220,9 @@ class PDFViewer {
     if (this.viewerInner) this.viewerInner.dataset.tool = tool;
     this.measurePoints = [];
     this.cablePoints = []; // Polyligne en cours pour l'outil cable
+    // Désélectionner toute signature en cours d'édition lors du changement d'outil
+    this._sigSelectedId = null;
+    this._sigDrag = null;
     this._renderOverlay();
     $('status-tool').textContent = tool.toUpperCase();
     $$('.btn').forEach(b => b.classList.remove('active'));
@@ -2326,6 +2333,9 @@ class PDFViewer {
       this._drawCableInProgress(ctx);
     }
 
+    // Sélection signature (overlay au-dessus de tout le reste)
+    this._drawSignatureSelection(ctx);
+
     ctx.restore();
   }
 
@@ -2421,6 +2431,99 @@ class PDFViewer {
     const dx = a.x * this.zoom;
     const dy = a.y * this.zoom;
     ctx.drawImage(img, dx, dy, w, h);
+  }
+
+  // ===== Signature selection / drag / resize =====
+  _signatureBounds(a) {
+    if (!a || a.type !== 'signature') return null;
+    const w = a.w || 160;
+    let h = a.h;
+    if (!h) {
+      const ar = SignatureManager.getNaturalAspect(a.src);
+      h = w * (ar || 0.5);
+    }
+    return { x: a.x, y: a.y, w, h };
+  }
+
+  _getSignatureById(id) {
+    return (this.state.annotations || []).find(a => a.id === id && a.type === 'signature') || null;
+  }
+
+  _hitSignature(pdfX, pdfY) {
+    const annots = (this.state.annotations || []).filter(
+      a => a.type === 'signature' && a.page === this.currentPageNum
+    );
+    for (let i = annots.length - 1; i >= 0; i--) {
+      const a = annots[i];
+      const b = this._signatureBounds(a);
+      if (!b) continue;
+      if (pdfX >= b.x && pdfX <= b.x + b.w && pdfY >= b.y && pdfY <= b.y + b.h) {
+        return a;
+      }
+    }
+    return null;
+  }
+
+  _hitSignatureControl(pdfX, pdfY, a) {
+    const b = this._signatureBounds(a);
+    if (!b) return null;
+    const z = this.zoom || 1;
+    const handlePdf = 8 / z;
+    const dxC = b.x + b.w + 12 / z;
+    const dyC = b.y - 12 / z;
+    if (Math.hypot(pdfX - dxC, pdfY - dyC) <= 11 / z) return 'delete';
+    const corners = [
+      ['nw', b.x,        b.y],
+      ['ne', b.x + b.w,  b.y],
+      ['sw', b.x,        b.y + b.h],
+      ['se', b.x + b.w,  b.y + b.h]
+    ];
+    for (const [name, cx, cy] of corners) {
+      if (Math.abs(pdfX - cx) <= handlePdf && Math.abs(pdfY - cy) <= handlePdf) return name;
+    }
+    if (pdfX >= b.x && pdfX <= b.x + b.w && pdfY >= b.y && pdfY <= b.y + b.h) return 'move';
+    return null;
+  }
+
+  _drawSignatureSelection(ctx) {
+    const id = this._sigSelectedId;
+    if (!id) return;
+    const a = this._getSignatureById(id);
+    if (!a || a.page !== this.currentPageNum) return;
+    const b = this._signatureBounds(a);
+    if (!b) return;
+    const z = this.zoom;
+    const x = b.x * z, y = b.y * z, w = b.w * z, h = b.h * z;
+    ctx.save();
+    ctx.strokeStyle = '#8b5cf6';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5, 4]);
+    ctx.strokeRect(x, y, w, h);
+    ctx.setLineDash([]);
+    const hs = 9;
+    ctx.fillStyle = '#fff';
+    ctx.strokeStyle = '#8b5cf6';
+    ctx.lineWidth = 1.5;
+    for (const [cx, cy] of [[x, y], [x + w, y], [x, y + h], [x + w, y + h]]) {
+      ctx.beginPath();
+      ctx.rect(cx - hs / 2, cy - hs / 2, hs, hs);
+      ctx.fill();
+      ctx.stroke();
+    }
+    const dxs = x + w + 12, dys = y - 12;
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath();
+    ctx.arc(dxs, dys, 11, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(dxs - 4, dys - 4);
+    ctx.lineTo(dxs + 4, dys + 4);
+    ctx.moveTo(dxs + 4, dys - 4);
+    ctx.lineTo(dxs - 4, dys + 4);
+    ctx.stroke();
+    ctx.restore();
   }
 
   _drawMeasureInProgress(ctx, color) {
@@ -4575,10 +4678,25 @@ function installEvents() {
           // Annuler juste la polyligne en cours, rester en outil cable
           v.cablePoints = [];
           v._renderOverlay();
+        } else if (v._sigSelectedId) {
+          // Désélectionner la signature en cours
+          v._sigSelectedId = null;
+          v._renderOverlay();
         } else {
           v.setTool('pan');
           v.measurePoints = [];
           v._renderOverlay();
+        }
+        break;
+      case 'Delete':
+      case 'Backspace':
+        if (v._sigSelectedId) {
+          ev.preventDefault();
+          const id = v._sigSelectedId;
+          v._sigSelectedId = null;
+          v._sigDrag = null;
+          v.deleteAnnotation(id);
+          showToast('Signature supprimée', 'info', 1200);
         }
         break;
       case '+': case '=': ev.preventDefault(); v.setZoom(v.zoom * 1.25); break;
@@ -4665,6 +4783,59 @@ function installViewerEvents(viewer) {
       return;
     }
     if (viewer.tool === 'pan' && ev.button === 0) {
+      // === Sélection / déplacement / redimensionnement / suppression d'une signature ===
+      const sigPos = viewer._eventToPdfCoords(ev);
+      if (sigPos) {
+        let sigHit = null;
+        let sigCtrl = null;
+        // 1. Si une signature est déjà sélectionnée, on regarde d'abord ses contrôles
+        if (viewer._sigSelectedId) {
+          const sel = viewer._getSignatureById(viewer._sigSelectedId);
+          if (sel && sel.page === viewer.currentPageNum) {
+            sigCtrl = viewer._hitSignatureControl(sigPos.x, sigPos.y, sel);
+            if (sigCtrl) sigHit = sel;
+          }
+        }
+        // 2. Sinon n'importe quelle signature de la page courante
+        if (!sigHit) {
+          const a = viewer._hitSignature(sigPos.x, sigPos.y);
+          if (a) { sigHit = a; sigCtrl = 'move'; }
+        }
+        if (sigHit && sigCtrl === 'delete') {
+          viewer.deleteAnnotation(sigHit.id);
+          viewer._sigSelectedId = null;
+          viewer._sigDrag = null;
+          showToast('Signature supprimée', 'info', 1500);
+          ev.preventDefault();
+          ev.stopPropagation();
+          return;
+        }
+        if (sigHit && sigCtrl) {
+          viewer._sigSelectedId = sigHit.id;
+          const ar = SignatureManager.getNaturalAspect(sigHit.src)
+            || (sigHit.h && sigHit.w ? sigHit.h / sigHit.w : 0.5);
+          const startW = sigHit.w || 160;
+          const startH = sigHit.h || startW * ar;
+          viewer._sigDrag = {
+            mode: sigCtrl,
+            id: sigHit.id,
+            startMouse: sigPos,
+            startX: sigHit.x,
+            startY: sigHit.y,
+            startW, startH,
+            aspect: ar
+          };
+          viewer._renderOverlay();
+          ev.preventDefault();
+          ev.stopPropagation();
+          return;
+        }
+        // Aucune signature touchée : on désélectionne et on continue avec le pan normal
+        if (viewer._sigSelectedId) {
+          viewer._sigSelectedId = null;
+          viewer._renderOverlay();
+        }
+      }
       viewer.isDragging = true;
       viewer.dragStart = { x: ev.clientX, y: ev.clientY, scrollLeft: pane.scrollLeft, scrollTop: pane.scrollTop };
       pane.classList.add('dragging');
@@ -4800,6 +4971,42 @@ function installViewerEvents(viewer) {
     $('coord-x-' + viewer.paneId).textContent = pos.x.toFixed(0);
     $('coord-y-' + viewer.paneId).textContent = pos.y.toFixed(0);
     viewer._lastMouse = pos;
+    // Drag / resize d'une signature sélectionnée
+    if (viewer._sigDrag) {
+      const d = viewer._sigDrag;
+      const a = viewer._getSignatureById(d.id);
+      if (!a) { viewer._sigDrag = null; return; }
+      const dx = pos.x - d.startMouse.x;
+      const dy = pos.y - d.startMouse.y;
+      if (d.mode === 'move') {
+        a.x = d.startX + dx;
+        a.y = d.startY + dy;
+      } else {
+        const minW = 20;
+        let newW;
+        if (d.mode === 'se' || d.mode === 'ne') newW = d.startW + dx;
+        else /* sw, nw */                       newW = d.startW - dx;
+        if (newW < minW) newW = minW;
+        const newH = newW * d.aspect;
+        if (d.mode === 'se') {
+          a.x = d.startX;
+          a.y = d.startY;
+        } else if (d.mode === 'sw') {
+          a.x = d.startX + (d.startW - newW);
+          a.y = d.startY;
+        } else if (d.mode === 'ne') {
+          a.x = d.startX;
+          a.y = d.startY + (d.startH - newH);
+        } else if (d.mode === 'nw') {
+          a.x = d.startX + (d.startW - newW);
+          a.y = d.startY + (d.startH - newH);
+        }
+        a.w = newW;
+        a.h = newH;
+      }
+      viewer._renderOverlay();
+      return;
+    }
     // Measure live
     if ((viewer.tool === 'measure' || viewer.tool === 'calibrate') && viewer.measurePoints.length === 1) {
       const p1 = viewer.measurePoints[0];
@@ -4858,6 +5065,11 @@ function installViewerEvents(viewer) {
   });
 
   pane.addEventListener('mouseup', () => {
+    if (viewer._sigDrag) {
+      saveDocState(viewer.docHash, viewer.state);
+      viewer._sigDrag = null;
+      viewer._renderAnnotationsList();
+    }
     viewer.isDragging = false;
     viewer.dragStart = null;
     pane.classList.remove('dragging');
@@ -4872,6 +5084,11 @@ function installViewerEvents(viewer) {
     }
   });
   pane.addEventListener('mouseleave', () => {
+    if (viewer._sigDrag) {
+      saveDocState(viewer.docHash, viewer.state);
+      viewer._sigDrag = null;
+      viewer._renderAnnotationsList();
+    }
     viewer.isDragging = false;
     pane.classList.remove('dragging');
   });

@@ -6,6 +6,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="js/firebase-init.js"></script>
+<script src="js/auth-guard.js"></script>
 <style>
 /* =============================================================================
    LISEUSE PLAN ÉLECTRIQUE A.L. GOMES
@@ -1613,15 +1615,14 @@ const SignatureManager = (() => {
 })();
 
 // =============================================================================
-// FIREBASE — init + chargement de la signature du profil utilisateur
+// FIREBASE — init géré par js/firebase-init.js (window.auth, window.db).
+// Ici on charge uniquement la signature du profil utilisateur connecté.
 // =============================================================================
-const _SIG_FC = {apiKey:"AIzaSyAXuLjl6_yZNB28anBGSPP6PptugpkDJ4k",authDomain:"algomes-a4e46.firebaseapp.com",projectId:"algomes-a4e46",storageBucket:"algomes-a4e46.firebasestorage.app",messagingSenderId:"827799257472",appId:"1:827799257472:web:b2248e501a5f72b63ec165"};
 let _sigDb = null, _sigAuth = null, _sigCurrentUser = null;
 try {
-  if (typeof firebase !== 'undefined' && firebase.initializeApp) {
-    if (!firebase.apps.length) firebase.initializeApp(_SIG_FC);
-    _sigAuth = firebase.auth();
-    _sigDb   = firebase.firestore();
+  if (typeof firebase !== 'undefined' && window.auth && window.db) {
+    _sigAuth = window.auth;
+    _sigDb   = window.db;
     _sigAuth.onAuthStateChanged(async (u) => {
       _sigCurrentUser = u || null;
       if (!u) { SignatureManager.setRemoteDataUrl(null); return; }

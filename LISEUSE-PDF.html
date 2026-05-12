@@ -5643,19 +5643,21 @@ function installViewerEvents(viewer) {
     } else if (viewer.tool === 'text' && ev.button === 0) {
       const pos = viewer._eventToPdfCoords(ev);
       if (!pos) return;
-      // Si on clique sur un texte existant → on l'édite plutôt que d'en créer un nouveau
+      // Si on clique sur un texte existant : on prépare un drag.
+      // Si la souris bouge (> seuil), on déplace ; sinon on ouvre la modale d'édition au relâchement.
       const hit = viewer._findTextAnnotationAt(pos.x, pos.y);
-      if (hit && window._openTextModal) {
-        app.textData = {
-          x: hit.x, y: hit.y, w: hit.w, h: hit.h,
-          originalText: hit.originalText,
-          type: hit.type,
-          viewer,
-          editingId: hit.id
+      if (hit) {
+        viewer._textDrag = {
+          id: hit.id,
+          startMouse: pos,
+          startX: hit.x,
+          startY: hit.y,
+          dragged: false
         };
-        window._openTextModal(hit);
+        ev.preventDefault();
         return;
       }
+      // Clic sur zone vide : création d'un nouveau texte
       app.textData = { x: pos.x, y: pos.y, viewer, editingId: null };
       if (window._openTextModal) window._openTextModal(null);
     } else if (viewer.tool === 'cable' && ev.button === 0) {
@@ -5756,6 +5758,25 @@ function installViewerEvents(viewer) {
     $('coord-x-' + viewer.paneId).textContent = pos.x.toFixed(0);
     $('coord-y-' + viewer.paneId).textContent = pos.y.toFixed(0);
     viewer._lastMouse = pos;
+    // Drag d'un texte (outil TEXTE) — seuil de 3 px en coords écran avant
+    // d'engager le déplacement, pour ne pas confondre clic-édition et glisser.
+    if (viewer._textDrag) {
+      const d = viewer._textDrag;
+      const a = (viewer.state.annotations || []).find(x => x.id === d.id);
+      if (!a) { viewer._textDrag = null; return; }
+      const dx = pos.x - d.startMouse.x;
+      const dy = pos.y - d.startMouse.y;
+      if (!d.dragged) {
+        const thresholdPdf = 3 / (viewer.zoom || 1);
+        if (Math.hypot(dx, dy) > thresholdPdf) d.dragged = true;
+      }
+      if (d.dragged) {
+        a.x = d.startX + dx;
+        a.y = d.startY + dy;
+        viewer._renderOverlay();
+      }
+      return;
+    }
     // Drag / resize d'une signature sélectionnée
     if (viewer._sigDrag) {
       const d = viewer._sigDrag;
@@ -5850,6 +5871,28 @@ function installViewerEvents(viewer) {
   });
 
   pane.addEventListener('mouseup', () => {
+    // Fin de drag de texte : si la souris a bougé on persiste la nouvelle
+    // position, sinon on ouvre la modale d'édition (équivalent clic).
+    if (viewer._textDrag) {
+      const d = viewer._textDrag;
+      const a = (viewer.state.annotations || []).find(x => x.id === d.id);
+      if (a) {
+        if (d.dragged) {
+          saveDocState(viewer.docHash, viewer.state);
+          viewer._renderAnnotationsList();
+        } else if (window._openTextModal) {
+          app.textData = {
+            x: a.x, y: a.y, w: a.w, h: a.h,
+            originalText: a.originalText,
+            type: a.type,
+            viewer,
+            editingId: a.id
+          };
+          window._openTextModal(a);
+        }
+      }
+      viewer._textDrag = null;
+    }
     if (viewer._sigDrag) {
       saveDocState(viewer.docHash, viewer.state);
       viewer._sigDrag = null;
@@ -5869,6 +5912,13 @@ function installViewerEvents(viewer) {
     }
   });
   pane.addEventListener('mouseleave', () => {
+    // Si on quitte la pane en cours de drag-texte, on persiste la position
+    // courante (sinon le drag se retrouve "bloqué" en état partiellement appliqué).
+    if (viewer._textDrag) {
+      if (viewer._textDrag.dragged) saveDocState(viewer.docHash, viewer.state);
+      viewer._textDrag = null;
+      viewer._renderAnnotationsList();
+    }
     if (viewer._sigDrag) {
       saveDocState(viewer.docHash, viewer.state);
       viewer._sigDrag = null;

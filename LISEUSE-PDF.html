@@ -1126,9 +1126,9 @@ html, body {
 .viewer-pane[data-tool="count-manual"] { cursor: cell; }
 .viewer-pane[data-tool="cable"] { cursor: crosshair; }
 .viewer-pane[data-tool="text"] { cursor: text; }
-.viewer-pane[data-tool="text"].over-text { cursor: grab; }
+.viewer-pane[data-tool="text"].over-text { cursor: move; cursor: grab; }
 .viewer-pane[data-tool="text"].text-dragging,
-.viewer-pane[data-tool="text"].over-text.text-dragging { cursor: grabbing; }
+.viewer-pane[data-tool="text"].over-text.text-dragging { cursor: move; cursor: grabbing; }
 .viewer-pane[data-tool="text-edit"] { cursor: pointer; }
 
 .viewer-inner[data-tool="measure"] .overlay-canvas,
@@ -2694,9 +2694,9 @@ class PDFViewer {
       else if (a.type === 'text') this._drawText(ctx, a);
       else if (a.type === 'text-edit') this._drawTextEdit(ctx, a);
     }
-    // Highlight du texte survolé en outil TEXTE — cadre pointillé violet pour
-    // signaler que le texte est déplaçable. Dessiné par-dessus le texte, autour
-    // de son bbox, en suivant la rotation visuelle.
+    // Highlight du texte survolé en outil TEXTE — cadre coloré bien visible
+    // pour signaler que le texte est déplaçable. Dessiné par-dessus le texte,
+    // autour de son bbox, en suivant la rotation visuelle.
     if (this.tool === 'text' && this._hoveredTextId) {
       const hov = annots.find(a => a.id === this._hoveredTextId);
       if (hov) {
@@ -2710,11 +2710,12 @@ class PDFViewer {
             ctx.rotate(rot * Math.PI / 180);
             ctx.translate(-ax, -ay);
           }
-          ctx.strokeStyle = 'rgba(124,95,214,0.85)';
-          ctx.lineWidth = 1.5;
-          ctx.setLineDash([4, 3]);
+          // Fond translucide pour bien voir la zone, puis bord plein épais
+          ctx.fillStyle = 'rgba(124,95,214,0.18)';
+          ctx.fillRect(bb.x, bb.y, bb.w, bb.h);
+          ctx.strokeStyle = '#7c5fd6';
+          ctx.lineWidth = 2;
           ctx.strokeRect(bb.x, bb.y, bb.w, bb.h);
-          ctx.setLineDash([]);
           ctx.restore();
         }
       }

@@ -1126,6 +1126,9 @@ html, body {
 .viewer-pane[data-tool="count-manual"] { cursor: cell; }
 .viewer-pane[data-tool="cable"] { cursor: crosshair; }
 .viewer-pane[data-tool="text"] { cursor: text; }
+.viewer-pane[data-tool="text"].over-text { cursor: grab; }
+.viewer-pane[data-tool="text"].text-dragging,
+.viewer-pane[data-tool="text"].over-text.text-dragging { cursor: grabbing; }
 .viewer-pane[data-tool="text-edit"] { cursor: pointer; }
 
 .viewer-inner[data-tool="measure"] .overlay-canvas,
@@ -2596,6 +2599,10 @@ class PDFViewer {
     // Désélectionner toute signature en cours d'édition lors du changement d'outil
     this._sigSelectedId = null;
     this._sigDrag = null;
+    // Idem pour le drag/survol de texte
+    this._textDrag = null;
+    this._hoveredTextId = null;
+    this.pane.classList.remove('over-text', 'text-dragging');
     this._renderOverlay();
     $('status-tool').textContent = tool.toUpperCase();
     $$('.btn').forEach(b => b.classList.remove('active'));
@@ -2686,6 +2693,31 @@ class PDFViewer {
       else if (a.type === 'signature') this._drawSignature(ctx, a);
       else if (a.type === 'text') this._drawText(ctx, a);
       else if (a.type === 'text-edit') this._drawTextEdit(ctx, a);
+    }
+    // Highlight du texte survolé en outil TEXTE — cadre pointillé violet pour
+    // signaler que le texte est déplaçable. Dessiné par-dessus le texte, autour
+    // de son bbox, en suivant la rotation visuelle.
+    if (this.tool === 'text' && this._hoveredTextId) {
+      const hov = annots.find(a => a.id === this._hoveredTextId);
+      if (hov) {
+        const bb = this._textBbox(hov);
+        if (bb) {
+          const rot = ((hov.rotation || 0) % 360 + 360) % 360;
+          const ax = hov.x * this.zoom, ay = hov.y * this.zoom;
+          ctx.save();
+          if (rot) {
+            ctx.translate(ax, ay);
+            ctx.rotate(rot * Math.PI / 180);
+            ctx.translate(-ax, -ay);
+          }
+          ctx.strokeStyle = 'rgba(124,95,214,0.85)';
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([4, 3]);
+          ctx.strokeRect(bb.x, bb.y, bb.w, bb.h);
+          ctx.setLineDash([]);
+          ctx.restore();
+        }
+      }
     }
     // Coudes : numérotés par ordre de création (global sur toutes pages)
     const allElbows = (this.state.annotations || [])
@@ -5654,6 +5686,7 @@ function installViewerEvents(viewer) {
           startY: hit.y,
           dragged: false
         };
+        pane.classList.add('text-dragging');
         ev.preventDefault();
         return;
       }
@@ -5758,6 +5791,22 @@ function installViewerEvents(viewer) {
     $('coord-x-' + viewer.paneId).textContent = pos.x.toFixed(0);
     $('coord-y-' + viewer.paneId).textContent = pos.y.toFixed(0);
     viewer._lastMouse = pos;
+    // Survol d'un texte en outil TEXTE : on change le curseur en "grab" et on
+    // dessine un cadre fin autour du texte pour indiquer qu'il est déplaçable.
+    if (viewer.tool === 'text' && !viewer._textDrag) {
+      const hovered = viewer._findTextAnnotationAt(pos.x, pos.y);
+      const hoveredId = hovered ? hovered.id : null;
+      pane.classList.toggle('over-text', !!hoveredId);
+      if (viewer._hoveredTextId !== hoveredId) {
+        viewer._hoveredTextId = hoveredId;
+        viewer._renderOverlay();
+      }
+    } else if (!viewer._textDrag && viewer._hoveredTextId) {
+      // Outil différent : on retire le highlight si présent
+      viewer._hoveredTextId = null;
+      pane.classList.remove('over-text');
+      viewer._renderOverlay();
+    }
     // Drag d'un texte (outil TEXTE) — seuil de 3 px en coords écran avant
     // d'engager le déplacement, pour ne pas confondre clic-édition et glisser.
     if (viewer._textDrag) {
@@ -5892,6 +5941,7 @@ function installViewerEvents(viewer) {
         }
       }
       viewer._textDrag = null;
+      pane.classList.remove('text-dragging');
     }
     if (viewer._sigDrag) {
       saveDocState(viewer.docHash, viewer.state);
@@ -5917,7 +5967,14 @@ function installViewerEvents(viewer) {
     if (viewer._textDrag) {
       if (viewer._textDrag.dragged) saveDocState(viewer.docHash, viewer.state);
       viewer._textDrag = null;
+      pane.classList.remove('text-dragging');
       viewer._renderAnnotationsList();
+    }
+    // Sortie de pane : retirer le highlight de survol s'il y en avait un
+    if (viewer._hoveredTextId) {
+      viewer._hoveredTextId = null;
+      pane.classList.remove('over-text');
+      viewer._renderOverlay();
     }
     if (viewer._sigDrag) {
       saveDocState(viewer.docHash, viewer.state);

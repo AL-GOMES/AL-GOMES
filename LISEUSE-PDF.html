@@ -3471,38 +3471,20 @@ class PDFViewer {
 
   async rotate(deltaDegrees) {
     if (!this.currentPage) return;
-    const oldRotation = this.rotation;
-    const newRotation = ((oldRotation + deltaDegrees) % 360 + 360) % 360;
-    // Transforme les coords (stockées en repère viewport-rotated) entre les deux rotations
-    // pour que les annotations restent à leur position physique réelle sur la page.
+    // Pour les annotations texte/modif : mise à jour de la rotation visuelle
+    // (le texte tourne avec la page pour rester lisible relativement au contenu).
+    // Les coords (x, y) restent en repère viewport — identique au comportement
+    // des autres annotations (note, mesure, câble…).
     try {
-      const oldVp = this.currentPage.getViewport({ scale: 1, rotation: oldRotation });
-      const newVp = this.currentPage.getViewport({ scale: 1, rotation: newRotation });
-      const transformPt = (vx, vy) => {
-        const [px, py] = oldVp.convertToPdfPoint(vx, vy);
-        const r = newVp.convertToViewportPoint(px, py);
-        return { x: r[0], y: r[1] };
-      };
       for (const a of (this.state.annotations || [])) {
-        if (a.x !== undefined && a.y !== undefined) {
-          const p = transformPt(a.x, a.y);
-          a.x = p.x; a.y = p.y;
-        }
-        if (a.x2 !== undefined && a.y2 !== undefined) {
-          const p = transformPt(a.x2, a.y2);
-          a.x2 = p.x; a.y2 = p.y;
-        }
-        if (Array.isArray(a.points)) {
-          a.points = a.points.map(p => transformPt(p.x, p.y));
-        }
-        // Texte : on conserve aussi une rotation visuelle (lecture)
         if (a.type === 'text' || a.type === 'text-edit') {
-          a.rotation = (((a.rotation || 0) + deltaDegrees) % 360 + 360) % 360;
+          const prev = a.rotation || 0;
+          a.rotation = ((prev + deltaDegrees) % 360 + 360) % 360;
         }
       }
       saveDocState(this.docHash, this.state);
-    } catch (e) { console.warn('[rotate] transform annotations failed', e); }
-    this.rotation = newRotation;
+    } catch (e) { console.warn('[rotate] update text rotation failed', e); }
+    this.rotation = ((this.rotation + deltaDegrees) % 360 + 360) % 360;
     $('rotation-label').textContent = this.rotation + '°';
     await this.renderPage(this.currentPageNum);
     showToast('Rotation : ' + this.rotation + '°', 'info', 1200);

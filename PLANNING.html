@@ -137,7 +137,6 @@ function restoreViewState(){
     if(v.view)S.view=v.view;
   }catch(e){}
 }
-restoreViewState();
 let modal=null,confirmDelete=null;
 function getF(){let t=[...TASKS];if(S.selectedWeek!=='all')t=t.filter(x=>x.week===S.selectedWeek);if(S.search){const q=S.search.toLowerCase();t=t.filter(x=>x.chantier.toLowerCase().includes(q)||x.tache.toLowerCase().includes(q))}if(S.filterReport)t=t.filter(x=>x.status==='report');if(S.filterTodo)t=t.filter(x=>x.status==='todo');if(S.filterDone)t=t.filter(x=>x.status==='progress');if(S.filterAttention)t=t.filter(x=>x.hasAttention);return t}
 function fmt(d){if(!d)return'—';const p=d.split('-');return p[2]+'/'+p[1]+'/'+p[0]}
@@ -158,6 +157,7 @@ if(typeof d.nextId === 'number') nextId = d.nextId;
 } catch(e){}
 }
 restore();
+restoreViewState(); // après restore() pour que GW() contienne les vraies semaines chargées
 // Migration : déduire le champ "status" des anciennes données (isReport/date)
 // status: 'report' = reportée | 'todo' = à faire (planifiée, pas commencée) | 'progress' = en cours
 function migrateStatus(){
@@ -630,6 +630,7 @@ async function initCloudSync(){
         migrateStatus();
         persistLocal(); // écrit en localStorage avec le timestamp cloud
         markLocalSynced(cloudTs);
+        restoreViewState(); // ré-applique la semaine sauvegardée maintenant que GW() inclut les nouvelles semaines du cloud
         render();
         console.log('[Cloud] Planning chargé depuis cloud:',TASKS.length,'tâches');
       }else{
@@ -661,6 +662,8 @@ async function initCloudSync(){
       const cloudTs=(data.updatedAt&&typeof data.updatedAt.toMillis==='function')?data.updatedAt.toMillis():(data._localWriteTs||Date.now());
       persistLocal();
       markLocalSynced(cloudTs);
+      // Re-vérifier que la semaine sélectionnée existe encore après la mise à jour
+      if(S.selectedWeek!=='all' && !GW().includes(S.selectedWeek)) restoreViewState();
       render();
       if(fromOther)console.log('[Cloud] Mise à jour reçue de',data.updatedByName||data.updatedBy);
       setSyncStatus('synced');

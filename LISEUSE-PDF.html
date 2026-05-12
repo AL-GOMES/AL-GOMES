@@ -158,6 +158,13 @@ html, body {
 }
 .btn:hover { background: var(--bg-3); color: var(--text-0); border-color: var(--accent-d); }
 .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+/* Indicateur "modifications non sauvegardées" : pastille rouge à droite */
+.btn.dirty { position: relative; border-color: #ef4444; color: #fef2f2; }
+.btn.dirty::after {
+  content: ""; position: absolute; top: 4px; right: 4px;
+  width: 8px; height: 8px; background: #ef4444; border-radius: 50%;
+  box-shadow: 0 0 6px rgba(239,68,68,0.85);
+}
 .btn.active {
   background: var(--accent);
   color: #fff;
@@ -1400,9 +1407,9 @@ html, body {
       ASSEMBLER
     </button>
 
-    <button class="btn" id="btn-export" title="Exporter le PDF annoté (la page de synthèse n'est ajoutée que s'il y a au moins un CDC, COUDE ou COMPTAGE)">
+    <button class="btn" id="btn-export" title="Sauvegarder mon travail dans le navigateur ET exporter le PDF annoté (la page de synthèse n'est ajoutée que s'il y a au moins un CDC, COUDE ou COMPTAGE)">
       <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-      EXPORT
+      SAUVEGARDER
     </button>
     <button class="btn" id="btn-merge" title="Fusionner plusieurs PDF en un seul fichier">
       <svg class="icon" viewBox="0 0 24 24"><path d="M8 3h13v18H8M3 8l5-5v18l-5-5M14 8v8M10 12h8"/></svg>
@@ -1777,7 +1784,7 @@ html, body {
       <b>Mesures</b><br>
       Calibrez une fois avec l'outil <b>ÉCHELLE</b>, puis toutes les mesures sont en mètres.<br><br>
       <b>Annotations</b><br>
-      Sauvegardées automatiquement dans ce navigateur. Utilisez <b>EXPORT</b> pour partager.<br><br>
+      Conservées en mémoire. Cliquez sur <b>SAUVEGARDER</b> pour persister dans ce navigateur et télécharger le PDF annoté. Une pastille rouge sur le bouton signale qu'il y a des modifications non sauvegardées.<br><br>
       <b>Signature posée</b><br>
       En mode <b>PAN</b>, cliquez sur la signature pour la sélectionner.<br>
       Glissez le rectangle pour la <b>déplacer</b>, tirez un coin pour la <b>redimensionner</b>.<br>
@@ -2052,13 +2059,63 @@ function loadDocState(docHash) {
     return parsed;
   } catch { return EMPTY_STATE(); }
 }
+// Mode "save manuel" : par défaut, les appels à saveDocState ne persistent pas
+// dans localStorage. Ils marquent simplement le viewer concerné comme "dirty"
+// pour signaler à l'utilisateur qu'il a des modifications non sauvegardées.
+// Le bouton SAUVEGARDER lève ce flag le temps d'écrire réellement, puis le
+// remet à true.
+let _suspendAutoSave = true;
+
 function saveDocState(docHash, state) {
+  if (_suspendAutoSave) {
+    // Auto-save désactivé : on retrouve le viewer concerné et on le marque dirty.
+    try {
+      const viewer = (typeof app !== 'undefined')
+        ? [app.primary, app.secondary, app.tertiary].find(v => v && v.docHash === docHash)
+        : null;
+      if (viewer && typeof viewer._markDirty === 'function') viewer._markDirty();
+    } catch {}
+    return;
+  }
   try {
     const payload = Object.assign({}, state, { _v: STORAGE_VERSION });
     localStorage.setItem(STORAGE_KEY_PREFIX + docHash, JSON.stringify(payload));
   } catch (e) {
     showToast('Sauvegarde locale saturée : ' + e.message, 'err', 4000);
   }
+}
+
+// Persiste effectivement tous les viewers ouverts en localStorage et remet à
+// zéro leurs indicateurs "dirty". Appelée par le bouton SAUVEGARDER.
+function commitAllSaves() {
+  _suspendAutoSave = false;
+  try {
+    for (const v of [app.primary, app.secondary, app.tertiary]) {
+      if (v && v.docHash) {
+        saveDocState(v.docHash, v.state);
+        v._dirty = false;
+      }
+    }
+  } finally {
+    _suspendAutoSave = true;
+  }
+  updateSaveButton();
+}
+
+function updateSaveButton() {
+  const anyDirty = (typeof app !== 'undefined')
+    && [app.primary, app.secondary, app.tertiary].some(v => v && v._dirty);
+  const btn = document.getElementById('btn-export');
+  if (btn) btn.classList.toggle('dirty', !!anyDirty);
+}
+
+// Persistance immédiate sans passer par le mécanisme "dirty" — pour les
+// initialisations système (calibration par défaut au chargement, restauration
+// d'un payload embarqué dans le PDF, etc.) qui ne sont pas des modifications
+// utilisateur à valider manuellement.
+function forceSaveDocState(docHash, state) {
+  _suspendAutoSave = false;
+  try { saveDocState(docHash, state); } finally { _suspendAutoSave = true; }
 }
 
 // =============================================================================
@@ -2078,6 +2135,7 @@ class PDFViewer {
     this.zoom = 1.0; // échelle d'affichage (CSS)
     this.rotation = 0; // 0, 90, 180, 270 — en degrés
     this.baseScale = 1.0; // scale de rendu PDF.js (resolution)
+    this._dirty = false; // état "modifications non sauvegardées" pour ce viewer
     this.currentPage = null;
     this.viewport = null;
     this.canvas = null;
@@ -2103,6 +2161,10 @@ class PDFViewer {
     this.file = file;
     this.docHash = await hashPdf(file);
     this.state = loadDocState(this.docHash);
+    // Nouveau fichier chargé : on repart d'un état "propre" (l'état chargé
+    // est par définition le dernier sauvegardé).
+    this._dirty = false;
+    if (typeof updateSaveButton === 'function') updateSaveButton();
     $('status-file').textContent = file.name;
     setStatus('Ouverture du PDF…');
     showLoader('Ouverture', file.name, 0);
@@ -2169,7 +2231,8 @@ class PDFViewer {
       if (ratio && ratio >= 1) {
         const pxPerMeter = 72 / (ratio * 0.0254);
         this.state.calibration = { pxPerMeter };
-        saveDocState(this.docHash, this.state);
+        // Action système (pas une modif utilisateur) → persistance directe.
+        forceSaveDocState(this.docHash, this.state);
         $('scale-label').textContent = '1m = ' + pxPerMeter.toFixed(1) + 'px';
         showToast('Échelle 1:' + ratio + ' appliquée par défaut', 'info', 2200);
       }
@@ -2195,7 +2258,8 @@ class PDFViewer {
         this.state.counts = embedded.primary.counts || [];
         this.state.calibration = embedded.primary.calibration || null;
         this.state.categories = embedded.primary.categories || [];
-        saveDocState(this.docHash, this.state);
+        // Restauration confirmée par l'utilisateur → persistance directe.
+        forceSaveDocState(this.docHash, this.state);
         if (this.state.calibration) {
           $('scale-label').textContent = '1m = ' + this.state.calibration.pxPerMeter.toFixed(1) + 'px';
         }
@@ -3572,6 +3636,13 @@ class PDFViewer {
       list.appendChild(item);
     }
     body.appendChild(list);
+  }
+
+  // Marque ce viewer comme ayant des modifications non sauvegardées et met à
+  // jour l'indicateur visuel du bouton SAUVEGARDER.
+  _markDirty() {
+    this._dirty = true;
+    if (typeof updateSaveButton === 'function') updateSaveButton();
   }
 
   addAnnotation(annot) {
@@ -5344,7 +5415,12 @@ function installEvents() {
   $('btn-c-reset').addEventListener('click', () => resetPaneCPosition());
 
   // Export
-  $('btn-export').addEventListener('click', () => exportAnnotations());
+  $('btn-export').addEventListener('click', () => {
+    // SAUVEGARDER = persiste les annotations dans localStorage pour tous les
+    // viewers ouverts, puis lance l'export PDF.
+    commitAllSaves();
+    exportAnnotations();
+  });
 
   // Search
   $('search-input').addEventListener('input', debounce(runSearch, 250));

@@ -1128,6 +1128,9 @@ html, body {
 .viewer-pane[data-tool="pan"] { cursor: grab; }
 .viewer-pane[data-tool="pan"].dragging { cursor: grabbing; }
 .viewer-pane[data-tool="measure"] { cursor: crosshair; }
+.viewer-pane[data-tool="measure"].over-measure { cursor: move; cursor: grab; }
+.viewer-pane[data-tool="measure"].measure-dragging,
+.viewer-pane[data-tool="measure"].over-measure.measure-dragging { cursor: move; cursor: grabbing; }
 .viewer-pane[data-tool="annot"] { cursor: crosshair; }
 .viewer-pane[data-tool="annot"].over-note { cursor: move; cursor: grab; }
 .viewer-pane[data-tool="annot"].note-dragging,
@@ -1633,6 +1636,20 @@ html, body {
     </div>
     <div class="modal-actions">
       <button class="btn" id="paper-scale-cancel">FERMER</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-measure">
+  <div class="modal">
+    <h3>MESURE</h3>
+    <div class="field">
+      <label>Distance</label>
+      <div id="measure-distance-display" style="padding:8px;background:var(--bg-3);border:1px solid var(--panel-border);border-radius:3px;font-weight:bold;color:#38bdf8;font-size:14px"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="measure-delete">SUPPRIMER</button>
+      <button class="btn" id="measure-close">FERMER</button>
     </div>
   </div>
 </div>
@@ -2672,7 +2689,9 @@ class PDFViewer {
     this._hoveredTextId = null;
     this._noteDrag = null;
     this._hoveredNoteId = null;
-    this.pane.classList.remove('over-text', 'text-dragging', 'over-note', 'note-dragging');
+    this._measureDrag = null;
+    this._hoveredMeasureId = null;
+    this.pane.classList.remove('over-text', 'text-dragging', 'over-note', 'note-dragging', 'over-measure', 'measure-dragging');
     this._renderOverlay();
     $('status-tool').textContent = tool.toUpperCase();
     $$('.btn').forEach(b => b.classList.remove('active'));
@@ -2774,6 +2793,20 @@ class PDFViewer {
       if (a.page !== this.currentPageNum) continue;
       this._drawNote(ctx, a, i + 1);
     }
+    // Highlight de la mesure survolée en outil MESURER — même style.
+    if (this.tool === 'measure' && this._hoveredMeasureId) {
+      const hov = annots.find(a => a.id === this._hoveredMeasureId);
+      if (hov) {
+        const bb = this._measureBbox(hov);
+        ctx.save();
+        ctx.fillStyle = 'rgba(124,95,214,0.18)';
+        ctx.fillRect(bb.x, bb.y, bb.w, bb.h);
+        ctx.strokeStyle = '#7c5fd6';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(bb.x, bb.y, bb.w, bb.h);
+        ctx.restore();
+      }
+    }
     // Highlight de la note survolée en outil ANNOT — même style que pour le texte.
     if (this.tool === 'annot' && this._hoveredNoteId) {
       const hov = annots.find(a => a.id === this._hoveredNoteId);
@@ -2873,6 +2906,51 @@ class PDFViewer {
     ctx.fillStyle = '#38bdf8';
     ctx.textAlign = 'center';
     ctx.fillText(text, midX, midY - 3);
+  }
+
+  // Bbox englobant ligne + label d'une mesure, en coords écran (zoom courant).
+  _measureBbox(a) {
+    const x1 = a.x1 * this.zoom, y1 = a.y1 * this.zoom;
+    const x2 = a.x2 * this.zoom, y2 = a.y2 * this.zoom;
+    let bx = Math.min(x1, x2) - 6;
+    let by = Math.min(y1, y2) - 6;
+    let bw = Math.abs(x2 - x1) + 12;
+    let bh = Math.abs(y2 - y1) + 12;
+    // Étendre pour englober le label au centre (largeur ~80 px, hauteur ~20 px)
+    const midX = (x1 + x2) / 2, midY = (y1 + y2) / 2;
+    const lx = midX - 50, ly = midY - 16, lw = 100, lh = 22;
+    const minX = Math.min(bx, lx);
+    const minY = Math.min(by, ly);
+    const maxX = Math.max(bx + bw, lx + lw);
+    const maxY = Math.max(by + bh, ly + lh);
+    return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+  }
+  // Distance d'un point au segment de droite défini par 2 points.
+  _pointToSegmentDistance(px, py, x1, y1, x2, y2) {
+    const dx = x2 - x1, dy = y2 - y1;
+    const lenSq = dx * dx + dy * dy;
+    if (lenSq === 0) return Math.hypot(px - x1, py - y1);
+    let t = ((px - x1) * dx + (py - y1) * dy) / lenSq;
+    t = Math.max(0, Math.min(1, t));
+    const cx = x1 + t * dx, cy = y1 + t * dy;
+    return Math.hypot(px - cx, py - cy);
+  }
+  // Hit-test : clic près de la ligne, des extrémités, ou du label central.
+  _findMeasureAnnotationAt(pdfX, pdfY) {
+    const annots = (this.state.annotations || []).filter(a =>
+      a.type === 'measure' && a.page === this.currentPageNum
+    );
+    const px = pdfX * this.zoom, py = pdfY * this.zoom;
+    const tol = 8; // px écran de tolérance autour de la ligne
+    for (const a of annots) {
+      const x1 = a.x1 * this.zoom, y1 = a.y1 * this.zoom;
+      const x2 = a.x2 * this.zoom, y2 = a.y2 * this.zoom;
+      if (this._pointToSegmentDistance(px, py, x1, y1, x2, y2) <= tol) return a;
+      // Zone label centrée
+      const midX = (x1 + x2) / 2, midY = (y1 + y2) / 2;
+      if (px >= midX - 50 && px <= midX + 50 && py >= midY - 18 && py <= midY + 4) return a;
+    }
+    return null;
   }
 
   // Renvoie la bounding-box approximative d'une annotation 'note' dans le repère
@@ -5540,6 +5618,25 @@ function installEvents() {
     if (app.primary.tool === 'text-edit') app.primary._showDetectedTextsOverlays();
   });
 
+  // Modale MESURE — affiche la distance + bouton supprimer.
+  window._openMeasureModal = function _openMeasureModal(existing, viewer) {
+    if (!existing || !viewer) return;
+    const dist = viewer._formatDistance(Math.hypot(existing.x2 - existing.x1, existing.y2 - existing.y1));
+    $('measure-distance-display').textContent = dist;
+    app.measureEditData = { id: existing.id, viewer };
+    openModal('modal-measure');
+  };
+  $('measure-close').addEventListener('click', () => {
+    closeModal('modal-measure');
+    app.measureEditData = null;
+  });
+  $('measure-delete').addEventListener('click', () => {
+    const data = app.measureEditData;
+    if (data && data.viewer) data.viewer.deleteAnnotation(data.id);
+    closeModal('modal-measure');
+    app.measureEditData = null;
+  });
+
   // Note modal — ouverture en mode création (existing=null) ou édition.
   window._openNoteModal = function _openNoteModal(existing) {
     const isEdit = !!existing;
@@ -5824,6 +5921,24 @@ function installViewerEvents(viewer) {
     } else if (viewer.tool === 'measure' || viewer.tool === 'calibrate') {
       const pos = viewer._eventToPdfCoords(ev);
       if (!pos) return;
+      // En outil MESURER, si on est PAS en train de poser un nouveau point
+      // (aucun point en cours), on regarde si le clic touche une mesure
+      // existante : drag pour la déplacer, clic seul → modale d'édition.
+      if (viewer.tool === 'measure' && viewer.measurePoints.length === 0) {
+        const hit = viewer._findMeasureAnnotationAt(pos.x, pos.y);
+        if (hit) {
+          viewer._measureDrag = {
+            id: hit.id,
+            startMouse: pos,
+            startX1: hit.x1, startY1: hit.y1,
+            startX2: hit.x2, startY2: hit.y2,
+            dragged: false
+          };
+          pane.classList.add('measure-dragging');
+          ev.preventDefault();
+          return;
+        }
+      }
       if (viewer.measurePoints.length === 0) {
         viewer.measurePoints.push(pos);
         viewer._renderOverlay();
@@ -5987,6 +6102,41 @@ function installViewerEvents(viewer) {
     $('coord-x-' + viewer.paneId).textContent = pos.x.toFixed(0);
     $('coord-y-' + viewer.paneId).textContent = pos.y.toFixed(0);
     viewer._lastMouse = pos;
+    // Survol d'une mesure en outil MESURER (uniquement si aucun point en cours
+    // de pose). Curseur grab + cadre violet, comme pour notes/textes.
+    if (viewer.tool === 'measure' && !viewer._measureDrag && viewer.measurePoints.length === 0) {
+      const hovered = viewer._findMeasureAnnotationAt(pos.x, pos.y);
+      const hoveredId = hovered ? hovered.id : null;
+      pane.classList.toggle('over-measure', !!hoveredId);
+      if (viewer._hoveredMeasureId !== hoveredId) {
+        viewer._hoveredMeasureId = hoveredId;
+        viewer._renderOverlay();
+      }
+    } else if (!viewer._measureDrag && viewer._hoveredMeasureId) {
+      viewer._hoveredMeasureId = null;
+      pane.classList.remove('over-measure');
+      viewer._renderOverlay();
+    }
+    // Drag d'une mesure (translation des 2 extrémités ensemble).
+    if (viewer._measureDrag) {
+      const d = viewer._measureDrag;
+      const a = (viewer.state.annotations || []).find(x => x.id === d.id);
+      if (!a) { viewer._measureDrag = null; return; }
+      const dx = pos.x - d.startMouse.x;
+      const dy = pos.y - d.startMouse.y;
+      if (!d.dragged) {
+        const thresholdPdf = 3 / (viewer.zoom || 1);
+        if (Math.hypot(dx, dy) > thresholdPdf) d.dragged = true;
+      }
+      if (d.dragged) {
+        a.x1 = d.startX1 + dx;
+        a.y1 = d.startY1 + dy;
+        a.x2 = d.startX2 + dx;
+        a.y2 = d.startY2 + dy;
+        viewer._renderOverlay();
+      }
+      return;
+    }
     // Survol d'une note en outil ANNOT : curseur "grab" + cadre de survol pour
     // signaler qu'elle est déplaçable (même logique que le texte).
     if (viewer.tool === 'annot' && !viewer._noteDrag) {
@@ -6149,6 +6299,21 @@ function installViewerEvents(viewer) {
   });
 
   pane.addEventListener('mouseup', () => {
+    // Fin de drag de mesure : si bougé on persiste, sinon on ouvre la modale.
+    if (viewer._measureDrag) {
+      const d = viewer._measureDrag;
+      const a = (viewer.state.annotations || []).find(x => x.id === d.id);
+      if (a) {
+        if (d.dragged) {
+          saveDocState(viewer.docHash, viewer.state);
+          viewer._renderAnnotationsList();
+        } else if (window._openMeasureModal) {
+          window._openMeasureModal(a, viewer);
+        }
+      }
+      viewer._measureDrag = null;
+      pane.classList.remove('measure-dragging');
+    }
     // Fin de drag de note : si la souris a bougé on persiste la nouvelle
     // position, sinon on ouvre la modale d'édition (équivalent clic).
     if (viewer._noteDrag) {
@@ -6222,6 +6387,18 @@ function installViewerEvents(viewer) {
       viewer._noteDrag = null;
       pane.classList.remove('note-dragging');
       viewer._renderAnnotationsList();
+    }
+    // Idem pour la mesure
+    if (viewer._measureDrag) {
+      if (viewer._measureDrag.dragged) saveDocState(viewer.docHash, viewer.state);
+      viewer._measureDrag = null;
+      pane.classList.remove('measure-dragging');
+      viewer._renderAnnotationsList();
+    }
+    if (viewer._hoveredMeasureId) {
+      viewer._hoveredMeasureId = null;
+      pane.classList.remove('over-measure');
+      viewer._renderOverlay();
     }
     // Sortie de pane : retirer les highlights de survol s'il y en avait
     if (viewer._hoveredTextId) {

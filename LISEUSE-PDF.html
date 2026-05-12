@@ -7174,6 +7174,9 @@ function drawAllAnnotationsOnCanvasForExport(ctx, viewer, pageNum, renderScale) 
   }
 
   // NOTES — numérotées globalement par ordre de création (toutes pages).
+  // Rendu strictement identique à _drawNote (pin triangulaire + cercle au-dessus
+  // du point d'ancrage + libellé "N{num}" + bande de prévi-texte), mis à
+  // l'échelle d'export via renderScale.
   const allNotes = (viewer.state.annotations || [])
     .filter(x => x.type === 'note')
     .sort((x, y) => (x.created || 0) - (y.created || 0));
@@ -7181,24 +7184,50 @@ function drawAllAnnotationsOnCanvasForExport(ctx, viewer, pageNum, renderScale) 
   allNotes.forEach((a, i) => noteNumById.set(a.id, i + 1));
   for (const a of annots.filter(x => x.type === 'note')) {
     const x = a.x * renderScale, y = a.y * renderScale;
-    ctx.fillStyle = '#fbbf24'; ctx.strokeStyle = '#000';
-    ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI * 2); ctx.fill(); ctx.lineWidth = 2; ctx.stroke();
-    // Libellé "N{num}" sur le rond
+    ctx.fillStyle = '#fbbf24';
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 1.5 * renderScale;
+    // Pin triangle (pointe vers le point d'ancrage)
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - 8 * renderScale, y - 20 * renderScale);
+    ctx.lineTo(x + 8 * renderScale, y - 20 * renderScale);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    // Cercle au-dessus
+    ctx.beginPath();
+    ctx.arc(x, y - 28 * renderScale, 12 * renderScale, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    // Libellé "N{num}" centré dans le cercle
     const label = 'N' + (noteNumById.get(a.id) || '');
-    const fontSize = label.length <= 2 ? 11 : (label.length === 3 ? 9 : 8);
+    const baseFont = label.length <= 2 ? 11 : (label.length === 3 ? 9 : 8);
+    const fontSize = baseFont * renderScale;
     ctx.fillStyle = '#000';
-    ctx.font = 'bold ' + fontSize + 'px sans-serif';
+    ctx.font = 'bold ' + fontSize.toFixed(1) + 'px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(label, x, y);
+    ctx.fillText(label, x, y - 28 * renderScale);
     ctx.textBaseline = 'alphabetic';
-    if (a.text) {
-      ctx.font = 'bold 14px sans-serif';
-      const mw = ctx.measureText(a.text).width;
-      ctx.fillStyle = 'rgba(251,191,36,0.95)';
-      ctx.fillRect(x + 14, y - 12, mw + 10, 22);
-      ctx.fillStyle = '#000'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.fillText(a.text, x + 19, y - 1);
+    // Bande de prévi-texte (mêmes couleurs / format que _drawNote)
+    if (a.text && a.text.length > 0) {
+      const previewFontSize = 10 * renderScale;
+      ctx.font = previewFontSize.toFixed(1) + 'px sans-serif';
+      ctx.textAlign = 'left';
+      const preview = a.text.substring(0, 30) + (a.text.length > 30 ? '…' : '');
+      const m = ctx.measureText(preview);
+      const px = x + 16 * renderScale;
+      const py = y - 36 * renderScale;
+      const pw = m.width + 8 * renderScale;
+      const ph = 16 * renderScale;
+      ctx.fillStyle = 'rgba(251,191,36,0.15)';
+      ctx.fillRect(px, py, pw, ph);
+      ctx.strokeStyle = '#fbbf24';
+      ctx.lineWidth = 1 * renderScale;
+      ctx.strokeRect(px, py, pw, ph);
+      ctx.fillStyle = '#fbbf24';
+      ctx.fillText(preview, x + 20 * renderScale, y - 25 * renderScale);
     }
   }
 

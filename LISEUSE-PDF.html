@@ -2025,7 +2025,7 @@ async function hashPdf(file) {
 
 const STORAGE_KEY_PREFIX = 'algomes-liseuse-';
 const STORAGE_VERSION = 1;
-const EMPTY_STATE = () => ({ _v: STORAGE_VERSION, annotations: [], calibration: null });
+const EMPTY_STATE = () => ({ _v: STORAGE_VERSION, annotations: [], calibration: null, rotation: 0 });
 
 function loadDocState(docHash) {
   try {
@@ -2120,6 +2120,14 @@ class PDFViewer {
     $('page-input').max = this.totalPages;
     $('page-input').value = 1;
     this.currentPageNum = 1;
+    // Restaure la rotation persistée : les coords des annotations ont été
+    // stockées dans le repère viewport-rotated lors de la dernière rotation,
+    // donc on doit re-rendre à la même rotation pour qu'elles s'alignent
+    // au contenu PDF sous-jacent.
+    this.rotation = (this.state && typeof this.state.rotation === 'number')
+      ? this.state.rotation
+      : 0;
+    $('rotation-label').textContent = this.rotation + '°';
 
     // Drop zone off
     $('drop-zone').classList.add('hidden');
@@ -2915,8 +2923,19 @@ class PDFViewer {
       const bb = this._textBbox(a);
       if (!bb) continue;
       // Conversion clic en pixels écran via le zoom courant
-      const px = pdfX * this.zoom;
-      const py = pdfY * this.zoom;
+      let px = pdfX * this.zoom;
+      let py = pdfY * this.zoom;
+      // Si le texte est visuellement tourné, on inverse la rotation autour du
+      // point d'ancrage (a.x, a.y) pour ramener le clic dans le repère du
+      // texte non tourné, où _textBbox a calculé son rectangle.
+      const rot = ((a.rotation || 0) % 360 + 360) % 360;
+      if (rot) {
+        const ax = a.x * this.zoom, ay = a.y * this.zoom;
+        const r = -rot * Math.PI / 180;
+        const dx = px - ax, dy = py - ay;
+        px = ax + dx * Math.cos(r) - dy * Math.sin(r);
+        py = ay + dx * Math.sin(r) + dy * Math.cos(r);
+      }
       if (px >= bb.x && px <= bb.x + bb.w && py >= bb.y && py <= bb.y + bb.h) return a;
     }
     return null;
@@ -2924,14 +2943,24 @@ class PDFViewer {
 
   _drawTextEdit(ctx, a) {
     if (!a.text) return;
-    // Recouvre la zone du texte original par un rectangle (fond) puis dessine le nouveau texte
+    // Recouvre la zone du texte original par un rectangle (fond) puis dessine le nouveau texte.
+    // Le masque suit la rotation visuelle pour rester aligné sur le texte
+    // PDF d'origine après rotation de la page.
     if (a.w && a.h) {
       const x1 = a.x * this.zoom;
       const y1 = a.y * this.zoom;
       const w  = a.w * this.zoom;
       const h  = a.h * this.zoom;
+      const rot = ((a.rotation || 0) % 360 + 360) % 360;
+      ctx.save();
+      if (rot) {
+        ctx.translate(x1, y1);
+        ctx.rotate(rot * Math.PI / 180);
+        ctx.translate(-x1, -y1);
+      }
       ctx.fillStyle = a.bgColor || '#ffffff';
       ctx.fillRect(x1 - 1, y1 - 1, w + 2, h + 2);
+      ctx.restore();
     }
     this._drawText(ctx, a);
   }
@@ -3507,6 +3536,7 @@ class PDFViewer {
           a.rotation = (((a.rotation || 0) + deltaDegrees) % 360 + 360) % 360;
         }
       }
+      this.state.rotation = newRotation;
       saveDocState(this.docHash, this.state);
     } catch (e) { console.warn('[rotate] transform failed', e); }
     this.rotation = newRotation;
@@ -6723,6 +6753,7 @@ function drawAllAnnotationsOnCanvasForExport(ctx, viewer, pageNum, renderScale) 
   for (const a of annots.filter(x => x.type === 'text' || x.type === 'text-edit')) {
     const x = a.x * renderScale;
     const y = a.y * renderScale;
+    const rot = ((a.rotation || 0) % 360 + 360) % 360;
     // Composition de la police canvas
     const parts = [];
     if (a.italic) parts.push('italic');
@@ -6733,6 +6764,12 @@ function drawAllAnnotationsOnCanvasForExport(ctx, viewer, pageNum, renderScale) 
                       'Times-Roman':'Times, "Times New Roman", serif',
                       'Courier':'"Courier New", Courier, monospace' };
     parts.push(fontMap[a.font] || 'sans-serif');
+    ctx.save();
+    if (rot) {
+      ctx.translate(x, y);
+      ctx.rotate(rot * Math.PI / 180);
+      ctx.translate(-x, -y);
+    }
     ctx.font = parts.join(' ');
     ctx.textAlign = a.align || 'left';
     ctx.textBaseline = 'top';
@@ -6768,6 +6805,7 @@ function drawAllAnnotationsOnCanvasForExport(ctx, viewer, pageNum, renderScale) 
         ctx.beginPath(); ctx.moveTo(lx, sy); ctx.lineTo(lx + w, sy); ctx.stroke();
       }
     });
+    ctx.restore();
   }
 
   // NOTES

@@ -119,6 +119,25 @@ function GW(){return[...new Set(TASKS.map(t=>t.week))].sort((a,b)=>a-b)}
 const palette=['#4f8cff','#f472b6','#34d399','#fbbf24','#a78bfa','#fb923c','#38bdf8','#f87171','#4ade80','#e879f9','#facc15','#2dd4bf','#818cf8','#fb7185','#a3e635','#c084fc','#22d3ee','#f97316','#84cc16','#ec4899','#06b6d4'];
 const _cc={};function gc(c){if(!_cc[c])_cc[c]=palette[Object.keys(_cc).length%palette.length];return _cc[c]}
 let S={selectedWeek:GW()[GW().length-1]||1,view:'table',search:'',filterReport:false,filterTodo:false,filterDone:false,filterAttention:false};
+// État de vue (semaine sélectionnée, mode liste) — persisté localement, NON synchronisé via le cloud.
+// Chaque poste peut avoir sa propre semaine affichée.
+const VIEW_STATE_KEY='algomes_planning_view_v1';
+function persistViewState(){
+  try{localStorage.setItem(VIEW_STATE_KEY,JSON.stringify({selectedWeek:S.selectedWeek,view:S.view}))}catch(e){}
+}
+function restoreViewState(){
+  try{
+    const raw=localStorage.getItem(VIEW_STATE_KEY);
+    if(!raw)return;
+    const v=JSON.parse(raw);
+    if(v.selectedWeek!==undefined){
+      // 'all' est toujours valide ; sinon vérifier que la semaine existe encore
+      if(v.selectedWeek==='all'||GW().includes(v.selectedWeek))S.selectedWeek=v.selectedWeek;
+    }
+    if(v.view)S.view=v.view;
+  }catch(e){}
+}
+restoreViewState();
 let modal=null,confirmDelete=null;
 function getF(){let t=[...TASKS];if(S.selectedWeek!=='all')t=t.filter(x=>x.week===S.selectedWeek);if(S.search){const q=S.search.toLowerCase();t=t.filter(x=>x.chantier.toLowerCase().includes(q)||x.tache.toLowerCase().includes(q))}if(S.filterReport)t=t.filter(x=>x.status==='report');if(S.filterTodo)t=t.filter(x=>x.status==='todo');if(S.filterDone)t=t.filter(x=>x.status==='progress');if(S.filterAttention)t=t.filter(x=>x.hasAttention);return t}
 function fmt(d){if(!d)return'—';const p=d.split('-');return p[2]+'/'+p[1]+'/'+p[0]}
@@ -184,7 +203,7 @@ const num=parseInt(document.getElementById('mw-num').value);
 if(isNaN(num)||num<1||num>53){alert('Numéro invalide (1-53)');return}
 if(GW().includes(num)){alert('S'+pad(num)+' existe déjà');return}
 getCarried(num).forEach(src=>{TASKS.push({id:nextId++,week:num,chantier:src.chantier,tache:src.tache,status:'report',isReport:true,reportTo:wL(num+1),date:'',hasAttention:src.hasAttention,attentionMsg:src.attentionMsg,carriedFrom:src.week})});
-modal=null;S.selectedWeek=num;render();
+modal=null;S.selectedWeek=num;persistViewState();render();
 }
 // DELETE WEEK
 function openDelWeek(wn){modal={mode:'delWeek',weekNum:wn};render()}
@@ -192,7 +211,7 @@ function confirmDelWeek(){
 const wn=modal.weekNum;
 TASKS=TASKS.filter(t=>t.week!==wn);
 modal=null;
-if(S.selectedWeek===wn)S.selectedWeek='all';
+if(S.selectedWeek===wn){S.selectedWeek='all';persistViewState();}
 render();
 }
 const svgWarn='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
@@ -203,7 +222,7 @@ let h=`<div class="app"><div class="header"><div class="header-left"><div class=
 <div class="stats-bar"><div class="stat"><span class="val">${tasks.length}</span> tâches</div><div class="stat report"><span class="val">${tR}</span> reportées</div><div class="stat todo"><span class="val">${tT}</span> à faire</div><div class="stat done"><span class="val">${tD}</span> finies</div><div class="stat warn"><span class="val">${tW}</span> alertes</div></div>
 <div class="controls"><div class="week-nav">${WEEKS.map(w=>`<button class="week-btn ${S.selectedWeek===w?'active':''}" onclick="setWeek(${w})">S${pad(w)}</button>`).join('')}<button class="week-btn add-week" onclick="openAddWeek()" title="Ajouter une semaine (les tâches reportées vers cette semaine seront automatiquement recopiées)">+ Semaine</button></div>
 <div class="filter-group"><input class="search-box" placeholder="Rechercher..." value="${S.search}" oninput="setSearch(this.value)"><button class="filter-btn ${S.filterReport?'active':''}" onclick="tglF('filterReport')">Report</button><button class="filter-btn ${S.filterTodo?'active':''}" onclick="tglF('filterTodo')">À faire</button><button class="filter-btn ${S.filterDone?'active':''}" onclick="tglF('filterDone')">Fini</button><button class="filter-btn ${S.filterAttention?'active':''}" onclick="tglF('filterAttention')">⚠ Alertes</button></div>
-<div class="view-toggle"><button class="view-btn ${S.view==='table'?'active':''}" onclick="setView('table')">☰ Liste</button></div><button class="export-btn" onclick="openImportModal()" title="Importer un PLANNING xlsx" style="margin-left:8px">📥 Importer Excel</button><button class="export-btn" onclick="exportExcel()" title="Exporter le planning au format xlsx">📤 Excel</button><div class="sync-indicator init" id="syncIndicator" title="Initialisation de la synchronisation cloud..."><span class="sync-dot"></span><span id="syncLabel">…</span></div></div>
+<div class="view-toggle"><button class="view-btn ${S.view==='table'?'active':''}" onclick="setView('table')">☰ Liste</button></div><button class="export-btn" onclick="openImportModal()" title="Importer un PLANNING xlsx" style="margin-left:8px">📥 Importer Excel</button><button class="export-btn" onclick="exportExcel()" title="Exporter le planning au format xlsx">📤 Excel</button><div class="sync-indicator ${(typeof CLOUD!=='undefined'&&CLOUD.status)||'init'}" id="syncIndicator" title="${({init:'Initialisation de la synchronisation cloud...',syncing:'Synchronisation en cours',synced:'Synchronisé avec le cloud ✓',offline:'Mode local — pas de connexion cloud',error:'Erreur de synchronisation (les modifs sont sauvées en local)'})[(typeof CLOUD!=='undefined'&&CLOUD.status)||'init']}"><span class="sync-dot"></span><span id="syncLabel">${({init:'…',syncing:'Sync…',synced:'Sync ✓',offline:'Local',error:'Erreur'})[(typeof CLOUD!=='undefined'&&CLOUD.status)||'init']}</span></div></div>
 <div class="content">`;
 if(!tasks.length)h+='<div class="no-results">Aucune tâche trouvée</div>';
 else if(S.view==='table')h+=rTable(tasks);else if(S.view==='chantier')h+=rChantier(tasks);else h+=rTimeline(tasks);
@@ -295,7 +314,7 @@ if(c.length){c.forEach(t=>{h+=`<div class="carry-item"><span class="carry-ch">${
 else h+='<div class="carry-empty">Aucune affaire reportée vers cette semaine</div>';
 h+='</div>';el.innerHTML=h}
 function updM(){const s=document.getElementById('m-status').value;document.getElementById('m-rg').style.display=s==='report'?'':'none';document.getElementById('m-dg').style.display=s==='progress'?'':'none'}
-function setWeek(w){S.selectedWeek=w;render()}function setView(v){S.view=v;render()}function setSearch(q){S.search=q;render()}function tglF(f){S[f]=!S[f];render()}
+function setWeek(w){S.selectedWeek=w;persistViewState();render()}function setView(v){S.view=v;persistViewState();render()}function setSearch(q){S.search=q;render()}function tglF(f){S[f]=!S[f];render()}
 function openAdd(w){modal={mode:'add',week:parseInt(w)};render();setTimeout(()=>document.getElementById('m-chantier')?.focus(),50)}
 function openEdit(id){modal={mode:'edit',task:{...TASKS.find(x=>x.id===id)}};render()}
 function askDel(id){confirmDelete=id;render()}function cancelDel(){confirmDelete=null;render()}
@@ -413,7 +432,7 @@ function applyImport(mode){
   }
   const firstWeek=imp[0]?.week;
   modal=null;
-  if(firstWeek!==undefined) S.selectedWeek=firstWeek;
+  if(firstWeek!==undefined){S.selectedWeek=firstWeek;persistViewState();}
   persist();
   render();
 }

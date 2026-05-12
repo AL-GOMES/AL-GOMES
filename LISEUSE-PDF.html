@@ -873,6 +873,12 @@ html, body {
   font-size: 14px;
   width: 10px;
 }
+.merge-file-row .type-ico {
+  font-size: 12px;
+  width: 16px;
+  text-align: center;
+  flex-shrink: 0;
+}
 .merge-file-row .name {
   flex: 1;
   overflow: hidden;
@@ -1624,11 +1630,11 @@ html, body {
   <div class="modal merge-modal">
     <h3>FUSIONNER PLUSIEURS PDFs</h3>
     <div class="help">
-      Sélectionnez plusieurs PDFs (au moins 2). Vous pouvez les <b>réordonner par glisser-déposer</b>, les trier par nom, ou en ajouter d'autres. Le fichier fusionné sera téléchargé automatiquement quand la fusion est terminée. Aucune limite stricte de nombre — testé avec succès jusqu'à 200+ fichiers selon leur taille.
+      Sélectionnez plusieurs <b>PDFs et/ou images</b> (JPG, PNG, WEBP, BMP, GIF — au moins 2 fichiers au total). Vous pouvez les <b>réordonner par glisser-déposer</b>, les trier par nom, ou en ajouter d'autres. Les images deviennent chacune une page A4 (portrait/paysage auto) dans le PDF final. Aucune limite stricte de nombre — testé avec succès jusqu'à 200+ fichiers selon leur taille.
     </div>
     <div class="merge-dropzone" id="merge-dropzone">
-      📂 Cliquez ici ou glissez vos PDFs pour les ajouter
-      <input type="file" id="merge-file-input" accept="application/pdf,.pdf" style="display:none" multiple>
+      📂 Cliquez ici ou glissez vos PDFs et images pour les ajouter
+      <input type="file" id="merge-file-input" accept="application/pdf,.pdf,image/*" style="display:none" multiple>
     </div>
     <div class="merge-toolbar">
       <span class="count"><strong id="merge-count">0</strong> fichier(s) · <strong id="merge-size">0 Mo</strong></span>
@@ -7093,6 +7099,10 @@ if (document.readyState !== 'loading') {
   const $m = id => document.getElementById(id);
   const fmtSize = b => b < 1024 ? b + ' o' : b < 1024*1024 ? (b/1024).toFixed(1) + ' Ko' : (b/(1024*1024)).toFixed(2) + ' Mo';
   const escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const isPdfFile = f => f.type === 'application/pdf' || /\.pdf$/i.test(f.name);
+  const isImageFile = f => (f.type && f.type.startsWith('image/')) || /\.(jpe?g|png|webp|bmp|gif|tiff?|avif)$/i.test(f.name);
+  const isSupported = f => isPdfFile(f) || isImageFile(f);
+  const fileIcon = f => isPdfFile(f) ? '📄' : '🖼️';
 
   function refresh(){
     const list = $m('merge-filelist');
@@ -7104,6 +7114,7 @@ if (document.readyState !== 'loading') {
       <div class="merge-file-row ${f.status === 'error' ? 'errored' : ''}" draggable="true" data-id="${f.id}">
         <span class="idx">${i + 1}.</span>
         <span class="grip">⋮⋮</span>
+        <span class="type-ico">${fileIcon(f.file)}</span>
         <span class="name" title="${escapeHtml(f.file.name)}">${escapeHtml(f.file.name)}</span>
         <span class="size">${fmtSize(f.file.size)}</span>
         <button class="remove" data-id="${f.id}" title="Retirer">✕</button>
@@ -7163,15 +7174,16 @@ if (document.readyState !== 'loading') {
 
   function addFiles(fileList){
     if (!fileList || !fileList.length) return;
-    const pdfs = Array.from(fileList).filter(f => f.type === 'application/pdf' || /\.pdf$/i.test(f.name));
-    if (pdfs.length === 0) {
-      alert('Aucun PDF valide dans la sélection.');
+    const ok = Array.from(fileList).filter(isSupported);
+    const rejected = fileList.length - ok.length;
+    if (ok.length === 0) {
+      alert('Aucun fichier compatible dans la sélection (PDFs et images uniquement).');
       return;
     }
-    if (pdfs.length < fileList.length) {
-      console.warn(`[merge] ${fileList.length - pdfs.length} fichier(s) non-PDF ignoré(s)`);
+    if (rejected > 0) {
+      console.warn(`[merge] ${rejected} fichier(s) non compatible(s) ignoré(s)`);
     }
-    pdfs.forEach(f => mergeFiles.push({ id: nextId++, file: f, status: 'pending' }));
+    ok.forEach(f => mergeFiles.push({ id: nextId++, file: f, status: 'pending' }));
     refresh();
   }
 
@@ -7197,9 +7209,75 @@ if (document.readyState !== 'loading') {
     document.getElementById('modal-merge').classList.remove('open');
   }
 
+  // === Helpers pour l'embed d'images ===
+  // Pour JPG/PNG : embed natif pdf-lib (sans conversion, qualité conservée)
+  // Pour les autres formats (WEBP, BMP, GIF, etc.) : conversion canvas → JPEG qualité 92%
+  // Une image = une page A4 (portrait/paysage auto selon l'orientation de l'image)
+  async function embedImageAsPage(pdfDoc, file) {
+    const arrayBuf = await file.arrayBuffer();
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    const mime = (file.type || '').toLowerCase();
+    let img;
+    if (mime === 'image/jpeg' || mime === 'image/jpg' || ext === 'jpg' || ext === 'jpeg') {
+      img = await pdfDoc.embedJpg(arrayBuf);
+    } else if (mime === 'image/png' || ext === 'png') {
+      img = await pdfDoc.embedPng(arrayBuf);
+    } else {
+      // Conversion via canvas pour WEBP, BMP, GIF, TIFF, AVIF, etc.
+      img = await convertAndEmbedViaCanvas(pdfDoc, arrayBuf, mime || 'image/' + ext);
+    }
+    // Format de page : A4, orientation auto selon le ratio de l'image
+    const A4_W = 595.28, A4_H = 841.89;
+    const portrait = img.height >= img.width;
+    const pageW = portrait ? A4_W : A4_H;
+    const pageH = portrait ? A4_H : A4_W;
+    const page = pdfDoc.addPage([pageW, pageH]);
+    // Marge de 20pt, image centrée, ratio préservé
+    const margin = 20;
+    const maxW = pageW - 2 * margin;
+    const maxH = pageH - 2 * margin;
+    const scale = Math.min(maxW / img.width, maxH / img.height);
+    const w = img.width * scale;
+    const h = img.height * scale;
+    page.drawImage(img, { x: (pageW - w) / 2, y: (pageH - h) / 2, width: w, height: h });
+  }
+
+  async function convertAndEmbedViaCanvas(pdfDoc, arrayBuf, mime) {
+    const blob = new Blob([arrayBuf], { type: mime });
+    const url = URL.createObjectURL(blob);
+    try {
+      const bitmap = await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error('Format image non supporté par le navigateur (' + mime + ')'));
+        img.src = url;
+      });
+      const canvas = document.createElement('canvas');
+      // Limiter la résolution max pour éviter d'exploser la mémoire (4000×4000 max)
+      const MAX_DIM = 4000;
+      let cw = bitmap.naturalWidth, ch = bitmap.naturalHeight;
+      if (cw > MAX_DIM || ch > MAX_DIM) {
+        const r = Math.min(MAX_DIM / cw, MAX_DIM / ch);
+        cw = Math.round(cw * r); ch = Math.round(ch * r);
+      }
+      canvas.width = cw;
+      canvas.height = ch;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, cw, ch);
+      ctx.drawImage(bitmap, 0, 0, cw, ch);
+      const jpgBytes = await new Promise((resolve, reject) => {
+        canvas.toBlob(b => b ? b.arrayBuffer().then(resolve, reject) : reject(new Error('Conversion JPEG échouée')), 'image/jpeg', 0.92);
+      });
+      return await pdfDoc.embedJpg(jpgBytes);
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
   // === FUSION ===
   async function doMerge(){
-    if (mergeFiles.length < 2) { alert('Sélectionnez au moins 2 PDFs.'); return; }
+    if (mergeFiles.length < 2) { alert('Sélectionnez au moins 2 fichiers.'); return; }
     isMerging = true;
     cancelled = false;
     $m('merge-start').disabled = true;
@@ -7215,20 +7293,25 @@ if (document.readyState !== 'loading') {
       const item = mergeFiles[i];
       $m('merge-progress-label').textContent = `Fusion ${i + 1} / ${mergeFiles.length} — ${item.file.name}`;
       $m('merge-progress-bar').style.width = ((i / mergeFiles.length) * 100) + '%';
-      // Laisser le navigateur respirer (rendu progression)
       await new Promise(r => requestAnimationFrame(r));
       try {
-        let buf = await item.file.arrayBuffer();
-        let src = await PDFDocument.load(buf, { ignoreEncryption: true, updateMetadata: false });
-        const indices = src.getPageIndices();
-        const pages = await dest.copyPages(src, indices);
-        pages.forEach(p => dest.addPage(p));
-        totalPages += pages.length;
+        if (isImageFile(item.file)) {
+          // Image → une page A4 avec l'image centrée
+          await embedImageAsPage(dest, item.file);
+          totalPages += 1;
+        } else {
+          // PDF → copier toutes les pages
+          let buf = await item.file.arrayBuffer();
+          let src = await PDFDocument.load(buf, { ignoreEncryption: true, updateMetadata: false });
+          const indices = src.getPageIndices();
+          const pages = await dest.copyPages(src, indices);
+          pages.forEach(p => dest.addPage(p));
+          totalPages += pages.length;
+          src = null;
+          buf = null;
+        }
         item.status = 'done';
         okCount++;
-        // Libérer les références pour le GC
-        src = null;
-        buf = null;
       } catch (err) {
         console.error(`[merge] Échec sur ${item.file.name}:`, err);
         item.status = 'error';
@@ -7259,7 +7342,7 @@ if (document.readyState !== 'loading') {
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 5000);
       $m('merge-progress-bar').style.width = '100%';
-      $m('merge-progress-label').textContent = `✓ Terminé : ${okCount} PDF(s) fusionné(s), ${totalPages} page(s)` + (errCount ? ` — ${errCount} échec(s)` : '');
+      $m('merge-progress-label').textContent = `✓ Terminé : ${okCount} fichier(s) fusionné(s), ${totalPages} page(s)` + (errCount ? ` — ${errCount} échec(s)` : '');
     } catch (err) {
       console.error('[merge] Save error:', err);
       $m('merge-progress-label').textContent = 'Erreur à la génération : ' + (err.message || 'inconnue');

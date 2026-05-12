@@ -2690,15 +2690,25 @@ class PDFViewer {
     const tc = parseFloat(this.overlayCanvas.dataset.assembledTopCover) || 0;
     if (lc || tc) ctx.translate(lc, tc);
 
-    // Annotations existantes (filtrées page courante)
+    // Annotations existantes (filtrées page courante). Les notes sont rendues
+    // séparément ci-dessous pour bénéficier d'une numérotation globale (toutes pages).
     const annots = this.state.annotations.filter(a => a.page === this.currentPageNum);
     for (const a of annots) {
       if (a.type === 'measure') this._drawMeasure(ctx, a);
-      else if (a.type === 'note') this._drawNote(ctx, a);
       else if (a.type === 'cable') this._drawCable(ctx, a);
       else if (a.type === 'signature') this._drawSignature(ctx, a);
       else if (a.type === 'text') this._drawText(ctx, a);
       else if (a.type === 'text-edit') this._drawTextEdit(ctx, a);
+    }
+    // Notes : numérotées par ordre de création (global sur toutes pages)
+    // pour que la numérotation reste cohérente quand on change de page.
+    const allNotes = (this.state.annotations || [])
+      .filter(a => a.type === 'note')
+      .sort((x, y) => (x.created || 0) - (y.created || 0));
+    for (let i = 0; i < allNotes.length; i++) {
+      const a = allNotes[i];
+      if (a.page !== this.currentPageNum) continue;
+      this._drawNote(ctx, a, i + 1);
     }
     // Highlight de la note survolée en outil ANNOT — même style que pour le texte.
     if (this.tool === 'annot' && this._hoveredNoteId) {
@@ -2836,7 +2846,7 @@ class PDFViewer {
     return null;
   }
 
-  _drawNote(ctx, a) {
+  _drawNote(ctx, a, num) {
     const x = a.x * this.zoom, y = a.y * this.zoom;
     ctx.fillStyle = '#fbbf24';
     ctx.strokeStyle = '#f59e0b';
@@ -2849,15 +2859,20 @@ class PDFViewer {
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
-    // Circle with N
+    // Circle avec libellé "N{num}" (taille de police adaptée au nombre de chiffres)
     ctx.beginPath();
     ctx.arc(x, y - 28, 12, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
+    const label = 'N' + (num || '');
+    // 2 chars ("N1"..."N9") : 11px. 3 chars ("N10"+) : 9px. 4 chars ("N100"+) : 8px.
+    const fontSize = label.length <= 2 ? 11 : (label.length === 3 ? 9 : 8);
     ctx.fillStyle = '#000';
-    ctx.font = 'bold 11px sans-serif';
+    ctx.font = 'bold ' + fontSize + 'px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('N', x, y - 24);
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, x, y - 28);
+    ctx.textBaseline = 'alphabetic';
     // Ligne indicative
     if (a.text && a.text.length > 0) {
       ctx.font = '10px sans-serif';
@@ -7082,11 +7097,25 @@ function drawAllAnnotationsOnCanvasForExport(ctx, viewer, pageNum, renderScale) 
     ctx.restore();
   }
 
-  // NOTES
+  // NOTES — numérotées globalement par ordre de création (toutes pages).
+  const allNotes = (viewer.state.annotations || [])
+    .filter(x => x.type === 'note')
+    .sort((x, y) => (x.created || 0) - (y.created || 0));
+  const noteNumById = new Map();
+  allNotes.forEach((a, i) => noteNumById.set(a.id, i + 1));
   for (const a of annots.filter(x => x.type === 'note')) {
     const x = a.x * renderScale, y = a.y * renderScale;
     ctx.fillStyle = '#fbbf24'; ctx.strokeStyle = '#000';
     ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI * 2); ctx.fill(); ctx.lineWidth = 2; ctx.stroke();
+    // Libellé "N{num}" sur le rond
+    const label = 'N' + (noteNumById.get(a.id) || '');
+    const fontSize = label.length <= 2 ? 11 : (label.length === 3 ? 9 : 8);
+    ctx.fillStyle = '#000';
+    ctx.font = 'bold ' + fontSize + 'px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, x, y);
+    ctx.textBaseline = 'alphabetic';
     if (a.text) {
       ctx.font = 'bold 14px sans-serif';
       const mw = ctx.measureText(a.text).width;

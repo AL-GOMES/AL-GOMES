@@ -3217,7 +3217,16 @@ class PDFViewer {
     this._hideDetectedTextsOverlays();
     if (!this.currentPage || !this.viewerInner) return;
     let textContent;
-    try { textContent = await this.currentPage.getTextContent(); } catch (e) { return; }
+    try {
+      // includeMarkedContent : récupère aussi les textes dans les marked content
+      // (souvent utilisés par les PDF générés par CAO/Office) qui sont sinon
+      // ignorés. disableCombineTextItems=false (défaut) garde les morceaux
+      // logiques pour ne pas exploser en mini-fragments.
+      textContent = await this.currentPage.getTextContent({
+        includeMarkedContent: true,
+        disableNormalization: false
+      });
+    } catch (e) { return; }
     const vp = this.viewport;
     if (!vp || !textContent || !Array.isArray(textContent.items)) return;
     // Map des annotations text-edit existantes (par clé position+texte original)
@@ -3230,13 +3239,22 @@ class PDFViewer {
       });
     const replacedKeys = new Set(existingByKey.keys());
     for (const item of textContent.items) {
+      // Marked content items (sans str réel) → skip
+      if (item.type) continue;
       if (!item.str || !item.str.trim()) continue;
       // Position et taille en coords viewport (= pixels canvas à zoom courant)
       const tx = item.transform[4];
       const ty = item.transform[5];
       const [cx, cy] = vp.convertToViewportPoint(tx, ty);
-      const widthPx  = (item.width || 0) * vp.scale;
-      const heightPx = (item.height || 12) * vp.scale;
+      // Hauteur : item.height peut être 0 dans certains PDF — on retombe sur
+      // la taille déduite du transform (l'échelle Y de la matrice texte).
+      const fontH = item.height || Math.abs(item.transform[3]) || 12;
+      const heightPx = fontH * vp.scale;
+      // Largeur : item.width peut être 0 pour des PDF qui n'écrivent pas
+      // d'avance — on retombe sur une estimation fontHeight * 0.55 * nbChars.
+      const rawW = item.width || 0;
+      const fallbackW = item.str.length * fontH * 0.55;
+      const widthPx = (rawW > 0 ? rawW : fallbackW) * vp.scale;
       // Conversion → coords PDF (zoom=1)
       const pdfX = cx / vp.scale;
       const pdfY = (cy - heightPx) / vp.scale;

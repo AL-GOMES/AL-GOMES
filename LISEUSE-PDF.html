@@ -3471,20 +3471,45 @@ class PDFViewer {
 
   async rotate(deltaDegrees) {
     if (!this.currentPage) return;
-    // Pour les annotations texte/modif : mise à jour de la rotation visuelle
-    // (le texte tourne avec la page pour rester lisible relativement au contenu).
-    // Les coords (x, y) restent en repère viewport — identique au comportement
-    // des autres annotations (note, mesure, câble…).
+    const oldRotation = this.rotation;
+    const newRotation = ((oldRotation + deltaDegrees) % 360 + 360) % 360;
     try {
+      // Transformation directe des coords viewport entre deux rotations (sans PDF.js
+      // pour éviter les surprises liées à l'origine bas-gauche).
+      // Pour une rotation horaire de Δ° autour du centre, un point (x, y) dans
+      // un viewport (W, H) devient :
+      //   Δ =  90 →  (H - y, x)        new viewport (H, W)
+      //   Δ = 180 →  (W - x, H - y)    new viewport (W, H)
+      //   Δ = 270 →  (y, W - x)        new viewport (H, W)
+      //   Δ = -90 → équivalent à 270
+      const vpOld = this.currentPage.getViewport({ scale: 1, rotation: oldRotation });
+      const Wold = vpOld.width, Hold = vpOld.height;
+      // Normalise delta à 0/90/180/270
+      const d = ((deltaDegrees % 360) + 360) % 360;
+      const transformPt = (x, y) => {
+        if (d === 0)   return { x, y };
+        if (d === 90)  return { x: Hold - y, y: x };
+        if (d === 180) return { x: Wold - x, y: Hold - y };
+        if (d === 270) return { x: y,         y: Wold - x };
+        // Fallback : pas de rotation orthogonale
+        return { x, y };
+      };
       for (const a of (this.state.annotations || [])) {
+        if (a.x !== undefined && a.y !== undefined) {
+          const p = transformPt(a.x, a.y); a.x = p.x; a.y = p.y;
+        }
+        if (a.x2 !== undefined && a.y2 !== undefined) {
+          const p = transformPt(a.x2, a.y2); a.x2 = p.x; a.y2 = p.y;
+        }
+        if (Array.isArray(a.points)) a.points = a.points.map(p => transformPt(p.x, p.y));
+        // Rotation visuelle uniquement pour les textes (lecture relative à la page)
         if (a.type === 'text' || a.type === 'text-edit') {
-          const prev = a.rotation || 0;
-          a.rotation = ((prev + deltaDegrees) % 360 + 360) % 360;
+          a.rotation = (((a.rotation || 0) + deltaDegrees) % 360 + 360) % 360;
         }
       }
       saveDocState(this.docHash, this.state);
-    } catch (e) { console.warn('[rotate] update text rotation failed', e); }
-    this.rotation = ((this.rotation + deltaDegrees) % 360 + 360) % 360;
+    } catch (e) { console.warn('[rotate] transform failed', e); }
+    this.rotation = newRotation;
     $('rotation-label').textContent = this.rotation + '°';
     await this.renderPage(this.currentPageNum);
     showToast('Rotation : ' + this.rotation + '°', 'info', 1200);

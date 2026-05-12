@@ -2567,6 +2567,15 @@ class PDFViewer {
     if (!a.text) return;
     const x = a.x * this.zoom;
     const y = a.y * this.zoom;
+    const rot = (a.rotation || 0) % 360;
+    ctx.save();
+    if (rot) {
+      // Rotation visuelle autour du point d'ancrage (x, y) — pour que le texte reste lisible
+      // dans le sens de la page après rotation utilisateur.
+      ctx.translate(x, y);
+      ctx.rotate(rot * Math.PI / 180);
+      ctx.translate(-x, -y);
+    }
     ctx.font = this._buildCanvasFont(a);
     ctx.textAlign = a.align || 'left';
     ctx.textBaseline = 'top';
@@ -2604,6 +2613,43 @@ class PDFViewer {
         ctx.beginPath(); ctx.moveTo(lx, sy); ctx.lineTo(lx + w, sy); ctx.stroke();
       }
     });
+    ctx.restore();
+  }
+
+  // Renvoie la bounding-box approximative d'une annotation 'text' / 'text-edit'
+  // dans le repère ÉCRAN (à zoom courant). Utilisé pour le hit-test au clic.
+  _textBbox(a) {
+    if (!a.text) return null;
+    // On utilise un canvas hors-écran pour mesurer le texte avec la bonne font
+    const tmp = document.createElement('canvas').getContext('2d');
+    tmp.font = this._buildCanvasFont(a);
+    const lines = String(a.text).split(/\r?\n/);
+    let maxW = 0; for (const ln of lines) maxW = Math.max(maxW, tmp.measureText(ln).width);
+    const lineHeight = (a.size || 14) * this.zoom * 1.25;
+    const h = lineHeight * lines.length;
+    const align = a.align || 'left';
+    const x = a.x * this.zoom;
+    const y = a.y * this.zoom;
+    let bx = x;
+    if (align === 'center') bx = x - maxW / 2;
+    else if (align === 'right') bx = x - maxW;
+    return { x: bx - 4, y: y - 2, w: maxW + 8, h: h + 4 };
+  }
+  // Recherche l'annotation texte sous le clic (page courante). Tient compte de
+  // l'éventuelle rotation visuelle pour ne pas rater le hit-test.
+  _findTextAnnotationAt(pdfX, pdfY) {
+    const annots = (this.state.annotations || []).filter(a =>
+      (a.type === 'text' || a.type === 'text-edit') && a.page === this.currentPageNum
+    );
+    for (const a of annots) {
+      const bb = this._textBbox(a);
+      if (!bb) continue;
+      // Conversion clic en pixels écran via le zoom courant
+      const px = pdfX * this.zoom;
+      const py = pdfY * this.zoom;
+      if (px >= bb.x && px <= bb.x + bb.w && py >= bb.y && py <= bb.y + bb.h) return a;
+    }
+    return null;
   }
 
   _drawTextEdit(ctx, a) {
@@ -3154,7 +3200,39 @@ class PDFViewer {
   // ============ ROTATION ============
 
   async rotate(deltaDegrees) {
-    this.rotation = ((this.rotation + deltaDegrees) % 360 + 360) % 360;
+    if (!this.currentPage) return;
+    const oldRotation = this.rotation;
+    const newRotation = ((oldRotation + deltaDegrees) % 360 + 360) % 360;
+    // Transforme les coords (stockées en repère viewport-rotated) entre les deux rotations
+    // pour que les annotations restent à leur position physique réelle sur la page.
+    try {
+      const oldVp = this.currentPage.getViewport({ scale: 1, rotation: oldRotation });
+      const newVp = this.currentPage.getViewport({ scale: 1, rotation: newRotation });
+      const transformPt = (vx, vy) => {
+        const [px, py] = oldVp.convertToPdfPoint(vx, vy);
+        const r = newVp.convertToViewportPoint(px, py);
+        return { x: r[0], y: r[1] };
+      };
+      for (const a of (this.state.annotations || [])) {
+        if (a.x !== undefined && a.y !== undefined) {
+          const p = transformPt(a.x, a.y);
+          a.x = p.x; a.y = p.y;
+        }
+        if (a.x2 !== undefined && a.y2 !== undefined) {
+          const p = transformPt(a.x2, a.y2);
+          a.x2 = p.x; a.y2 = p.y;
+        }
+        if (Array.isArray(a.points)) {
+          a.points = a.points.map(p => transformPt(p.x, p.y));
+        }
+        // Texte : on conserve aussi une rotation visuelle (lecture)
+        if (a.type === 'text' || a.type === 'text-edit') {
+          a.rotation = (((a.rotation || 0) + deltaDegrees) % 360 + 360) % 360;
+        }
+      }
+      saveDocState(this.docHash, this.state);
+    } catch (e) { console.warn('[rotate] transform annotations failed', e); }
+    this.rotation = newRotation;
     $('rotation-label').textContent = this.rotation + '°';
     await this.renderPage(this.currentPageNum);
     showToast('Rotation : ' + this.rotation + '°', 'info', 1200);
@@ -5149,6 +5227,22 @@ function installViewerEvents(viewer) {
       return;
     }
     if (viewer.tool === 'pan' && ev.button === 0) {
+      // === Double-clic ? Ouverture d'une annotation texte ===
+      const tPos = viewer._eventToPdfCoords(ev);
+      if (tPos && ev.detail >= 2) {
+        const tAnn = viewer._findTextAnnotationAt(tPos.x, tPos.y);
+        if (tAnn && window._openTextModal) {
+          app.textData = {
+            x: tAnn.x, y: tAnn.y, w: tAnn.w, h: tAnn.h,
+            originalText: tAnn.originalText,
+            type: tAnn.type,
+            viewer,
+            editingId: tAnn.id
+          };
+          window._openTextModal(tAnn);
+          return;
+        }
+      }
       // === Sélection / déplacement / redimensionnement / suppression d'une signature ===
       const sigPos = viewer._eventToPdfCoords(ev);
       if (sigPos) {
@@ -5242,6 +5336,19 @@ function installViewerEvents(viewer) {
     } else if (viewer.tool === 'text' && ev.button === 0) {
       const pos = viewer._eventToPdfCoords(ev);
       if (!pos) return;
+      // Si on clique sur un texte existant → on l'édite plutôt que d'en créer un nouveau
+      const hit = viewer._findTextAnnotationAt(pos.x, pos.y);
+      if (hit && window._openTextModal) {
+        app.textData = {
+          x: hit.x, y: hit.y, w: hit.w, h: hit.h,
+          originalText: hit.originalText,
+          type: hit.type,
+          viewer,
+          editingId: hit.id
+        };
+        window._openTextModal(hit);
+        return;
+      }
       app.textData = { x: pos.x, y: pos.y, viewer, editingId: null };
       if (window._openTextModal) window._openTextModal(null);
     } else if (viewer.tool === 'cable' && ev.button === 0) {

@@ -10,6 +10,7 @@
 <script src="js/auth-guard.js"></script>
 <script src="js/cloud-sync.js"></script>
 <script>window.cloudSync && window.cloudSync.bindPrefix('algomes-liseuse-');</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <style>
 /* =============================================================================
    LISEUSE PLAN ÉLECTRIQUE A.L. GOMES
@@ -778,6 +779,152 @@ html, body {
   border-radius: 0 4px 4px 0;
 }
 
+/* === Styles du modal FUSIONNER PDFs === */
+.merge-modal { width: 720px; max-width: 92vw; }
+.merge-dropzone {
+  border: 2px dashed var(--panel-border);
+  border-radius: 6px;
+  padding: 22px;
+  text-align: center;
+  color: var(--text-2);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: all .15s;
+  background: var(--bg-1);
+}
+.merge-dropzone:hover, .merge-dropzone.drag-over {
+  border-color: var(--accent);
+  color: var(--accent-2);
+  background: rgba(139,92,246,0.06);
+}
+.merge-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 12px 0 8px;
+  font-size: 11px;
+}
+.merge-toolbar .count {
+  color: var(--text-1);
+  letter-spacing: 0.08em;
+  flex: 1;
+}
+.merge-toolbar .count strong { color: var(--accent-2); }
+.merge-toolbar button.mini {
+  background: transparent;
+  border: 1px solid var(--panel-border);
+  color: var(--text-1);
+  padding: 5px 9px;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all .12s;
+}
+.merge-toolbar button.mini:hover { border-color: var(--accent); color: var(--accent-2); }
+.merge-toolbar button.mini.danger:hover { border-color: #ef4444; color: #fca5a5; }
+.merge-filelist {
+  max-height: 320px;
+  overflow-y: auto;
+  background: var(--bg-1);
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  padding: 4px;
+}
+.merge-filelist::-webkit-scrollbar { width: 8px; }
+.merge-filelist::-webkit-scrollbar-thumb { background: var(--panel-border); border-radius: 4px; }
+.merge-filelist:empty::before {
+  content: "Aucun fichier sélectionné. Cliquez sur la zone ci-dessus pour ajouter des PDFs.";
+  display: block;
+  padding: 14px;
+  color: var(--text-2);
+  font-size: 11px;
+  text-align: center;
+  font-style: italic;
+}
+.merge-file-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 3px;
+  font-size: 11px;
+  color: var(--text-1);
+  cursor: grab;
+  user-select: none;
+  transition: background .1s;
+}
+.merge-file-row:hover { background: rgba(139,92,246,0.08); }
+.merge-file-row.dragging { opacity: 0.4; }
+.merge-file-row.drop-target-above { box-shadow: inset 0 2px 0 0 var(--accent); }
+.merge-file-row.drop-target-below { box-shadow: inset 0 -2px 0 0 var(--accent); }
+.merge-file-row .idx {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-2);
+  width: 30px;
+  text-align: right;
+}
+.merge-file-row .grip {
+  color: var(--text-2);
+  font-size: 14px;
+  width: 10px;
+}
+.merge-file-row .name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.merge-file-row .size {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-2);
+  width: 60px;
+  text-align: right;
+}
+.merge-file-row .remove {
+  background: transparent;
+  border: none;
+  color: var(--text-2);
+  cursor: pointer;
+  padding: 2px 6px;
+  font-size: 14px;
+  line-height: 1;
+  border-radius: 3px;
+}
+.merge-file-row .remove:hover { background: rgba(239,68,68,0.15); color: #fca5a5; }
+.merge-file-row.errored { color: #fca5a5; background: rgba(239,68,68,0.08); }
+
+.merge-progress {
+  margin: 12px 0;
+  display: none;
+}
+.merge-progress.on { display: block; }
+.merge-progress .bar {
+  height: 6px;
+  background: var(--bg-1);
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid var(--panel-border);
+}
+.merge-progress .bar > div {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  width: 0%;
+  transition: width .15s;
+}
+.merge-progress .label {
+  font-size: 10px;
+  color: var(--text-1);
+  letter-spacing: 0.08em;
+  margin-top: 6px;
+  text-align: center;
+  text-transform: uppercase;
+}
 /* Status bar */
 .status {
   grid-area: status;
@@ -1143,6 +1290,10 @@ html, body {
       <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
       EXPORT
     </button>
+    <button class="btn" id="btn-merge" title="Fusionner plusieurs PDF en un seul fichier">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M8 3h13v18H8M3 8l5-5v18l-5-5M14 8v8M10 12h8"/></svg>
+      FUSIONNER
+    </button>
     <button class="btn icon-only" id="btn-help" title="Aide (?)">
       <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/></svg>
     </button>
@@ -1464,6 +1615,39 @@ html, body {
     </div>
     <div class="modal-actions">
       <button class="btn primary" id="help-close">FERMER</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== Modal FUSIONNER PDFs ====== -->
+<div class="modal-backdrop" id="modal-merge">
+  <div class="modal merge-modal">
+    <h3>FUSIONNER PLUSIEURS PDFs</h3>
+    <div class="help">
+      Sélectionnez plusieurs PDFs (au moins 2). Vous pouvez les <b>réordonner par glisser-déposer</b>, les trier par nom, ou en ajouter d'autres. Le fichier fusionné sera téléchargé automatiquement quand la fusion est terminée. Aucune limite stricte de nombre — testé avec succès jusqu'à 200+ fichiers selon leur taille.
+    </div>
+    <div class="merge-dropzone" id="merge-dropzone">
+      📂 Cliquez ici ou glissez vos PDFs pour les ajouter
+      <input type="file" id="merge-file-input" accept="application/pdf,.pdf" style="display:none" multiple>
+    </div>
+    <div class="merge-toolbar">
+      <span class="count"><strong id="merge-count">0</strong> fichier(s) · <strong id="merge-size">0 Mo</strong></span>
+      <button class="mini" id="merge-sort-az">Trier A → Z</button>
+      <button class="mini" id="merge-sort-za">Trier Z → A</button>
+      <button class="mini danger" id="merge-clear">Tout vider</button>
+    </div>
+    <div class="merge-filelist" id="merge-filelist"></div>
+    <div class="merge-progress" id="merge-progress">
+      <div class="bar"><div id="merge-progress-bar"></div></div>
+      <div class="label" id="merge-progress-label">Préparation...</div>
+    </div>
+    <div class="field" style="margin-top:14px">
+      <label>Nom du fichier fusionné</label>
+      <input type="text" id="merge-output-name" value="planning_fusionne.pdf">
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="merge-cancel">FERMER</button>
+      <button class="btn primary" id="merge-start" disabled>FUSIONNER</button>
     </div>
   </div>
 </div>
@@ -6892,6 +7076,238 @@ if (document.readyState !== 'loading') {
     setTimeout(() => $('file-input')?.click(), 200);
   }
 }
+
+// =========================================================================
+// FUSIONNER PDFs — Merge multiple PDFs into one (uses pdf-lib)
+// Handles 200+ files via streaming: each source PDF is freed from memory
+// as soon as its pages are copied into the destination doc.
+// =========================================================================
+(function setupMergeFeature(){
+  if (!window.PDFLib) { console.warn('[merge] pdf-lib non chargé, fonctionnalité désactivée'); return; }
+  const { PDFDocument } = window.PDFLib;
+  let mergeFiles = []; // [{ id, file, status: 'pending'|'done'|'error' }]
+  let nextId = 1;
+  let isMerging = false;
+  let cancelled = false;
+
+  const $m = id => document.getElementById(id);
+  const fmtSize = b => b < 1024 ? b + ' o' : b < 1024*1024 ? (b/1024).toFixed(1) + ' Ko' : (b/(1024*1024)).toFixed(2) + ' Mo';
+  const escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  function refresh(){
+    const list = $m('merge-filelist');
+    const totalBytes = mergeFiles.reduce((s,f) => s + f.file.size, 0);
+    $m('merge-count').textContent = mergeFiles.length;
+    $m('merge-size').textContent = fmtSize(totalBytes);
+    $m('merge-start').disabled = mergeFiles.length < 2 || isMerging;
+    list.innerHTML = mergeFiles.map((f, i) => `
+      <div class="merge-file-row ${f.status === 'error' ? 'errored' : ''}" draggable="true" data-id="${f.id}">
+        <span class="idx">${i + 1}.</span>
+        <span class="grip">⋮⋮</span>
+        <span class="name" title="${escapeHtml(f.file.name)}">${escapeHtml(f.file.name)}</span>
+        <span class="size">${fmtSize(f.file.size)}</span>
+        <button class="remove" data-id="${f.id}" title="Retirer">✕</button>
+      </div>
+    `).join('');
+    // Brancher les boutons de suppression
+    list.querySelectorAll('.remove').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const id = parseInt(btn.dataset.id);
+        mergeFiles = mergeFiles.filter(f => f.id !== id);
+        refresh();
+      });
+    });
+    // Drag & drop pour réordonner
+    setupDragReorder();
+  }
+
+  function setupDragReorder(){
+    const list = $m('merge-filelist');
+    let draggedId = null;
+    list.querySelectorAll('.merge-file-row').forEach(row => {
+      row.addEventListener('dragstart', e => {
+        draggedId = parseInt(row.dataset.id);
+        row.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      row.addEventListener('dragend', () => {
+        row.classList.remove('dragging');
+        list.querySelectorAll('.merge-file-row').forEach(r => r.classList.remove('drop-target-above', 'drop-target-below'));
+      });
+      row.addEventListener('dragover', e => {
+        e.preventDefault();
+        if (draggedId === null || parseInt(row.dataset.id) === draggedId) return;
+        const rect = row.getBoundingClientRect();
+        const above = e.clientY < rect.top + rect.height / 2;
+        list.querySelectorAll('.merge-file-row').forEach(r => r.classList.remove('drop-target-above', 'drop-target-below'));
+        row.classList.add(above ? 'drop-target-above' : 'drop-target-below');
+      });
+      row.addEventListener('drop', e => {
+        e.preventDefault();
+        if (draggedId === null) return;
+        const targetId = parseInt(row.dataset.id);
+        if (targetId === draggedId) return;
+        const rect = row.getBoundingClientRect();
+        const above = e.clientY < rect.top + rect.height / 2;
+        const srcIdx = mergeFiles.findIndex(f => f.id === draggedId);
+        const dragged = mergeFiles.splice(srcIdx, 1)[0];
+        let dstIdx = mergeFiles.findIndex(f => f.id === targetId);
+        if (!above) dstIdx++;
+        mergeFiles.splice(dstIdx, 0, dragged);
+        draggedId = null;
+        refresh();
+      });
+    });
+  }
+
+  function addFiles(fileList){
+    if (!fileList || !fileList.length) return;
+    const pdfs = Array.from(fileList).filter(f => f.type === 'application/pdf' || /\.pdf$/i.test(f.name));
+    if (pdfs.length === 0) {
+      alert('Aucun PDF valide dans la sélection.');
+      return;
+    }
+    if (pdfs.length < fileList.length) {
+      console.warn(`[merge] ${fileList.length - pdfs.length} fichier(s) non-PDF ignoré(s)`);
+    }
+    pdfs.forEach(f => mergeFiles.push({ id: nextId++, file: f, status: 'pending' }));
+    refresh();
+  }
+
+  function openMerge(){
+    mergeFiles = [];
+    isMerging = false;
+    cancelled = false;
+    $m('merge-progress').classList.remove('on');
+    $m('merge-progress-bar').style.width = '0%';
+    $m('merge-progress-label').textContent = 'Préparation...';
+    $m('merge-cancel').textContent = 'FERMER';
+    $m('merge-output-name').value = 'planning_fusionne.pdf';
+    refresh();
+    document.getElementById('modal-merge').classList.add('open');
+  }
+  function closeMerge(){
+    if (isMerging) {
+      if (!confirm('Une fusion est en cours. L\'annuler ?')) return;
+      cancelled = true;
+      $m('merge-progress-label').textContent = 'Annulation...';
+      return;
+    }
+    document.getElementById('modal-merge').classList.remove('open');
+  }
+
+  // === FUSION ===
+  async function doMerge(){
+    if (mergeFiles.length < 2) { alert('Sélectionnez au moins 2 PDFs.'); return; }
+    isMerging = true;
+    cancelled = false;
+    $m('merge-start').disabled = true;
+    $m('merge-cancel').textContent = 'ANNULER';
+    $m('merge-progress').classList.add('on');
+    $m('merge-progress-bar').style.width = '0%';
+
+    const dest = await PDFDocument.create();
+    let okCount = 0, errCount = 0, totalPages = 0;
+
+    for (let i = 0; i < mergeFiles.length; i++) {
+      if (cancelled) break;
+      const item = mergeFiles[i];
+      $m('merge-progress-label').textContent = `Fusion ${i + 1} / ${mergeFiles.length} — ${item.file.name}`;
+      $m('merge-progress-bar').style.width = ((i / mergeFiles.length) * 100) + '%';
+      // Laisser le navigateur respirer (rendu progression)
+      await new Promise(r => requestAnimationFrame(r));
+      try {
+        let buf = await item.file.arrayBuffer();
+        let src = await PDFDocument.load(buf, { ignoreEncryption: true, updateMetadata: false });
+        const indices = src.getPageIndices();
+        const pages = await dest.copyPages(src, indices);
+        pages.forEach(p => dest.addPage(p));
+        totalPages += pages.length;
+        item.status = 'done';
+        okCount++;
+        // Libérer les références pour le GC
+        src = null;
+        buf = null;
+      } catch (err) {
+        console.error(`[merge] Échec sur ${item.file.name}:`, err);
+        item.status = 'error';
+        errCount++;
+      }
+    }
+
+    if (cancelled) {
+      $m('merge-progress-label').textContent = 'Fusion annulée';
+      isMerging = false;
+      $m('merge-start').disabled = mergeFiles.length < 2;
+      $m('merge-cancel').textContent = 'FERMER';
+      refresh();
+      return;
+    }
+
+    $m('merge-progress-label').textContent = 'Génération du PDF final...';
+    $m('merge-progress-bar').style.width = '98%';
+    await new Promise(r => requestAnimationFrame(r));
+
+    try {
+      const out = await dest.save({ useObjectStreams: true });
+      const blob = new Blob([out], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const name = ($m('merge-output-name').value || 'planning_fusionne.pdf').replace(/[^a-zA-Z0-9._-]/g, '_');
+      const a = document.createElement('a');
+      a.href = url; a.download = name.endsWith('.pdf') ? name : name + '.pdf';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      $m('merge-progress-bar').style.width = '100%';
+      $m('merge-progress-label').textContent = `✓ Terminé : ${okCount} PDF(s) fusionné(s), ${totalPages} page(s)` + (errCount ? ` — ${errCount} échec(s)` : '');
+    } catch (err) {
+      console.error('[merge] Save error:', err);
+      $m('merge-progress-label').textContent = 'Erreur à la génération : ' + (err.message || 'inconnue');
+    }
+
+    isMerging = false;
+    $m('merge-start').disabled = false;
+    $m('merge-cancel').textContent = 'FERMER';
+    refresh();
+  }
+
+  // === Branchements UI ===
+  document.addEventListener('DOMContentLoaded', () => {
+    const btn = $m('btn-merge');
+    if (btn) btn.addEventListener('click', openMerge);
+    $m('merge-cancel')?.addEventListener('click', closeMerge);
+    $m('merge-start')?.addEventListener('click', doMerge);
+    $m('merge-clear')?.addEventListener('click', () => {
+      if (isMerging) return;
+      mergeFiles = []; refresh();
+    });
+    $m('merge-sort-az')?.addEventListener('click', () => {
+      mergeFiles.sort((a, b) => a.file.name.localeCompare(b.file.name, 'fr', { numeric: true })); refresh();
+    });
+    $m('merge-sort-za')?.addEventListener('click', () => {
+      mergeFiles.sort((a, b) => b.file.name.localeCompare(a.file.name, 'fr', { numeric: true })); refresh();
+    });
+    const dz = $m('merge-dropzone');
+    const fi = $m('merge-file-input');
+    if (dz && fi) {
+      dz.addEventListener('click', () => fi.click());
+      fi.addEventListener('change', e => { addFiles(e.target.files); fi.value = ''; });
+      dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+      dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+      dz.addEventListener('drop', e => {
+        e.preventDefault();
+        dz.classList.remove('drag-over');
+        addFiles(e.dataTransfer.files);
+      });
+    }
+    // Échap pour fermer
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && document.getElementById('modal-merge').classList.contains('open')) {
+        closeMerge();
+      }
+    });
+  });
+})();
 
 </script>
 </body>

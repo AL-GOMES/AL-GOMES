@@ -589,25 +589,38 @@ async function initCloudSync(){
   CLOUD.user=user;
   CLOUD.docRef=window.db.collection('planning').doc('main');
   setSyncStatus('syncing');
+  // Récupérer le timestamp local pour comparer avec le cloud
+  const localTs=getLocalModifiedTs();
+  console.log('[Cloud] Local modifié à:',localTs?new Date(localTs).toLocaleString():'jamais');
   try{
     const snap=await CLOUD.docRef.get();
     if(snap.exists){
       const data=snap.data();
-      if(Array.isArray(data.tasks)&&data.tasks.length>0){
+      const cloudTs=(data.updatedAt&&typeof data.updatedAt.toMillis==='function')?data.updatedAt.toMillis():(data._localWriteTs||0);
+      console.log('[Cloud] Cloud modifié à:',cloudTs?new Date(cloudTs).toLocaleString():'jamais','par',data.updatedByName||'inconnu');
+      // ⚠ Si le LOCAL est plus récent que le CLOUD → on a des modifs non synchronisées
+      // (ex : modif faite puis fermeture rapide avant fin du debounce)
+      // Dans ce cas, on POUSSE le local, on n'écrase PAS le local
+      if(localTs>0 && localTs>cloudTs){
+        console.log('[Cloud] ⚠ Modifs locales non synchronisées détectées → push vers cloud');
+        await cloudPushNow(); // push immédiat, sans debounce
+      }else if(Array.isArray(data.tasks)&&data.tasks.length>0){
         TASKS=data.tasks;
         if(typeof data.nextId==='number')nextId=data.nextId;
         else nextId=Math.max(0,...TASKS.map(t=>t.id||0))+1;
         migrateStatus();
-        try{localStorage.setItem('algomes_planning_v1',JSON.stringify({TASKS,nextId}))}catch(e){}
+        persistLocal(); // écrit en localStorage avec le timestamp cloud
+        markLocalSynced(cloudTs);
         render();
-        console.log('[Cloud] Planning chargé:',TASKS.length,'tâches');
+        console.log('[Cloud] Planning chargé depuis cloud:',TASKS.length,'tâches');
       }else{
-        // Doc vide → pousser le local vers le cloud
-        await cloudPush();
+        // Doc cloud vide → pousser le local
+        await cloudPushNow();
       }
     }else{
       // Première fois → initialiser le doc avec le local
-      await cloudPush();
+      console.log('[Cloud] Pas de doc cloud → init avec local');
+      await cloudPushNow();
     }
     setSyncStatus('synced');
   }catch(err){
@@ -622,12 +635,13 @@ async function initCloudSync(){
     // Ignorer nos propres écritures (basé sur le timestamp local)
     if(data._localWriteTs&&data._localWriteTs===CLOUD.lastLocalWriteTs)return;
     if(Array.isArray(data.tasks)){
-      const sameLength=data.tasks.length===TASKS.length;
       const fromOther=data.updatedBy&&data.updatedBy!==CLOUD.user.uid;
       TASKS=data.tasks;
       if(typeof data.nextId==='number')nextId=data.nextId;
       migrateStatus();
-      try{localStorage.setItem('algomes_planning_v1',JSON.stringify({TASKS,nextId}))}catch(e){}
+      const cloudTs=(data.updatedAt&&typeof data.updatedAt.toMillis==='function')?data.updatedAt.toMillis():(data._localWriteTs||Date.now());
+      persistLocal();
+      markLocalSynced(cloudTs);
       render();
       if(fromOther)console.log('[Cloud] Mise à jour reçue de',data.updatedByName||data.updatedBy);
       setSyncStatus('synced');
@@ -638,9 +652,65 @@ async function initCloudSync(){
   });
 }
 
+// Helpers timestamps localStorage
+function getLocalModifiedTs(){
+  try{
+    const raw=localStorage.getItem('algomes_planning_v1');
+    if(!raw)return 0;
+    const obj=JSON.parse(raw);
+    return obj._localModified||0;
+  }catch(e){return 0}
+}
+function markLocalModified(){
+  try{
+    const raw=localStorage.getItem('algomes_planning_v1');
+    const obj=raw?JSON.parse(raw):{};
+    obj._localModified=Date.now();
+    localStorage.setItem('algomes_planning_v1',JSON.stringify(obj));
+  }catch(e){}
+}
+function markLocalSynced(cloudTs){
+  // Après réception du cloud : on aligne le timestamp local sur le cloud
+  // pour qu'au prochain chargement il n'y ait pas de fausse alerte "local plus récent"
+  try{
+    const raw=localStorage.getItem('algomes_planning_v1');
+    const obj=raw?JSON.parse(raw):{};
+    obj._localModified=cloudTs||Date.now();
+    localStorage.setItem('algomes_planning_v1',JSON.stringify(obj));
+  }catch(e){}
+}
+function persistLocal(){
+  try{localStorage.setItem('algomes_planning_v1',JSON.stringify({TASKS,nextId,_localModified:getLocalModifiedTs()}))}catch(e){}
+}
+
+// Push immédiat (sans debounce) — utilisé pour rattrapage initial
+async function cloudPushNow(){
+  if(!CLOUD.docRef||!CLOUD.user)return;
+  if(CLOUD.pendingWrite){clearTimeout(CLOUD.pendingWrite);CLOUD.pendingWrite=null}
+  setSyncStatus('syncing');
+  const ts=Date.now();
+  CLOUD.lastLocalWriteTs=ts;
+  try{
+    await CLOUD.docRef.set({
+      tasks:TASKS,
+      nextId:nextId,
+      updatedAt:firebase.firestore.FieldValue.serverTimestamp(),
+      updatedBy:CLOUD.user.uid,
+      updatedByName:CLOUD.user.name||CLOUD.user.login||'',
+      _localWriteTs:ts
+    });
+    markLocalSynced(ts);
+    setSyncStatus('synced');
+  }catch(err){
+    console.error('[Cloud] Écriture immédiate échouée:',err);
+    setSyncStatus('error','Écriture cloud échouée : '+err.message+' (les données restent en local)');
+  }
+}
+
 async function cloudPush(){
   if(!CLOUD.docRef||!CLOUD.user)return;
-  // Anti-rafale : si une écriture est déjà programmée, on la garde
+  // Anti-rafale réduit à 120ms (au lieu de 300ms) — pour minimiser la fenêtre
+  // de perte si l'utilisateur ferme l'onglet juste après une modif
   if(CLOUD.pendingWrite)clearTimeout(CLOUD.pendingWrite);
   CLOUD.pendingWrite=setTimeout(async()=>{
     CLOUD.pendingWrite=null;
@@ -656,22 +726,41 @@ async function cloudPush(){
         updatedByName:CLOUD.user.name||CLOUD.user.login||'',
         _localWriteTs:ts
       });
+      markLocalSynced(ts);
       setSyncStatus('synced');
     }catch(err){
       console.error('[Cloud] Écriture échouée:',err);
       setSyncStatus('error','Écriture cloud échouée : '+err.message+' (les données restent en local)');
     }
-  },300);
+  },120);
 }
 
-// Wrapper persist() pour qu'il pousse aussi vers le cloud
+// Wrapper persist() : marque local + déclenche push cloud
 const _originalPersist=persist;
-persist=function(){_originalPersist();cloudPush()};
+persist=function(){
+  _originalPersist();
+  markLocalModified(); // ← critique : marque le timestamp dès que l'utilisateur modifie
+  cloudPush();
+};
+
+// Si l'utilisateur ferme l'onglet alors qu'une écriture est en attente,
+// au moins le timestamp local est marqué → la prochaine session détectera
+// qu'il faut pousser local→cloud
+window.addEventListener('beforeunload',()=>{
+  if(CLOUD.pendingWrite){
+    // Une écriture est en attente — on ne peut pas l'attendre (async)
+    // mais le markLocalModified() a déjà été fait à chaque persist()
+    // donc la prochaine session récupérera le local en priorité
+    console.log('[Cloud] beforeunload : écriture en attente, sera rattrapée à la prochaine session');
+  }
+});
 
 // Démarrer la sync après le premier rendu
 window.addEventListener('load',()=>setTimeout(initCloudSync,600));
 // Si on est déjà chargé (DOM ready avant l'event load)
 if(document.readyState==='complete')setTimeout(initCloudSync,600);
+// Failsafe : si rien ne s'est lancé au bout de 4s, on force
+setTimeout(()=>{if(!CLOUD.initialized)initCloudSync()},4000);
 // ====== Fin SYNCHRONISATION CLOUD FIRESTORE =================
 
 render();

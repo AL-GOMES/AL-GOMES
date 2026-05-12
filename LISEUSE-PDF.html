@@ -2900,11 +2900,15 @@ class PDFViewer {
     try { textContent = await this.currentPage.getTextContent(); } catch (e) { return; }
     const vp = this.viewport;
     if (!vp || !textContent || !Array.isArray(textContent.items)) return;
-    const replacedKeys = new Set(
-      (this.state.annotations || [])
-        .filter(a => a.type === 'text-edit' && a.page === this.currentPageNum && a.originalText)
-        .map(a => Math.round(a.x * 10) + '_' + Math.round(a.y * 10) + '_' + (a.originalText || ''))
-    );
+    // Map des annotations text-edit existantes (par clé position+texte original)
+    const existingByKey = new Map();
+    (this.state.annotations || [])
+      .filter(a => a.type === 'text-edit' && a.page === this.currentPageNum && a.originalText)
+      .forEach(a => {
+        const k = Math.round(a.x * 10) + '_' + Math.round(a.y * 10) + '_' + (a.originalText || '');
+        existingByKey.set(k, a);
+      });
+    const replacedKeys = new Set(existingByKey.keys());
     for (const item of textContent.items) {
       if (!item.str || !item.str.trim()) continue;
       // Position et taille en coords viewport (= pixels canvas à zoom courant)
@@ -2935,24 +2939,37 @@ class PDFViewer {
       if (replacedKeys.has(key)) div.classList.add('replaced');
       div.addEventListener('click', (ev) => {
         ev.stopPropagation();
-        app.textData = {
-          x: pdfX, y: pdfY, w: pdfW, h: pdfH,
-          originalText: item.str,
-          type: 'text-edit',
-          viewer: this,
-          editingId: null
-        };
-        // Pré-remplit avec le texte original
-        const fakeExisting = {
-          text: item.str,
-          font: 'Helvetica',
-          size: Math.max(8, Math.round((item.height || 12) * 0.85)),
-          color: '#000000',
-          bgColor: '#ffffff',
-          bold: false, italic: false, underline: false, strike: false,
-          align: 'left'
-        };
-        if (window._openTextModal) window._openTextModal(fakeExisting);
+        // Si un text-edit existe déjà pour ce mot, on l'édite (réutilise l'id)
+        const existing = existingByKey.get(key);
+        if (existing) {
+          app.textData = {
+            x: existing.x, y: existing.y, w: existing.w, h: existing.h,
+            originalText: existing.originalText,
+            type: 'text-edit',
+            viewer: this,
+            editingId: existing.id
+          };
+          if (window._openTextModal) window._openTextModal(existing);
+        } else {
+          app.textData = {
+            x: pdfX, y: pdfY, w: pdfW, h: pdfH,
+            originalText: item.str,
+            type: 'text-edit',
+            viewer: this,
+            editingId: null
+          };
+          // Pré-remplit avec le texte original
+          const fakeExisting = {
+            text: item.str,
+            font: 'Helvetica',
+            size: Math.max(8, Math.round((item.height || 12) * 0.85)),
+            color: '#000000',
+            bgColor: '#ffffff',
+            bold: false, italic: false, underline: false, strike: false,
+            align: 'left'
+          };
+          if (window._openTextModal) window._openTextModal(fakeExisting);
+        }
       });
       this.viewerInner.appendChild(div);
       if (!this._detectedDivs) this._detectedDivs = [];
@@ -3352,6 +3369,18 @@ class PDFViewer {
       item.addEventListener('click', async (ev) => {
         if (ev.target.classList.contains('annot-delete')) return;
         await this.gotoPage(a.page);
+        // Pour les annotations texte : ouverture directe de la modale d'édition
+        if ((a.type === 'text' || a.type === 'text-edit') && window._openTextModal) {
+          app.textData = {
+            x: a.x, y: a.y,
+            w: a.w, h: a.h,
+            originalText: a.originalText,
+            type: a.type,
+            viewer: this,
+            editingId: a.id
+          };
+          window._openTextModal(a);
+        }
       });
       item.querySelector('.annot-delete').addEventListener('click', (ev) => {
         ev.stopPropagation();

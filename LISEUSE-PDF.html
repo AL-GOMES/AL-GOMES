@@ -892,12 +892,16 @@ html, body {
 .viewer-pane[data-tool="calibrate"] { cursor: crosshair; }
 .viewer-pane[data-tool="count-manual"] { cursor: cell; }
 .viewer-pane[data-tool="cable"] { cursor: crosshair; }
+.viewer-pane[data-tool="text"] { cursor: text; }
+.viewer-pane[data-tool="text-edit"] { cursor: pointer; }
 
 .viewer-inner[data-tool="measure"] .overlay-canvas,
 .viewer-inner[data-tool="annot"] .overlay-canvas,
 .viewer-inner[data-tool="calibrate"] .overlay-canvas,
 .viewer-inner[data-tool="count-manual"] .overlay-canvas,
-.viewer-inner[data-tool="cable"] .overlay-canvas {
+.viewer-inner[data-tool="cable"] .overlay-canvas,
+.viewer-inner[data-tool="text"] .overlay-canvas,
+.viewer-inner[data-tool="text-edit"] .overlay-canvas {
   pointer-events: all;
 }
 
@@ -2561,8 +2565,8 @@ class PDFViewer {
 
   _drawText(ctx, a) {
     if (!a.text) return;
-    const x = a.x * this.zoom + this.panX;
-    const y = a.y * this.zoom + this.panY;
+    const x = a.x * this.zoom;
+    const y = a.y * this.zoom;
     ctx.font = this._buildCanvasFont(a);
     ctx.textAlign = a.align || 'left';
     ctx.textBaseline = 'top';
@@ -2606,8 +2610,8 @@ class PDFViewer {
     if (!a.text) return;
     // Recouvre la zone du texte original par un rectangle (fond) puis dessine le nouveau texte
     if (a.w && a.h) {
-      const x1 = a.x * this.zoom + this.panX;
-      const y1 = a.y * this.zoom + this.panY;
+      const x1 = a.x * this.zoom;
+      const y1 = a.y * this.zoom;
       const w  = a.w * this.zoom;
       const h  = a.h * this.zoom;
       ctx.fillStyle = a.bgColor || '#ffffff';
@@ -2644,9 +2648,9 @@ class PDFViewer {
       const pdfY = (cy - heightPx) / vp.scale;
       const pdfW = widthPx / vp.scale;
       const pdfH = heightPx / vp.scale;
-      // Position à l'écran (zoom courant)
-      const sx = pdfX * this.zoom + this.panX;
-      const sy = pdfY * this.zoom + this.panY;
+      // Position à l'écran (zoom courant) — viewerInner est dimensionné à cssWidth = vpBase.width * zoom
+      const sx = pdfX * this.zoom;
+      const sy = pdfY * this.zoom;
       const sw = pdfW * this.zoom;
       const sh = pdfH * this.zoom;
       // Création du div cliquable

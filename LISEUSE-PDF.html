@@ -1122,6 +1122,9 @@ html, body {
 .viewer-pane[data-tool="pan"].dragging { cursor: grabbing; }
 .viewer-pane[data-tool="measure"] { cursor: crosshair; }
 .viewer-pane[data-tool="annot"] { cursor: crosshair; }
+.viewer-pane[data-tool="annot"].over-note { cursor: move; cursor: grab; }
+.viewer-pane[data-tool="annot"].note-dragging,
+.viewer-pane[data-tool="annot"].over-note.note-dragging { cursor: move; cursor: grabbing; }
 .viewer-pane[data-tool="calibrate"] { cursor: crosshair; }
 .viewer-pane[data-tool="count-manual"] { cursor: cell; }
 .viewer-pane[data-tool="cable"] { cursor: crosshair; }
@@ -1629,12 +1632,13 @@ html, body {
 
 <div class="modal-backdrop" id="modal-note">
   <div class="modal">
-    <h3>ANNOTATION</h3>
+    <h3 id="modal-note-title">ANNOTATION</h3>
     <div class="field">
       <label>Texte</label>
       <textarea id="note-text" placeholder="Ex. Prévoir attente VDI, Circuit C12 à vérifier, etc." rows="3"></textarea>
     </div>
     <div class="modal-actions">
+      <button class="btn" id="note-delete" style="display:none">SUPPRIMER</button>
       <button class="btn" id="note-cancel">ANNULER</button>
       <button class="btn primary" id="note-save">ENREGISTRER</button>
     </div>
@@ -2602,7 +2606,9 @@ class PDFViewer {
     // Idem pour le drag/survol de texte
     this._textDrag = null;
     this._hoveredTextId = null;
-    this.pane.classList.remove('over-text', 'text-dragging');
+    this._noteDrag = null;
+    this._hoveredNoteId = null;
+    this.pane.classList.remove('over-text', 'text-dragging', 'over-note', 'note-dragging');
     this._renderOverlay();
     $('status-tool').textContent = tool.toUpperCase();
     $$('.btn').forEach(b => b.classList.remove('active'));
@@ -2694,6 +2700,20 @@ class PDFViewer {
       else if (a.type === 'text') this._drawText(ctx, a);
       else if (a.type === 'text-edit') this._drawTextEdit(ctx, a);
     }
+    // Highlight de la note survolée en outil ANNOT — même style que pour le texte.
+    if (this.tool === 'annot' && this._hoveredNoteId) {
+      const hov = annots.find(a => a.id === this._hoveredNoteId);
+      if (hov) {
+        const bb = this._noteBbox(hov);
+        ctx.save();
+        ctx.fillStyle = 'rgba(124,95,214,0.18)';
+        ctx.fillRect(bb.x, bb.y, bb.w, bb.h);
+        ctx.strokeStyle = '#7c5fd6';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(bb.x, bb.y, bb.w, bb.h);
+        ctx.restore();
+      }
+    }
     // Highlight du texte survolé en outil TEXTE — cadre coloré bien visible
     // pour signaler que le texte est déplaçable. Dessiné par-dessus le texte,
     // autour de son bbox, en suivant la rotation visuelle.
@@ -2779,6 +2799,41 @@ class PDFViewer {
     ctx.fillStyle = '#38bdf8';
     ctx.textAlign = 'center';
     ctx.fillText(text, midX, midY - 3);
+  }
+
+  // Renvoie la bounding-box approximative d'une annotation 'note' dans le repère
+  // ÉCRAN (à zoom courant). Couvre pin + cercle + (éventuelle) bande de prévi-texte.
+  // Utilisé pour le hit-test au clic et le highlight au survol.
+  _noteBbox(a) {
+    const x = a.x * this.zoom, y = a.y * this.zoom;
+    // Pin descend du cercle (rayon 12 centré en (x, y-28)) jusqu'à (x, y).
+    // Cercle : x ∈ [x-12, x+12], y ∈ [y-40, y-16].
+    // Pin    : x ∈ [x-8, x+8],   y ∈ [y-20, y].
+    let bx = x - 12;
+    let by = y - 40;
+    let bw = 24;
+    let bh = 40;
+    if (a.text && a.text.length > 0) {
+      const tmp = document.createElement('canvas').getContext('2d');
+      tmp.font = '10px sans-serif';
+      const preview = a.text.substring(0, 30) + (a.text.length > 30 ? '…' : '');
+      const m = tmp.measureText(preview);
+      const previewRight = x + 16 + m.width + 8;
+      bw = Math.max(bw, previewRight - bx);
+    }
+    return { x: bx, y: by, w: bw, h: bh };
+  }
+  // Recherche l'annotation note sous le clic (page courante).
+  _findNoteAnnotationAt(pdfX, pdfY) {
+    const annots = (this.state.annotations || []).filter(a =>
+      a.type === 'note' && a.page === this.currentPageNum
+    );
+    const px = pdfX * this.zoom, py = pdfY * this.zoom;
+    for (const a of annots) {
+      const bb = this._noteBbox(a);
+      if (px >= bb.x && px <= bb.x + bb.w && py >= bb.y && py <= bb.y + bb.h) return a;
+    }
+    return null;
   }
 
   _drawNote(ctx, a) {
@@ -3488,6 +3543,11 @@ class PDFViewer {
             editingId: a.id
           };
           window._openTextModal(a);
+        }
+        // Pour les notes : même comportement (édition directe)
+        if (a.type === 'note' && window._openNoteModal) {
+          app.noteData = { x: a.x, y: a.y, viewer: this, editingId: a.id };
+          window._openNoteModal(a);
         }
       });
       item.querySelector('.annot-delete').addEventListener('click', (ev) => {
@@ -5389,7 +5449,16 @@ function installEvents() {
     if (app.primary.tool === 'text-edit') app.primary._showDetectedTextsOverlays();
   });
 
-  // Note modal
+  // Note modal — ouverture en mode création (existing=null) ou édition.
+  window._openNoteModal = function _openNoteModal(existing) {
+    const isEdit = !!existing;
+    $('modal-note-title').textContent = isEdit ? 'MODIFIER LA NOTE' : 'ANNOTATION';
+    $('note-text').value = isEdit ? (existing.text || '') : '';
+    $('note-delete').style.display = isEdit ? '' : 'none';
+    if (app.noteData) app.noteData.editingId = isEdit ? existing.id : null;
+    openModal('modal-note');
+    setTimeout(() => $('note-text').focus(), 50);
+  };
   $('note-cancel').addEventListener('click', () => {
     closeModal('modal-note');
     app.noteData = null;
@@ -5397,12 +5466,33 @@ function installEvents() {
   $('note-save').addEventListener('click', () => {
     const text = $('note-text').value.trim();
     if (!text) { showToast('Texte requis', 'warn'); return; }
-    app.primary.addAnnotation({
-      type: 'note',
-      x: app.noteData.x,
-      y: app.noteData.y,
-      text
-    });
+    const data = app.noteData || {};
+    const viewer = data.viewer || app.primary;
+    if (data.editingId) {
+      // Mise à jour du texte d'une note existante
+      const ann = viewer.state.annotations.find(a => a.id === data.editingId);
+      if (ann) {
+        ann.text = text;
+        saveDocState(viewer.docHash, viewer.state);
+        viewer._renderOverlay();
+        viewer._renderAnnotationsList();
+      }
+    } else {
+      viewer.addAnnotation({
+        type: 'note',
+        x: data.x,
+        y: data.y,
+        text
+      });
+    }
+    closeModal('modal-note');
+    app.noteData = null;
+    $('note-text').value = '';
+  });
+  $('note-delete').addEventListener('click', () => {
+    const data = app.noteData || {};
+    const viewer = data.viewer || app.primary;
+    if (data.editingId) viewer.deleteAnnotation(data.editingId);
     closeModal('modal-note');
     app.noteData = null;
     $('note-text').value = '';
@@ -5669,10 +5759,24 @@ function installViewerEvents(viewer) {
     } else if (viewer.tool === 'annot' && ev.button === 0) {
       const pos = viewer._eventToPdfCoords(ev);
       if (!pos) return;
-      app.noteData = { x: pos.x, y: pos.y };
-      $('note-text').value = '';
-      openModal('modal-note');
-      setTimeout(() => $('note-text').focus(), 50);
+      // Si on clique sur une note existante : on prépare un drag.
+      // Si la souris bouge (> seuil), on déplace ; sinon on ouvre la modale d'édition au relâchement.
+      const hit = viewer._findNoteAnnotationAt(pos.x, pos.y);
+      if (hit) {
+        viewer._noteDrag = {
+          id: hit.id,
+          startMouse: pos,
+          startX: hit.x,
+          startY: hit.y,
+          dragged: false
+        };
+        pane.classList.add('note-dragging');
+        ev.preventDefault();
+        return;
+      }
+      // Clic sur zone vide : création d'une nouvelle note
+      app.noteData = { x: pos.x, y: pos.y, viewer, editingId: null };
+      if (window._openNoteModal) window._openNoteModal(null);
     } else if (viewer.tool === 'text' && ev.button === 0) {
       const pos = viewer._eventToPdfCoords(ev);
       if (!pos) return;
@@ -5792,6 +5896,39 @@ function installViewerEvents(viewer) {
     $('coord-x-' + viewer.paneId).textContent = pos.x.toFixed(0);
     $('coord-y-' + viewer.paneId).textContent = pos.y.toFixed(0);
     viewer._lastMouse = pos;
+    // Survol d'une note en outil ANNOT : curseur "grab" + cadre de survol pour
+    // signaler qu'elle est déplaçable (même logique que le texte).
+    if (viewer.tool === 'annot' && !viewer._noteDrag) {
+      const hovered = viewer._findNoteAnnotationAt(pos.x, pos.y);
+      const hoveredId = hovered ? hovered.id : null;
+      pane.classList.toggle('over-note', !!hoveredId);
+      if (viewer._hoveredNoteId !== hoveredId) {
+        viewer._hoveredNoteId = hoveredId;
+        viewer._renderOverlay();
+      }
+    } else if (!viewer._noteDrag && viewer._hoveredNoteId) {
+      viewer._hoveredNoteId = null;
+      pane.classList.remove('over-note');
+      viewer._renderOverlay();
+    }
+    // Drag d'une note (outil ANNOT) — même seuil de 3 px que le texte.
+    if (viewer._noteDrag) {
+      const d = viewer._noteDrag;
+      const a = (viewer.state.annotations || []).find(x => x.id === d.id);
+      if (!a) { viewer._noteDrag = null; return; }
+      const dx = pos.x - d.startMouse.x;
+      const dy = pos.y - d.startMouse.y;
+      if (!d.dragged) {
+        const thresholdPdf = 3 / (viewer.zoom || 1);
+        if (Math.hypot(dx, dy) > thresholdPdf) d.dragged = true;
+      }
+      if (d.dragged) {
+        a.x = d.startX + dx;
+        a.y = d.startY + dy;
+        viewer._renderOverlay();
+      }
+      return;
+    }
     // Survol d'un texte en outil TEXTE : on change le curseur en "grab" et on
     // dessine un cadre fin autour du texte pour indiquer qu'il est déplaçable.
     if (viewer.tool === 'text' && !viewer._textDrag) {
@@ -5921,6 +6058,23 @@ function installViewerEvents(viewer) {
   });
 
   pane.addEventListener('mouseup', () => {
+    // Fin de drag de note : si la souris a bougé on persiste la nouvelle
+    // position, sinon on ouvre la modale d'édition (équivalent clic).
+    if (viewer._noteDrag) {
+      const d = viewer._noteDrag;
+      const a = (viewer.state.annotations || []).find(x => x.id === d.id);
+      if (a) {
+        if (d.dragged) {
+          saveDocState(viewer.docHash, viewer.state);
+          viewer._renderAnnotationsList();
+        } else if (window._openNoteModal) {
+          app.noteData = { x: a.x, y: a.y, viewer, editingId: a.id };
+          window._openNoteModal(a);
+        }
+      }
+      viewer._noteDrag = null;
+      pane.classList.remove('note-dragging');
+    }
     // Fin de drag de texte : si la souris a bougé on persiste la nouvelle
     // position, sinon on ouvre la modale d'édition (équivalent clic).
     if (viewer._textDrag) {
@@ -5971,10 +6125,22 @@ function installViewerEvents(viewer) {
       pane.classList.remove('text-dragging');
       viewer._renderAnnotationsList();
     }
-    // Sortie de pane : retirer le highlight de survol s'il y en avait un
+    // Idem pour la note
+    if (viewer._noteDrag) {
+      if (viewer._noteDrag.dragged) saveDocState(viewer.docHash, viewer.state);
+      viewer._noteDrag = null;
+      pane.classList.remove('note-dragging');
+      viewer._renderAnnotationsList();
+    }
+    // Sortie de pane : retirer les highlights de survol s'il y en avait
     if (viewer._hoveredTextId) {
       viewer._hoveredTextId = null;
       pane.classList.remove('over-text');
+      viewer._renderOverlay();
+    }
+    if (viewer._hoveredNoteId) {
+      viewer._hoveredNoteId = null;
+      pane.classList.remove('over-note');
       viewer._renderOverlay();
     }
     if (viewer._sigDrag) {

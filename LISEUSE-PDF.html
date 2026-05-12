@@ -1370,7 +1370,7 @@ html, body {
       ASSEMBLER
     </button>
 
-    <button class="btn" id="btn-export" title="Exporter un PDF complet avec plan annoté + page de synthèse">
+    <button class="btn" id="btn-export" title="Exporter le PDF annoté (la page de synthèse n'est ajoutée que s'il y a au moins un CDC, COUDE ou COMPTAGE)">
       <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
       EXPORT
     </button>
@@ -6908,11 +6908,20 @@ async function exportFullPdf() {
     }
   }
 
-  // ========== PAGE DE SYNTHÈSE ==========
-  showLoader('Export PDF', 'Génération de la synthèse…', 88);
-  await new Promise(r => setTimeout(r, 10));
-  const synthCv = buildSynthesisPageCanvas();
-  pushCanvasAsPage(synthCv, 0.92);
+  // ========== PAGE DE SYNTHÈSE (uniquement si CDC / COUDE / COMPTAGE) ==========
+  // La synthèse n'est ajoutée que si au moins un câble (CDC), un coude ou un
+  // comptage existe sur l'un des viewers — sinon export du plan annoté seul.
+  const _synthViewers = [app.primary, app.secondary, app.tertiary].filter(Boolean);
+  const _hasSynthContent = _synthViewers.some(vw =>
+    (vw.state.annotations || []).some(a => a.type === 'cable' || a.type === 'elbow') ||
+    (vw.state.counts || []).length > 0
+  );
+  if (_hasSynthContent) {
+    showLoader('Export PDF', 'Génération de la synthèse…', 88);
+    await new Promise(r => setTimeout(r, 10));
+    const synthCv = buildSynthesisPageCanvas();
+    pushCanvasAsPage(synthCv, 0.92);
+  }
 
   // ========== PAYLOAD EMBARQUÉ ==========
   showLoader('Export PDF', 'Assemblage…', 95);
@@ -7096,7 +7105,7 @@ async function exportFullPdf() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = (v.file?.name || 'plan').replace(/\.pdf$/i, '') + (isAssembled ? '-fusionne' : '') + '-annote-synthese.pdf';
+  a.download = (v.file?.name || 'plan').replace(/\.pdf$/i, '') + (isAssembled ? '-fusionne' : '') + (_hasSynthContent ? '-annote-synthese.pdf' : '-annote.pdf');
   a.click();
   URL.revokeObjectURL(url);
   showToast('PDF' + (isAssembled ? ' fusionné' : '') + ' exporté (' + pageImages.length + ' page(s))', 'ok', 3000);

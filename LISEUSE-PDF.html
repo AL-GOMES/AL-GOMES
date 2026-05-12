@@ -711,6 +711,18 @@ html, body {
 .hud .label { color: var(--text-2); }
 
 /* Modals */
+/* Boutons style texte (B I U S̶) */
+.text-style-btn { display:inline-flex;align-items:center;justify-content:center;width:36px;height:30px;background:var(--bg-3);border:1px solid var(--panel-border);border-radius:4px;cursor:pointer;user-select:none;transition:all .15s; }
+.text-style-btn input { display:none; }
+.text-style-btn span { font-size:14px;color:var(--text-2);line-height:1; }
+.text-style-btn:hover { border-color:var(--accent); }
+.text-style-btn:has(input:checked) { background:var(--accent);border-color:var(--accent); }
+.text-style-btn:has(input:checked) span { color:#fff; }
+/* Overlays cliquables des textes détectés (mode MODIF TXT) */
+.detected-text-overlay { position:absolute;pointer-events:auto;cursor:pointer;border:1px dashed rgba(124,95,214,0.5);background:rgba(124,95,214,0.06);transition:background .12s;z-index:6; }
+.detected-text-overlay:hover { background:rgba(124,95,214,0.18);border-color:var(--accent); }
+.detected-text-overlay.replaced { background:rgba(74,222,128,0.18);border-color:#4ade80;border-style:solid; }
+
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -1089,6 +1101,14 @@ html, body {
       <svg class="icon" viewBox="0 0 24 24"><path d="M3 17c2-3 4-3 6 0s4 3 6 0 4-3 6 0M5 21h14"/></svg>
       SIGNATURE
     </button>
+    <button class="btn" id="tool-text" title="Ajouter du texte avec mise en forme (T)">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
+      TEXTE
+    </button>
+    <button class="btn" id="tool-text-edit" title="Modifier du texte existant sur le PDF (G)">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M4 8h16M4 12h10M4 16h6M14 16l4-4 3 3-4 4h-3v-3z"/></svg>
+      MODIF TXT
+    </button>
 
     <div class="sep"></div>
 
@@ -1373,6 +1393,61 @@ html, body {
     <div class="modal-actions">
       <button class="btn" id="note-cancel">ANNULER</button>
       <button class="btn primary" id="note-save">ENREGISTRER</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal TEXTE — annotation avec mise en forme -->
+<div class="modal-backdrop" id="modal-text">
+  <div class="modal" style="min-width:480px">
+    <h3 id="modal-text-title">AJOUTER DU TEXTE</h3>
+    <div class="field">
+      <label>Texte</label>
+      <textarea id="text-content" placeholder="Saisissez le texte à afficher sur le plan…" rows="3" style="width:100%"></textarea>
+    </div>
+    <div class="field" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <div style="display:flex;flex-direction:column;gap:3px">
+        <label style="font-size:10px">Police</label>
+        <select id="text-font" style="padding:5px;background:var(--bg-3);color:var(--text);border:1px solid var(--panel-border);border-radius:3px">
+          <option value="Helvetica">Helvetica</option>
+          <option value="Times-Roman">Times</option>
+          <option value="Courier">Courier (mono)</option>
+        </select>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3px">
+        <label style="font-size:10px">Taille (pt)</label>
+        <input id="text-size" type="number" value="14" min="6" max="96" step="1" style="width:70px;padding:5px;background:var(--bg-3);color:var(--text);border:1px solid var(--panel-border);border-radius:3px">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3px">
+        <label style="font-size:10px">Couleur</label>
+        <input id="text-color" type="color" value="#000000" style="width:50px;height:28px;background:none;border:1px solid var(--panel-border);border-radius:3px;cursor:pointer">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3px">
+        <label style="font-size:10px">Fond</label>
+        <div style="display:flex;align-items:center;gap:4px">
+          <input id="text-bg-enabled" type="checkbox" style="cursor:pointer">
+          <input id="text-bg-color" type="color" value="#ffff00" style="width:40px;height:24px;background:none;border:1px solid var(--panel-border);border-radius:3px;cursor:pointer">
+        </div>
+      </div>
+    </div>
+    <div class="field" style="display:flex;gap:6px;flex-wrap:wrap">
+      <label class="text-style-btn"><input id="text-bold" type="checkbox"><span><b>G</b></span></label>
+      <label class="text-style-btn"><input id="text-italic" type="checkbox"><span><i>I</i></span></label>
+      <label class="text-style-btn"><input id="text-underline" type="checkbox"><span><u>S</u></span></label>
+      <label class="text-style-btn"><input id="text-strike" type="checkbox"><span><s>B</s></span></label>
+      <div style="flex:1"></div>
+      <label style="font-size:11px;display:flex;align-items:center;gap:6px">Align :
+        <select id="text-align" style="padding:3px;background:var(--bg-3);color:var(--text);border:1px solid var(--panel-border);border-radius:3px;font-size:11px">
+          <option value="left">Gauche</option>
+          <option value="center">Centre</option>
+          <option value="right">Droite</option>
+        </select>
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="text-delete" style="display:none">SUPPRIMER</button>
+      <button class="btn" id="text-cancel">ANNULER</button>
+      <button class="btn primary" id="text-save">ENREGISTRER</button>
     </div>
   </div>
 </div>
@@ -2041,6 +2116,8 @@ class PDFViewer {
     if (typeof app !== 'undefined' && app.assembledMode && this === app.primary) {
       setTimeout(extendAssembledOverlay, 0);
     }
+    // Si le mode "MODIF TXT" est actif, rafraîchit les overlays cliquables des textes détectés
+    if (this.tool === 'text-edit') this._showDetectedTextsOverlays();
   }
 
   // Programme un full render pour retrouver la netteté après zoom, mais
@@ -2246,8 +2323,13 @@ class PDFViewer {
       'count-manual': 'tool-count-manual',
       cable: 'tool-cable',
       elbow: 'tool-elbow',
-      signature: 'tool-signature'
+      signature: 'tool-signature',
+      text: 'tool-text',
+      'text-edit': 'tool-text-edit'
     };
+    // Mode 'text-edit' : affiche les overlays cliquables des textes détectés sur la page
+    if (tool === 'text-edit') this._showDetectedTextsOverlays();
+    else this._hideDetectedTextsOverlays();
     if (map[tool]) $(map[tool])?.classList.add('active');
     // Mettre à jour le HUD : afficher la catégorie active uniquement en mode count
     this._updateHudCategoryRow();
@@ -2320,6 +2402,8 @@ class PDFViewer {
       else if (a.type === 'note') this._drawNote(ctx, a);
       else if (a.type === 'cable') this._drawCable(ctx, a);
       else if (a.type === 'signature') this._drawSignature(ctx, a);
+      else if (a.type === 'text') this._drawText(ctx, a);
+      else if (a.type === 'text-edit') this._drawTextEdit(ctx, a);
     }
     // Coudes : numérotés par ordre de création (global sur toutes pages)
     const allElbows = (this.state.annotations || [])
@@ -2457,6 +2541,154 @@ class PDFViewer {
       h = w * (ar || 0.5);
     }
     return { x: a.x, y: a.y, w, h };
+  }
+
+  // -------------------------------------------------------------------------
+  // ANNOTATION TEXTE (type='text') et MODIF TEXTE EXISTANT (type='text-edit')
+  // -------------------------------------------------------------------------
+  _buildCanvasFont(a) {
+    const parts = [];
+    if (a.italic) parts.push('italic');
+    if (a.bold)   parts.push('bold');
+    const px = Math.max(6, (a.size || 14) * this.zoom);
+    parts.push(px.toFixed(1) + 'px');
+    const fontMap = { 'Helvetica': 'Helvetica, Arial, sans-serif',
+                      'Times-Roman': 'Times, "Times New Roman", serif',
+                      'Courier': '"Courier New", Courier, monospace' };
+    parts.push(fontMap[a.font] || 'sans-serif');
+    return parts.join(' ');
+  }
+
+  _drawText(ctx, a) {
+    if (!a.text) return;
+    const x = a.x * this.zoom + this.panX;
+    const y = a.y * this.zoom + this.panY;
+    ctx.font = this._buildCanvasFont(a);
+    ctx.textAlign = a.align || 'left';
+    ctx.textBaseline = 'top';
+    const lines = String(a.text).split(/\r?\n/);
+    const lineHeight = (a.size || 14) * this.zoom * 1.25;
+    // Mesure de la largeur max pour les fonds + soulignements
+    let maxW = 0;
+    for (const ln of lines) { const m = ctx.measureText(ln); if (m.width > maxW) maxW = m.width; }
+    // Fond optionnel
+    if (a.bgColor) {
+      const totalH = lineHeight * lines.length + 4;
+      let bgX = x;
+      if (ctx.textAlign === 'center') bgX = x - maxW / 2;
+      else if (ctx.textAlign === 'right') bgX = x - maxW;
+      ctx.fillStyle = a.bgColor;
+      ctx.fillRect(bgX - 3, y - 2, maxW + 6, totalH);
+    }
+    // Texte + soulignement / barré (canvas n'a pas de styles natifs)
+    ctx.fillStyle = a.color || '#000000';
+    lines.forEach((ln, i) => {
+      const ly = y + i * lineHeight;
+      ctx.fillText(ln, x, ly);
+      const w = ctx.measureText(ln).width;
+      let lx = x;
+      if (ctx.textAlign === 'center') lx = x - w / 2;
+      else if (ctx.textAlign === 'right') lx = x - w;
+      ctx.strokeStyle = a.color || '#000000';
+      ctx.lineWidth = Math.max(1, (a.size || 14) * this.zoom / 16);
+      if (a.underline) {
+        const uy = ly + (a.size || 14) * this.zoom * 1.05;
+        ctx.beginPath(); ctx.moveTo(lx, uy); ctx.lineTo(lx + w, uy); ctx.stroke();
+      }
+      if (a.strike) {
+        const sy = ly + (a.size || 14) * this.zoom * 0.55;
+        ctx.beginPath(); ctx.moveTo(lx, sy); ctx.lineTo(lx + w, sy); ctx.stroke();
+      }
+    });
+  }
+
+  _drawTextEdit(ctx, a) {
+    if (!a.text) return;
+    // Recouvre la zone du texte original par un rectangle (fond) puis dessine le nouveau texte
+    if (a.w && a.h) {
+      const x1 = a.x * this.zoom + this.panX;
+      const y1 = a.y * this.zoom + this.panY;
+      const w  = a.w * this.zoom;
+      const h  = a.h * this.zoom;
+      ctx.fillStyle = a.bgColor || '#ffffff';
+      ctx.fillRect(x1 - 1, y1 - 1, w + 2, h + 2);
+    }
+    this._drawText(ctx, a);
+  }
+
+  // -------------------------------------------------------------------------
+  // MODE TEXT-EDIT : overlay HTML cliquable sur chaque texte détecté par PDF.js
+  // -------------------------------------------------------------------------
+  async _showDetectedTextsOverlays() {
+    this._hideDetectedTextsOverlays();
+    if (!this.currentPage || !this.viewerInner) return;
+    let textContent;
+    try { textContent = await this.currentPage.getTextContent(); } catch (e) { return; }
+    const vp = this.viewport;
+    if (!vp || !textContent || !Array.isArray(textContent.items)) return;
+    const replacedKeys = new Set(
+      (this.state.annotations || [])
+        .filter(a => a.type === 'text-edit' && a.page === this.currentPageNum && a.originalText)
+        .map(a => Math.round(a.x * 10) + '_' + Math.round(a.y * 10) + '_' + (a.originalText || ''))
+    );
+    for (const item of textContent.items) {
+      if (!item.str || !item.str.trim()) continue;
+      // Position et taille en coords viewport (= pixels canvas à zoom courant)
+      const tx = item.transform[4];
+      const ty = item.transform[5];
+      const [cx, cy] = vp.convertToViewportPoint(tx, ty);
+      const widthPx  = (item.width || 0) * vp.scale;
+      const heightPx = (item.height || 12) * vp.scale;
+      // Conversion → coords PDF (zoom=1)
+      const pdfX = cx / vp.scale;
+      const pdfY = (cy - heightPx) / vp.scale;
+      const pdfW = widthPx / vp.scale;
+      const pdfH = heightPx / vp.scale;
+      // Position à l'écran (zoom courant)
+      const sx = pdfX * this.zoom + this.panX;
+      const sy = pdfY * this.zoom + this.panY;
+      const sw = pdfW * this.zoom;
+      const sh = pdfH * this.zoom;
+      // Création du div cliquable
+      const div = document.createElement('div');
+      div.className = 'detected-text-overlay';
+      div.style.left = sx + 'px';
+      div.style.top  = sy + 'px';
+      div.style.width  = sw + 'px';
+      div.style.height = sh + 'px';
+      div.title = item.str;
+      const key = Math.round(pdfX * 10) + '_' + Math.round(pdfY * 10) + '_' + item.str;
+      if (replacedKeys.has(key)) div.classList.add('replaced');
+      div.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        app.textData = {
+          x: pdfX, y: pdfY, w: pdfW, h: pdfH,
+          originalText: item.str,
+          type: 'text-edit',
+          viewer: this,
+          editingId: null
+        };
+        // Pré-remplit avec le texte original
+        const fakeExisting = {
+          text: item.str,
+          font: 'Helvetica',
+          size: Math.max(8, Math.round((item.height || 12) * 0.85)),
+          color: '#000000',
+          bgColor: '#ffffff',
+          bold: false, italic: false, underline: false, strike: false,
+          align: 'left'
+        };
+        if (window._openTextModal) window._openTextModal(fakeExisting);
+      });
+      this.viewerInner.appendChild(div);
+      if (!this._detectedDivs) this._detectedDivs = [];
+      this._detectedDivs.push(div);
+    }
+  }
+  _hideDetectedTextsOverlays() {
+    if (!this._detectedDivs) return;
+    this._detectedDivs.forEach(d => d.remove());
+    this._detectedDivs = [];
   }
 
   _getSignatureById(id) {
@@ -2803,10 +3035,11 @@ class PDFViewer {
     // On filtre pour ne montrer dans cet onglet que les types pertinents
     // (les CDC et coudes ont leur propre onglet).
     const shown = (this.state.annotations || []).filter(a =>
-      a.type === 'measure' || a.type === 'note' || a.type === 'signature'
+      a.type === 'measure' || a.type === 'note' || a.type === 'signature' ||
+      a.type === 'text' || a.type === 'text-edit'
     );
     if (shown.length === 0) {
-      body.innerHTML = '<div class="empty-state">Aucune annotation. Utilisez l\'outil <b>NOTE</b>, <b>MESURER</b> ou <b>SIGNATURE</b> pour en ajouter.</div>';
+      body.innerHTML = '<div class="empty-state">Aucune annotation. Utilisez les outils <b>NOTE</b>, <b>TEXTE</b>, <b>MESURER</b>, <b>SIGNATURE</b> ou <b>MODIF TXT</b> pour en ajouter.</div>';
       return;
     }
     const list = document.createElement('div');
@@ -2821,6 +3054,12 @@ class PDFViewer {
       } else if (a.type === 'note') {
         typeName = 'NOTE';
         content = escapeHtml(a.text || '');
+      } else if (a.type === 'text') {
+        typeName = 'TEXTE';
+        content = escapeHtml((a.text || '').slice(0, 60)) + ((a.text || '').length > 60 ? '…' : '');
+      } else if (a.type === 'text-edit') {
+        typeName = 'MODIF';
+        content = '<span style="color:var(--text-3);text-decoration:line-through">' + escapeHtml((a.originalText || '').slice(0, 30)) + '</span> → ' + escapeHtml((a.text || '').slice(0, 30));
       } else if (a.type === 'signature') {
         typeName = 'SIGNATURE';
         const w = Math.round(a.w || 160);
@@ -4324,6 +4563,8 @@ function installEvents() {
     if (app.tertiary) app.tertiary.setTool('pan'); });
   $('tool-measure').addEventListener('click', () => { app.primary.setTool('measure'); activateRightTab('annotations'); });
   $('tool-annot').addEventListener('click', () => { app.primary.setTool('annot'); activateRightTab('annotations'); });
+  $('tool-text').addEventListener('click', () => { app.primary.setTool('text'); activateRightTab('annotations'); });
+  $('tool-text-edit').addEventListener('click', () => { app.primary.setTool('text-edit'); activateRightTab('annotations'); });
   $('btn-calibrate').addEventListener('click', () => { app.primary.setTool('calibrate'); showToast('Cliquez 2 points d\'une distance connue', 'info', 3000); });
   $('tool-count-manual').addEventListener('click', () => {
     // Sauvetage : merger les catégories "orphelines" de secondary vers primary
@@ -4626,6 +4867,77 @@ function installEvents() {
     app.primary.setTool('pan');
   });
 
+  // =============================================================================
+  // TEXTE — modal et helpers (annotation texte avec mise en forme + édition existant)
+  // =============================================================================
+  window._openTextModal = function _openTextModal(existing) {
+    // existing: null = nouveau, sinon annotation à modifier
+    const isEdit = !!existing;
+    $('modal-text-title').textContent = isEdit ? 'MODIFIER LE TEXTE' : 'AJOUTER DU TEXTE';
+    $('text-delete').style.display = isEdit ? '' : 'none';
+    $('text-content').value = existing ? (existing.text || '') : '';
+    $('text-font').value     = existing ? (existing.font || 'Helvetica') : 'Helvetica';
+    $('text-size').value     = existing ? (existing.size || 14) : 14;
+    $('text-color').value    = existing ? (existing.color || '#000000') : '#000000';
+    $('text-bg-enabled').checked = existing ? !!existing.bgColor : false;
+    $('text-bg-color').value = existing ? (existing.bgColor || '#ffff00') : '#ffff00';
+    $('text-bold').checked      = existing ? !!existing.bold : false;
+    $('text-italic').checked    = existing ? !!existing.italic : false;
+    $('text-underline').checked = existing ? !!existing.underline : false;
+    $('text-strike').checked    = existing ? !!existing.strike : false;
+    $('text-align').value       = existing ? (existing.align || 'left') : 'left';
+    if (app.textData) app.textData.editingId = existing ? existing.id : null;
+    openModal('modal-text');
+    setTimeout(() => $('text-content').focus(), 50);
+  };
+  function _readTextForm() {
+    return {
+      text:    $('text-content').value,
+      font:    $('text-font').value,
+      size:    parseFloat($('text-size').value) || 14,
+      color:   $('text-color').value,
+      bgColor: $('text-bg-enabled').checked ? $('text-bg-color').value : null,
+      bold:      $('text-bold').checked,
+      italic:    $('text-italic').checked,
+      underline: $('text-underline').checked,
+      strike:    $('text-strike').checked,
+      align:     $('text-align').value,
+    };
+  }
+  $('text-cancel').addEventListener('click', () => {
+    closeModal('modal-text');
+    app.textData = null;
+  });
+  $('text-save').addEventListener('click', () => {
+    const fields = _readTextForm();
+    if (!fields.text.trim()) { showToast('Texte requis', 'warn'); return; }
+    const data = app.textData;
+    const viewer = (data && data.viewer) || app.primary;
+    if (data && data.editingId) {
+      // Mise à jour d'une annotation existante (type 'text' ou 'text-edit')
+      const ann = viewer.state.annotations.find(a => a.id === data.editingId);
+      if (ann) { Object.assign(ann, fields); saveDocState(viewer.docHash, viewer.state); viewer._renderOverlay(); viewer._renderAnnotationsList(); }
+    } else if (data) {
+      const ann = Object.assign({ type: data.type || 'text', x: data.x, y: data.y }, fields);
+      if (data.type === 'text-edit') {
+        ann.w = data.w; ann.h = data.h;
+        ann.originalText = data.originalText || '';
+      }
+      viewer.addAnnotation(ann);
+    }
+    closeModal('modal-text');
+    app.textData = null;
+    if (app.primary.tool === 'text-edit') app.primary._showDetectedTextsOverlays();
+  });
+  $('text-delete').addEventListener('click', () => {
+    const data = app.textData;
+    const viewer = (data && data.viewer) || app.primary;
+    if (data && data.editingId) viewer.deleteAnnotation(data.editingId);
+    closeModal('modal-text');
+    app.textData = null;
+    if (app.primary.tool === 'text-edit') app.primary._showDetectedTextsOverlays();
+  });
+
   // Note modal
   $('note-cancel').addEventListener('click', () => {
     closeModal('modal-note');
@@ -4894,6 +5206,11 @@ function installViewerEvents(viewer) {
       $('note-text').value = '';
       openModal('modal-note');
       setTimeout(() => $('note-text').focus(), 50);
+    } else if (viewer.tool === 'text' && ev.button === 0) {
+      const pos = viewer._eventToPdfCoords(ev);
+      if (!pos) return;
+      app.textData = { x: pos.x, y: pos.y, viewer, editingId: null };
+      if (window._openTextModal) window._openTextModal(null);
     } else if (viewer.tool === 'cable' && ev.button === 0) {
       // Polyligne clic-par-clic : chaque clic ajoute un point
       const pos = viewer._eventToPdfCoords(ev);
@@ -5983,6 +6300,57 @@ function drawAllAnnotationsOnCanvasForExport(ctx, viewer, pageNum, renderScale) 
     ctx.strokeStyle = '#0284c7'; ctx.lineWidth = 1; ctx.strokeRect(mx - mw/2 - 6, my - 12, mw + 12, 24);
     ctx.fillStyle = '#0284c7'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(label, mx, my);
+  }
+
+  // TEXTE (annotation libre avec mise en forme) et TEXTE-EDIT (modification de texte existant)
+  for (const a of annots.filter(x => x.type === 'text' || x.type === 'text-edit')) {
+    const x = a.x * renderScale;
+    const y = a.y * renderScale;
+    // Composition de la police canvas
+    const parts = [];
+    if (a.italic) parts.push('italic');
+    if (a.bold)   parts.push('bold');
+    const px = Math.max(6, (a.size || 14) * renderScale);
+    parts.push(px.toFixed(1) + 'px');
+    const fontMap = { 'Helvetica':'Helvetica, Arial, sans-serif',
+                      'Times-Roman':'Times, "Times New Roman", serif',
+                      'Courier':'"Courier New", Courier, monospace' };
+    parts.push(fontMap[a.font] || 'sans-serif');
+    ctx.font = parts.join(' ');
+    ctx.textAlign = a.align || 'left';
+    ctx.textBaseline = 'top';
+    const lines = String(a.text || '').split(/\r?\n/);
+    const lineHeight = (a.size || 14) * renderScale * 1.25;
+    // Pour text-edit : recouvre l'ancien texte avec un rectangle
+    if (a.type === 'text-edit' && a.w && a.h) {
+      ctx.fillStyle = a.bgColor || '#ffffff';
+      ctx.fillRect(a.x * renderScale - 1, a.y * renderScale - 1, a.w * renderScale + 2, a.h * renderScale + 2);
+    }
+    // Fond optionnel pour 'text'
+    if (a.type === 'text' && a.bgColor) {
+      let maxW = 0; for (const ln of lines) maxW = Math.max(maxW, ctx.measureText(ln).width);
+      let bgX = x; if (ctx.textAlign === 'center') bgX = x - maxW/2; else if (ctx.textAlign === 'right') bgX = x - maxW;
+      ctx.fillStyle = a.bgColor;
+      ctx.fillRect(bgX - 3, y - 2, maxW + 6, lineHeight * lines.length + 4);
+    }
+    // Lignes + soulignement / barré
+    ctx.fillStyle = a.color || '#000000';
+    lines.forEach((ln, i) => {
+      const ly = y + i * lineHeight;
+      ctx.fillText(ln, x, ly);
+      const w = ctx.measureText(ln).width;
+      let lx = x; if (ctx.textAlign === 'center') lx = x - w/2; else if (ctx.textAlign === 'right') lx = x - w;
+      ctx.strokeStyle = a.color || '#000000';
+      ctx.lineWidth = Math.max(1, (a.size || 14) * renderScale / 16);
+      if (a.underline) {
+        const uy = ly + (a.size || 14) * renderScale * 1.05;
+        ctx.beginPath(); ctx.moveTo(lx, uy); ctx.lineTo(lx + w, uy); ctx.stroke();
+      }
+      if (a.strike) {
+        const sy = ly + (a.size || 14) * renderScale * 0.55;
+        ctx.beginPath(); ctx.moveTo(lx, sy); ctx.lineTo(lx + w, sy); ctx.stroke();
+      }
+    });
   }
 
   // NOTES

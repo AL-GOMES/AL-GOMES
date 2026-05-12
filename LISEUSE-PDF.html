@@ -827,83 +827,161 @@ html, body {
 .merge-toolbar button.mini:hover { border-color: var(--accent); color: var(--accent-2); }
 .merge-toolbar button.mini.danger:hover { border-color: #ef4444; color: #fca5a5; }
 .merge-filelist {
-  max-height: 320px;
+  max-height: 420px;
   overflow-y: auto;
   background: var(--bg-1);
   border: 1px solid var(--panel-border);
   border-radius: 4px;
-  padding: 4px;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
+  gap: 10px;
 }
 .merge-filelist::-webkit-scrollbar { width: 8px; }
 .merge-filelist::-webkit-scrollbar-thumb { background: var(--panel-border); border-radius: 4px; }
 .merge-filelist:empty::before {
-  content: "Aucun fichier sélectionné. Cliquez sur la zone ci-dessus pour ajouter des PDFs.";
+  content: "Aucun fichier sélectionné. Cliquez sur la zone ci-dessus pour ajouter des PDFs ou des images.";
   display: block;
-  padding: 14px;
+  padding: 30px 14px;
   color: var(--text-2);
   font-size: 11px;
   text-align: center;
   font-style: italic;
+  grid-column: 1 / -1;
 }
-.merge-file-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 8px;
-  border-radius: 3px;
-  font-size: 11px;
-  color: var(--text-1);
+.merge-card {
+  position: relative;
+  background: var(--bg-2);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  padding: 8px 8px 10px;
   cursor: grab;
   user-select: none;
-  transition: background .1s;
+  transition: all .15s;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
-.merge-file-row:hover { background: rgba(139,92,246,0.08); }
-.merge-file-row.dragging { opacity: 0.4; }
-.merge-file-row.drop-target-above { box-shadow: inset 0 2px 0 0 var(--accent); }
-.merge-file-row.drop-target-below { box-shadow: inset 0 -2px 0 0 var(--accent); }
-.merge-file-row .idx {
+.merge-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+}
+.merge-card.dragging {
+  opacity: 0.4;
+  cursor: grabbing;
+}
+.merge-card.drop-target-before { box-shadow: -3px 0 0 0 var(--accent), 0 6px 16px rgba(0,0,0,0.3); }
+.merge-card.drop-target-after  { box-shadow:  3px 0 0 0 var(--accent), 0 6px 16px rgba(0,0,0,0.3); }
+.merge-card.errored {
+  border-color: #ef4444;
+  background: rgba(239,68,68,0.06);
+}
+.merge-card .thumb {
+  width: 100%;
+  aspect-ratio: 1 / 1.414;
+  background: var(--bg-1);
+  border: 1px solid var(--panel-border);
+  border-radius: 3px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.merge-card .thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.merge-card .thumb .placeholder {
+  font-size: 28px;
+  color: var(--text-2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.merge-card .thumb .placeholder .sp {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--panel-border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: mspin .8s linear infinite;
+}
+@keyframes mspin { to { transform: rotate(360deg); } }
+.merge-card .badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  background: var(--accent);
+  color: #fff;
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
-  color: var(--text-2);
-  width: 30px;
-  text-align: right;
-}
-.merge-file-row .grip {
-  color: var(--text-2);
-  font-size: 14px;
-  width: 10px;
-}
-.merge-file-row .type-ico {
-  font-size: 12px;
-  width: 16px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 3px;
+  min-width: 22px;
   text-align: center;
-  flex-shrink: 0;
+  z-index: 2;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
-.merge-file-row .name {
-  flex: 1;
+.merge-card .type-pill {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(20,20,28,0.85);
+  color: var(--text-1);
+  font-size: 10px;
+  padding: 2px 5px;
+  border-radius: 3px;
+  z-index: 2;
+}
+.merge-card .remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(239,68,68,0.92);
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  font-size: 12px;
+  line-height: 1;
+  border-radius: 50%;
+  display: none;
+  z-index: 3;
+}
+.merge-card:hover .remove { display: flex; align-items: center; justify-content: center; }
+.merge-card:hover .type-pill { display: none; }
+.merge-card .meta {
+  font-size: 10px;
+  line-height: 1.3;
+  overflow: hidden;
+}
+.merge-card .meta .name {
+  color: var(--text-0);
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  word-break: break-all;
 }
-.merge-file-row .size {
+.merge-card .meta .size {
+  color: var(--text-2);
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  color: var(--text-2);
-  width: 60px;
-  text-align: right;
+  font-size: 9px;
+  margin-top: 2px;
 }
-.merge-file-row .remove {
-  background: transparent;
-  border: none;
-  color: var(--text-2);
-  cursor: pointer;
-  padding: 2px 6px;
-  font-size: 14px;
-  line-height: 1;
-  border-radius: 3px;
+.merge-card.errored .meta .size::after {
+  content: " · erreur";
+  color: #fca5a5;
 }
-.merge-file-row .remove:hover { background: rgba(239,68,68,0.15); color: #fca5a5; }
-.merge-file-row.errored { color: #fca5a5; background: rgba(239,68,68,0.08); }
 
 .merge-progress {
   margin: 12px 0;
@@ -7111,16 +7189,23 @@ if (document.readyState !== 'loading') {
     $m('merge-size').textContent = fmtSize(totalBytes);
     $m('merge-start').disabled = mergeFiles.length < 2 || isMerging;
     list.innerHTML = mergeFiles.map((f, i) => `
-      <div class="merge-file-row ${f.status === 'error' ? 'errored' : ''}" draggable="true" data-id="${f.id}">
-        <span class="idx">${i + 1}.</span>
-        <span class="grip">⋮⋮</span>
-        <span class="type-ico">${fileIcon(f.file)}</span>
-        <span class="name" title="${escapeHtml(f.file.name)}">${escapeHtml(f.file.name)}</span>
-        <span class="size">${fmtSize(f.file.size)}</span>
+      <div class="merge-card ${f.status === 'error' ? 'errored' : ''}" draggable="true" data-id="${f.id}">
+        <div class="badge">${i + 1}</div>
+        <span class="type-pill">${fileIcon(f.file)}</span>
         <button class="remove" data-id="${f.id}" title="Retirer">✕</button>
+        <div class="thumb" data-thumb-id="${f.id}">
+          ${f.thumbDataUrl
+            ? `<img src="${f.thumbDataUrl}" alt="">`
+            : `<div class="placeholder"><div class="sp"></div></div>`
+          }
+        </div>
+        <div class="meta">
+          <div class="name" title="${escapeHtml(f.file.name)}">${escapeHtml(f.file.name)}</div>
+          <div class="size">${fmtSize(f.file.size)}</div>
+        </div>
       </div>
     `).join('');
-    // Brancher les boutons de suppression
+    // Boutons de suppression
     list.querySelectorAll('.remove').forEach(btn => {
       btn.addEventListener('click', e => {
         e.stopPropagation();
@@ -7129,47 +7214,154 @@ if (document.readyState !== 'loading') {
         refresh();
       });
     });
-    // Drag & drop pour réordonner
     setupDragReorder();
   }
 
   function setupDragReorder(){
     const list = $m('merge-filelist');
     let draggedId = null;
-    list.querySelectorAll('.merge-file-row').forEach(row => {
-      row.addEventListener('dragstart', e => {
-        draggedId = parseInt(row.dataset.id);
-        row.classList.add('dragging');
+    list.querySelectorAll('.merge-card').forEach(card => {
+      card.addEventListener('dragstart', e => {
+        draggedId = parseInt(card.dataset.id);
+        card.classList.add('dragging');
         e.dataTransfer.effectAllowed = 'move';
+        // Empêcher le drag de fonctionner depuis le bouton ✕
       });
-      row.addEventListener('dragend', () => {
-        row.classList.remove('dragging');
-        list.querySelectorAll('.merge-file-row').forEach(r => r.classList.remove('drop-target-above', 'drop-target-below'));
+      card.addEventListener('dragend', () => {
+        card.classList.remove('dragging');
+        list.querySelectorAll('.merge-card').forEach(c => c.classList.remove('drop-target-before', 'drop-target-after'));
       });
-      row.addEventListener('dragover', e => {
+      card.addEventListener('dragover', e => {
         e.preventDefault();
-        if (draggedId === null || parseInt(row.dataset.id) === draggedId) return;
-        const rect = row.getBoundingClientRect();
-        const above = e.clientY < rect.top + rect.height / 2;
-        list.querySelectorAll('.merge-file-row').forEach(r => r.classList.remove('drop-target-above', 'drop-target-below'));
-        row.classList.add(above ? 'drop-target-above' : 'drop-target-below');
+        if (draggedId === null || parseInt(card.dataset.id) === draggedId) return;
+        const rect = card.getBoundingClientRect();
+        // Sur une grille horizontale, on regarde la position X plutôt que Y
+        const before = e.clientX < rect.left + rect.width / 2;
+        list.querySelectorAll('.merge-card').forEach(c => c.classList.remove('drop-target-before', 'drop-target-after'));
+        card.classList.add(before ? 'drop-target-before' : 'drop-target-after');
       });
-      row.addEventListener('drop', e => {
+      card.addEventListener('drop', e => {
         e.preventDefault();
         if (draggedId === null) return;
-        const targetId = parseInt(row.dataset.id);
+        const targetId = parseInt(card.dataset.id);
         if (targetId === draggedId) return;
-        const rect = row.getBoundingClientRect();
-        const above = e.clientY < rect.top + rect.height / 2;
+        const rect = card.getBoundingClientRect();
+        const before = e.clientX < rect.left + rect.width / 2;
         const srcIdx = mergeFiles.findIndex(f => f.id === draggedId);
         const dragged = mergeFiles.splice(srcIdx, 1)[0];
         let dstIdx = mergeFiles.findIndex(f => f.id === targetId);
-        if (!above) dstIdx++;
+        if (!before) dstIdx++;
         mergeFiles.splice(dstIdx, 0, dragged);
         draggedId = null;
         refresh();
       });
     });
+  }
+
+  // === Génération asynchrone des miniatures ===
+  // Concurrence limitée pour ne pas saturer le navigateur avec 200 PDFs en parallèle.
+  const THUMB_CONCURRENCY = 3;
+  let thumbQueue = [];
+  let thumbActive = 0;
+
+  function enqueueThumbnail(item) {
+    thumbQueue.push(item);
+    pumpThumbQueue();
+  }
+  function pumpThumbQueue() {
+    while (thumbActive < THUMB_CONCURRENCY && thumbQueue.length) {
+      const item = thumbQueue.shift();
+      if (!mergeFiles.some(f => f.id === item.id)) continue; // peut avoir été supprimé entre-temps
+      if (item.thumbDataUrl) continue; // déjà fait
+      thumbActive++;
+      generateThumbnail(item)
+        .then(dataUrl => {
+          item.thumbDataUrl = dataUrl;
+          updateOneThumb(item);
+        })
+        .catch(err => {
+          console.warn('[merge] miniature impossible pour', item.file.name, err);
+          item.thumbDataUrl = null;
+          item.thumbFailed = true;
+          updateOneThumb(item);
+        })
+        .finally(() => {
+          thumbActive--;
+          pumpThumbQueue();
+        });
+    }
+  }
+  // Met à jour UNE seule miniature dans le DOM sans refaire le refresh complet
+  // (sinon le drag&drop en cours serait cassé et 200 mises à jour mettraient le navigateur à genoux)
+  function updateOneThumb(item) {
+    const slot = document.querySelector(`.merge-card[data-id="${item.id}"] .thumb`);
+    if (!slot) return;
+    if (item.thumbDataUrl) {
+      slot.innerHTML = `<img src="${item.thumbDataUrl}" alt="">`;
+    } else if (item.thumbFailed) {
+      slot.innerHTML = `<div class="placeholder">${fileIcon(item.file)}</div>`;
+    }
+  }
+
+  async function generateThumbnail(item) {
+    if (isPdfFile(item.file)) {
+      return await generatePdfThumbnail(item.file);
+    } else if (isImageFile(item.file)) {
+      return await generateImageThumbnail(item.file);
+    }
+    return null;
+  }
+
+  async function generatePdfThumbnail(file) {
+    if (typeof pdfjsLib === 'undefined') return null;
+    const buf = await file.arrayBuffer();
+    let pdf = null, page = null;
+    try {
+      pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+      page = await pdf.getPage(1);
+      // Calculer un scale pour que la largeur fasse ~280px (rétine OK sur cartes 135px)
+      const viewport0 = page.getViewport({ scale: 1 });
+      const targetW = 280;
+      const scale = targetW / viewport0.width;
+      const viewport = page.getViewport({ scale });
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext('2d');
+      // Fond blanc (les PDFs transparents existent)
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      await page.render({ canvasContext: ctx, viewport }).promise;
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+      return dataUrl;
+    } finally {
+      try { if (page) page.cleanup && page.cleanup(); } catch(e){}
+      try { if (pdf) pdf.destroy && pdf.destroy(); } catch(e){}
+    }
+  }
+
+  async function generateImageThumbnail(file) {
+    const url = URL.createObjectURL(file);
+    try {
+      const img = await new Promise((resolve, reject) => {
+        const i = new Image();
+        i.onload = () => resolve(i);
+        i.onerror = () => reject(new Error('Image illisible'));
+        i.src = url;
+      });
+      const canvas = document.createElement('canvas');
+      const MAX = 280;
+      const r = Math.min(MAX / img.naturalWidth, MAX / img.naturalHeight, 1);
+      canvas.width = Math.round(img.naturalWidth * r);
+      canvas.height = Math.round(img.naturalHeight * r);
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      return canvas.toDataURL('image/jpeg', 0.75);
+    } finally {
+      URL.revokeObjectURL(url);
+    }
   }
 
   function addFiles(fileList){
@@ -7183,8 +7375,11 @@ if (document.readyState !== 'loading') {
     if (rejected > 0) {
       console.warn(`[merge] ${rejected} fichier(s) non compatible(s) ignoré(s)`);
     }
-    ok.forEach(f => mergeFiles.push({ id: nextId++, file: f, status: 'pending' }));
+    const newItems = ok.map(f => ({ id: nextId++, file: f, status: 'pending', thumbDataUrl: null, thumbFailed: false }));
+    mergeFiles.push(...newItems);
     refresh();
+    // Démarrer la génération asynchrone des miniatures
+    newItems.forEach(enqueueThumbnail);
   }
 
   function openMerge(){

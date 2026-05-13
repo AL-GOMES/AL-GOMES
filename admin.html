@@ -709,6 +709,59 @@ function ghFmtFileTs(iso){
   return dd + '/' + mm + '/' + yy + ' ' + hh + ':' + mi;
 }
 
+// Cache des dates de commit GitHub par sha de fichier. Le sha est stable
+// tant que le contenu du fichier ne change pas, donc on peut cacher sans
+// limite de temps : tant que le sha est le même, la date est valide.
+const GH_SHA_TS_KEY = 'algomes_gh_sha_timestamps';
+let ghShaTs = {};
+try { ghShaTs = JSON.parse(localStorage.getItem(GH_SHA_TS_KEY) || '{}') || {}; } catch { ghShaTs = {}; }
+function ghSaveShaTs(){
+  try { localStorage.setItem(GH_SHA_TS_KEY, JSON.stringify(ghShaTs)); } catch {}
+}
+
+// Lance un fetch en arrière-plan des dates de commit pour les fichiers
+// dont le sha n'est pas encore en cache. Traitement par batches de 5
+// pour ne pas saturer l'API GitHub. Met à jour l'arborescence
+// incrémentalement à chaque batch terminé.
+let _ghBackfillRunning = false;
+async function ghBackfillTimestamps(){
+  if (_ghBackfillRunning) return;
+  if (!ghTreeFlat || !ghTreeFlat.length) return;
+  const toFetch = ghTreeFlat.filter(f => f.type === 'blob' && !ghShaTs[f.sha]);
+  if (toFetch.length === 0) return;
+  _ghBackfillRunning = true;
+  const tid = ghShowBusy('Récupération des dates de commit (' + toFetch.length + ' fichiers)…', null, 0);
+  const BATCH = 5;
+  let done = 0;
+  try {
+    for (let i = 0; i < toFetch.length; i += BATCH) {
+      const batch = toFetch.slice(i, i + BATCH);
+      await Promise.all(batch.map(async (file) => {
+        try {
+          const commits = await ghApi('GET',
+            '/repos/' + ghCfg.owner + '/' + ghCfg.repo + '/commits?sha=' + encodeURIComponent(ghCfg.branch) +
+            '&path=' + ghEncodePath(file.path) + '&per_page=1');
+          if (Array.isArray(commits) && commits[0] && commits[0].commit && commits[0].commit.committer) {
+            ghShaTs[file.sha] = commits[0].commit.committer.date;
+          }
+        } catch (e) {
+          // Si erreur (rate limit ou autre), on arrête mais on garde ce qu'on a
+          throw e;
+        }
+      }));
+      done += batch.length;
+      ghUpdateProgress(tid, Math.round((done / toFetch.length) * 100));
+      ghSaveShaTs();
+      renderGhTree(); // Re-render incrémental
+    }
+    ghHideBusy(tid, true);
+  } catch (e) {
+    ghHideBusy(tid, false, e.message);
+  } finally {
+    _ghBackfillRunning = false;
+  }
+}
+
 // ─── Flux d'activité : chaque opération a un statut visuel ───────────────
 // Pattern : `const tid = ghShowBusy('label')` au début, puis
 // `ghHideBusy(tid, true)` ou `ghHideBusy(tid, false, err)` à la fin.
@@ -1078,6 +1131,10 @@ async function loadGhTree(){
     ghTreeRoot = buildGhTree(ghTreeFlat);
     ghUpdateProgress(tid, 95, 'Rendu de l\'arbre…');
     renderGhTree();
+    // Lance en background le fetch des dates de commit pour les fichiers
+    // pas encore en cache (n'attend pas → l'utilisateur peut commencer
+    // à naviguer immédiatement, les dates apparaissent au fur et à mesure).
+    setTimeout(() => ghBackfillTimestamps(), 100);
   } catch (e) {
     ghHideBusy(tid, false, e.message);
     console.error('loadGhTree', e);
@@ -1161,7 +1218,10 @@ function renderGhNode(node, depth, filter){
     } else {
       // Filtre : si match pas, on saute le fichier
       if (filter && !node.path.toLowerCase().includes(filter)) return '';
-      const ts = ghFileTs[node.path] ? '<span class="gh-node-ts">' + ghFmtFileTs(ghFileTs[node.path]) + '</span>' : '';
+      // Priorité au timestamp local (modifié via admin), sinon date du
+      // dernier commit GitHub mise en cache par sha.
+      const tsVal = ghFileTs[node.path] || ghShaTs[node.sha];
+      const ts = tsVal ? '<span class="gh-node-ts">' + ghFmtFileTs(tsVal) + '</span>' : '';
       html += '<div class="gh-node' + selected + '" data-type="blob" data-path="' + escHtml(node.path) + '" style="padding-left:' + (indent + 22) + 'px">'
             + '<span>' + ghFileIcon(node.name) + '</span>'
             + '<span class="gh-name">' + escHtml(node.name) + '</span>'

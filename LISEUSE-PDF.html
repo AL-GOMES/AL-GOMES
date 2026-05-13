@@ -3306,20 +3306,35 @@ class PDFViewer {
           // ordre de précision décroissante.
           let realName = '', realFam = '', realBold = false, realItalic = false;
           let realLoadedName = '';
+          // Tente plusieurs sources pour récupérer l'objet font : pdfjs peut
+          // stocker les fonts dans pdf.commonObjs, page.commonObjs ou page.objs
+          // selon le type de font (Type0, Type1, TrueType, etc.) et la version
+          // de pdfjs.
           try {
-            const co = this.pdf && this.pdf.commonObjs;
-            if (co && item.fontName && co.has && co.has(item.fontName)) {
-              const fontObj = co.get(item.fontName);
-              if (fontObj) {
-                realName = String(fontObj.name || fontObj.loadedName || '').toLowerCase();
-                realLoadedName = String(fontObj.loadedName || '');
-                realFam  = String(
-                  (fontObj.cssFontInfo && fontObj.cssFontInfo.fontFamily) ||
-                  fontObj.fallbackName || ''
-                );
-                realBold = !!fontObj.bold;
-                realItalic = !!fontObj.italic;
-              }
+            const candidateStores = [
+              this.pdf && this.pdf.commonObjs,
+              this.currentPage && this.currentPage.commonObjs,
+              this.currentPage && this.currentPage.objs
+            ].filter(Boolean);
+            let fontObj = null;
+            for (const co of candidateStores) {
+              if (!item.fontName) break;
+              try {
+                if (co.has && co.has(item.fontName)) {
+                  fontObj = co.get(item.fontName);
+                  if (fontObj) break;
+                }
+              } catch {}
+            }
+            if (fontObj) {
+              realName = String(fontObj.name || fontObj.loadedName || '').toLowerCase();
+              realLoadedName = String(fontObj.loadedName || '');
+              realFam  = String(
+                (fontObj.cssFontInfo && fontObj.cssFontInfo.fontFamily) ||
+                fontObj.fallbackName || ''
+              );
+              realBold = !!fontObj.bold;
+              realItalic = !!fontObj.italic;
             }
           } catch {}
           const style = textContent.styles && item.fontName ? textContent.styles[item.fontName] : null;

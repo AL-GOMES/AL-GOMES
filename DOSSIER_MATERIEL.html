@@ -9,213 +9,149 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="js/firebase-init.js"></script>
 <script src="js/auth-guard.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg: #0c0e14;
-  --surface: #13161f;
-  --surface2: #1a1e2a;
-  --surface3: #222738;
-  --border: #2a2f42;
-  --border-strong: #3a4060;
-  --text: #e2e4ea;
-  --text2: #8b90a5;
-  --text3: #5a5f75;
-  --accent: #F59E0B;
-  --accent2: #d97706;
-  --accent-soft: rgba(245, 158, 11, 0.10);
-  --accent-border: rgba(245, 158, 11, 0.40);
-  --paper: #fff;
-  --paper-ink: #111;
-  --paper-line: #e5e7eb;
-  --paper-head: #fef3c7;
-}
+/* ─── Reset + base ─── */
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { background: var(--bg); color: var(--text); font-family: 'Rajdhani', system-ui, sans-serif; min-height: 100vh; }
+html, body { background: #2a2a35; font-family: 'Calibri', 'Segoe UI', Arial, sans-serif; min-height: 100vh; color: #111; }
 
-/* ─── Topbar ─── */
+/* ─── Topbar (hors page) ─── */
 .topbar {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 24px; background: var(--surface);
-  border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50;
+  padding: 12px 24px; background: #13161f; color: #e2e4ea;
+  border-bottom: 1px solid #2a2f42; position: sticky; top: 0; z-index: 50;
 }
-.topbar-title { font-size: 17px; font-weight: 700; letter-spacing: 1.5px; }
-.topbar-title .accent { color: var(--accent); }
-.topbar-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.topbar-title { font-size: 16px; font-weight: 600; letter-spacing: 1.5px; }
+.topbar-title .accent { color: #F59E0B; }
+.topbar-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .btn {
-  padding: 8px 16px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface2);
-  color: var(--text); font-family: inherit; font-size: 13px; font-weight: 600; letter-spacing: 0.5px;
+  padding: 7px 14px; border-radius: 4px; border: 1px solid #2a2f42; background: #1a1e2a;
+  color: #e2e4ea; font-family: inherit; font-size: 12px; font-weight: 600; letter-spacing: 0.5px;
   cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px;
 }
-.btn:hover { border-color: var(--accent-border); color: var(--accent); }
-.btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; border-color: transparent; }
+.btn:hover { border-color: rgba(245,158,11,0.4); color: #F59E0B; }
+.btn.primary { background: linear-gradient(135deg, #F59E0B, #d97706); color: #fff; border-color: transparent; }
 .btn.primary:hover { color: #fff; opacity: 0.92; }
-.btn.danger { color: #f87171; }
-.btn.danger:hover { border-color: rgba(248, 113, 113, 0.4); color: #fca5a5; }
+#saveStatus { font-size: 11px; color: #8b90a5; margin-right: 4px; }
+#saveStatus.saved { color: #4ade80; }
+#saveStatus.dirty { color: #fbbf24; }
 
-/* ─── Fiche papier ─── */
-.fiche-wrap {
-  max-width: 1100px; margin: 24px auto 60px; padding: 0 20px;
-}
-.fiche {
-  background: var(--paper); color: var(--paper-ink); border: 1px solid var(--border-strong);
-  border-radius: 4px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
-  padding: 24px 28px;
-  font-family: 'Arial', system-ui, sans-serif; font-size: 13px; line-height: 1.4;
+/* ─── La feuille (style Excel) ─── */
+.sheet-wrap { padding: 24px; display: flex; justify-content: center; }
+.sheet {
+  width: 900px; max-width: 100%; background: #fff;
+  border: 1.5px solid #000; padding: 14px;
+  font-size: 11pt; line-height: 1.25; color: #000;
 }
 
-/* En-tête : projet à gauche, info à droite */
-.fiche-header {
-  display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; align-items: stretch;
-  border: 2px solid var(--paper-ink); padding: 10px 14px; margin-bottom: 14px;
+/* La table principale est une grille à 16 colonnes (≈ le grille Excel) */
+table.fp { width: 100%; border-collapse: collapse; }
+table.fp td, table.fp th {
+  border: 1px solid #000; padding: 2px 4px; vertical-align: middle; font-weight: normal;
 }
-.fiche-header .project {
-  font-size: 28px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
-  display: flex; align-items: center; min-height: 56px;
-}
-.fiche-header .meta { display: flex; flex-direction: column; gap: 4px; justify-content: center; font-size: 12px; }
-.fiche-header .meta .row { display: grid; grid-template-columns: 90px 1fr; gap: 8px; }
-.fiche-header .meta label { font-weight: 700; color: var(--paper-ink); }
-
-/* Ligne fiche n° + date */
-.fiche-id {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;
-}
-.fiche-id .box {
-  border: 1px solid var(--paper-ink); padding: 6px 10px;
-  display: grid; grid-template-columns: 100px 1fr; gap: 8px; align-items: center;
-  font-weight: 700;
+table.fp th {
+  font-weight: 700; text-align: center;
+  background: #FFE699; /* jaune pâle des en-têtes Excel */
 }
 
-/* OBJET DE LA FICHE */
-.section-title {
-  background: var(--paper-head); border: 1px solid var(--paper-ink); padding: 6px 12px;
-  font-weight: 800; text-transform: uppercase; letter-spacing: 1px; font-size: 13px; text-align: center;
-  margin-bottom: 0;
+/* Header projet : haut gauche grand + droite info */
+.fp-projet td.projet {
+  background: #FFFFFF; text-align: center; font-size: 28pt; font-weight: 700;
+  letter-spacing: 1px; padding: 6px;
 }
-.objet {
-  border: 1px solid var(--paper-ink); border-top: 0; padding: 10px 14px; margin-bottom: 14px;
-  display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; align-items: start;
-}
-.objet label { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; font-size: 12px; }
-.objet input[type="checkbox"] { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; accent-color: var(--accent2); }
-.objet label.with-input { grid-template-columns: auto 1fr; display: grid; gap: 6px; }
-.objet input[type="text"].autre {
-  flex: 1; border: 0; border-bottom: 1px solid var(--paper-ink);
-  font: inherit; color: inherit; background: transparent; padding: 2px 0;
+.fp-projet td.info { padding: 4px 8px; vertical-align: top; }
+.fp-projet td.info .row { display: grid; grid-template-columns: 70px 1fr; gap: 6px; font-size: 9pt; padding: 1px 0; }
+.fp-projet td.info label { font-weight: 700; }
+.fp-projet td.info .addr { margin-top: 6px; padding-top: 6px; border-top: 1px dotted #999; font-size: 9pt; line-height: 1.4; }
+
+/* Fiche N° + Date */
+.fp-id td { padding: 4px 6px; font-size: 11pt; }
+.fp-id td label { font-weight: 700; margin-right: 6px; }
+
+/* Section title */
+.fp-section-title {
+  background: #FFE699; font-weight: 700; text-align: center;
+  letter-spacing: 1px; padding: 4px 8px; font-size: 12pt;
+  border: 1px solid #000;
 }
 
-/* Tableau central : Matériels (gauche) + Observations (droite) */
-.fiche-body {
-  display: grid; grid-template-columns: 1.4fr 1fr; gap: 0; margin-bottom: 14px;
-  border: 1px solid var(--paper-ink);
+/* OBJET DE LA FICHE — bloc avec 2 colonnes */
+.fp-objet { border: 1px solid #000; border-top: 0; padding: 6px 10px; }
+.fp-objet .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 14px; }
+.fp-objet .row { display: grid; grid-template-columns: 20px 1fr; align-items: center; gap: 6px; padding: 2px 0; font-size: 10pt; }
+.fp-objet .row input[type="checkbox"] {
+  width: 14px; height: 14px; accent-color: #000;
 }
-.col-mat, .col-obs { display: flex; flex-direction: column; }
-.col-mat { border-right: 1px solid var(--paper-ink); }
-.col-head {
-  background: var(--paper-head); padding: 6px 10px; font-weight: 800;
-  text-transform: uppercase; font-size: 12px; letter-spacing: 1px; text-align: center;
-  border-bottom: 1px solid var(--paper-ink);
-}
-.field-row {
-  display: grid; grid-template-columns: 180px 1fr;
-  border-bottom: 1px solid var(--paper-line); min-height: 32px;
-}
-.field-row:last-child { border-bottom: 0; }
-.field-row .label {
-  background: #f9fafb; padding: 6px 10px; font-weight: 700; font-size: 12px;
-  border-right: 1px solid var(--paper-line); display: flex; align-items: center;
-}
-.field-row input, .field-row textarea {
-  border: 0; padding: 6px 10px; font: inherit; color: inherit; background: transparent;
-  width: 100%; resize: vertical;
-}
-.field-row input:focus, .field-row textarea:focus { outline: 1px solid var(--accent); background: #fefce8; }
-.field-row textarea { min-height: 60px; }
-.col-obs textarea {
-  width: 100%; height: 100%; min-height: 380px; border: 0; padding: 10px 12px; font: inherit;
-  color: inherit; background: transparent; resize: vertical;
-}
-.col-obs textarea:focus { outline: 1px solid var(--accent); background: #fefce8; }
-
-/* Localisation pleine largeur */
-.field-loc {
-  display: grid; grid-template-columns: 220px 1fr; border: 1px solid var(--paper-ink);
-  margin-bottom: 14px; min-height: 38px;
-}
-.field-loc .label {
-  background: var(--paper-head); padding: 8px 12px; font-weight: 800; text-transform: uppercase;
-  font-size: 12px; letter-spacing: 1px; border-right: 1px solid var(--paper-ink);
-  display: flex; align-items: center;
-}
-.field-loc input { border: 0; padding: 8px 12px; font: inherit; color: inherit; background: transparent; width: 100%; }
-.field-loc input:focus { outline: 1px solid var(--accent); background: #fefce8; }
-
-/* Coordonnées AL GOMES (côté droit, sous l'en-tête, intégré au header) */
-.fiche-header .coord {
-  font-size: 11px; line-height: 1.5; color: var(--paper-ink); padding-top: 6px;
-  border-top: 1px dashed var(--paper-line); margin-top: 4px;
+.fp-objet .row.autre { grid-template-columns: 20px auto 1fr; gap: 6px; }
+.fp-objet .row.autre .lbl { font-weight: 700; }
+.fp-objet input[type="text"].autre-txt {
+  border: 0; border-bottom: 1px solid #000;
+  font: inherit; background: transparent; padding: 1px 4px;
 }
 
-/* Approbations : 3 colonnes */
-.approval {
-  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; margin-bottom: 10px;
-  border: 1px solid var(--paper-ink);
+/* Body : Matériels (gauche) + Observations (droite) */
+.fp-body-head td {
+  background: #FFE699; font-weight: 700; text-align: center;
+  letter-spacing: 1px; padding: 5px 8px; font-size: 11pt;
 }
-.approval > .col { padding: 0; border-right: 1px solid var(--paper-ink); }
-.approval > .col:last-child { border-right: 0; }
-.approval .col-title {
-  background: var(--paper-head); padding: 6px 10px; font-weight: 800; font-size: 12px;
-  text-transform: uppercase; letter-spacing: 0.5px; text-align: center;
-  border-bottom: 1px solid var(--paper-ink);
+.fp-row td { padding: 4px 8px; font-size: 10pt; vertical-align: middle; }
+.fp-row td.lbl { font-weight: 700; background: #f3f3f3; min-width: 130px; }
+.fp-row td.val input, .fp-row td.val textarea {
+  width: 100%; border: 0; font: inherit; background: transparent;
+  padding: 2px 0; resize: vertical;
 }
-.approval .aor-row {
-  display: grid; grid-template-columns: auto 1fr; gap: 8px; padding: 5px 10px; align-items: center;
-  border-bottom: 1px solid var(--paper-line); font-size: 12px;
+.fp-row td.val input:focus, .fp-row td.val textarea:focus,
+.fp-projet input:focus, .fp-id input:focus, .fp-objet input:focus,
+.fp-loc input:focus, .fp-approval input:focus {
+  outline: 1px solid #F59E0B; background: #FFFBE6;
 }
-.approval .aor-row:last-of-type { border-bottom: 0; }
-.approval .aor-row .key { font-weight: 800; width: 18px; text-align: center; }
-.approval .date-row {
-  display: grid; grid-template-columns: 40px 1fr; gap: 8px; padding: 6px 10px; align-items: center;
-  border-top: 1px solid var(--paper-line);
+.fp-row td.val { padding: 2px 8px; }
+.fp-obs { vertical-align: top; }
+.fp-obs textarea {
+  width: 100%; height: 100%; min-height: 280px; border: 0; padding: 6px 8px;
+  font: inherit; background: transparent; resize: vertical;
 }
-.approval .date-row input { border: 0; border-bottom: 1px solid var(--paper-line); font: inherit; color: inherit; background: transparent; padding: 2px 4px; }
-.approval .date-row input:focus { outline: none; border-bottom-color: var(--accent); }
-.approval .aor-input { border: 0; border-bottom: 1px dotted var(--paper-line); flex: 1; font: inherit; color: inherit; background: transparent; padding: 2px 4px; }
-.approval .aor-input:focus { outline: none; border-bottom-color: var(--accent); }
-.aor-radio { width: 16px; height: 16px; accent-color: var(--accent2); }
 
-/* Légende */
-.legend {
-  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; font-size: 11px;
-  border: 1px solid var(--paper-ink); padding: 4px 0; text-align: center; font-weight: 700;
+/* Localisation (pleine largeur) */
+.fp-loc td { padding: 4px 8px; }
+.fp-loc td.lbl { background: #FFE699; font-weight: 700; text-align: center; min-width: 220px; }
+.fp-loc input { width: 100%; border: 0; font: inherit; background: transparent; padding: 2px 0; }
+
+/* Approbations */
+.fp-approval { margin-top: 10px; }
+.fp-approval th { padding: 5px 8px; font-size: 10pt; }
+.fp-approval td.aor { padding: 3px 8px; font-size: 10pt; }
+.fp-approval td.aor .row { display: grid; grid-template-columns: 18px 1fr; gap: 8px; align-items: center; padding: 1px 0; }
+.fp-approval td.aor input[type="radio"] { width: 14px; height: 14px; accent-color: #000; }
+.fp-approval td.aor .key { font-weight: 700; text-align: center; }
+.fp-approval td.date { padding: 4px 8px; font-size: 10pt; }
+.fp-approval td.date .row { display: grid; grid-template-columns: 28px 1fr; gap: 6px; }
+.fp-approval td.date label { font-weight: 700; }
+.fp-approval td.date input { border: 0; border-bottom: 1px solid #000; font: inherit; background: transparent; padding: 1px 4px; }
+
+/* Legende A/O/R */
+.fp-legend td {
+  text-align: center; font-weight: 700; padding: 4px;
+  font-size: 10pt; background: #f7f7f7;
 }
-.legend > div { padding: 0 10px; }
+
+/* Inputs invisibles génériques (au survol on devine qu'ils sont éditables) */
+input.fpinp, textarea.fpinp {
+  border: 0; background: transparent; font: inherit; color: inherit;
+  padding: 0; width: 100%;
+}
+input.fpinp:focus, textarea.fpinp:focus { outline: 1px solid #F59E0B; background: #FFFBE6; }
+
+input.proj { font-size: 28pt; font-weight: 700; text-align: center; letter-spacing: 1px; text-transform: uppercase; }
 
 /* Print */
 @media print {
-  body { background: #fff; color: #000; }
+  body { background: #fff; }
   .topbar, .no-print { display: none !important; }
-  .fiche-wrap { margin: 0; padding: 0; max-width: 100%; }
-  .fiche { border: 0; box-shadow: none; padding: 12mm; }
+  .sheet-wrap { padding: 0; }
+  .sheet { width: 100%; border: 0; padding: 8mm; box-shadow: none; }
+  table.fp td, table.fp th { font-size: 9pt; }
   input, textarea { outline: 0 !important; background: transparent !important; }
 }
-
-/* Field on top-right project */
-.fiche-header .project-input {
-  width: 100%; border: 0; background: transparent; font-family: inherit; font-size: inherit;
-  font-weight: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; padding: 0;
-}
-.fiche-header .project-input:focus { outline: 1px solid var(--accent); background: #fefce8; }
-.meta input[type="text"], .meta input[type="date"], .fiche-id input {
-  border: 0; border-bottom: 1px dotted var(--paper-line); padding: 2px 4px; font: inherit; color: inherit; background: transparent; min-width: 60px;
-}
-.meta input:focus, .fiche-id input:focus { outline: none; border-bottom-color: var(--accent); background: #fefce8; }
-
-/* Status flag */
-#saveStatus { font-size: 11px; color: var(--text2); margin-right: 8px; }
-#saveStatus.saved { color: #4ade80; }
-#saveStatus.dirty { color: #fbbf24; }
 </style>
 </head>
 <body>
@@ -230,97 +166,129 @@ html, body { background: var(--bg); color: var(--text); font-family: 'Rajdhani',
   </div>
 </div>
 
-<div class="fiche-wrap">
-<form class="fiche" id="ficheForm" onsubmit="event.preventDefault();saveFiche();">
+<div class="sheet-wrap">
+<form class="sheet" id="ficheForm" onsubmit="event.preventDefault();saveFiche();">
 
-  <!-- En-tête : projet à gauche, métadonnées + coordonnées à droite -->
-  <div class="fiche-header">
-    <div>
-      <input class="project-input" id="f_project" placeholder="NOM DU PROJET" autocomplete="off" />
-    </div>
-    <div class="meta">
-      <div class="row"><label>Lot :</label><input type="text" id="f_lot" placeholder="Electricité Cfo / Cfa" /></div>
-      <div class="row"><label>Emetteur :</label><input type="text" id="f_emetteur" value="AL GOMES" /></div>
-      <div class="coord">
-        77, Bd d'Aulnay - 93250 VILLEMOMBLE<br>
-        Tél : 01.48.49.83.95<br>
-        algomes.sarl@al-gomes.com
-      </div>
-    </div>
-  </div>
+  <table class="fp">
+    <colgroup>
+      <col style="width:60%"><col style="width:40%">
+    </colgroup>
 
-  <!-- N° fiche + date -->
-  <div class="fiche-id">
-    <div class="box">FICHE N° : <input type="text" id="f_num" placeholder="1.0" /></div>
-    <div class="box">DATE : <input type="date" id="f_date" /></div>
-  </div>
+    <!-- En-tête : projet + info -->
+    <tr class="fp-projet" style="height:78px">
+      <td class="projet">
+        <input type="text" class="fpinp proj" id="f_project" placeholder="NOM DU PROJET" autocomplete="off">
+      </td>
+      <td class="info">
+        <div class="row"><label>Lot :</label><input type="text" class="fpinp" id="f_lot" placeholder="Electricité Cfo / Cfa"></div>
+        <div class="row"><label>Emetteur :</label><input type="text" class="fpinp" id="f_emetteur" value="AL GOMES"></div>
+        <div class="addr">
+          77, Bd d'Aulnay - 93250 VILLEMOMBLE<br>
+          Tél : 01.48.49.83.95<br>
+          algomes.sarl@al-gomes.com
+        </div>
+      </td>
+    </tr>
+
+    <!-- N° fiche + Date -->
+    <tr class="fp-id">
+      <td><label>FICHE N° :</label><input type="text" class="fpinp" id="f_num" placeholder="1.0" style="display:inline-block;width:auto;min-width:120px;border-bottom:1px dotted #000"></td>
+      <td><label>DATE :</label><input type="date" class="fpinp" id="f_date" style="display:inline-block;width:auto;min-width:140px;border-bottom:1px dotted #000"></td>
+    </tr>
+  </table>
 
   <!-- OBJET DE LA FICHE -->
-  <div class="section-title">Objet de la fiche</div>
-  <div class="objet">
-    <label><input type="checkbox" id="o_conforme"> Présentation d'un produit conforme au marché</label>
-    <label><input type="checkbox" id="o_echantillon"> Échantillon</label>
-    <label><input type="checkbox" id="o_variante"> Présentation d'une variante dans le cadre du marché</label>
-    <label><input type="checkbox" id="o_documentation"> Documentation</label>
-    <label><input type="checkbox" id="o_incidence"> Présentation d'un produit avec incidence financière PV/MV</label>
-    <label><input type="checkbox" id="o_gamme"> Présentation d'une gamme au choix</label>
-    <label class="with-input"><span><input type="checkbox" id="o_autre1"> Autre :</span><input type="text" class="autre" id="o_autre1_txt" /></label>
-    <label class="with-input"><span><input type="checkbox" id="o_autre2"> Autre :</span><input type="text" class="autre" id="o_autre2_txt" /></label>
-  </div>
-
-  <!-- Matériel + Observations -->
-  <div class="fiche-body">
-    <div class="col-mat">
-      <div class="col-head">Matériels / Matériaux</div>
-      <div class="field-row"><div class="label">FOURNISSEUR</div><input type="text" id="m_fournisseur" placeholder="LEGRAND" /></div>
-      <div class="field-row"><div class="label">Matériels / Matériaux</div><input type="text" id="m_materiel" placeholder="APPAREILLAGE DOOXIE" /></div>
-      <div class="field-row"><div class="label">Caractéristiques</div><input type="text" id="m_caract" placeholder="APPAREILLAGE ENCASTRE" /></div>
-      <div class="field-row"><div class="label">Couleur</div><input type="text" id="m_couleur" placeholder="BLANC" /></div>
-      <div class="field-row"><div class="label">Finition</div><input type="text" id="m_finition" /></div>
-      <div class="field-row"><div class="label">Autres caractéristiques</div><textarea id="m_autres" rows="5"></textarea></div>
-    </div>
-    <div class="col-obs">
-      <div class="col-head">Observations</div>
-      <textarea id="m_observations"></textarea>
+  <div class="fp-section-title" style="margin-top:8px">OBJET DE LA FICHE</div>
+  <div class="fp-objet">
+    <div class="grid">
+      <div class="row"><input type="checkbox" id="o_conforme"><span>Présentation d'un produit conforme au marché</span></div>
+      <div class="row"><input type="checkbox" id="o_echantillon"><span>Echantillon</span></div>
+      <div class="row"><input type="checkbox" id="o_variante"><span>Présentation d'une variante dans le cadre du marché</span></div>
+      <div class="row"><input type="checkbox" id="o_documentation"><span>Documentation</span></div>
+      <div class="row"><input type="checkbox" id="o_incidence"><span>Présentation d'un produit avec incidence financière PV/MV</span></div>
+      <div class="row"><input type="checkbox" id="o_gamme"><span>Présentation d'une gamme au choix</span></div>
+      <div class="row autre"><input type="checkbox" id="o_autre1"><span class="lbl">Autre :</span><input type="text" class="autre-txt" id="o_autre1_txt"></div>
+      <div class="row autre"><input type="checkbox" id="o_autre2"><span class="lbl">Autre :</span><input type="text" class="autre-txt" id="o_autre2_txt"></div>
     </div>
   </div>
 
-  <!-- Localisation -->
-  <div class="field-loc">
-    <div class="label">Localisation de mise en œuvre</div>
-    <input type="text" id="m_loc" placeholder="LOGEMENTS" />
-  </div>
+  <!-- Section corps : Matériels (gauche) + Observations (droite) -->
+  <table class="fp" style="margin-top:8px">
+    <colgroup>
+      <col style="width:18%"><col style="width:42%"><col style="width:40%">
+    </colgroup>
+    <tr class="fp-body-head">
+      <td colspan="2">Matériels / Matériaux</td>
+      <td rowspan="8" class="fp-obs"><textarea id="m_observations" placeholder="Observations…"></textarea>
+        <div style="text-align:center;font-weight:700;background:#FFE699;border-top:1px solid #000;padding:5px 8px;letter-spacing:1px;font-size:11pt">Observations</div>
+      </td>
+    </tr>
+    <tr class="fp-row">
+      <td class="lbl">FOURNISSEUR</td>
+      <td class="val"><input type="text" id="m_fournisseur" placeholder="LEGRAND"></td>
+    </tr>
+    <tr class="fp-row">
+      <td class="lbl">Matériels / Matériaux</td>
+      <td class="val"><input type="text" id="m_materiel" placeholder="APPAREILLAGE DOOXIE"></td>
+    </tr>
+    <tr class="fp-row">
+      <td class="lbl">Caractéristiques</td>
+      <td class="val"><input type="text" id="m_caract" placeholder="APPAREILLAGE ENCASTRE"></td>
+    </tr>
+    <tr class="fp-row">
+      <td class="lbl">Couleur</td>
+      <td class="val"><input type="text" id="m_couleur" placeholder="BLANC"></td>
+    </tr>
+    <tr class="fp-row">
+      <td class="lbl">Finition</td>
+      <td class="val"><input type="text" id="m_finition"></td>
+    </tr>
+    <tr class="fp-row" style="height:120px">
+      <td class="lbl" style="vertical-align:top;padding-top:6px">Autres caractéristiques</td>
+      <td class="val" style="vertical-align:top"><textarea id="m_autres" rows="6" style="min-height:110px"></textarea></td>
+    </tr>
+    <tr class="fp-row fp-loc">
+      <td class="lbl" colspan="2" style="background:#FFE699;text-align:center">Localisation de mise en œuvre</td>
+    </tr>
+    <tr class="fp-row">
+      <td colspan="3"><input type="text" id="m_loc" placeholder="LOGEMENTS" style="border:0;background:transparent;width:100%;font:inherit;padding:6px"></td>
+    </tr>
+  </table>
 
-  <!-- Approbations -->
-  <div class="approval">
-    <div class="col">
-      <div class="col-title">B.E.T. / Bureau de contrôle</div>
-      <div class="aor-row"><span class="key">A</span><label style="font-size:11px;display:flex;align-items:center;gap:6px"><input type="radio" name="bet_aor" value="A" class="aor-radio"> APPROUVÉ</label></div>
-      <div class="aor-row"><span class="key">O</span><label style="font-size:11px;display:flex;align-items:center;gap:6px"><input type="radio" name="bet_aor" value="O" class="aor-radio"> OBSERVATIONS</label></div>
-      <div class="aor-row"><span class="key">R</span><label style="font-size:11px;display:flex;align-items:center;gap:6px"><input type="radio" name="bet_aor" value="R" class="aor-radio"> REFUSÉ</label></div>
-      <div class="date-row"><span style="font-weight:700">Le :</span><input type="date" id="bet_date" /></div>
-    </div>
-    <div class="col">
-      <div class="col-title">Architecte</div>
-      <div class="aor-row"><span class="key">A</span><label style="font-size:11px;display:flex;align-items:center;gap:6px"><input type="radio" name="arch_aor" value="A" class="aor-radio"> APPROUVÉ</label></div>
-      <div class="aor-row"><span class="key">O</span><label style="font-size:11px;display:flex;align-items:center;gap:6px"><input type="radio" name="arch_aor" value="O" class="aor-radio"> OBSERVATIONS</label></div>
-      <div class="aor-row"><span class="key">R</span><label style="font-size:11px;display:flex;align-items:center;gap:6px"><input type="radio" name="arch_aor" value="R" class="aor-radio"> REFUSÉ</label></div>
-      <div class="date-row"><span style="font-weight:700">Le :</span><input type="date" id="arch_date" /></div>
-    </div>
-    <div class="col">
-      <div class="col-title">Maître d'Œuvre d'Exécution</div>
-      <div class="aor-row"><span class="key">A</span><label style="font-size:11px;display:flex;align-items:center;gap:6px"><input type="radio" name="moe_aor" value="A" class="aor-radio"> APPROUVÉ</label></div>
-      <div class="aor-row"><span class="key">O</span><label style="font-size:11px;display:flex;align-items:center;gap:6px"><input type="radio" name="moe_aor" value="O" class="aor-radio"> OBSERVATIONS</label></div>
-      <div class="aor-row"><span class="key">R</span><label style="font-size:11px;display:flex;align-items:center;gap:6px"><input type="radio" name="moe_aor" value="R" class="aor-radio"> REFUSÉ</label></div>
-      <div class="date-row"><span style="font-weight:700">Le :</span><input type="date" id="moe_date" /></div>
-    </div>
-  </div>
-
-  <div class="legend">
-    <div>A = APPROUVÉ</div>
-    <div>O = OBSERVATIONS</div>
-    <div>R = REFUSÉ</div>
-  </div>
+  <!-- Approbations : 3 colonnes -->
+  <table class="fp fp-approval">
+    <colgroup>
+      <col style="width:33.33%"><col style="width:33.33%"><col style="width:33.34%">
+    </colgroup>
+    <tr><th>B.E.T. / Bureau de contrôle</th><th>Architecte</th><th>Maître d'Œuvre d'Exécution</th></tr>
+    <tr>
+      <td class="aor">
+        <div class="row"><span class="key">A</span><label><input type="radio" name="bet_aor" value="A"> APPROUVÉ</label></div>
+        <div class="row"><span class="key">O</span><label><input type="radio" name="bet_aor" value="O"> OBSERVATIONS</label></div>
+        <div class="row"><span class="key">R</span><label><input type="radio" name="bet_aor" value="R"> REFUSÉ</label></div>
+      </td>
+      <td class="aor">
+        <div class="row"><span class="key">A</span><label><input type="radio" name="arch_aor" value="A"> APPROUVÉ</label></div>
+        <div class="row"><span class="key">O</span><label><input type="radio" name="arch_aor" value="O"> OBSERVATIONS</label></div>
+        <div class="row"><span class="key">R</span><label><input type="radio" name="arch_aor" value="R"> REFUSÉ</label></div>
+      </td>
+      <td class="aor">
+        <div class="row"><span class="key">A</span><label><input type="radio" name="moe_aor" value="A"> APPROUVÉ</label></div>
+        <div class="row"><span class="key">O</span><label><input type="radio" name="moe_aor" value="O"> OBSERVATIONS</label></div>
+        <div class="row"><span class="key">R</span><label><input type="radio" name="moe_aor" value="R"> REFUSÉ</label></div>
+      </td>
+    </tr>
+    <tr>
+      <td class="date"><div class="row"><label>Le :</label><input type="date" id="bet_date"></div></td>
+      <td class="date"><div class="row"><label>Le :</label><input type="date" id="arch_date"></div></td>
+      <td class="date"><div class="row"><label>Le :</label><input type="date" id="moe_date"></div></td>
+    </tr>
+    <tr class="fp-legend">
+      <td>A = APPROUVÉ</td>
+      <td>O = OBSERVATIONS</td>
+      <td>R = REFUSÉ</td>
+    </tr>
+  </table>
 
 </form>
 </div>
@@ -328,7 +296,6 @@ html, body { background: var(--bg); color: var(--text); font-family: 'Rajdhani',
 <script>
 // ============================================================================
 // Persistance — sauvegarde l'état du formulaire en localStorage.
-// Plus tard : migration vers Firestore pour partage multi-utilisateurs.
 // ============================================================================
 const FORM_KEY = 'algomes_dossier_materiel_current';
 const FIELDS = [
@@ -391,7 +358,6 @@ function loadFiche(){
 function newFiche(){
   if(!confirm('Créer une nouvelle fiche ? Le brouillon actuel sera effacé si non enregistré.')) return;
   document.getElementById('ficheForm').reset();
-  // Pré-remplit Emetteur (valeur par défaut)
   document.getElementById('f_emetteur').value = 'AL GOMES';
   document.getElementById('f_date').valueAsDate = new Date();
   localStorage.removeItem(FORM_KEY);
@@ -399,14 +365,10 @@ function newFiche(){
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Date par défaut = aujourd'hui
-  const today = new Date();
-  document.getElementById('f_date').valueAsDate = today;
+  document.getElementById('f_date').valueAsDate = new Date();
   loadFiche();
-  // Mark dirty au moindre changement
   document.getElementById('ficheForm').addEventListener('input', markDirty);
   document.getElementById('ficheForm').addEventListener('change', markDirty);
-  // Ctrl+S pour sauvegarder
   document.addEventListener('keydown', (e) => {
     if((e.ctrlKey || e.metaKey) && e.key === 's'){ e.preventDefault(); saveFiche(); }
   });

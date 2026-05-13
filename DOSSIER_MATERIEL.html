@@ -155,14 +155,19 @@ html, body { background: #2a2a35; font-family: 'Calibri', 'Segoe UI', Arial, san
 .fp-nota strong { font-style: normal; }
 
 /* ─── Page de garde du dossier ────────────────────────────────────────────────
-   Reproduit fidèlement le PDF "N°0 PAGE DE GARDE.pdf" : décorations violet
-   en haut (grand arc/cercle + petit rectangle), logo rond A.L.GOMES centré,
-   titres centrés en gras, blocs d'adresses, date, et bandeau bleu en bas. */
+   Reproduit fidèlement le PDF "N°0 PAGE DE GARDE.pdf" :
+   - grand bandeau violet à gauche avec demi-cercle blanc creusé qui dépasse
+   - petit rectangle violet en haut-droite
+   - pilule bleue arrondie centrée en bas
+   - logo A.L.GOMES dans la zone blanche du cut-out
+   - texte centré dans la moitié droite (DOSSIER MATERIEL / DOE / adresse /
+     coordonnées société / téléphone / mail / lieu + date). */
 .sheet.cover {
   position: relative; padding: 0;
-  font-family: 'Calibri', 'Trebuchet MS', sans-serif;
-  color: #333;
+  font-family: 'Trebuchet MS', 'Calibri', sans-serif;
+  color: #1a1a1a;
   overflow: hidden;
+  background: #fff;
 }
 .cover-deco {
   position: absolute; inset: 0; pointer-events: none; z-index: 0;
@@ -171,37 +176,33 @@ html, body { background: #2a2a35; font-family: 'Calibri', 'Segoe UI', Arial, san
   position: relative; z-index: 1;
   height: 100%; min-height: 277mm;
   display: flex; flex-direction: column; align-items: center;
-  padding: 18mm 16mm 24mm 16mm; text-align: center;
+  /* padding-left = largeur de l'arc violet pour pousser le texte à droite */
+  padding: 28mm 14mm 30mm 78mm;
+  text-align: center;
 }
 .cover-logo {
-  width: 60mm; height: 60mm; margin: 14mm 0 8mm;
+  width: 48mm; height: 48mm; margin: 0 0 16mm;
   display: flex; align-items: center; justify-content: center;
-  background: #fff; border-radius: 50%;
-  box-shadow: 0 0 0 1px rgba(0,0,0,0.05);
 }
 .cover-logo img { width: 100%; height: 100%; object-fit: contain; }
-.cover-titles { margin: 12mm 0 8mm; }
-.cover-title1 {
-  display: block; font-size: 22pt; font-weight: 700;
-  letter-spacing: 1px; color: #111;
+.cover-titles { margin: 0 0 8mm; }
+.cover-title1, .cover-title2 {
+  display: block; font-size: 20pt; font-weight: 700;
+  color: #1a1a1a; letter-spacing: 1px;
   border: 0; background: transparent; text-align: center; width: 100%;
-  font-family: 'Verdana', 'Tahoma', sans-serif;
+  font-family: 'Trebuchet MS', 'Verdana', sans-serif;
+  padding: 0;
 }
-.cover-title2 {
-  display: block; font-size: 22pt; font-weight: 700;
-  letter-spacing: 1px; color: #111; margin-top: 2mm;
-  border: 0; background: transparent; text-align: center; width: 100%;
-  font-family: 'Verdana', 'Tahoma', sans-serif;
-}
+.cover-title2 { margin-top: 1mm; }
 .cover-address {
-  font-size: 13pt; font-weight: 700; color: #111;
-  margin: 6mm 0 12mm; line-height: 1.4; min-height: 4em;
+  font-size: 12pt; font-weight: 700; color: #1a1a1a;
+  margin: 6mm 0 10mm; line-height: 1.4; min-height: 3em;
   border: 0; background: transparent; text-align: center;
-  width: 80%; resize: none; font-family: inherit;
+  width: 100%; resize: none; font-family: inherit; padding: 0;
 }
 .cover-company {
-  font-size: 13pt; font-weight: 700; color: #111;
-  margin-bottom: 12mm; line-height: 1.4;
+  font-size: 12pt; font-weight: 700; color: #1a1a1a;
+  margin-bottom: 12mm; line-height: 1.5;
 }
 .cover-company input {
   display: block; border: 0; background: transparent;
@@ -209,7 +210,7 @@ html, body { background: #2a2a35; font-family: 'Calibri', 'Segoe UI', Arial, san
   padding: 1px 4px;
 }
 .cover-contact {
-  font-size: 11pt; color: #444; margin-bottom: 6mm; line-height: 1.7;
+  font-size: 10pt; color: #1a1a1a; margin-bottom: 4mm; line-height: 1.9;
 }
 .cover-contact input {
   display: block; border: 0; background: transparent;
@@ -217,14 +218,14 @@ html, body { background: #2a2a35; font-family: 'Calibri', 'Segoe UI', Arial, san
   padding: 1px 4px;
 }
 .cover-date {
-  font-size: 11pt; color: #444; margin-top: 4mm;
+  font-size: 10pt; color: #1a1a1a; margin-top: 0;
 }
 .cover-date input {
   border: 0; background: transparent; font: inherit; color: inherit;
   text-align: center; padding: 1px 4px;
 }
 .cover-date .place { width: auto; min-width: 80px; }
-.cover-date .datetext { width: auto; min-width: 140px; }
+.cover-date .datetext { width: auto; min-width: 150px; }
 /* Focus discret en cohérence avec le reste */
 .sheet.cover input:focus, .sheet.cover textarea:focus {
   outline: 1px solid #F59E0B; background: rgba(245,158,11,0.06);
@@ -368,18 +369,18 @@ input.proj { font-size: 28pt; font-weight: 700; text-align: center; letter-spaci
 
 <!-- Page de garde — masquée par défaut, montrée quand l'onglet 📋 est actif -->
 <section class="sheet cover" id="coverSheet" style="display:none">
-  <!-- Décorations violet en haut + bandeau bleu en bas (SVG positionné en absolu) -->
+  <!-- Décorations (SVG positionné en absolu, viewBox = 210×297 mm A4) -->
   <svg class="cover-deco" viewBox="0 0 210 297" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-    <!-- Petit rectangle violet en haut à gauche -->
-    <rect x="0" y="0" width="105" height="22" fill="#a594c0"/>
-    <!-- Grand quart-de-cercle violet sur la gauche descendant vers le centre -->
-    <path d="M 0 0 L 70 0 Q 145 0 145 95 Q 145 170 70 170 L 0 170 Z" fill="#a594c0"/>
-    <!-- Cercle blanc au centre du grand violet (espace pour le logo) -->
-    <circle cx="105" cy="100" r="36" fill="#ffffff"/>
-    <!-- Bandeau bleu rond en bas -->
-    <rect x="10" y="265" width="190" height="14" rx="7" ry="7" fill="#1d4f9c"/>
-    <!-- Petit prolongement bleu en bas à gauche -->
-    <rect x="0" y="282" width="105" height="6" fill="#1d4f9c"/>
+    <!-- 1. Grand bandeau violet à gauche (rectangle vertical) -->
+    <rect x="0" y="0" width="78" height="223" fill="#a594c0"/>
+    <!-- 2. Demi-cercle blanc creusé dans le violet — son centre est sur le
+         bord droit du violet, donc on n'en voit que la moitié droite qui
+         "mange" l'intérieur du violet, créant l'effet d'arc. -->
+    <circle cx="78" cy="112" r="56" fill="#ffffff"/>
+    <!-- 3. Petit rectangle violet en haut-droite (séparé du grand) -->
+    <rect x="120" y="0" width="90" height="22" fill="#a594c0"/>
+    <!-- 4. Pilule bleue arrondie, centrée horizontalement, en bas -->
+    <rect x="55" y="254" width="100" height="14" rx="7" ry="7" fill="#1d4f9c"/>
   </svg>
 
   <div class="cover-content">

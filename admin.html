@@ -186,6 +186,19 @@ if(window.self!==window.top){
   .gh-busy-bar{flex:1;height:4px;background:rgba(120,50,255,.10);border-radius:2px;overflow:hidden;position:relative;min-width:120px}
   .gh-busy-bar::before{content:'';position:absolute;inset:0;width:35%;background:linear-gradient(90deg,transparent,#b388ff,transparent);animation:ghBusySlide 1.3s linear infinite}
   @keyframes ghBusySlide{0%{transform:translateX(-100%)}100%{transform:translateX(380%)}}
+  /* ─── Onglet Firebase : éditeur de règles ────────────────────────────── */
+  .fb-busy{display:flex;align-items:center;gap:14px;background:rgba(255,160,0,.08);border:1px solid rgba(255,160,0,.30);border-radius:10px;padding:12px 18px;margin-bottom:18px;font-size:13px;color:#ffb74d;font-weight:600;animation:fadeUp .25s ease}
+  .fb-busy.hidden{display:none}
+  .fb-busy-spin{width:18px;height:18px;border:2px solid rgba(255,160,0,.20);border-top-color:#ffb74d;border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+  .fb-busy-bar{flex:1;height:4px;background:rgba(255,160,0,.10);border-radius:2px;overflow:hidden;position:relative;min-width:120px}
+  .fb-busy-bar::before{content:'';position:absolute;inset:0;width:35%;background:linear-gradient(90deg,transparent,#ffb74d,transparent);animation:ghBusySlide 1.3s linear infinite}
+  .fb-status{display:inline-block;padding:3px 10px;border-radius:5px;font-size:11px;font-weight:700;letter-spacing:1px}
+  .fb-status.ok{background:rgba(34,197,94,.10);color:#4ade80;border:1px solid rgba(34,197,94,.25)}
+  .fb-status.bad{background:rgba(239,68,68,.10);color:#f87171;border:1px solid rgba(239,68,68,.25)}
+  .fb-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+  .fb-rules-info{font-size:11px;color:var(--text2)}
+  .fb-rules-textarea{width:100%;min-height:420px;background:#0a0d14;border:1px solid var(--border);border-radius:6px;padding:12px 14px;color:#cbd5e1;font-family:'Menlo','Consolas',monospace;font-size:12px;line-height:1.55;resize:vertical;white-space:pre;tab-size:2}
+  .fb-rules-textarea:focus{outline:none;border-color:rgba(255,160,0,.5)}
 </style>
 </head>
 <body>
@@ -214,6 +227,7 @@ if(window.self!==window.top){
     <button type="button" class="admin-tab" data-tab="tab-signatures" role="tab" aria-selected="false"><span class="tab-ico">✍️</span>Signatures</button>
     <button type="button" class="admin-tab" data-tab="tab-console" role="tab" aria-selected="false"><span class="tab-ico">🪵</span>Console</button>
     <button type="button" class="admin-tab" data-tab="tab-github" role="tab" aria-selected="false"><span class="tab-ico">🐙</span>GitHub</button>
+    <button type="button" class="admin-tab" data-tab="tab-firebase" role="tab" aria-selected="false"><span class="tab-ico">🔥</span>Firebase</button>
   </div>
 
   <!-- ─── ONGLET 1 : Utilisateurs ─────────────────────────────────────── -->
@@ -417,6 +431,50 @@ if(window.self!==window.top){
       </div>
     </div>
   </div>
+
+  <!-- ─── ONGLET 7 : Firebase ──────────────────────────────────────────── -->
+  <div class="tab-panel" id="tab-firebase" role="tabpanel">
+    <div class="fb-busy hidden" id="fbBusy">
+      <div class="fb-busy-spin"></div>
+      <span class="gh-busy-text" id="fbBusyText">Chargement…</span>
+      <div class="fb-busy-bar"></div>
+    </div>
+
+    <!-- Connexion Google pour le Management API -->
+    <div class="card">
+      <h2><span>🔥</span> Firebase — Connexion</h2>
+      <div style="font-size:12px;color:var(--text2);margin:-8px 0 14px">
+        Pour modifier les règles Firestore, on a besoin d'un token OAuth
+        Google avec accès au projet. Tu te connectes une fois avec ton compte
+        Google (celui qui a accès au projet Firebase) et le token est gardé
+        en local pendant ~1h.
+        <br><br>
+        <strong>Pré-requis</strong> : Google sign-in doit être activé dans
+        Firebase Console → Authentication → Sign-in method (gratuit, 2 clics).
+      </div>
+      <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+        <span style="font-size:12px;color:var(--text2)">Projet : <code id="fbProjectId">—</code></span>
+        <button class="btn btn-primary btn-sm" id="fbConnectBtn" onclick="fbConnect()">🔐 Se connecter avec Google</button>
+        <button class="btn btn-danger btn-sm" id="fbDisconnectBtn" onclick="fbDisconnect()" style="display:none">🔓 Déconnexion</button>
+        <span id="fbConnectStatus" class="fb-status bad" style="display:none">Non connecté</span>
+      </div>
+    </div>
+
+    <!-- Éditeur de règles Firestore -->
+    <div class="card" id="fbRulesCard" style="display:none">
+      <h2><span>📜</span> Règles Firestore</h2>
+      <div class="fb-toolbar">
+        <button class="btn btn-sm" onclick="fbLoadRules()" style="background:rgba(255,160,0,.10);color:#ffb74d;border:1px solid rgba(255,160,0,.30)">↻ Recharger depuis Firebase</button>
+        <button class="btn btn-primary btn-sm" onclick="fbSaveRules()">💾 Déployer les règles</button>
+        <span id="fbRulesInfo" class="fb-rules-info"></span>
+      </div>
+      <textarea id="fbRulesText" class="fb-rules-textarea" spellcheck="false" placeholder="Charge les règles depuis Firebase pour commencer…"></textarea>
+      <div style="font-size:11px;color:var(--text2);margin-top:8px">
+        ⚠ Les règles sont déployées <strong style="color:#fbbf24">immédiatement en production</strong>
+        après confirmation. Teste tes changements avec l'émulateur Firestore avant de pousser.
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- EDIT USER ROLE MODAL -->
@@ -557,8 +615,9 @@ function initAdminTabs(){
   document.querySelectorAll('.admin-tab').forEach(btn => {
     btn.addEventListener('click', () => {
       showAdminTab(btn.dataset.tab);
-      // Lazy-load des données de l'onglet GitHub
+      // Lazy-load des données des onglets externes (GitHub / Firebase)
       if (btn.dataset.tab === 'tab-github' && !ghCfg) loadGhConfig();
+      if (btn.dataset.tab === 'tab-firebase') fbInitFromStorage();
     });
   });
   // Restaure le dernier onglet ouvert (par défaut : utilisateurs)
@@ -567,6 +626,7 @@ function initAdminTabs(){
   if (saved && document.getElementById(saved)) {
     showAdminTab(saved);
     if (saved === 'tab-github') loadGhConfig();
+    if (saved === 'tab-firebase') fbInitFromStorage();
   }
 }
 
@@ -1038,6 +1098,219 @@ function ghB64DecodeUtf8(b64){
   const bytes = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
   return new TextDecoder('utf-8').decode(bytes);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  ONGLET FIREBASE — édition des règles Firestore via Management API
+// ═══════════════════════════════════════════════════════════════════════════
+// Stratégie : on utilise une INSTANCE SECONDAIRE de Firebase pour faire
+// signInWithPopup avec Google + scope Firebase. Cela évite de polluer la
+// session principale (login/password) du user en cours. On récupère le
+// token OAuth de la credential pour appeler l'API REST firebaserules.
+const FB_LS_TOKEN = 'algomes_fb_admin_token';
+let fbToken = null;       // string : access_token Google
+let fbTokenExpires = 0;   // ms epoch (~1h après obtention)
+let fbAdminApp = null;    // app Firebase secondaire (créée à la demande)
+let fbUserEmail = null;   // email Google connecté
+
+function fbShowBusy(text){
+  const el = document.getElementById('fbBusy');
+  const lbl = document.getElementById('fbBusyText');
+  if (lbl) lbl.textContent = text || 'Chargement…';
+  if (el) el.classList.remove('hidden');
+}
+function fbHideBusy(){
+  const el = document.getElementById('fbBusy');
+  if (el) el.classList.add('hidden');
+}
+
+function fbInitFromStorage(){
+  document.getElementById('fbProjectId').textContent = FC.projectId || '—';
+  try {
+    const raw = localStorage.getItem(FB_LS_TOKEN);
+    if (raw) {
+      const obj = JSON.parse(raw);
+      if (obj && obj.token && obj.expires > Date.now()) {
+        fbToken = obj.token;
+        fbTokenExpires = obj.expires;
+        fbUserEmail = obj.email || null;
+        fbUpdateConnectedUI();
+        return;
+      } else {
+        localStorage.removeItem(FB_LS_TOKEN);
+      }
+    }
+  } catch {}
+  fbUpdateDisconnectedUI();
+}
+
+function fbUpdateConnectedUI(){
+  const status = document.getElementById('fbConnectStatus');
+  status.textContent = '✓ Connecté' + (fbUserEmail ? ' : ' + fbUserEmail : '') +
+    ' · expire à ' + new Date(fbTokenExpires).toLocaleTimeString('fr-FR');
+  status.className = 'fb-status ok';
+  status.style.display = 'inline-block';
+  document.getElementById('fbConnectBtn').style.display = 'none';
+  document.getElementById('fbDisconnectBtn').style.display = '';
+  document.getElementById('fbRulesCard').style.display = '';
+}
+
+function fbUpdateDisconnectedUI(){
+  const status = document.getElementById('fbConnectStatus');
+  status.textContent = 'Non connecté';
+  status.className = 'fb-status bad';
+  status.style.display = 'inline-block';
+  document.getElementById('fbConnectBtn').style.display = '';
+  document.getElementById('fbDisconnectBtn').style.display = 'none';
+  document.getElementById('fbRulesCard').style.display = 'none';
+}
+
+async function fbConnect(){
+  fbShowBusy('Ouverture du popup Google…');
+  try {
+    if (!fbAdminApp) {
+      fbAdminApp = firebase.initializeApp(FC, 'fbAdmin_' + Date.now());
+    }
+    const provider = new firebase.auth.GoogleAuthProvider();
+    // Scopes nécessaires pour gérer les règles Firestore
+    provider.addScope('https://www.googleapis.com/auth/firebase');
+    provider.addScope('https://www.googleapis.com/auth/cloud-platform');
+    provider.setCustomParameters({ prompt: 'select_account' });
+    fbShowBusy('Authentification Google…');
+    const result = await fbAdminApp.auth().signInWithPopup(provider);
+    const credential = result.credential;
+    if (!credential || !credential.accessToken) {
+      throw new Error('Pas de token Google retourné par le popup');
+    }
+    fbToken = credential.accessToken;
+    // Les tokens OAuth Google sont valides 1h, on garde 55min de marge
+    fbTokenExpires = Date.now() + 55 * 60 * 1000;
+    fbUserEmail = result.user && result.user.email;
+    try {
+      localStorage.setItem(FB_LS_TOKEN, JSON.stringify({
+        token: fbToken, expires: fbTokenExpires, email: fbUserEmail
+      }));
+    } catch {}
+    // Sign out de l'app secondaire pour éviter de garder une session inutile
+    try { await fbAdminApp.auth().signOut(); } catch {}
+    fbUpdateConnectedUI();
+    toast('Connecté à Firebase Management API', 'success');
+    // Charge les règles tout de suite
+    await fbLoadRules();
+  } catch (e) {
+    console.error('fbConnect', e);
+    let msg = e.message || String(e);
+    if (e.code === 'auth/operation-not-allowed') {
+      msg = 'Google sign-in non activé. Va dans Firebase Console → Authentication → Sign-in method → Google → Activer.';
+    } else if (e.code === 'auth/popup-blocked') {
+      msg = 'Popup bloquée par le navigateur. Autorise les popups pour cette page.';
+    } else if (e.code === 'auth/popup-closed-by-user') {
+      msg = 'Popup fermée avant la fin de l\'authentification.';
+    }
+    toast('Erreur connexion : ' + msg, 'error');
+  } finally {
+    fbHideBusy();
+  }
+}
+
+function fbDisconnect(){
+  if (!confirm('Déconnecter de l\'API Firebase Management ?\n\nLe token sera supprimé et tu devras te reconnecter avec Google pour modifier les règles.')) return;
+  fbToken = null;
+  fbTokenExpires = 0;
+  fbUserEmail = null;
+  try { localStorage.removeItem(FB_LS_TOKEN); } catch {}
+  fbUpdateDisconnectedUI();
+  toast('Déconnecté', 'success');
+}
+
+// ─── Helper : appel à l'API Firebase Rules avec le token OAuth ────────────
+async function fbApi(method, path, body){
+  if (!fbToken || Date.now() > fbTokenExpires) {
+    throw new Error('Token expiré ou absent — reclique sur "Se connecter"');
+  }
+  const url = 'https://firebaserules.googleapis.com/v1' + path;
+  const opts = {
+    method,
+    headers: {
+      Authorization: 'Bearer ' + fbToken,
+      Accept: 'application/json'
+    }
+  };
+  if (body) {
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  }
+  const r = await fetch(url, opts);
+  const txt = await r.text();
+  let data = null;
+  try { data = txt ? JSON.parse(txt) : null; } catch { data = txt; }
+  if (!r.ok) {
+    let msg;
+    if (data && data.error && data.error.message) msg = data.error.message;
+    else if (typeof data === 'string') msg = data;
+    else msg = 'HTTP ' + r.status;
+    const err = new Error(msg);
+    err.status = r.status;
+    throw err;
+  }
+  return data;
+}
+
+// ─── Charge les règles Firestore actuellement déployées ───────────────────
+async function fbLoadRules(){
+  fbShowBusy('Chargement des règles Firestore actuelles…');
+  try {
+    const projectId = FC.projectId;
+    const release = await fbApi('GET', '/projects/' + projectId + '/releases/cloud.firestore');
+    if (!release || !release.rulesetName) {
+      throw new Error('Aucun ruleset trouvé pour cloud.firestore');
+    }
+    const ruleset = await fbApi('GET', '/' + release.rulesetName);
+    const file = (ruleset && ruleset.source && ruleset.source.files && ruleset.source.files[0]) || null;
+    const content = file ? file.content : '';
+    document.getElementById('fbRulesText').value = content;
+    const id = release.rulesetName.split('/').pop();
+    const created = ruleset.createTime ? new Date(ruleset.createTime).toLocaleString('fr-FR') : '—';
+    document.getElementById('fbRulesInfo').textContent =
+      '✓ Ruleset ' + id.slice(0, 8) + '… · créé le ' + created;
+  } catch (e) {
+    console.error('fbLoadRules', e);
+    toast('Erreur chargement : ' + e.message, 'error');
+    document.getElementById('fbRulesInfo').textContent = '✗ ' + e.message;
+  } finally {
+    fbHideBusy();
+  }
+}
+
+// ─── Déploie les règles : crée un nouveau ruleset + active le release ─────
+async function fbSaveRules(){
+  const newContent = document.getElementById('fbRulesText').value;
+  if (!newContent.trim()) {
+    toast('Les règles ne peuvent pas être vides', 'error');
+    return;
+  }
+  if (!confirm('⚠ Déployer ces règles Firestore EN PRODUCTION ?\n\nLes règles actuelles seront immédiatement remplacées. Aucun retour en arrière automatique.')) return;
+  fbShowBusy('Création du nouveau ruleset…');
+  try {
+    const projectId = FC.projectId;
+    const newRuleset = await fbApi('POST', '/projects/' + projectId + '/rulesets', {
+      source: { files: [{ name: 'firestore.rules', content: newContent }] }
+    });
+    fbShowBusy('Activation du ruleset (release cloud.firestore)…');
+    await fbApi('PATCH', '/projects/' + projectId + '/releases/cloud.firestore', {
+      release: {
+        name: 'projects/' + projectId + '/releases/cloud.firestore',
+        rulesetName: newRuleset.name
+      }
+    });
+    toast('✓ Règles Firestore déployées en production', 'success');
+    await fbLoadRules();
+  } catch (e) {
+    console.error('fbSaveRules', e);
+    toast('Erreur déploiement : ' + e.message, 'error');
+  } finally {
+    fbHideBusy();
+  }
 }
 
 // PRESENCE (real-time)

@@ -364,10 +364,12 @@ if(window.self!==window.top){
     <div class="card">
       <h2><span>🐙</span> GitHub — Configuration</h2>
       <div style="font-size:12px;color:var(--text2);margin:-8px 0 14px">
-        Personal Access Token (PAT) avec scope <code>repo</code>. Stocké dans
-        <code>config/github</code> (Firestore). Crée-le sur
-        <a href="https://github.com/settings/tokens/new?scopes=repo&description=AL-GOMES%20admin" target="_blank" style="color:#b388ff">github.com/settings/tokens</a>.
-        <strong style="color:#fbbf24">Important :</strong> protège <code>config/github</code> par une règle Firestore admin-only.
+        Personal Access Token (PAT) avec scope <code>repo</code>. Crée-le sur
+        <a href="https://github.com/settings/tokens/new?scopes=repo&description=AL-GOMES%20admin" target="_blank" style="color:#b388ff">github.com/settings/tokens</a>
+        puis colle-le ci-dessous.
+        <br><br>
+        <span style="color:#4ade80">🔒 Stocké uniquement dans ton navigateur (localStorage)</span> — jamais envoyé à Firebase ni partagé avec d'autres utilisateurs.
+        À re-saisir sur chaque navigateur/machine.
       </div>
       <div class="form-row four">
         <div class="form-group"><label>Owner</label><input type="text" id="ghOwner" placeholder="jerome93190"></div>
@@ -562,15 +564,21 @@ const ghExpanded = new Set([''  ]); // chemins de dossiers ouverts
 let ghSelectedPath = null;       // fichier actuellement sélectionné dans l'éditeur
 let ghCurrentFile = null;        // { path, sha, content, isImage, isText, raw }
 
-async function loadGhConfig(){
+// Le token est stocké UNIQUEMENT dans localStorage (jamais envoyé à Firebase
+// ni à d'autres utilisateurs) → solution clé en main qui n'impose aucune
+// règle Firestore particulière. Owner/repo/branch sont aussi locaux pour
+// la même raison.
+const GH_LS_KEY = 'algomes_github_config';
+
+function loadGhConfig(){
   try {
-    const doc = await db.collection('config').doc('github').get();
-    const data = doc.exists ? doc.data() : null;
+    let stored = null;
+    try { stored = JSON.parse(localStorage.getItem(GH_LS_KEY) || 'null'); } catch {}
     ghCfg = {
-      owner:  (data && data.owner)  || 'jerome93190',
-      repo:   (data && data.repo)   || 'al-gomes',
-      branch: (data && data.branch) || 'main',
-      token:  (data && data.token)  || ''
+      owner:  (stored && stored.owner)  || 'jerome93190',
+      repo:   (stored && stored.repo)   || 'al-gomes',
+      branch: (stored && stored.branch) || 'main',
+      token:  (stored && stored.token)  || ''
     };
     document.getElementById('ghOwner').value  = ghCfg.owner;
     document.getElementById('ghRepo').value   = ghCfg.repo;
@@ -593,8 +601,9 @@ async function loadGhConfig(){
     }
   } catch (e) {
     console.error('Erreur loadGhConfig', e);
-    toast('Impossible de charger la config GitHub', 'error');
+    toast('Impossible de charger la config GitHub locale', 'error');
   }
+  return Promise.resolve();
 }
 
 async function saveGhConfig(){
@@ -620,17 +629,22 @@ async function saveGhConfig(){
     toast('Erreur réseau : ' + e.message, 'error');
     return;
   }
-  await db.collection('config').doc('github').set({ owner, repo, branch, token }, { merge: true });
-  toast('Configuration GitHub enregistrée', 'success');
-  await loadGhConfig();
+  try {
+    localStorage.setItem(GH_LS_KEY, JSON.stringify({ owner, repo, branch, token }));
+  } catch (e) {
+    toast('Erreur localStorage : ' + e.message, 'error');
+    return;
+  }
+  toast('Configuration GitHub enregistrée (local)', 'success');
+  loadGhConfig();
 }
 
 async function clearGhToken(){
-  if (!confirm('Supprimer le token stocké dans Firestore ?\n\nL\'arborescence ne sera plus accessible jusqu\'à ce que tu remettes un token.')) return;
-  await db.collection('config').doc('github').set({ token: '' }, { merge: true });
+  if (!confirm('Supprimer le token stocké dans ce navigateur ?\n\nL\'arborescence ne sera plus accessible jusqu\'à ce que tu remettes un token.')) return;
+  try { localStorage.removeItem(GH_LS_KEY); } catch {}
   toast('Token supprimé', 'success');
   ghCfg = null;
-  await loadGhConfig();
+  loadGhConfig();
 }
 
 // ─── Appel API GitHub avec token ──────────────────────────────────────────

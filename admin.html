@@ -186,6 +186,24 @@ if(window.self!==window.top){
   .gh-busy-bar{flex:1;height:4px;background:rgba(120,50,255,.10);border-radius:2px;overflow:hidden;position:relative;min-width:120px}
   .gh-busy-bar::before{content:'';position:absolute;inset:0;width:35%;background:linear-gradient(90deg,transparent,#b388ff,transparent);animation:ghBusySlide 1.3s linear infinite}
   @keyframes ghBusySlide{0%{transform:translateX(-100%)}100%{transform:translateX(380%)}}
+  /* ─── Flux d'activité des opérations (statut par opération) ─────────── */
+  .gh-tasks{display:flex;flex-direction:column;gap:6px;margin-bottom:18px}
+  .gh-tasks:empty{display:none}
+  .gh-task{display:flex;align-items:center;gap:10px;background:rgba(120,50,255,.04);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;font-weight:500;color:var(--text);animation:fadeUp .25s ease}
+  .gh-task.pending{background:rgba(245,158,11,.06);border-color:rgba(245,158,11,.25)}
+  .gh-task.success{background:rgba(34,197,94,.05);border-color:rgba(34,197,94,.20)}
+  .gh-task.error{background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.30)}
+  .gh-task.fade{opacity:0;transition:opacity .8s ease;pointer-events:none}
+  /* Pastille de statut (pulse pour pending, fixe pour les autres) */
+  .gh-task-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;position:relative}
+  .gh-task.pending .gh-task-dot{background:#fbbf24;box-shadow:0 0 0 0 rgba(251,191,36,.6);animation:ghTaskPulse 1.5s ease-in-out infinite}
+  .gh-task.success .gh-task-dot{background:#4ade80}
+  .gh-task.error .gh-task-dot{background:#f87171}
+  @keyframes ghTaskPulse{0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,.6)}50%{box-shadow:0 0 0 8px rgba(251,191,36,0)}}
+  .gh-task-ico{font-size:14px;flex-shrink:0}
+  .gh-task-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .gh-task-time{font-size:11px;color:var(--text2);flex-shrink:0;font-family:'Menlo','Consolas',monospace}
+  .gh-task-err{font-size:11px;color:#f87171;flex-shrink:0;font-family:'Menlo','Consolas',monospace;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   /* ─── Onglet Firebase : éditeur de règles ────────────────────────────── */
   .fb-busy{display:flex;align-items:center;gap:14px;background:rgba(255,160,0,.08);border:1px solid rgba(255,160,0,.30);border-radius:10px;padding:12px 18px;margin-bottom:18px;font-size:13px;color:#ffb74d;font-weight:600;animation:fadeUp .25s ease}
   .fb-busy.hidden{display:none}
@@ -382,14 +400,11 @@ if(window.self!==window.top){
 
   <!-- ─── ONGLET 6 : GitHub ────────────────────────────────────────────── -->
   <div class="tab-panel" id="tab-github" role="tabpanel">
-    <!-- Indicateur de progression (spinner + libellé + barre indéterminée).
-         Visible pendant chaque opération réseau (test token, chargement
-         arborescence, lecture/sauvegarde/suppression/création de fichier). -->
-    <div class="gh-busy hidden" id="ghBusy">
-      <div class="gh-busy-spin"></div>
-      <span class="gh-busy-text" id="ghBusyText">Chargement…</span>
-      <div class="gh-busy-bar"></div>
-    </div>
+    <!-- Flux d'activité : chaque opération crée une "tâche" qui passe par
+         pending → success/error (style proche des status checks GitHub).
+         Les opérations terminées avec succès disparaissent après 6 secondes ;
+         les erreurs restent jusqu'au prochain rafraîchissement. -->
+    <div class="gh-tasks" id="ghTasks"></div>
     <!-- Configuration du token + repo -->
     <div class="card">
       <h2><span>🐙</span> GitHub — Configuration</h2>
@@ -436,11 +451,8 @@ if(window.self!==window.top){
 
   <!-- ─── ONGLET 7 : Firebase ──────────────────────────────────────────── -->
   <div class="tab-panel" id="tab-firebase" role="tabpanel">
-    <div class="fb-busy hidden" id="fbBusy">
-      <div class="fb-busy-spin"></div>
-      <span class="gh-busy-text" id="fbBusyText">Chargement…</span>
-      <div class="fb-busy-bar"></div>
-    </div>
+    <!-- Flux d'activité Firebase (même style que l'onglet GitHub) -->
+    <div class="gh-tasks" id="fbTasks"></div>
 
     <!-- Connexion Google pour le Management API -->
     <div class="card">
@@ -642,19 +654,98 @@ const ghExpanded = new Set([''  ]); // chemins de dossiers ouverts
 let ghSelectedPath = null;       // fichier actuellement sélectionné dans l'éditeur
 let ghCurrentFile = null;        // { path, sha, content, isImage, isText, raw }
 
-// Indicateur de progression — chaque opération réseau appelle ghShowBusy
-// au début et ghHideBusy à la fin (try/finally). Le libellé décrit ce qui
-// est en train de se passer pour rassurer l'utilisateur.
-function ghShowBusy(text){
-  const el = document.getElementById('ghBusy');
-  const lbl = document.getElementById('ghBusyText');
-  if (lbl) lbl.textContent = text || 'Chargement…';
-  if (el) el.classList.remove('hidden');
+// ─── Flux d'activité : chaque opération a un statut visuel ───────────────
+// Pattern : `const tid = ghShowBusy('label')` au début, puis
+// `ghHideBusy(tid, true)` ou `ghHideBusy(tid, false, err)` à la fin.
+// L'ancien `ghShowBusy(text)` retournait undefined → on accepte les
+// appels existants sans `tid` mais ils crééront un nouveau item à chaque
+// appel ; pour mettre à jour le label en cours d'opération, on peut
+// rappeler ghShowBusy('nouveau label', tid).
+const ghTasks = [];          // [{ id, label, status, ts, error, fadeTimeout }]
+let _ghTaskSeq = 0;
+
+function ghShowBusy(label, existingId){
+  if (existingId) {
+    const t = ghTasks.find(x => x.id === existingId);
+    if (t) { t.label = label || t.label; ghRenderTasks(); return existingId; }
+  }
+  const id = ++_ghTaskSeq;
+  ghTasks.unshift({ id, label: label || 'Opération…', status: 'pending', ts: Date.now() });
+  if (ghTasks.length > 6) ghTasks.length = 6;
+  ghRenderTasks();
+  return id;
 }
-function ghHideBusy(){
-  const el = document.getElementById('ghBusy');
-  if (el) el.classList.add('hidden');
+
+function ghHideBusy(id, ok, errMsg){
+  // Appel sans id (legacy) : on marque la 1re pending comme success
+  if (id == null) {
+    const t = ghTasks.find(x => x.status === 'pending');
+    if (!t) return;
+    t.status = 'success';
+    t.endTs = Date.now();
+    ghRenderTasks();
+    ghScheduleFade();
+    return;
+  }
+  const t = ghTasks.find(x => x.id === id);
+  // Idempotent : si déjà finalisé (success/error), on n'écrase pas le statut.
+  // C'est utile pour le pattern try { ok } catch { ghHideBusy(tid, false, e) }
+  // finally { ghHideBusy(tid) } — l'erreur reste visible.
+  if (!t || t.status !== 'pending') return;
+  t.status = ok === false ? 'error' : 'success';
+  if (errMsg) t.error = errMsg;
+  t.endTs = Date.now();
+  ghRenderTasks();
+  ghScheduleFade();
 }
+
+function ghScheduleFade(){
+  // Les succès disparaissent après 6s ; les erreurs restent jusqu'à
+  // ce qu'une nouvelle opération les pousse hors du top 6.
+  ghTasks.forEach(t => {
+    if (t.status === 'success' && !t._fadeT) {
+      t._fadeT = setTimeout(() => {
+        const idx = ghTasks.indexOf(t);
+        if (idx >= 0) {
+          ghTasks.splice(idx, 1);
+          ghRenderTasks();
+        }
+      }, 6000);
+    }
+  });
+}
+
+function ghFmtSince(ts){
+  const s = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+  if (s < 60) return 'il y a ' + s + ' s';
+  const m = Math.floor(s / 60);
+  return 'il y a ' + m + ' min';
+}
+
+function ghRenderTasks(){
+  const el = document.getElementById('ghTasks');
+  if (!el) return;
+  el.innerHTML = ghTasks.map(t => {
+    const ico = t.status === 'pending' ? '⏳' : t.status === 'success' ? '✅' : '❌';
+    const cls = 'gh-task ' + t.status;
+    const errHtml = t.status === 'error' && t.error
+      ? '<span class="gh-task-err" title="' + escHtml(t.error) + '">' + escHtml(t.error) + '</span>'
+      : '';
+    const time = t.endTs ? ghFmtSince(t.endTs) : ghFmtSince(t.ts);
+    return '<div class="' + cls + '" data-tid="' + t.id + '">'
+      + '<span class="gh-task-dot"></span>'
+      + '<span class="gh-task-ico">' + ico + '</span>'
+      + '<span class="gh-task-label">' + escHtml(t.label) + '</span>'
+      + errHtml
+      + '<span class="gh-task-time">' + time + '</span>'
+      + '</div>';
+  }).join('');
+}
+
+// Auto-refresh des timestamps relatifs
+setInterval(() => {
+  if (ghTasks.length) ghRenderTasks();
+}, 5000);
 
 // Le token est stocké UNIQUEMENT dans localStorage (jamais envoyé à Firebase
 // ni à d'autres utilisateurs) → solution clé en main qui n'impose aucune
@@ -708,21 +799,23 @@ async function saveGhConfig(){
   const token = tokenIn || (ghCfg && ghCfg.token) || '';
   if (!token) { toast('Token GitHub requis', 'error'); return; }
   // Test : vérifie que le token donne accès au repo (rate limit + perms)
-  ghShowBusy('Test du token GitHub sur ' + owner + '/' + repo + '…');
+  const _tid = ghShowBusy('Test du token GitHub sur ' + owner + '/' + repo + '…');
   try {
     const r = await fetch('https://api.github.com/repos/' + owner + '/' + repo, {
       headers: { Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json' }
     });
     if (!r.ok) {
       const body = await r.text();
+      ghHideBusy(_tid, false, 'HTTP ' + r.status);
       toast('Test KO : ' + r.status + ' ' + body.slice(0, 80), 'error');
       return;
     }
   } catch (e) {
+    ghHideBusy(_tid, false, e.message);
     toast('Erreur réseau : ' + e.message, 'error');
     return;
   } finally {
-    ghHideBusy();
+    ghHideBusy(_tid); // no-op si déjà finalisé en erreur
   }
   try {
     localStorage.setItem(GH_LS_KEY, JSON.stringify({ owner, repo, branch, token }));
@@ -775,7 +868,7 @@ async function ghApi(method, path, body){
 
 // ─── Chargement de la liste des branches du dépôt ─────────────────────────
 async function loadGhBranches(){
-  ghShowBusy('Chargement des branches du dépôt…');
+  const tid = ghShowBusy('Chargement des branches du dépôt…');
   try {
     const branches = await ghApi('GET', '/repos/' + ghCfg.owner + '/' + ghCfg.repo + '/branches?per_page=100');
     const sel = document.getElementById('ghBranchSelect');
@@ -788,10 +881,11 @@ async function loadGhBranches(){
       sel.appendChild(opt);
     });
   } catch (e) {
+    ghHideBusy(tid, false, e.message);
     console.error('loadGhBranches', e);
     toast('Branches : ' + e.message, 'error');
   } finally {
-    ghHideBusy();
+    ghHideBusy(tid);
   }
 }
 
@@ -802,7 +896,7 @@ async function loadGhTree(){
   ghCfg.branch = branch;
   const view = document.getElementById('ghTreeView');
   view.innerHTML = '<div class="gh-empty">Chargement de l\'arborescence…</div>';
-  ghShowBusy('Chargement de l\'arborescence (branche : ' + branch + ')…');
+  const tid = ghShowBusy('Chargement de l\'arborescence (branche : ' + branch + ')…');
   try {
     const data = await ghApi('GET', '/repos/' + ghCfg.owner + '/' + ghCfg.repo + '/git/trees/' + encodeURIComponent(branch) + '?recursive=1');
     if (!data || !Array.isArray(data.tree)) {
@@ -814,10 +908,11 @@ async function loadGhTree(){
     ghTreeRoot = buildGhTree(ghTreeFlat);
     renderGhTree();
   } catch (e) {
+    ghHideBusy(tid, false, e.message);
     console.error('loadGhTree', e);
     view.innerHTML = '<div class="gh-empty">Erreur : ' + escHtml(e.message) + '</div>';
   } finally {
-    ghHideBusy();
+    ghHideBusy(tid);
   }
 }
 
@@ -941,7 +1036,7 @@ async function openGhFile(path){
   renderGhTree();
   const editor = document.getElementById('ghEditor');
   editor.innerHTML = '<div class="gh-empty-editor">Chargement…</div>';
-  ghShowBusy('Lecture de ' + path + '…');
+  const tid = ghShowBusy('Lecture de ' + path + '…');
   try {
     const ext = (path.split('.').pop() || '').toLowerCase();
     const isText = GH_TEXT_EXT.has(ext);
@@ -959,10 +1054,11 @@ async function openGhFile(path){
     ghCurrentFile = { path, sha: data && data.sha, content, isText, isImage, ext, downloadUrl: data && data.download_url };
     renderGhEditor();
   } catch (e) {
+    ghHideBusy(tid, false, e.message);
     console.error('openGhFile', e);
     editor.innerHTML = '<div class="gh-empty-editor">Erreur : ' + escHtml(e.message) + '</div>';
   } finally {
-    ghHideBusy();
+    ghHideBusy(tid);
   }
 }
 
@@ -1004,7 +1100,7 @@ async function ghSaveFile(){
   const newContent = ta.value;
   const msg = document.getElementById('ghCommitMsg').value.trim() || ('Update ' + f.path);
   if (!confirm('Pousser cette modification sur la branche "' + ghCfg.branch + '" ?\n\n' + f.path + '\n\nMessage : ' + msg)) return;
-  ghShowBusy('Sauvegarde de ' + f.path + ' sur ' + ghCfg.branch + '…');
+  const tid = ghShowBusy('Sauvegarde de ' + f.path + ' sur ' + ghCfg.branch + '…');
   try {
     const res = await ghApi('PUT', '/repos/' + ghCfg.owner + '/' + ghCfg.repo + '/contents/' + ghEncodePath(f.path), {
       message: msg,
@@ -1016,10 +1112,11 @@ async function ghSaveFile(){
     ghCurrentFile.sha = res.content.sha;
     ghCurrentFile.content = newContent;
   } catch (e) {
+    ghHideBusy(tid, false, e.message);
     console.error('ghSaveFile', e);
     toast('Erreur : ' + e.message, 'error');
   } finally {
-    ghHideBusy();
+    ghHideBusy(tid);
   }
 }
 
@@ -1029,7 +1126,7 @@ async function ghDeleteFile(){
   if (!confirm('⚠ Supprimer DÉFINITIVEMENT le fichier suivant ?\n\n' + f.path + '\n\nBranche : ' + ghCfg.branch)) return;
   const msg = prompt('Message de commit pour la suppression :', 'Delete ' + f.path);
   if (msg === null) return;
-  ghShowBusy('Suppression de ' + f.path + '…');
+  const tid = ghShowBusy('Suppression de ' + f.path + '…');
   try {
     await ghApi('DELETE', '/repos/' + ghCfg.owner + '/' + ghCfg.repo + '/contents/' + ghEncodePath(f.path), {
       message: msg || ('Delete ' + f.path),
@@ -1042,10 +1139,11 @@ async function ghDeleteFile(){
     document.getElementById('ghEditor').innerHTML = '<div class="gh-empty-editor">Fichier supprimé. Sélectionne un autre fichier.</div>';
     await loadGhTree();
   } catch (e) {
+    ghHideBusy(tid, false, e.message);
     console.error('ghDeleteFile', e);
     toast('Erreur : ' + e.message, 'error');
   } finally {
-    ghHideBusy();
+    ghHideBusy(tid);
   }
 }
 
@@ -1062,7 +1160,7 @@ async function ghCreateFilePrompt(){
   const initial = prompt('Contenu initial du fichier (laisser vide pour un fichier vide) :', '');
   if (initial === null) return;
   const msg = 'Create ' + cleanPath;
-  ghShowBusy('Création de ' + cleanPath + '…');
+  const tid = ghShowBusy('Création de ' + cleanPath + '…');
   try {
     const res = await ghApi('PUT', '/repos/' + ghCfg.owner + '/' + ghCfg.repo + '/contents/' + ghEncodePath(cleanPath), {
       message: msg,
@@ -1074,10 +1172,11 @@ async function ghCreateFilePrompt(){
     // Ouvre directement le fichier créé
     setTimeout(() => openGhFile(cleanPath), 200);
   } catch (e) {
+    ghHideBusy(tid, false, e.message);
     console.error('ghCreateFile', e);
     toast('Erreur : ' + e.message, 'error');
   } finally {
-    ghHideBusy();
+    ghHideBusy(tid);
   }
 }
 
@@ -1115,19 +1214,18 @@ async function ghUploadFile(input){
     existingSha = existing.sha;
   }
 
-  fbShowBusyOrGh('Lecture du fichier local (' + (file.size / 1024).toFixed(1) + ' Ko)…');
+  const tid = ghShowBusy((existingSha ? 'Mise à jour' : 'Upload') + ' de ' + cleanPath + ' (' + (file.size / 1024).toFixed(1) + ' Ko)…');
   let b64;
   try {
     const buf = await file.arrayBuffer();
     b64 = ghBytesToB64(new Uint8Array(buf));
   } catch (e) {
-    ghHideBusy();
+    ghHideBusy(tid, false, e.message);
     toast('Lecture impossible : ' + e.message, 'error');
     return;
   }
 
   const msg = (existingSha ? 'Update ' : 'Upload ') + cleanPath;
-  ghShowBusy((existingSha ? 'Mise à jour' : 'Upload') + ' de ' + cleanPath + ' sur ' + ghCfg.branch + '…');
   try {
     const body = {
       message: msg,
@@ -1141,14 +1239,13 @@ async function ghUploadFile(input){
     // Ouvre le fichier uploadé si c'est une image/texte affichable
     setTimeout(() => openGhFile(cleanPath), 200);
   } catch (e) {
+    ghHideBusy(tid, false, e.message);
     console.error('ghUploadFile', e);
     toast('Erreur upload : ' + e.message, 'error');
   } finally {
-    ghHideBusy();
+    ghHideBusy(tid);
   }
 }
-// Petit wrapper utilitaire (au cas où on aurait masqué la barre Firebase)
-function fbShowBusyOrGh(t){ ghShowBusy(t); }
 
 // ─── Helpers d'encodage ───────────────────────────────────────────────────
 function ghEncodePath(path){
@@ -1187,16 +1284,69 @@ let fbTokenExpires = 0;   // ms epoch (~1h après obtention)
 let fbAdminApp = null;    // app Firebase secondaire (créée à la demande)
 let fbUserEmail = null;   // email Google connecté
 
-function fbShowBusy(text){
-  const el = document.getElementById('fbBusy');
-  const lbl = document.getElementById('fbBusyText');
-  if (lbl) lbl.textContent = text || 'Chargement…';
-  if (el) el.classList.remove('hidden');
+// Flux d'activité Firebase (même pattern que ghTasks).
+// Les helpers retournent un tid à passer ensuite à fbHideBusy en cas d'erreur.
+const fbTasks = [];
+let _fbTaskSeq = 0;
+function fbShowBusy(label, existingId){
+  if (existingId) {
+    const t = fbTasks.find(x => x.id === existingId);
+    if (t) { t.label = label || t.label; fbRenderTasks(); return existingId; }
+  }
+  const id = ++_fbTaskSeq;
+  fbTasks.unshift({ id, label: label || 'Opération…', status: 'pending', ts: Date.now() });
+  if (fbTasks.length > 6) fbTasks.length = 6;
+  fbRenderTasks();
+  return id;
 }
-function fbHideBusy(){
-  const el = document.getElementById('fbBusy');
-  if (el) el.classList.add('hidden');
+function fbHideBusy(id, ok, errMsg){
+  if (id == null) {
+    const t = fbTasks.find(x => x.status === 'pending');
+    if (!t) return;
+    t.status = 'success';
+    t.endTs = Date.now();
+    fbRenderTasks();
+    fbScheduleFade();
+    return;
+  }
+  const t = fbTasks.find(x => x.id === id);
+  if (!t || t.status !== 'pending') return;
+  t.status = ok === false ? 'error' : 'success';
+  if (errMsg) t.error = errMsg;
+  t.endTs = Date.now();
+  fbRenderTasks();
+  fbScheduleFade();
 }
+function fbScheduleFade(){
+  fbTasks.forEach(t => {
+    if (t.status === 'success' && !t._fadeT) {
+      t._fadeT = setTimeout(() => {
+        const idx = fbTasks.indexOf(t);
+        if (idx >= 0) { fbTasks.splice(idx, 1); fbRenderTasks(); }
+      }, 6000);
+    }
+  });
+}
+function fbRenderTasks(){
+  const el = document.getElementById('fbTasks');
+  if (!el) return;
+  el.innerHTML = fbTasks.map(t => {
+    const ico = t.status === 'pending' ? '⏳' : t.status === 'success' ? '✅' : '❌';
+    const cls = 'gh-task ' + t.status;
+    const errHtml = t.status === 'error' && t.error
+      ? '<span class="gh-task-err" title="' + escHtml(t.error) + '">' + escHtml(t.error) + '</span>'
+      : '';
+    const time = ghFmtSince(t.endTs || t.ts);
+    return '<div class="' + cls + '">'
+      + '<span class="gh-task-dot"></span>'
+      + '<span class="gh-task-ico">' + ico + '</span>'
+      + '<span class="gh-task-label">' + escHtml(t.label) + '</span>'
+      + errHtml
+      + '<span class="gh-task-time">' + time + '</span>'
+      + '</div>';
+  }).join('');
+}
+setInterval(() => { if (fbTasks.length) fbRenderTasks(); }, 5000);
 
 function fbInitFromStorage(){
   document.getElementById('fbProjectId').textContent = FC.projectId || '—';
@@ -1240,7 +1390,7 @@ function fbUpdateDisconnectedUI(){
 }
 
 async function fbConnect(){
-  fbShowBusy('Ouverture du popup Google…');
+  const tid = fbShowBusy('Ouverture du popup Google…');
   try {
     if (!fbAdminApp) {
       fbAdminApp = firebase.initializeApp(FC, 'fbAdmin_' + Date.now());
@@ -1250,7 +1400,7 @@ async function fbConnect(){
     provider.addScope('https://www.googleapis.com/auth/firebase');
     provider.addScope('https://www.googleapis.com/auth/cloud-platform');
     provider.setCustomParameters({ prompt: 'select_account' });
-    fbShowBusy('Authentification Google…');
+    fbShowBusy('Authentification Google…', tid);
     const result = await fbAdminApp.auth().signInWithPopup(provider);
     const credential = result.credential;
     if (!credential || !credential.accessToken) {
@@ -1275,15 +1425,16 @@ async function fbConnect(){
     console.error('fbConnect', e);
     let msg = e.message || String(e);
     if (e.code === 'auth/operation-not-allowed') {
-      msg = 'Google sign-in non activé. Va dans Firebase Console → Authentication → Sign-in method → Google → Activer.';
+      msg = 'Google sign-in non activé (Firebase Console → Auth → Sign-in method → Google)';
     } else if (e.code === 'auth/popup-blocked') {
-      msg = 'Popup bloquée par le navigateur. Autorise les popups pour cette page.';
+      msg = 'Popup bloquée par le navigateur';
     } else if (e.code === 'auth/popup-closed-by-user') {
-      msg = 'Popup fermée avant la fin de l\'authentification.';
+      msg = 'Popup fermée avant la fin';
     }
+    fbHideBusy(tid, false, msg);
     toast('Erreur connexion : ' + msg, 'error');
   } finally {
-    fbHideBusy();
+    fbHideBusy(tid);
   }
 }
 
@@ -1332,7 +1483,7 @@ async function fbApi(method, path, body){
 
 // ─── Charge les règles Firestore actuellement déployées ───────────────────
 async function fbLoadRules(){
-  fbShowBusy('Chargement des règles Firestore actuelles…');
+  const tid = fbShowBusy('Chargement des règles Firestore actuelles…');
   try {
     const projectId = FC.projectId;
     const release = await fbApi('GET', '/projects/' + projectId + '/releases/cloud.firestore');
@@ -1348,11 +1499,12 @@ async function fbLoadRules(){
     document.getElementById('fbRulesInfo').textContent =
       '✓ Ruleset ' + id.slice(0, 8) + '… · créé le ' + created;
   } catch (e) {
+    fbHideBusy(tid, false, e.message);
     console.error('fbLoadRules', e);
     toast('Erreur chargement : ' + e.message, 'error');
     document.getElementById('fbRulesInfo').textContent = '✗ ' + e.message;
   } finally {
-    fbHideBusy();
+    fbHideBusy(tid);
   }
 }
 
@@ -1364,13 +1516,13 @@ async function fbSaveRules(){
     return;
   }
   if (!confirm('⚠ Déployer ces règles Firestore EN PRODUCTION ?\n\nLes règles actuelles seront immédiatement remplacées. Aucun retour en arrière automatique.')) return;
-  fbShowBusy('Création du nouveau ruleset…');
+  const tid = fbShowBusy('Création du nouveau ruleset…');
   try {
     const projectId = FC.projectId;
     const newRuleset = await fbApi('POST', '/projects/' + projectId + '/rulesets', {
       source: { files: [{ name: 'firestore.rules', content: newContent }] }
     });
-    fbShowBusy('Activation du ruleset (release cloud.firestore)…');
+    fbShowBusy('Activation du ruleset (release cloud.firestore)…', tid);
     await fbApi('PATCH', '/projects/' + projectId + '/releases/cloud.firestore', {
       release: {
         name: 'projects/' + projectId + '/releases/cloud.firestore',
@@ -1380,10 +1532,11 @@ async function fbSaveRules(){
     toast('✓ Règles Firestore déployées en production', 'success');
     await fbLoadRules();
   } catch (e) {
+    fbHideBusy(tid, false, e.message);
     console.error('fbSaveRules', e);
     toast('Erreur déploiement : ' + e.message, 'error');
   } finally {
-    fbHideBusy();
+    fbHideBusy(tid);
   }
 }
 

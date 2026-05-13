@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>A.L.GOMES — Dossier matériel</title>
+<title>A.L.GOMES — Dossier matériel · Fiche produit</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -15,83 +15,403 @@
   --bg: #0c0e14;
   --surface: #13161f;
   --surface2: #1a1e2a;
+  --surface3: #222738;
   --border: #2a2f42;
+  --border-strong: #3a4060;
   --text: #e2e4ea;
   --text2: #8b90a5;
+  --text3: #5a5f75;
   --accent: #F59E0B;
+  --accent2: #d97706;
   --accent-soft: rgba(245, 158, 11, 0.10);
   --accent-border: rgba(245, 158, 11, 0.40);
+  --paper: #fff;
+  --paper-ink: #111;
+  --paper-line: #e5e7eb;
+  --paper-head: #fef3c7;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  font-family: 'Rajdhani', system-ui, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 20px;
+html, body { background: var(--bg); color: var(--text); font-family: 'Rajdhani', system-ui, sans-serif; min-height: 100vh; }
+
+/* ─── Topbar ─── */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 24px; background: var(--surface);
+  border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50;
 }
-.empty-card {
-  max-width: 520px;
-  width: 100%;
-  background: linear-gradient(145deg, var(--surface), var(--surface2));
-  border: 1px solid var(--accent-border);
-  border-radius: 16px;
-  padding: 48px 36px;
-  text-align: center;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+.topbar-title { font-size: 17px; font-weight: 700; letter-spacing: 1.5px; }
+.topbar-title .accent { color: var(--accent); }
+.topbar-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn {
+  padding: 8px 16px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface2);
+  color: var(--text); font-family: inherit; font-size: 13px; font-weight: 600; letter-spacing: 0.5px;
+  cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px;
 }
-.empty-icon {
-  width: 72px;
-  height: 72px;
-  margin: 0 auto 24px;
-  background: var(--accent-soft);
-  border: 1px solid var(--accent-border);
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--accent);
+.btn:hover { border-color: var(--accent-border); color: var(--accent); }
+.btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; border-color: transparent; }
+.btn.primary:hover { color: #fff; opacity: 0.92; }
+.btn.danger { color: #f87171; }
+.btn.danger:hover { border-color: rgba(248, 113, 113, 0.4); color: #fca5a5; }
+
+/* ─── Fiche papier ─── */
+.fiche-wrap {
+  max-width: 1100px; margin: 24px auto 60px; padding: 0 20px;
 }
-.empty-icon svg { width: 36px; height: 36px; }
-h1 {
-  font-size: 26px;
+.fiche {
+  background: var(--paper); color: var(--paper-ink); border: 1px solid var(--border-strong);
+  border-radius: 4px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  padding: 24px 28px;
+  font-family: 'Arial', system-ui, sans-serif; font-size: 13px; line-height: 1.4;
+}
+
+/* En-tête : projet à gauche, info à droite */
+.fiche-header {
+  display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; align-items: stretch;
+  border: 2px solid var(--paper-ink); padding: 10px 14px; margin-bottom: 14px;
+}
+.fiche-header .project {
+  font-size: 28px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
+  display: flex; align-items: center; min-height: 56px;
+}
+.fiche-header .meta { display: flex; flex-direction: column; gap: 4px; justify-content: center; font-size: 12px; }
+.fiche-header .meta .row { display: grid; grid-template-columns: 90px 1fr; gap: 8px; }
+.fiche-header .meta label { font-weight: 700; color: var(--paper-ink); }
+
+/* Ligne fiche n° + date */
+.fiche-id {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;
+}
+.fiche-id .box {
+  border: 1px solid var(--paper-ink); padding: 6px 10px;
+  display: grid; grid-template-columns: 100px 1fr; gap: 8px; align-items: center;
   font-weight: 700;
-  letter-spacing: 2px;
-  margin-bottom: 12px;
-  color: var(--accent);
 }
-p {
-  font-size: 14px;
-  color: var(--text2);
-  line-height: 1.6;
+
+/* OBJET DE LA FICHE */
+.section-title {
+  background: var(--paper-head); border: 1px solid var(--paper-ink); padding: 6px 12px;
+  font-weight: 800; text-transform: uppercase; letter-spacing: 1px; font-size: 13px; text-align: center;
+  margin-bottom: 0;
 }
-.tag {
-  display: inline-block;
-  margin-top: 22px;
-  padding: 6px 14px;
-  background: var(--accent-soft);
-  border: 1px solid var(--accent-border);
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--accent);
-  letter-spacing: 2px;
+.objet {
+  border: 1px solid var(--paper-ink); border-top: 0; padding: 10px 14px; margin-bottom: 14px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; align-items: start;
 }
+.objet label { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; font-size: 12px; }
+.objet input[type="checkbox"] { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; accent-color: var(--accent2); }
+.objet label.with-input { grid-template-columns: auto 1fr; display: grid; gap: 6px; }
+.objet input[type="text"].autre {
+  flex: 1; border: 0; border-bottom: 1px solid var(--paper-ink);
+  font: inherit; color: inherit; background: transparent; padding: 2px 0;
+}
+
+/* Tableau central : Matériels (gauche) + Observations (droite) */
+.fiche-body {
+  display: grid; grid-template-columns: 1.4fr 1fr; gap: 0; margin-bottom: 14px;
+  border: 1px solid var(--paper-ink);
+}
+.col-mat, .col-obs { display: flex; flex-direction: column; }
+.col-mat { border-right: 1px solid var(--paper-ink); }
+.col-head {
+  background: var(--paper-head); padding: 6px 10px; font-weight: 800;
+  text-transform: uppercase; font-size: 12px; letter-spacing: 1px; text-align: center;
+  border-bottom: 1px solid var(--paper-ink);
+}
+.field-row {
+  display: grid; grid-template-columns: 180px 1fr;
+  border-bottom: 1px solid var(--paper-line); min-height: 32px;
+}
+.field-row:last-child { border-bottom: 0; }
+.field-row .label {
+  background: #f9fafb; padding: 6px 10px; font-weight: 700; font-size: 12px;
+  border-right: 1px solid var(--paper-line); display: flex; align-items: center;
+}
+.field-row input, .field-row textarea {
+  border: 0; padding: 6px 10px; font: inherit; color: inherit; background: transparent;
+  width: 100%; resize: vertical;
+}
+.field-row input:focus, .field-row textarea:focus { outline: 1px solid var(--accent); background: #fefce8; }
+.field-row textarea { min-height: 60px; }
+.col-obs textarea {
+  width: 100%; height: 100%; min-height: 380px; border: 0; padding: 10px 12px; font: inherit;
+  color: inherit; background: transparent; resize: vertical;
+}
+.col-obs textarea:focus { outline: 1px solid var(--accent); background: #fefce8; }
+
+/* Localisation pleine largeur */
+.field-loc {
+  display: grid; grid-template-columns: 220px 1fr; border: 1px solid var(--paper-ink);
+  margin-bottom: 14px; min-height: 38px;
+}
+.field-loc .label {
+  background: var(--paper-head); padding: 8px 12px; font-weight: 800; text-transform: uppercase;
+  font-size: 12px; letter-spacing: 1px; border-right: 1px solid var(--paper-ink);
+  display: flex; align-items: center;
+}
+.field-loc input { border: 0; padding: 8px 12px; font: inherit; color: inherit; background: transparent; width: 100%; }
+.field-loc input:focus { outline: 1px solid var(--accent); background: #fefce8; }
+
+/* Coordonnées AL GOMES (côté droit, sous l'en-tête, intégré au header) */
+.fiche-header .coord {
+  font-size: 11px; line-height: 1.5; color: var(--paper-ink); padding-top: 6px;
+  border-top: 1px dashed var(--paper-line); margin-top: 4px;
+}
+
+/* Approbations : 3 colonnes */
+.approval {
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; margin-bottom: 10px;
+  border: 1px solid var(--paper-ink);
+}
+.approval > .col { padding: 0; border-right: 1px solid var(--paper-ink); }
+.approval > .col:last-child { border-right: 0; }
+.approval .col-title {
+  background: var(--paper-head); padding: 6px 10px; font-weight: 800; font-size: 12px;
+  text-transform: uppercase; letter-spacing: 0.5px; text-align: center;
+  border-bottom: 1px solid var(--paper-ink);
+}
+.approval .aor-row {
+  display: grid; grid-template-columns: auto 1fr; gap: 8px; padding: 5px 10px; align-items: center;
+  border-bottom: 1px solid var(--paper-line); font-size: 12px;
+}
+.approval .aor-row:last-of-type { border-bottom: 0; }
+.approval .aor-row .key { font-weight: 800; width: 18px; text-align: center; }
+.approval .date-row {
+  display: grid; grid-template-columns: 40px 1fr; gap: 8px; padding: 6px 10px; align-items: center;
+  border-top: 1px solid var(--paper-line);
+}
+.approval .date-row input { border: 0; border-bottom: 1px solid var(--paper-line); font: inherit; color: inherit; background: transparent; padding: 2px 4px; }
+.approval .date-row input:focus { outline: none; border-bottom-color: var(--accent); }
+.approval .aor-input { border: 0; border-bottom: 1px dotted var(--paper-line); flex: 1; font: inherit; color: inherit; background: transparent; padding: 2px 4px; }
+.approval .aor-input:focus { outline: none; border-bottom-color: var(--accent); }
+.aor-radio { width: 16px; height: 16px; accent-color: var(--accent2); }
+
+/* Légende */
+.legend {
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; font-size: 11px;
+  border: 1px solid var(--paper-ink); padding: 4px 0; text-align: center; font-weight: 700;
+}
+.legend > div { padding: 0 10px; }
+
+/* Print */
+@media print {
+  body { background: #fff; color: #000; }
+  .topbar, .no-print { display: none !important; }
+  .fiche-wrap { margin: 0; padding: 0; max-width: 100%; }
+  .fiche { border: 0; box-shadow: none; padding: 12mm; }
+  input, textarea { outline: 0 !important; background: transparent !important; }
+}
+
+/* Field on top-right project */
+.fiche-header .project-input {
+  width: 100%; border: 0; background: transparent; font-family: inherit; font-size: inherit;
+  font-weight: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; padding: 0;
+}
+.fiche-header .project-input:focus { outline: 1px solid var(--accent); background: #fefce8; }
+.meta input[type="text"], .meta input[type="date"], .fiche-id input {
+  border: 0; border-bottom: 1px dotted var(--paper-line); padding: 2px 4px; font: inherit; color: inherit; background: transparent; min-width: 60px;
+}
+.meta input:focus, .fiche-id input:focus { outline: none; border-bottom-color: var(--accent); background: #fefce8; }
+
+/* Status flag */
+#saveStatus { font-size: 11px; color: var(--text2); margin-right: 8px; }
+#saveStatus.saved { color: #4ade80; }
+#saveStatus.dirty { color: #fbbf24; }
 </style>
 </head>
 <body>
-<main class="empty-card">
-  <div class="empty-icon" aria-hidden="true">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-    </svg>
+
+<div class="topbar no-print">
+  <div class="topbar-title">⚡ A.L.GOMES <span class="accent">— Dossier matériel</span></div>
+  <div class="topbar-actions">
+    <span id="saveStatus">Brouillon</span>
+    <button class="btn" onclick="newFiche()">＋ Nouvelle fiche</button>
+    <button class="btn" onclick="window.print()">🖨 Imprimer</button>
+    <button class="btn primary" onclick="saveFiche()">💾 Enregistrer</button>
   </div>
-  <h1>DOSSIER MATÉRIEL</h1>
-  <p>Cette page est prête à recevoir le contenu du module Dossier matériel.<br>Dis-moi ce que tu veux y mettre et je l'implémente.</p>
-  <span class="tag">À venir</span>
-</main>
+</div>
+
+<div class="fiche-wrap">
+<form class="fiche" id="ficheForm" onsubmit="event.preventDefault();saveFiche();">
+
+  <!-- En-tête : projet à gauche, métadonnées + coordonnées à droite -->
+  <div class="fiche-header">
+    <div>
+      <input class="project-input" id="f_project" placeholder="NOM DU PROJET" autocomplete="off" />
+    </div>
+    <div class="meta">
+      <div class="row"><label>Lot :</label><input type="text" id="f_lot" placeholder="Electricité Cfo / Cfa" /></div>
+      <div class="row"><label>Emetteur :</label><input type="text" id="f_emetteur" value="AL GOMES" /></div>
+      <div class="coord">
+        77, Bd d'Aulnay - 93250 VILLEMOMBLE<br>
+        Tél : 01.48.49.83.95<br>
+        algomes.sarl@al-gomes.com
+      </div>
+    </div>
+  </div>
+
+  <!-- N° fiche + date -->
+  <div class="fiche-id">
+    <div class="box">FICHE N° : <input type="text" id="f_num" placeholder="1.0" /></div>
+    <div class="box">DATE : <input type="date" id="f_date" /></div>
+  </div>
+
+  <!-- OBJET DE LA FICHE -->
+  <div class="section-title">Objet de la fiche</div>
+  <div class="objet">
+    <label><input type="checkbox" id="o_conforme"> Présentation d'un produit conforme au marché</label>
+    <label><input type="checkbox" id="o_echantillon"> Échantillon</label>
+    <label><input type="checkbox" id="o_variante"> Présentation d'une variante dans le cadre du marché</label>
+    <label><input type="checkbox" id="o_documentation"> Documentation</label>
+    <label><input type="checkbox" id="o_incidence"> Présentation d'un produit avec incidence financière PV/MV</label>
+    <label><input type="checkbox" id="o_gamme"> Présentation d'une gamme au choix</label>
+    <label class="with-input"><span><input type="checkbox" id="o_autre1"> Autre :</span><input type="text" class="autre" id="o_autre1_txt" /></label>
+    <label class="with-input"><span><input type="checkbox" id="o_autre2"> Autre :</span><input type="text" class="autre" id="o_autre2_txt" /></label>
+  </div>
+
+  <!-- Matériel + Observations -->
+  <div class="fiche-body">
+    <div class="col-mat">
+      <div class="col-head">Matériels / Matériaux</div>
+      <div class="field-row"><div class="label">FOURNISSEUR</div><input type="text" id="m_fournisseur" placeholder="LEGRAND" /></div>
+      <div class="field-row"><div class="label">Matériels / Matériaux</div><input type="text" id="m_materiel" placeholder="APPAREILLAGE DOOXIE" /></div>
+      <div class="field-row"><div class="label">Caractéristiques</div><input type="text" id="m_caract" placeholder="APPAREILLAGE ENCASTRE" /></div>
+      <div class="field-row"><div class="label">Couleur</div><input type="text" id="m_couleur" placeholder="BLANC" /></div>
+      <div class="field-row"><div class="label">Finition</div><input type="text" id="m_finition" /></div>
+      <div class="field-row"><div class="label">Autres caractéristiques</div><textarea id="m_autres" rows="5"></textarea></div>
+    </div>
+    <div class="col-obs">
+      <div class="col-head">Observations</div>
+      <textarea id="m_observations"></textarea>
+    </div>
+  </div>
+
+  <!-- Localisation -->
+  <div class="field-loc">
+    <div class="label">Localisation de mise en œuvre</div>
+    <input type="text" id="m_loc" placeholder="LOGEMENTS" />
+  </div>
+
+  <!-- Approbations -->
+  <div class="approval">
+    <div class="col">
+      <div class="col-title">B.E.T. / Bureau de contrôle</div>
+      <div class="aor-row"><span class="key">A</span><label style="font-size:11px;display:flex;align-items:center;gap:6px"><input type="radio" name="bet_aor" value="A" class="aor-radio"> APPROUVÉ</label></div>
+      <div class="aor-row"><span class="key">O</span><label style="font-size:11px;display:flex;align-items:center;gap:6px"><input type="radio" name="bet_aor" value="O" class="aor-radio"> OBSERVATIONS</label></div>
+      <div class="aor-row"><span class="key">R</span><label style="font-size:11px;display:flex;align-items:center;gap:6px"><input type="radio" name="bet_aor" value="R" class="aor-radio"> REFUSÉ</label></div>
+      <div class="date-row"><span style="font-weight:700">Le :</span><input type="date" id="bet_date" /></div>
+    </div>
+    <div class="col">
+      <div class="col-title">Architecte</div>
+      <div class="aor-row"><span class="key">A</span><label style="font-size:11px;display:flex;align-items:center;gap:6px"><input type="radio" name="arch_aor" value="A" class="aor-radio"> APPROUVÉ</label></div>
+      <div class="aor-row"><span class="key">O</span><label style="font-size:11px;display:flex;align-items:center;gap:6px"><input type="radio" name="arch_aor" value="O" class="aor-radio"> OBSERVATIONS</label></div>
+      <div class="aor-row"><span class="key">R</span><label style="font-size:11px;display:flex;align-items:center;gap:6px"><input type="radio" name="arch_aor" value="R" class="aor-radio"> REFUSÉ</label></div>
+      <div class="date-row"><span style="font-weight:700">Le :</span><input type="date" id="arch_date" /></div>
+    </div>
+    <div class="col">
+      <div class="col-title">Maître d'Œuvre d'Exécution</div>
+      <div class="aor-row"><span class="key">A</span><label style="font-size:11px;display:flex;align-items:center;gap:6px"><input type="radio" name="moe_aor" value="A" class="aor-radio"> APPROUVÉ</label></div>
+      <div class="aor-row"><span class="key">O</span><label style="font-size:11px;display:flex;align-items:center;gap:6px"><input type="radio" name="moe_aor" value="O" class="aor-radio"> OBSERVATIONS</label></div>
+      <div class="aor-row"><span class="key">R</span><label style="font-size:11px;display:flex;align-items:center;gap:6px"><input type="radio" name="moe_aor" value="R" class="aor-radio"> REFUSÉ</label></div>
+      <div class="date-row"><span style="font-weight:700">Le :</span><input type="date" id="moe_date" /></div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div>A = APPROUVÉ</div>
+    <div>O = OBSERVATIONS</div>
+    <div>R = REFUSÉ</div>
+  </div>
+
+</form>
+</div>
+
+<script>
+// ============================================================================
+// Persistance — sauvegarde l'état du formulaire en localStorage.
+// Plus tard : migration vers Firestore pour partage multi-utilisateurs.
+// ============================================================================
+const FORM_KEY = 'algomes_dossier_materiel_current';
+const FIELDS = [
+  'f_project', 'f_lot', 'f_emetteur', 'f_num', 'f_date',
+  'o_conforme', 'o_echantillon', 'o_variante', 'o_documentation',
+  'o_incidence', 'o_gamme', 'o_autre1', 'o_autre1_txt', 'o_autre2', 'o_autre2_txt',
+  'm_fournisseur', 'm_materiel', 'm_caract', 'm_couleur', 'm_finition',
+  'm_autres', 'm_observations', 'm_loc',
+  'bet_date', 'arch_date', 'moe_date'
+];
+const RADIO_GROUPS = ['bet_aor', 'arch_aor', 'moe_aor'];
+
+function readForm(){
+  const data = {};
+  for(const id of FIELDS){
+    const el = document.getElementById(id);
+    if(!el) continue;
+    data[id] = (el.type === 'checkbox') ? el.checked : el.value;
+  }
+  for(const grp of RADIO_GROUPS){
+    const sel = document.querySelector('input[name="' + grp + '"]:checked');
+    data[grp] = sel ? sel.value : '';
+  }
+  return data;
+}
+function writeForm(data){
+  if(!data) return;
+  for(const id of FIELDS){
+    const el = document.getElementById(id);
+    if(!el) continue;
+    if(el.type === 'checkbox'){ el.checked = !!data[id]; }
+    else { el.value = data[id] || ''; }
+  }
+  for(const grp of RADIO_GROUPS){
+    document.querySelectorAll('input[name="' + grp + '"]').forEach(r => { r.checked = (r.value === data[grp]); });
+  }
+}
+function setStatus(text, cls){
+  const s = document.getElementById('saveStatus');
+  s.textContent = text;
+  s.className = cls || '';
+}
+function markDirty(){ setStatus('Modifications non sauvegardées', 'dirty'); }
+function saveFiche(){
+  try{
+    const data = readForm();
+    data._savedAt = new Date().toISOString();
+    localStorage.setItem(FORM_KEY, JSON.stringify(data));
+    setStatus('✓ Enregistré ' + new Date().toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' }), 'saved');
+  } catch(e){ setStatus('Erreur de sauvegarde', 'dirty'); }
+}
+function loadFiche(){
+  try{
+    const raw = localStorage.getItem(FORM_KEY);
+    if(!raw) return;
+    writeForm(JSON.parse(raw));
+    setStatus('Chargé · Brouillon', '');
+  } catch(e){}
+}
+function newFiche(){
+  if(!confirm('Créer une nouvelle fiche ? Le brouillon actuel sera effacé si non enregistré.')) return;
+  document.getElementById('ficheForm').reset();
+  // Pré-remplit Emetteur (valeur par défaut)
+  document.getElementById('f_emetteur').value = 'AL GOMES';
+  document.getElementById('f_date').valueAsDate = new Date();
+  localStorage.removeItem(FORM_KEY);
+  setStatus('Nouvelle fiche', '');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Date par défaut = aujourd'hui
+  const today = new Date();
+  document.getElementById('f_date').valueAsDate = today;
+  loadFiche();
+  // Mark dirty au moindre changement
+  document.getElementById('ficheForm').addEventListener('input', markDirty);
+  document.getElementById('ficheForm').addEventListener('change', markDirty);
+  // Ctrl+S pour sauvegarder
+  document.addEventListener('keydown', (e) => {
+    if((e.ctrlKey || e.metaKey) && e.key === 's'){ e.preventDefault(); saveFiche(); }
+  });
+});
+</script>
+
 </body>
 </html>

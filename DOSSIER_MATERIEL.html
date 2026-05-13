@@ -391,24 +391,21 @@ input.proj { font-size: 28pt; font-weight: 700; text-align: center; letter-spaci
 <!-- Toutes les coordonnées (positions/tailles) sont extraites du DOCX original
      PAGE_DE_GARDE.DOCX. Voir aussi les commentaires CSS. -->
 <section class="sheet cover" id="coverSheet" style="display:none">
-  <!-- Décorations (SVG viewBox = 210×297 mm A4) -->
+  <!-- Décorations (SVG viewBox = 210×297 mm A4)
+       On reproduit l'empilage du DOCX original (pas de mask SVG car
+       html2canvas le rend mal lors de l'export PDF) :
+       1. fond violet clair (rectangle)
+       2. GROSSE pilule blanche par-dessus → crée le "C"
+       3. rectangle blanc en bas-droit → efface davantage le violet
+       4. pilule navy fine en bas (par-dessus tout) -->
   <svg class="cover-deco" viewBox="0 0 210 297" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-    <defs>
-      <!-- Le mask définit les zones de la forme violette qui restent visibles :
-           blanc = garder le violet, noir = effacer. -->
-      <mask id="violetClipMask" maskUnits="userSpaceOnUse">
-        <!-- Tout le rectangle de base est conservé (blanc) -->
-        <rect x="0" y="0" width="141.9" height="252.5" fill="#fff"/>
-        <!-- La GROSSE pilule blanche du DOCX (stadium 204.5×162.1mm, rx=81)
-             vient mordre dans le violet et créer le "C" -->
-        <rect x="5.5" y="17.7" width="204.5" height="162.1" rx="81" ry="81" fill="#000"/>
-        <!-- Le rectangle blanc du DOCX (110.6×99.8mm) efface le bas-droit -->
-        <rect x="31.4" y="152.7" width="110.6" height="99.8" fill="#000"/>
-      </mask>
-    </defs>
-    <!-- Rectangle violet clair (#99c = #9999cc) avec le masque -->
-    <rect x="0" y="0" width="141.9" height="252.5" fill="#9999cc" mask="url(#violetClipMask)"/>
-    <!-- Pilule navy en bas (154.4×7.76mm, stadium rx=3.88) -->
+    <!-- 1. Rectangle violet clair (#99c = #9999cc) -->
+    <rect x="0" y="0" width="141.9" height="252.5" fill="#9999cc"/>
+    <!-- 2. GROSSE pilule blanche (204×162mm rx=81) — créé le "C" -->
+    <rect x="5.5" y="17.7" width="204.5" height="162.1" rx="81" ry="81" fill="#ffffff"/>
+    <!-- 3. Rectangle blanc (110×100mm) efface le bas-droit -->
+    <rect x="31.4" y="152.7" width="110.6" height="99.8" fill="#ffffff"/>
+    <!-- 4. Pilule navy fine en bas (154×7.76mm rx=3.88, stadium) -->
     <rect x="17.5" y="224.7" width="154.4" height="7.76" rx="3.88" ry="3.88" fill="#000080"/>
   </svg>
 
@@ -1205,7 +1202,10 @@ async function exportDossierPdf(){
       currentFicheId = fiche.id;
       // Attend 2 frames pour que le DOM se mette à jour (inputs et focus)
       await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-      const sheet = document.querySelector('.sheet');
+      // ⚠ '.sheet' renvoie en premier la cover (id=coverSheet) qui est cachée
+      // → on cible explicitement le ficheForm pour ne pas html2canvas-render
+      // un élément display:none (qui déclenche une erreur "undefined").
+      const sheet = document.getElementById('ficheForm');
       const canvas = await html2canvas(sheet, {
         scale: 2,
         backgroundColor: '#ffffff',

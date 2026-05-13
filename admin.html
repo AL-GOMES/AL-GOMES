@@ -274,6 +274,28 @@ if(window.self!==window.top){
       <button class="btn btn-primary btn-sm" id="btnAddSig" onclick="addSignature()" disabled>+ Ajouter</button>
     </div>
   </div>
+
+  <!-- CONSOLE LIVE (debug) -->
+  <div class="card">
+    <h2><span>🪵</span> Console live</h2>
+    <div style="font-size:12px;color:var(--text2);margin:-8px 0 14px">
+      Logs capturés sur toutes les pages (auto-refresh 1s).
+      Activer le mode debug pour aussi les afficher dans la vraie console : <code>?debug=1</code> dans l'URL ou <code>localStorage.setItem('algomes_debug','1')</code>.
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
+      <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="logFltLog" checked> log</label>
+      <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="logFltInfo" checked> info</label>
+      <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="logFltWarn" checked> warn</label>
+      <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="logFltError" checked> error</label>
+      <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="logFltDebug" checked> debug</label>
+      <input type="text" id="logSearch" placeholder="Filtrer (texte ou page)…" style="flex:1;min-width:160px;padding:5px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px">
+      <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="logAutoScroll" checked> Auto-scroll</label>
+      <button class="btn btn-sm" onclick="copyConsoleLog()" style="background:rgba(120,50,255,.10);color:#b388ff;border:1px solid rgba(120,50,255,.25)">📋 Copier</button>
+      <button class="btn btn-danger btn-sm" onclick="clearConsoleLog()">🗑 Vider</button>
+      <span id="logCount" style="font-size:11px;color:var(--text2);margin-left:auto"></span>
+    </div>
+    <pre id="logView" style="margin:0;padding:10px;background:#0a0d14;border:1px solid var(--border);border-radius:4px;max-height:380px;overflow:auto;font-family:'Menlo','Consolas',monospace;font-size:11px;line-height:1.5;color:#cbd5e1;white-space:pre-wrap;word-break:break-word"></pre>
+  </div>
 </div>
 
 <!-- EDIT USER ROLE MODAL -->
@@ -1289,6 +1311,79 @@ async function doSaveSchedule(){
     toast('Erreur : ' + (err.message||''), 'error');
   }
 }
+
+// ============================================================================
+// CONSOLE LIVE — lit le buffer alimenté par firebase-init.js sur toutes les
+// pages (y compris dans les iframes). Rafraîchi via storage events + intervalle
+// de secours toutes les 1 s. Filtres par niveau et recherche texte.
+// ============================================================================
+const LOG_LEVELS = ['log', 'info', 'warn', 'error', 'debug'];
+const LOG_COLORS = { log: '#cbd5e1', info: '#7dd3fc', warn: '#fbbf24', error: '#f87171', debug: '#a78bfa' };
+let _lastLogSig = '';
+function getLogFilters(){
+  const f = {};
+  LOG_LEVELS.forEach(l => { f[l] = document.getElementById('logFlt' + l.charAt(0).toUpperCase() + l.slice(1)).checked; });
+  return f;
+}
+function fmtLogTs(t){
+  const d = new Date(t);
+  return d.toLocaleTimeString('fr-FR', { hour12:false }) + '.' + String(d.getMilliseconds()).padStart(3,'0');
+}
+function escHtml(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[m]));
+}
+function renderConsoleLog(force){
+  const all = (window.AlgomesLog ? window.AlgomesLog.getAll() : []) || [];
+  const filt = getLogFilters();
+  const q = (document.getElementById('logSearch').value || '').toLowerCase();
+  const shown = all.filter(e => filt[e.lvl] !== false && (!q || (e.m + ' ' + e.p).toLowerCase().includes(q)));
+  const sig = shown.length + ':' + (shown[shown.length-1] ? shown[shown.length-1].t : 0) + ':' + q + ':' + LOG_LEVELS.map(l => filt[l]?1:0).join('');
+  if (!force && sig === _lastLogSig) return;
+  _lastLogSig = sig;
+  const view = document.getElementById('logView');
+  const wasAtBottom = (view.scrollHeight - view.scrollTop - view.clientHeight) < 40;
+  const autoScroll = document.getElementById('logAutoScroll').checked;
+  view.innerHTML = shown.map(e =>
+    '<span style="color:#6b7280">' + fmtLogTs(e.t) + '</span> ' +
+    '<span style="color:' + (LOG_COLORS[e.lvl] || '#cbd5e1') + ';font-weight:600">' +
+      escHtml((e.lvl||'log').toUpperCase().padEnd(5)) + '</span> ' +
+    '<span style="color:#a78bfa">[' + escHtml(e.p || '?') + ']</span> ' +
+    '<span>' + escHtml(e.m || '') + '</span>'
+  ).join('\n');
+  document.getElementById('logCount').textContent = shown.length + ' / ' + all.length + ' lignes';
+  if (autoScroll && (wasAtBottom || force)) view.scrollTop = view.scrollHeight;
+}
+function copyConsoleLog(){
+  const all = (window.AlgomesLog ? window.AlgomesLog.getAll() : []) || [];
+  const filt = getLogFilters();
+  const q = (document.getElementById('logSearch').value || '').toLowerCase();
+  const text = all
+    .filter(e => filt[e.lvl] !== false && (!q || (e.m + ' ' + e.p).toLowerCase().includes(q)))
+    .map(e => fmtLogTs(e.t) + ' ' + (e.lvl||'log').toUpperCase().padEnd(5) + ' [' + (e.p||'?') + '] ' + (e.m||''))
+    .join('\n');
+  if (!text) { toast('Aucun log à copier', 'error'); return; }
+  navigator.clipboard.writeText(text).then(
+    () => toast(all.length + ' lignes copiées dans le presse-papier', 'success'),
+    () => toast('Impossible de copier (autorisation refusée ?)', 'error')
+  );
+}
+function clearConsoleLog(){
+  if (!confirm('Vider le buffer de logs ?')) return;
+  if (window.AlgomesLog) window.AlgomesLog.clear();
+  _lastLogSig = '';
+  renderConsoleLog(true);
+  toast('Buffer vidé', 'success');
+}
+// Refresh sur events
+window.addEventListener('storage', e => { if (e.key && e.key === (window.AlgomesLog && window.AlgomesLog.KEY)) renderConsoleLog(); });
+['logFltLog','logFltInfo','logFltWarn','logFltError','logFltDebug','logAutoScroll','logSearch']
+  .forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener(el.type === 'checkbox' ? 'change' : 'input', () => renderConsoleLog(true));
+  });
+// Refresh de secours (au cas où storage event raté)
+setInterval(renderConsoleLog, 1000);
+renderConsoleLog(true);
 </script>
 </body>
 </html>

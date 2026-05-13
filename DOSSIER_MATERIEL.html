@@ -35,13 +35,27 @@ html, body { background: #2a2a35; font-family: 'Calibri', 'Segoe UI', Arial, san
 #saveStatus.saved { color: #4ade80; }
 #saveStatus.dirty { color: #fbbf24; }
 
-/* ─── La feuille (style Excel) ─── */
-.sheet-wrap { padding: 24px; display: flex; justify-content: center; }
+/* ─── La feuille (format A4 strict 210×297 mm) ─── */
+@page { size: A4 portrait; margin: 10mm; }
+.sheet-wrap { padding: 16px; display: flex; justify-content: center; }
 .sheet {
-  width: 900px; max-width: 100%; background: #fff;
-  border: 1.5px solid #000; padding: 14px;
-  font-size: 11pt; line-height: 1.25; color: #000;
+  /* A4 portrait : 210mm de large, 297mm de haut. On retire 20mm de marge */
+  width: 210mm; min-height: 297mm; max-width: 100%;
+  background: #fff;
+  border: 1.5px solid #000; padding: 10mm;
+  font-size: 10.5pt; line-height: 1.25; color: #000;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.45);
+  display: flex; flex-direction: column;
 }
+.sheet > form, .sheet form { display: flex; flex-direction: column; flex: 1; }
+
+/* Nota A/O/R tout en bas de la feuille */
+.fp-nota {
+  margin-top: auto; padding-top: 10mm;
+  font-size: 9pt; color: #333; font-style: italic;
+  border-top: 1px dashed #999;
+}
+.fp-nota strong { font-style: normal; }
 
 /* La table principale est une grille à 16 colonnes (≈ le grille Excel) */
 table.fp { width: 100%; border-collapse: collapse; }
@@ -128,26 +142,10 @@ table.fp th {
 .fp-approval td.date label { font-weight: 700; }
 .fp-approval td.date input { border: 0; border-bottom: 1px solid #000; font: inherit; background: transparent; padding: 1px 4px; }
 
-/* Legende A/O/R */
-.fp-legend td {
-  text-align: center; font-weight: 700; padding: 4px;
-  font-size: 10pt; background: #f7f7f7;
-}
-
 /* Logo AL GOMES dans le bandeau projet (haut-droite) */
 .fp-logo {
   display: block; width: 100%; max-width: 180px; height: auto;
   margin: 0 auto 6px;
-}
-
-/* Zone cachet + signature dans les colonnes d'approbation */
-.fp-approval td.stamp {
-  height: 90px; padding: 2px;
-  background: repeating-linear-gradient(45deg, #fafafa 0 6px, #fff 6px 12px);
-}
-.fp-approval td.stamp .stamp-label {
-  font-size: 8pt; color: #888; text-align: center; letter-spacing: 0.5px;
-  font-style: italic; text-transform: uppercase;
 }
 
 /* Inputs invisibles génériques (au survol on devine qu'ils sont éditables) */
@@ -159,13 +157,15 @@ input.fpinp:focus, textarea.fpinp:focus { outline: 1px solid #F59E0B; background
 
 input.proj { font-size: 28pt; font-weight: 700; text-align: center; letter-spacing: 1px; text-transform: uppercase; }
 
-/* Print */
+/* Print A4 */
 @media print {
   body { background: #fff; }
   .topbar, .no-print { display: none !important; }
   .sheet-wrap { padding: 0; }
-  .sheet { width: 100%; border: 0; padding: 8mm; box-shadow: none; }
-  table.fp td, table.fp th { font-size: 9pt; }
+  .sheet {
+    width: 100%; min-height: auto;
+    border: 0; padding: 0; box-shadow: none;
+  }
   input, textarea { outline: 0 !important; background: transparent !important; }
 }
 </style>
@@ -297,24 +297,17 @@ input.proj { font-size: 28pt; font-weight: 700; text-align: center; letter-spaci
         <div class="row"><span class="key">R</span><label><input type="radio" name="moe_aor" value="R"> REFUSÉ</label></div>
       </td>
     </tr>
-    <!-- Zone cachet + signature : 90 px de haut, fond hachuré clair pour suggérer
-         qu'on peut tamponner / signer ici. À l'impression, c'est juste blanc. -->
-    <tr>
-      <td class="stamp"><div class="stamp-label">Cachet + signature</div></td>
-      <td class="stamp"><div class="stamp-label">Cachet + signature</div></td>
-      <td class="stamp"><div class="stamp-label">Cachet + signature</div></td>
-    </tr>
     <tr>
       <td class="date"><div class="row"><label>Le :</label><input type="date" id="bet_date"></div></td>
       <td class="date"><div class="row"><label>Le :</label><input type="date" id="arch_date"></div></td>
       <td class="date"><div class="row"><label>Le :</label><input type="date" id="moe_date"></div></td>
     </tr>
-    <tr class="fp-legend">
-      <td>A = APPROUVÉ</td>
-      <td>O = OBSERVATIONS</td>
-      <td>R = REFUSÉ</td>
-    </tr>
   </table>
+
+  <!-- Nota tout en bas de la fiche -->
+  <div class="fp-nota">
+    <strong>Nota :</strong> A = APPROUVÉ &nbsp;·&nbsp; O = OBSERVATIONS &nbsp;·&nbsp; R = REFUSÉ
+  </div>
 
 </form>
 </div>

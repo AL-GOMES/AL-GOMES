@@ -1682,8 +1682,17 @@ html, body {
         <label style="font-size:10px">Police</label>
         <select id="text-font" style="padding:5px;background:var(--bg-3);color:var(--text);border:1px solid var(--panel-border);border-radius:3px">
           <option value="Helvetica">Helvetica</option>
+          <option value="Arial">Arial</option>
+          <option value="Verdana">Verdana</option>
+          <option value="Tahoma">Tahoma</option>
+          <option value="Trebuchet">Trebuchet MS</option>
+          <option value="Impact">Impact</option>
           <option value="Times-Roman">Times</option>
+          <option value="Georgia">Georgia</option>
+          <option value="Garamond">Garamond</option>
           <option value="Courier">Courier (mono)</option>
+          <option value="Consolas">Consolas (mono)</option>
+          <option value="ComicSans">Comic Sans MS</option>
         </select>
       </div>
       <div style="display:flex;flex-direction:column;gap:3px">
@@ -3080,8 +3089,17 @@ class PDFViewer {
     const px = Math.max(6, (a.size || 14) * this.zoom);
     parts.push(px.toFixed(1) + 'px');
     const fontMap = { 'Helvetica': 'Helvetica, Arial, sans-serif',
+                      'Arial': 'Arial, Helvetica, sans-serif',
+                      'Verdana': 'Verdana, Geneva, sans-serif',
+                      'Tahoma': 'Tahoma, Geneva, sans-serif',
+                      'Trebuchet': '"Trebuchet MS", sans-serif',
+                      'Impact': 'Impact, "Arial Black", sans-serif',
                       'Times-Roman': 'Times, "Times New Roman", serif',
-                      'Courier': '"Courier New", Courier, monospace' };
+                      'Georgia': 'Georgia, serif',
+                      'Garamond': 'Garamond, "EB Garamond", serif',
+                      'Courier': '"Courier New", Courier, monospace',
+                      'Consolas': 'Consolas, "Lucida Console", monospace',
+                      'ComicSans': '"Comic Sans MS", "Comic Sans", cursive' };
     parts.push(fontMap[a.font] || 'sans-serif');
     return parts.join(' ');
   }
@@ -3296,14 +3314,41 @@ class PDFViewer {
             viewer: this,
             editingId: null
           };
-          // Pré-remplit avec le texte original
+          // Pré-remplit avec la police et le style détectés depuis le PDF.
+          // Le fontName de pdfjs est un identifiant interne (ex. g_d0_f1) et
+          // le vrai nom de police est dans textContent.styles[fontName].
+          // Bold/italic sont déduits du nom de la police (convention PDF :
+          // "TimesNewRoman-Bold", "Arial-Italic", etc.).
+          const style = textContent.styles && item.fontName ? textContent.styles[item.fontName] : null;
+          const rawFam = (style && style.fontFamily) ? String(style.fontFamily).toLowerCase() : '';
+          const rawName = String(item.fontName || '').toLowerCase();
+          const probe = (rawFam + ' ' + rawName).toLowerCase();
+          const isBold = /bold|black|heavy|extrabold|semibold/.test(probe);
+          const isItalic = /italic|oblique/.test(probe);
+          let pickedFont = 'Helvetica';
+          if (/courier|consola|mono/.test(probe)) {
+            pickedFont = probe.includes('consola') ? 'Consolas' : 'Courier';
+          } else if (/serif/.test(rawFam) && !/sans/.test(rawFam) ||
+                     /times|georgia|garamond|cambria/.test(probe)) {
+            if (probe.includes('georgia')) pickedFont = 'Georgia';
+            else if (probe.includes('garamond')) pickedFont = 'Garamond';
+            else pickedFont = 'Times-Roman';
+          } else {
+            if (probe.includes('arial black') || probe.includes('impact')) pickedFont = 'Impact';
+            else if (probe.includes('arial')) pickedFont = 'Arial';
+            else if (probe.includes('verdana')) pickedFont = 'Verdana';
+            else if (probe.includes('tahoma')) pickedFont = 'Tahoma';
+            else if (probe.includes('trebuchet')) pickedFont = 'Trebuchet';
+            else if (probe.includes('comic')) pickedFont = 'ComicSans';
+            else pickedFont = 'Helvetica';
+          }
           const fakeExisting = {
             text: item.str,
-            font: 'Helvetica',
+            font: pickedFont,
             size: Math.max(8, Math.round((item.height || 12) * 0.85)),
             color: '#000000',
             bgColor: '#ffffff',
-            bold: false, italic: false, underline: false, strike: false,
+            bold: isBold, italic: isItalic, underline: false, strike: false,
             align: 'left'
           };
           if (window._openTextModal) window._openTextModal(fakeExisting);
@@ -7321,8 +7366,17 @@ function drawAllAnnotationsOnCanvasForExport(ctx, viewer, pageNum, renderScale) 
     const px = Math.max(6, (a.size || 14) * renderScale);
     parts.push(px.toFixed(1) + 'px');
     const fontMap = { 'Helvetica':'Helvetica, Arial, sans-serif',
+                      'Arial':'Arial, Helvetica, sans-serif',
+                      'Verdana':'Verdana, Geneva, sans-serif',
+                      'Tahoma':'Tahoma, Geneva, sans-serif',
+                      'Trebuchet':'"Trebuchet MS", sans-serif',
+                      'Impact':'Impact, "Arial Black", sans-serif',
                       'Times-Roman':'Times, "Times New Roman", serif',
-                      'Courier':'"Courier New", Courier, monospace' };
+                      'Georgia':'Georgia, serif',
+                      'Garamond':'Garamond, "EB Garamond", serif',
+                      'Courier':'"Courier New", Courier, monospace',
+                      'Consolas':'Consolas, "Lucida Console", monospace',
+                      'ComicSans':'"Comic Sans MS", "Comic Sans", cursive' };
     parts.push(fontMap[a.font] || 'sans-serif');
     ctx.save();
     if (rot) {

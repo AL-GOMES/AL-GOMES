@@ -2104,8 +2104,40 @@ function saveDocState(docHash, state) {
     return;
   }
   try {
-    const payload = Object.assign({}, state, { _v: STORAGE_VERSION });
-    localStorage.setItem(STORAGE_KEY_PREFIX + docHash, JSON.stringify(payload));
+    const payload = Object.assign({}, state, { _v: STORAGE_VERSION, _t: Date.now() });
+    try {
+      localStorage.setItem(STORAGE_KEY_PREFIX + docHash, JSON.stringify(payload));
+    } catch (quotaErr) {
+      // Quota atteint → on évince les documents les plus anciens (LRU sur _t)
+      // jusqu'à pouvoir écrire le nouveau state, en gardant au moins le doc courant.
+      if (quotaErr && (quotaErr.name === 'QuotaExceededError' ||
+                       quotaErr.code === 22 || quotaErr.code === 1014)) {
+        const others = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (!k || !k.startsWith(STORAGE_KEY_PREFIX)) continue;
+          if (k === STORAGE_KEY_PREFIX + docHash) continue;
+          try {
+            const v = JSON.parse(localStorage.getItem(k) || 'null');
+            others.push({ key: k, t: (v && v._t) || 0 });
+          } catch { others.push({ key: k, t: 0 }); }
+        }
+        others.sort((a, b) => a.t - b.t);
+        let evicted = 0;
+        for (const o of others) {
+          try {
+            localStorage.removeItem(o.key);
+            evicted++;
+            localStorage.setItem(STORAGE_KEY_PREFIX + docHash, JSON.stringify(payload));
+            showToast('Espace local saturé — ' + evicted + ' ancien(s) plan(s) supprimé(s) pour faire de la place', 'warn', 4500);
+            return;
+          } catch { /* still saturé → continuer à évincer */ }
+        }
+        showToast('Sauvegarde locale saturée : impossible de libérer de l\'espace', 'err', 5000);
+        return;
+      }
+      throw quotaErr;
+    }
   } catch (e) {
     showToast('Sauvegarde locale saturée : ' + e.message, 'err', 4000);
   }

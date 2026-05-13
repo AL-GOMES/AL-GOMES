@@ -4,6 +4,19 @@
    Expose window.firebase, window.auth, window.db.
    ============================================================================= */
 (function () {
+  // Silencer console.log/warn/info/debug en production sauf si ?debug=1 dans l'URL.
+  // console.error reste actif (pour ne pas masquer de vraies erreurs).
+  try {
+    var qs = (window.location.search || '');
+    var isDebug = /[?&]debug=1\b/.test(qs) || (window.localStorage && localStorage.getItem('algomes_debug') === '1');
+    if (!isDebug) {
+      var noop = function () {};
+      ['log', 'warn', 'info', 'debug'].forEach(function (k) {
+        try { console[k] = noop; } catch (e) {}
+      });
+    }
+  } catch (e) {}
+
   if (typeof firebase === 'undefined') {
     console.error('[firebase-init] firebase compat SDK non chargé. Ordre des <script> ?');
     return;

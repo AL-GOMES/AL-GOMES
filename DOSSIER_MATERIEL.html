@@ -155,80 +155,100 @@ html, body { background: #2a2a35; font-family: 'Calibri', 'Segoe UI', Arial, san
 .fp-nota strong { font-style: normal; }
 
 /* ─── Page de garde du dossier ────────────────────────────────────────────────
-   Reproduit fidèlement le PDF "N°0 PAGE DE GARDE.pdf" :
-   - grand bandeau violet à gauche avec demi-cercle blanc creusé qui dépasse
-   - petit rectangle violet en haut-droite
-   - pilule bleue arrondie centrée en bas
-   - logo A.L.GOMES dans la zone blanche du cut-out
-   - texte centré dans la moitié droite (DOSSIER MATERIEL / DOE / adresse /
-     coordonnées société / téléphone / mail / lieu + date). */
+   Coordonnées extraites du DOCX original (PAGE_DE_GARDE.DOCX) :
+   - grand rectangle violet clair (#99c) couvrant la gauche+haut de la page
+   - GROSSE pilule blanche (stadium 204×162mm rx=81) par-dessus qui le découpe,
+     ne laissant visible qu'un mince bandeau en "C" sur le côté gauche
+   - rectangle blanc additionnel (110×100mm) qui efface le bas-droit du violet
+   - pilule navy fine (154×8mm, stadium) en bas
+   - logo A.L.GOMES (114×58mm) ancré en haut, au centre du C
+   - 3 zones de texte centrées : titres (Lucida Sans Typewriter 26pt bold),
+     adresse (Lucida Sans 14pt bold), contact (Lucida Sans 11.5pt) */
 .sheet.cover {
-  position: relative; padding: 0;
-  font-family: 'Trebuchet MS', 'Calibri', sans-serif;
-  color: #1a1a1a;
-  overflow: hidden;
+  position: relative; padding: 0; border: 0;
+  width: 210mm; height: 297mm; min-height: 297mm; max-height: 297mm;
   background: #fff;
+  font-family: 'Lucida Sans Unicode', 'Lucida Sans', 'Lucida Grande', sans-serif;
+  color: #000;
+  overflow: hidden;
+  display: block;
 }
 .cover-deco {
   position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  width: 100%; height: 100%;
 }
-.cover-content {
-  position: relative; z-index: 1;
-  height: 100%; min-height: 277mm;
-  display: flex; flex-direction: column; align-items: center;
-  /* padding-left = largeur de l'arc violet pour pousser le texte à droite */
-  padding: 28mm 14mm 30mm 78mm;
-  text-align: center;
-}
+/* Logo A.L.GOMES — position EXACTE du DOCX (114×58mm @ 55.7,26.3mm) */
 .cover-logo {
-  width: 48mm; height: 48mm; margin: 0 0 16mm;
-  display: flex; align-items: center; justify-content: center;
+  position: absolute; z-index: 2;
+  left: 55.7mm; top: 26.33mm;
+  width: 114mm; height: 58mm;
+  pointer-events: none;
 }
 .cover-logo img { width: 100%; height: 100%; object-fit: contain; }
-.cover-titles { margin: 0 0 8mm; }
-.cover-title1, .cover-title2 {
-  display: block; font-size: 20pt; font-weight: 700;
-  color: #1a1a1a; letter-spacing: 1px;
-  border: 0; background: transparent; text-align: center; width: 100%;
-  font-family: 'Trebuchet MS', 'Verdana', sans-serif;
-  padding: 0;
+
+/* Zone 1 : titres DOSSIER MATERIEL + DOE (centrés, gras, typewriter 26pt) */
+.cover-zone-titles {
+  position: absolute; z-index: 2;
+  left: 35.85mm; top: 77.92mm;
+  width: 135.9mm; height: 45.78mm;
+  display: flex; flex-direction: column;
+  justify-content: center; align-items: center; gap: 1mm;
+  font-family: 'Lucida Sans Typewriter', 'Lucida Console', 'Consolas', 'Courier New', monospace;
+  font-weight: 700; font-size: 26pt; color: #000;
+  line-height: 1.1; text-align: center;
 }
-.cover-title2 { margin-top: 1mm; }
-.cover-address {
-  font-size: 12pt; font-weight: 700; color: #1a1a1a;
-  margin: 6mm 0 10mm; line-height: 1.4; min-height: 3em;
-  border: 0; background: transparent; text-align: center;
-  width: 100%; resize: none; font-family: inherit; padding: 0;
+.cover-zone-titles input {
+  font: inherit; font-weight: inherit; color: inherit;
+  background: transparent; border: 0; text-align: center;
+  width: 100%; padding: 0; margin: 0;
 }
-.cover-company {
-  font-size: 12pt; font-weight: 700; color: #1a1a1a;
-  margin-bottom: 12mm; line-height: 1.5;
+
+/* Zone 2 : adresse chantier + société (centrées, gras, Lucida Sans 14pt) */
+.cover-zone-address {
+  position: absolute; z-index: 2;
+  left: 47.36mm; top: 118.25mm;
+  width: 113.8mm; height: 54.67mm;
+  display: flex; flex-direction: column;
+  justify-content: space-around; align-items: stretch;
+  font-family: 'Lucida Sans Unicode', 'Lucida Sans', 'Lucida Grande', sans-serif;
+  font-weight: 700; font-size: 14pt; color: #000;
+  line-height: 1.25; text-align: center;
 }
-.cover-company input {
-  display: block; border: 0; background: transparent;
-  text-align: center; width: 100%; font: inherit; color: inherit;
-  padding: 1px 4px;
+.cover-zone-address textarea, .cover-zone-address input {
+  font: inherit; font-weight: inherit; color: inherit;
+  background: transparent; border: 0; text-align: center;
+  width: 100%; padding: 0; margin: 0; resize: none;
 }
-.cover-contact {
-  font-size: 10pt; color: #1a1a1a; margin-bottom: 4mm; line-height: 1.9;
+.cover-zone-address textarea { min-height: 2.5em; }
+.cover-company { display: flex; flex-direction: column; gap: 0; }
+
+/* Zone 3 : téléphone + email + date (centrés, Lucida Sans 11.5pt) */
+.cover-zone-contact {
+  position: absolute; z-index: 2;
+  left: 50.67mm; top: 171.36mm;
+  width: 112.4mm; height: 46.1mm;
+  display: flex; flex-direction: column;
+  justify-content: space-around; align-items: stretch;
+  font-family: 'Lucida Sans Unicode', 'Lucida Sans', 'Lucida Grande', sans-serif;
+  font-weight: 400; font-size: 11.5pt; color: #000;
+  line-height: 1.5; text-align: center;
 }
-.cover-contact input {
-  display: block; border: 0; background: transparent;
-  text-align: center; width: 100%; font: inherit; color: inherit;
-  padding: 1px 4px;
+.cover-zone-contact input {
+  font: inherit; font-weight: inherit; color: inherit;
+  background: transparent; border: 0; text-align: center;
+  width: 100%; padding: 0; margin: 0;
 }
-.cover-date {
-  font-size: 10pt; color: #1a1a1a; margin-top: 0;
+.cover-zone-contact .cover-date {
+  display: flex; justify-content: center; align-items: center;
+  gap: 4px; flex-wrap: nowrap;
 }
-.cover-date input {
-  border: 0; background: transparent; font: inherit; color: inherit;
-  text-align: center; padding: 1px 4px;
-}
-.cover-date .place { width: auto; min-width: 80px; }
-.cover-date .datetext { width: auto; min-width: 150px; }
-/* Focus discret en cohérence avec le reste */
+.cover-zone-contact .cover-date input.place { width: auto; min-width: 90px; }
+.cover-zone-contact .cover-date input.datetext { width: auto; min-width: 150px; }
+
+/* Focus discret pour l'édition */
 .sheet.cover input:focus, .sheet.cover textarea:focus {
-  outline: 1px solid #F59E0B; background: rgba(245,158,11,0.06);
+  outline: 1px solid #F59E0B;
+  background: rgba(245,158,11,0.06);
 }
 
 /* La table principale est une grille à 16 colonnes (≈ le grille Excel) */
@@ -368,50 +388,58 @@ input.proj { font-size: 28pt; font-weight: 700; text-align: center; letter-spaci
 <div class="sheet-wrap">
 
 <!-- Page de garde — masquée par défaut, montrée quand l'onglet 📋 est actif -->
+<!-- Toutes les coordonnées (positions/tailles) sont extraites du DOCX original
+     PAGE_DE_GARDE.DOCX. Voir aussi les commentaires CSS. -->
 <section class="sheet cover" id="coverSheet" style="display:none">
-  <!-- Décorations (SVG positionné en absolu, viewBox = 210×297 mm A4) -->
-  <svg class="cover-deco" viewBox="0 0 210 297" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-    <!-- 1. Grand bandeau violet à gauche (rectangle vertical) -->
-    <rect x="0" y="0" width="78" height="223" fill="#a594c0"/>
-    <!-- 2. Demi-cercle blanc creusé dans le violet — son centre est sur le
-         bord droit du violet, donc on n'en voit que la moitié droite qui
-         "mange" l'intérieur du violet, créant l'effet d'arc. -->
-    <circle cx="78" cy="112" r="56" fill="#ffffff"/>
-    <!-- 3. Petit rectangle violet en haut-droite (séparé du grand) -->
-    <rect x="120" y="0" width="90" height="22" fill="#a594c0"/>
-    <!-- 4. Pilule bleue arrondie, centrée horizontalement, en bas -->
-    <rect x="55" y="254" width="100" height="14" rx="7" ry="7" fill="#1d4f9c"/>
+  <!-- Décorations (SVG viewBox = 210×297 mm A4) -->
+  <svg class="cover-deco" viewBox="0 0 210 297" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <defs>
+      <!-- Le mask définit les zones de la forme violette qui restent visibles :
+           blanc = garder le violet, noir = effacer. -->
+      <mask id="violetClipMask" maskUnits="userSpaceOnUse">
+        <!-- Tout le rectangle de base est conservé (blanc) -->
+        <rect x="0" y="0" width="141.9" height="252.5" fill="#fff"/>
+        <!-- La GROSSE pilule blanche du DOCX (stadium 204.5×162.1mm, rx=81)
+             vient mordre dans le violet et créer le "C" -->
+        <rect x="5.5" y="17.7" width="204.5" height="162.1" rx="81" ry="81" fill="#000"/>
+        <!-- Le rectangle blanc du DOCX (110.6×99.8mm) efface le bas-droit -->
+        <rect x="31.4" y="152.7" width="110.6" height="99.8" fill="#000"/>
+      </mask>
+    </defs>
+    <!-- Rectangle violet clair (#99c = #9999cc) avec le masque -->
+    <rect x="0" y="0" width="141.9" height="252.5" fill="#9999cc" mask="url(#violetClipMask)"/>
+    <!-- Pilule navy en bas (154.4×7.76mm, stadium rx=3.88) -->
+    <rect x="17.5" y="224.7" width="154.4" height="7.76" rx="3.88" ry="3.88" fill="#000080"/>
   </svg>
 
-  <div class="cover-content">
-    <!-- Logo A.L.GOMES rond positionné au cercle blanc des décorations -->
-    <div class="cover-logo">
-      <img src="LOGO ALGOMES.jpg" alt="A.L. GOMES">
-    </div>
+  <!-- Logo A.L.GOMES (114×58 mm à 55.7,26.3 mm — coordonnées DOCX) -->
+  <div class="cover-logo">
+    <img src="LOGO ALGOMES.jpg" alt="A.L. GOMES">
+  </div>
 
-    <!-- Titres principaux (DOSSIER MATERIEL / DOE) -->
-    <div class="cover-titles">
-      <input class="cover-title1" id="c_title1" value="DOSSIER MATERIEL" autocomplete="off">
-      <input class="cover-title2" id="c_title2" value="DOE" autocomplete="off">
-    </div>
+  <!-- Zone 1 — Titres principaux (Lucida Sans Typewriter 26pt bold) -->
+  <div class="cover-zone-titles">
+    <input id="c_title1" value="DOSSIER MATERIEL" autocomplete="off">
+    <input id="c_title2" value="DOE" autocomplete="off">
+  </div>
 
-    <!-- Adresse du chantier / projet -->
-    <textarea class="cover-address" id="c_address" rows="2" placeholder="QUARTIER DE L'ARCHE GUEDON – 77220 TORCY"></textarea>
-
-    <!-- Coordonnées entreprise (préremplies, modifiables si besoin) -->
+  <!-- Zone 2 — Adresse chantier + société (Lucida Sans 14pt bold) -->
+  <div class="cover-zone-address">
+    <textarea id="c_address" rows="2" placeholder="QUARTIER DE L'ARCHE GUEDON – 77220 TORCY"></textarea>
     <div class="cover-company">
       <input id="c_company1" value="S.A.S A.L.GOMES" autocomplete="off">
       <input id="c_company2" value="77, Bd d' Aulnay" autocomplete="off">
       <input id="c_company3" value="93250 VILLEMOMBLE" autocomplete="off">
     </div>
+  </div>
 
-    <div class="cover-contact">
-      <input id="c_tel" value="Téléphone : 01.48.49.83.95" autocomplete="off">
-      <input id="c_email" value="algomes.sas@al-gomes.com" autocomplete="off">
-    </div>
-
+  <!-- Zone 3 — Téléphone + email + date (Lucida Sans 11.5pt) -->
+  <div class="cover-zone-contact">
+    <input id="c_tel" value="Téléphone : 01.48.49.83.95" autocomplete="off">
+    <input id="c_email" value="algomes.sas@al-gomes.com" autocomplete="off">
     <div class="cover-date">
-      <input class="place" id="c_place" value="VILLEMOMBLE" autocomplete="off">, le
+      <input class="place" id="c_place" value="VILLEMOMBLE" autocomplete="off">,
+      <span>le</span>
       <input class="datetext" id="c_datetext" autocomplete="off">
     </div>
   </div>

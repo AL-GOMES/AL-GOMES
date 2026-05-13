@@ -3305,24 +3305,20 @@ class PDFViewer {
           // Détection police + style à partir de plusieurs sources, par
           // ordre de précision décroissante.
           let realName = '', realFam = '', realBold = false, realItalic = false;
-          let _debugFontObj = null;
-          let _debugCommonObjKeys = [];
+          let realLoadedName = '';
           try {
             const co = this.pdf && this.pdf.commonObjs;
-            if (co) {
-              try { _debugCommonObjKeys = Object.keys(co._objs || {}); } catch {}
-              if (item.fontName && co.has && co.has(item.fontName)) {
-                _debugFontObj = co.get(item.fontName);
-              }
-              if (_debugFontObj) {
-                realName = String(_debugFontObj.name || _debugFontObj.loadedName || '').toLowerCase();
+            if (co && item.fontName && co.has && co.has(item.fontName)) {
+              const fontObj = co.get(item.fontName);
+              if (fontObj) {
+                realName = String(fontObj.name || fontObj.loadedName || '').toLowerCase();
+                realLoadedName = String(fontObj.loadedName || '');
                 realFam  = String(
-                  (_debugFontObj.cssFontInfo && _debugFontObj.cssFontInfo.fontFamily) ||
-                  _debugFontObj.loadedName ||
-                  _debugFontObj.fallbackName || ''
+                  (fontObj.cssFontInfo && fontObj.cssFontInfo.fontFamily) ||
+                  fontObj.fallbackName || ''
                 );
-                realBold = !!_debugFontObj.bold;
-                realItalic = !!_debugFontObj.italic;
+                realBold = !!fontObj.bold;
+                realItalic = !!fontObj.italic;
               }
             }
           } catch {}
@@ -3331,21 +3327,6 @@ class PDFViewer {
           const probe = (realName + ' ' + realFam + ' ' + styleFam.toLowerCase() + ' ' + String(item.fontName || '').toLowerCase()).trim();
           const isBold = realBold || /bold|black|heavy|extrabold|semibold/.test(probe);
           const isItalic = realItalic || /italic|oblique/.test(probe);
-          // Debug : pour comprendre pourquoi la police détectée n'est pas
-          // celle attendue, ouvre DevTools > Console et clique sur un texte.
-          // Une fois le bug compris/résolu, ce log peut être retiré.
-          try {
-            console.log('[MODIF TXT detect]', {
-              str: item.str,
-              fontName: item.fontName,
-              styleFam, style,
-              fontObj: _debugFontObj,
-              commonObjKeys: _debugCommonObjKeys,
-              realName, realFam, isBold, isItalic,
-              transform: item.transform,
-              detectedSize: Math.abs(item.transform && item.transform[3]) || item.height || 12
-            });
-          } catch {}
           let pickedFont = 'Helvetica';
           if (/courier|consola|mono/.test(probe)) {
             pickedFont = probe.includes('consola') ? 'Consolas' : 'Courier';
@@ -3369,9 +3350,19 @@ class PDFViewer {
           // le repli si la matrice n'est pas exploitable.
           const detectedSize = Math.abs(item.transform && item.transform[3]) || item.height || 12;
           // Police CSS d'origine : utilisée prioritairement par _drawText pour
-          // le rendu (sinon notre fontMap sur les 12 polices forcerait à
-          // utiliser une font différente de l'original).
-          const cssFontFamily = (realFam || styleFam || '').trim() || null;
+          // le rendu. Priorité :
+          //   1. loadedName (alias @font-face injecté par pdfjs pour la police
+          //      embarquée — si dispo, donne un rendu visuel identique au PDF)
+          //   2. cssFontInfo.fontFamily ou fallbackName du fontObj
+          //   3. style.fontFamily de textContent (souvent générique sans-serif)
+          let cssFontFamily = null;
+          if (realLoadedName) {
+            cssFontFamily = '"' + realLoadedName + '", ' + (realFam || styleFam || 'sans-serif');
+          } else if (realFam) {
+            cssFontFamily = realFam;
+          } else if (styleFam) {
+            cssFontFamily = styleFam;
+          }
           const fakeExisting = {
             text: item.str,
             font: pickedFont,

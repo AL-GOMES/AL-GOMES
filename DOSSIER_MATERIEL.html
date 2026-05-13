@@ -273,11 +273,12 @@ input.proj { font-size: 28pt; font-weight: 700; text-align: center; letter-spaci
   <div class="topbar-title">⚡ A.L.GOMES <span class="accent">— Dossier matériel</span></div>
   <div class="topbar-actions">
     <span id="saveStatus">Brouillon</span>
+    <button class="btn" onclick="newDossier()" title="Repartir d'un dossier vierge (le brouillon actuel sera perdu)">🆕 Nouveau</button>
     <button class="btn" onclick="addNewFiche()" title="Ajouter une nouvelle fiche numérotée">＋ Fiche</button>
     <button class="btn" onclick="addVariante()" title="Ajouter une variante BIS/TER/QUATER de la fiche courante">＋ Variante</button>
     <button class="btn danger" onclick="deleteCurrentFiche()" title="Supprimer la fiche courante">🗑 Supprimer</button>
     <button class="btn" onclick="document.getElementById('importPdfInput').click()" title="Reprendre un dossier précédemment exporté (PDF généré par ce module)">📥 Importer</button>
-    <button class="btn primary" onclick="saveDossierAndExport()" title="Enregistre le dossier en local ET télécharge un PDF unique contenant toutes les fiches + leurs documents techniques">💾 Enregistrer &amp; PDF</button>
+    <button class="btn primary" onclick="saveDossierAndExport()" title="Choisir un emplacement + nom et enregistrer le dossier en PDF unique (fiches + PDFs techniques fusionnés)">💾 Enregistrer</button>
   </div>
 </div>
 
@@ -588,7 +589,7 @@ function deleteCurrentFiche(){
   currentFicheId = fiches[0].id;
   writeForm(getActive());
   renderTabs();
-  saveDossier(true);
+  setStatus('Fiche supprimée · modifications non sauvegardées', 'dirty');
 }
 function switchTo(id){
   syncFormToActive();
@@ -675,7 +676,7 @@ function renderTabs(){
         if (wasActive) currentFicheId = fiches[0].id;
         writeForm(getActive());
         renderTabs();
-        saveDossier(true);
+        setStatus('Fiche supprimée · modifications non sauvegardées', 'dirty');
       };
       tab.appendChild(close);
     }
@@ -874,7 +875,60 @@ async function exportDossierPdf(){
         useCORS: true,
         logging: false,
         windowWidth: sheet.scrollWidth,
-        windowHeight: sheet.scrollHeight
+        windowHeight: sheet.scrollHeight,
+        // html2canvas rend mal les <input> / <textarea> (souvent vide ou
+        // texte wrappé sur 2 lignes pour les inputs un peu longs comme le
+        // titre projet). On remplace dans le DOM cloné par des <span>/<div>
+        // qui s'affichent normalement.
+        onclone: (clonedDoc) => {
+          clonedDoc.querySelectorAll('input[type="text"], input[type="date"]').forEach(inp => {
+            const live = document.getElementById(inp.id);
+            const val = live ? (live.value || '') : (inp.value || '');
+            const span = clonedDoc.createElement('span');
+            span.textContent = val;
+            // Mêmes classes pour récupérer le styling (font, align, etc.)
+            span.className = inp.className;
+            // Forcer display block pour qu'il occupe toute la largeur dispo
+            // (comme l'input qu'il remplace) mais sans wrap forcé.
+            span.style.display = 'inline-block';
+            span.style.width = '100%';
+            span.style.minHeight = '1em';
+            span.style.whiteSpace = 'nowrap';
+            span.style.overflow = 'visible';
+            span.style.boxSizing = 'border-box';
+            // Conserve text-align/letter-spacing/text-transform si présents
+            const cs = window.getComputedStyle(inp);
+            span.style.textAlign = cs.textAlign;
+            span.style.letterSpacing = cs.letterSpacing;
+            span.style.textTransform = cs.textTransform;
+            span.style.fontSize = cs.fontSize;
+            span.style.fontWeight = cs.fontWeight;
+            span.style.fontFamily = cs.fontFamily;
+            span.style.padding = cs.padding;
+            inp.parentNode.replaceChild(span, inp);
+          });
+          clonedDoc.querySelectorAll('input[type="checkbox"], input[type="radio"]').forEach(inp => {
+            const live = document.getElementById(inp.id) ||
+                         document.querySelector('input[name="' + inp.name + '"][value="' + inp.value + '"]');
+            inp.checked = !!(live && live.checked);
+            // html2canvas respecte le state checked des checkboxes/radios en général
+          });
+          clonedDoc.querySelectorAll('textarea').forEach(ta => {
+            const live = document.getElementById(ta.id);
+            const val = live ? (live.value || '') : (ta.value || '');
+            const div = clonedDoc.createElement('div');
+            div.textContent = val;
+            div.className = ta.className;
+            const cs = window.getComputedStyle(ta);
+            div.style.cssText =
+              'white-space:pre-wrap;word-break:break-word;' +
+              'font:' + cs.font + ';' +
+              'padding:' + cs.padding + ';' +
+              'min-height:' + cs.height + ';' +
+              'width:100%;box-sizing:border-box;';
+            ta.parentNode.replaceChild(div, ta);
+          });
+        }
       });
       const pngData = canvas.toDataURL('image/png');
       const pngBytes = await (await fetch(pngData)).arrayBuffer();
@@ -902,23 +956,20 @@ async function exportDossierPdf(){
     writeForm(getActive());
     renderTabs();
     renderPdfPanel();
-    // Save + download
+    // Save : injecter le sidecar puis ouvrir le picker d'emplacement
     let bytes = await out.save();
     // Injecter les données du dossier (fiches + PDFs techniques) en fin de
     // fichier sous forme de commentaire PDF pour permettre la réimportation.
     bytes = await injectDossierSidecar(bytes);
-    const blob = new Blob([bytes], { type: 'application/pdf' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
     const projName = (getActive() && getActive().f_project) || 'dossier-materiel';
     const safeName = String(projName).replace(/[^a-zA-Z0-9_-]+/g, '_').slice(0, 60);
-    a.href = url;
-    a.download = safeName + '_' + new Date().toISOString().slice(0,10) + '.pdf';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    setStatus('✓ PDF généré (' + fiches.length + ' fiche' + (fiches.length > 1 ? 's' : '') + ')', 'saved');
+    const defaultName = safeName + '_' + new Date().toISOString().slice(0,10) + '.pdf';
+    const saved = await savePdfBytes(bytes, defaultName);
+    if (saved) {
+      setStatus('✓ PDF enregistré (' + fiches.length + ' fiche' + (fiches.length > 1 ? 's' : '') + ')', 'saved');
+    } else {
+      setStatus('Enregistrement annulé', '');
+    }
   } catch (e) {
     console.error(e);
     setStatus('Erreur génération PDF : ' + (e && e.message), 'dirty');
@@ -929,8 +980,75 @@ async function exportDossierPdf(){
 }
 
 async function saveDossierAndExport(){
+  // L'utilisateur a explicitement demandé la sauvegarde → on persiste en
+  // localStorage ET on télécharge le PDF (avec picker d'emplacement).
   saveDossier(false);
   await exportDossierPdf();
+}
+
+// ─── Nouveau dossier : reset complet (mémoire + localStorage + IndexedDB) ────
+async function newDossier(){
+  // Vérifie s'il y a vraiment du contenu pour ne pas demander confirmation
+  // sur un dossier déjà vide.
+  const hasContent = fiches.some(f =>
+    (f.f_project || f.m_fournisseur || f.m_materiel || f.m_observations ||
+     f.f_lot || f.m_caract || f.m_couleur || f.m_loc));
+  if (hasContent) {
+    if (!confirm('Repartir d\'un dossier vierge ?\n\nLe brouillon actuel et tous les PDFs techniques associés seront effacés.\nSi tu veux les garder, clique d\'abord sur "Enregistrer".')) return;
+  }
+  // Supprime les PDFs techniques des fiches courantes dans IndexedDB
+  const oldIds = fiches.map(f => f.id);
+  for (const id of oldIds) {
+    try { await PdfDB.remove(id); } catch {}
+  }
+  // Reset état + localStorage
+  try { localStorage.removeItem(STORAGE_KEY); } catch {}
+  fiches = [];
+  currentFicheId = null;
+  // Crée une nouvelle fiche vide
+  const today = new Date().toISOString().slice(0, 10);
+  const nf = { id: genId(), f_num: '1', f_emetteur: 'AL GOMES', f_date: today };
+  fiches = [nf];
+  currentFicheId = nf.id;
+  writeForm(nf);
+  renderTabs();
+  await renderPdfPanel();
+  setStatus('Nouveau dossier · brouillon', '');
+}
+
+// ─── Save File Picker (Chrome/Edge) avec fallback download classique ─────────
+async function savePdfBytes(bytes, defaultName){
+  // showSaveFilePicker permet à l'utilisateur de choisir nom + emplacement.
+  if (window.showSaveFilePicker) {
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: defaultName,
+        types: [{
+          description: 'Document PDF',
+          accept: { 'application/pdf': ['.pdf'] }
+        }]
+      });
+      const writable = await handle.createWritable();
+      await writable.write(bytes);
+      await writable.close();
+      return true;
+    } catch (e) {
+      if (e && e.name === 'AbortError') return false; // utilisateur a annulé
+      console.warn('showSaveFilePicker indisponible, fallback download', e);
+      // tombe sur le fallback ci-dessous
+    }
+  }
+  // Fallback : téléchargement classique (le navigateur place dans Téléchargements)
+  const blob = new Blob([bytes], { type: 'application/pdf' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = defaultName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return true;
 }
 
 // ─── Sidecar : embarquement des données dans le PDF + extraction ──────────────

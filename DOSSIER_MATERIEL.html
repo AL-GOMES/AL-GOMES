@@ -9,6 +9,10 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="js/firebase-init.js"></script>
 <script src="js/auth-guard.js"></script>
+<!-- pdf-lib pour fusionner les PDF techniques avec les fiches générées -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<!-- html2canvas pour capturer chaque fiche en image avant d'en faire une page PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 /* ─── Reset + base ─── */
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -105,7 +109,20 @@ html, body { background: #2a2a35; font-family: 'Calibri', 'Segoe UI', Arial, san
 }
 .pdf-panel-head .pdf-empty { font-size: 12px; color: #5a5f75; font-style: italic; }
 .pdf-panel-head .pdf-actions { display: flex; gap: 6px; flex-shrink: 0; }
-.pdf-panel iframe { flex: 1; width: 100%; border: 0; background: #fff; min-height: 297mm; }
+.pdf-panel iframe, .pdf-panel embed, .pdf-panel object {
+  flex: 1; width: 100%; border: 0; background: #fff; min-height: 297mm;
+  display: block;
+}
+.pdf-fallback {
+  padding: 24px; text-align: center; color: #e2e4ea; background: #1a1e2a;
+  font-size: 13px; line-height: 1.6;
+}
+.pdf-fallback a {
+  color: #F59E0B; text-decoration: none; font-weight: 700;
+  display: inline-block; padding: 8px 16px; border: 1px solid #F59E0B;
+  border-radius: 6px; margin-top: 10px;
+}
+.pdf-fallback a:hover { background: rgba(245,158,11,0.1); }
 .pdf-dropzone {
   flex: 1; display: flex; align-items: center; justify-content: center;
   flex-direction: column; padding: 32px; gap: 14px; text-align: center;
@@ -248,7 +265,7 @@ input.proj { font-size: 28pt; font-weight: 700; text-align: center; letter-spaci
     <button class="btn" onclick="addVariante()" title="Ajouter une variante BIS/TER/QUATER de la fiche courante">＋ Variante</button>
     <button class="btn danger" onclick="deleteCurrentFiche()" title="Supprimer la fiche courante">🗑 Supprimer</button>
     <button class="btn" onclick="window.print()">🖨 Imprimer</button>
-    <button class="btn primary" onclick="saveDossier(true)">💾 Enregistrer</button>
+    <button class="btn primary" onclick="saveDossierAndExport()" title="Enregistre le dossier en local ET télécharge un PDF unique contenant toutes les fiches + leurs documents techniques">💾 Enregistrer &amp; PDF</button>
   </div>
 </div>
 
@@ -721,10 +738,23 @@ async function renderPdfPanel(){
     btnRemove.style.display = '';
     btnOpen.style.display = '';
     body.innerHTML = '';
-    const iframe = document.createElement('iframe');
-    iframe.src = _currentPdfBlobUrl + '#view=FitH&toolbar=1';
-    iframe.title = 'Fiche technique ' + rec.name;
-    body.appendChild(iframe);
+    // <embed type="application/pdf"> est généralement mieux supporté que
+    // l'iframe pour afficher un PDF, surtout dans un contexte d'iframe
+    // sandboxée. Fallback : un lien "Ouvrir dans un nouvel onglet" sous
+    // l'embed pour les navigateurs qui ne savent pas afficher le PDF
+    // inline (ils téléchargeraient au lieu d'afficher).
+    const embed = document.createElement('embed');
+    embed.src = _currentPdfBlobUrl + '#view=FitH&toolbar=1';
+    embed.type = 'application/pdf';
+    embed.title = 'Fiche technique ' + rec.name;
+    body.appendChild(embed);
+    // Fallback link en dessous (clic = nouvel onglet) — toujours visible
+    // pour permettre d'agrandir.
+    const fb = document.createElement('div');
+    fb.className = 'pdf-fallback';
+    fb.innerHTML = 'Si le PDF ne s\'affiche pas ci-dessus :<br>' +
+      '<a href="' + _currentPdfBlobUrl + '" target="_blank" rel="noopener">Ouvrir le PDF dans un nouvel onglet ⤢</a>';
+    body.appendChild(fb);
   } else {
     nameEl.innerHTML = '<span class="pdf-empty">Aucun PDF associé</span>';
     btnAttach.style.display = '';
@@ -781,6 +811,94 @@ function openPdfFullscreen(){
   window.open(_currentPdfBlobUrl, '_blank');
 }
 
+// ─── Export PDF du dossier complet ────────────────────────────────────────────
+// Pour chaque fiche : capture la sheet en image (html2canvas) → page A4 du
+// nouveau PDF. Si la fiche a un PDF technique attaché : ajoute toutes ses
+// pages après la page de la fiche.
+async function exportDossierPdf(){
+  if (typeof PDFLib === 'undefined' || typeof html2canvas === 'undefined') {
+    alert('Librairies PDF non chargées. Recharge la page (Ctrl+Shift+R).');
+    return;
+  }
+  syncFormToActive();
+  const originalId = currentFicheId;
+  setStatus('Génération du PDF…', 'dirty');
+  // Désactive temporairement les outline orange et les fonds focus pour
+  // une capture propre
+  document.body.classList.add('exporting-pdf');
+  try {
+    const { PDFDocument } = PDFLib;
+    const out = await PDFDocument.create();
+    // Dimensions A4 portrait en points PDF (1 pt = 1/72")
+    const A4W = 595.28, A4H = 841.89;
+    for (const fiche of fiches) {
+      writeForm(fiche);
+      currentFicheId = fiche.id;
+      // Attend 2 frames pour que le DOM se mette à jour (inputs et focus)
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const sheet = document.querySelector('.sheet');
+      const canvas = await html2canvas(sheet, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        logging: false,
+        windowWidth: sheet.scrollWidth,
+        windowHeight: sheet.scrollHeight
+      });
+      const pngData = canvas.toDataURL('image/png');
+      const pngBytes = await (await fetch(pngData)).arrayBuffer();
+      const img = await out.embedPng(pngBytes);
+      const page = out.addPage([A4W, A4H]);
+      // Centre l'image en respectant le ratio
+      const ratio = Math.min(A4W / img.width, A4H / img.height);
+      const w = img.width * ratio, h = img.height * ratio;
+      page.drawImage(img, { x: (A4W - w) / 2, y: (A4H - h) / 2, width: w, height: h });
+      // Append attached technical PDF if any
+      try {
+        const rec = await PdfDB.get(fiche.id);
+        if (rec && rec.blob) {
+          const buf = await rec.blob.arrayBuffer();
+          const ext = await PDFDocument.load(buf, { ignoreEncryption: true });
+          const pages = await out.copyPages(ext, ext.getPageIndices());
+          pages.forEach(p => out.addPage(p));
+        }
+      } catch (e) {
+        console.error('PDF attaché illisible pour fiche', fiche.f_num, e);
+      }
+    }
+    // Restaure l'état initial
+    currentFicheId = originalId;
+    writeForm(getActive());
+    renderTabs();
+    renderPdfPanel();
+    // Save + download
+    const bytes = await out.save();
+    const blob = new Blob([bytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const projName = (getActive() && getActive().f_project) || 'dossier-materiel';
+    const safeName = String(projName).replace(/[^a-zA-Z0-9_-]+/g, '_').slice(0, 60);
+    a.href = url;
+    a.download = safeName + '_' + new Date().toISOString().slice(0,10) + '.pdf';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setStatus('✓ PDF généré (' + fiches.length + ' fiche' + (fiches.length > 1 ? 's' : '') + ')', 'saved');
+  } catch (e) {
+    console.error(e);
+    setStatus('Erreur génération PDF : ' + (e && e.message), 'dirty');
+    alert('Erreur lors de la génération du PDF : ' + (e && e.message));
+  } finally {
+    document.body.classList.remove('exporting-pdf');
+  }
+}
+
+async function saveDossierAndExport(){
+  saveDossier(false);
+  await exportDossierPdf();
+}
+
 // Surcharge switchTo pour rafraîchir le panel PDF
 const _origSwitchTo = switchTo;
 switchTo = function(id){
@@ -814,7 +932,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('ficheForm').addEventListener('input', markDirty);
   document.getElementById('ficheForm').addEventListener('change', markDirty);
   document.addEventListener('keydown', (e) => {
-    if((e.ctrlKey || e.metaKey) && e.key === 's'){ e.preventDefault(); saveDossier(true); }
+    if((e.ctrlKey || e.metaKey) && e.key === 's'){ e.preventDefault(); saveDossierAndExport(); }
   });
   // PDF panel
   const fileInput = document.getElementById('pdfFileInput');

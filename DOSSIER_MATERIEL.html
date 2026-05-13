@@ -13,6 +13,15 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <!-- html2canvas pour capturer chaque fiche en image avant d'en faire une page PDF -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<!-- PDF.js pour afficher le PDF technique dans le panel droit (les viewers
+     PDF natifs sont bloqués dans les iframes sandboxées) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+  if (typeof pdfjsLib !== 'undefined') {
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+</script>
 <style>
 /* ─── Reset + base ─── */
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -109,20 +118,23 @@ html, body { background: #2a2a35; font-family: 'Calibri', 'Segoe UI', Arial, san
 }
 .pdf-panel-head .pdf-empty { font-size: 12px; color: #5a5f75; font-style: italic; }
 .pdf-panel-head .pdf-actions { display: flex; gap: 6px; flex-shrink: 0; }
-.pdf-panel iframe, .pdf-panel embed, .pdf-panel object {
-  flex: 1; width: 100%; border: 0; background: #fff; min-height: 297mm;
-  display: block;
+.pdf-pages {
+  flex: 1; width: 100%; background: #2a2f42; padding: 12px;
+  overflow-y: auto; display: flex; flex-direction: column; gap: 10px;
+  min-height: 297mm;
 }
-.pdf-fallback {
-  padding: 24px; text-align: center; color: #e2e4ea; background: #1a1e2a;
-  font-size: 13px; line-height: 1.6;
+.pdf-pages canvas {
+  width: 100%; height: auto; background: #fff; display: block;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
 }
-.pdf-fallback a {
-  color: #F59E0B; text-decoration: none; font-weight: 700;
-  display: inline-block; padding: 8px 16px; border: 1px solid #F59E0B;
-  border-radius: 6px; margin-top: 10px;
+.pdf-pages .pdf-page-loader {
+  padding: 12px; color: #8b90a5; font-size: 12px; text-align: center;
 }
-.pdf-fallback a:hover { background: rgba(245,158,11,0.1); }
+.pdf-pages .pdf-page-error {
+  padding: 16px; color: #f87171; font-size: 13px; text-align: center;
+  background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.3);
+  border-radius: 4px;
+}
 .pdf-dropzone {
   flex: 1; display: flex; align-items: center; justify-content: center;
   flex-direction: column; padding: 32px; gap: 14px; text-align: center;
@@ -741,23 +753,39 @@ async function renderPdfPanel(){
     btnRemove.style.display = '';
     btnOpen.style.display = '';
     body.innerHTML = '';
-    // <embed type="application/pdf"> est généralement mieux supporté que
-    // l'iframe pour afficher un PDF, surtout dans un contexte d'iframe
-    // sandboxée. Fallback : un lien "Ouvrir dans un nouvel onglet" sous
-    // l'embed pour les navigateurs qui ne savent pas afficher le PDF
-    // inline (ils téléchargeraient au lieu d'afficher).
-    const embed = document.createElement('embed');
-    embed.src = _currentPdfBlobUrl + '#view=FitH&toolbar=1';
-    embed.type = 'application/pdf';
-    embed.title = 'Fiche technique ' + rec.name;
-    body.appendChild(embed);
-    // Fallback link en dessous (clic = nouvel onglet) — toujours visible
-    // pour permettre d'agrandir.
-    const fb = document.createElement('div');
-    fb.className = 'pdf-fallback';
-    fb.innerHTML = 'Si le PDF ne s\'affiche pas ci-dessus :<br>' +
-      '<a href="' + _currentPdfBlobUrl + '" target="_blank" rel="noopener">Ouvrir le PDF dans un nouvel onglet ⤢</a>';
-    body.appendChild(fb);
+    // PDF.js rendu en canvas : marche dans toutes les iframes sandboxées
+    // alors que <iframe> et <embed> peuvent être bloqués par le navigateur
+    // (Chrome refuse le viewer PDF natif dans certains contextes sandbox).
+    const pages = document.createElement('div');
+    pages.className = 'pdf-pages';
+    pages.innerHTML = '<div class="pdf-page-loader">Chargement du PDF…</div>';
+    body.appendChild(pages);
+    try {
+      if (typeof pdfjsLib === 'undefined') throw new Error('pdfjs-lib non chargé');
+      const buf = await rec.blob.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+      pages.innerHTML = '';
+      // Rendu progressif : on rend chaque page séquentiellement pour ne pas
+      // bloquer le thread principal sur les PDFs avec beaucoup de pages.
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        // Échelle adaptée à la largeur du conteneur (~775 px pour 210 mm @ 96 dpi)
+        const targetWidth = pages.clientWidth - 24; // padding 12px de chaque côté
+        const baseVp = page.getViewport({ scale: 1 });
+        const scale = Math.max(0.5, Math.min(3, targetWidth / baseVp.width));
+        const viewport = page.getViewport({ scale });
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.floor(viewport.width);
+        canvas.height = Math.floor(viewport.height);
+        pages.appendChild(canvas);
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+      }
+    } catch (e) {
+      console.error('pdf.js render failed', e);
+      pages.innerHTML = '<div class="pdf-page-error">Impossible d\'afficher le PDF (' +
+        escHtml(e && e.message || 'erreur inconnue') + ').<br>' +
+        '<a href="' + _currentPdfBlobUrl + '" target="_blank" rel="noopener" style="color:#F59E0B">Ouvrir dans un nouvel onglet ⤢</a></div>';
+    }
   } else {
     nameEl.innerHTML = '<span class="pdf-empty">Aucun PDF associé</span>';
     btnAttach.style.display = '';

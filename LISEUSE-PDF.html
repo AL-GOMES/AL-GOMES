@@ -3306,19 +3306,23 @@ class PDFViewer {
           // ordre de précision décroissante.
           let realName = '', realFam = '', realBold = false, realItalic = false;
           let _debugFontObj = null;
+          let _debugCommonObjKeys = [];
           try {
             const co = this.pdf && this.pdf.commonObjs;
-            if (co && item.fontName && co.has && co.has(item.fontName)) {
-              const fontObj = co.get(item.fontName);
-              _debugFontObj = fontObj;
-              if (fontObj) {
-                realName = String(fontObj.name || fontObj.loadedName || '').toLowerCase();
+            if (co) {
+              try { _debugCommonObjKeys = Object.keys(co._objs || {}); } catch {}
+              if (item.fontName && co.has && co.has(item.fontName)) {
+                _debugFontObj = co.get(item.fontName);
+              }
+              if (_debugFontObj) {
+                realName = String(_debugFontObj.name || _debugFontObj.loadedName || '').toLowerCase();
                 realFam  = String(
-                  (fontObj.cssFontInfo && fontObj.cssFontInfo.fontFamily) ||
-                  fontObj.fallbackName || ''
-                ).toLowerCase();
-                realBold = !!fontObj.bold;
-                realItalic = !!fontObj.italic;
+                  (_debugFontObj.cssFontInfo && _debugFontObj.cssFontInfo.fontFamily) ||
+                  _debugFontObj.loadedName ||
+                  _debugFontObj.fallbackName || ''
+                );
+                realBold = !!_debugFontObj.bold;
+                realItalic = !!_debugFontObj.italic;
               }
             }
           } catch {}
@@ -3336,6 +3340,7 @@ class PDFViewer {
               fontName: item.fontName,
               styleFam, style,
               fontObj: _debugFontObj,
+              commonObjKeys: _debugCommonObjKeys,
               realName, realFam, isBold, isItalic,
               transform: item.transform,
               detectedSize: Math.abs(item.transform && item.transform[3]) || item.height || 12

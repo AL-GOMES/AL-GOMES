@@ -140,6 +140,16 @@ if(window.self!==window.top){
   @keyframes spin{to{transform:rotate(360deg)}}
   .loading-screen p{color:var(--text2);font-size:14px;letter-spacing:2px}
   .quick-links{display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap}
+  /* ─── Sous-onglets de la page admin ───────────────────────────────────── */
+  .admin-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:24px;padding-bottom:0;border-bottom:1px solid var(--border)}
+  .admin-tab{position:relative;padding:11px 20px;background:rgba(120,50,255,.06);border:1px solid var(--border);border-bottom:none;border-radius:10px 10px 0 0;color:var(--text2);font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .25s;margin-bottom:-1px;display:inline-flex;align-items:center;gap:8px;user-select:none}
+  .admin-tab:hover{background:rgba(120,50,255,.14);color:var(--text)}
+  .admin-tab.active{background:var(--card);color:#fff;border-color:var(--border);box-shadow:0 -4px 12px rgba(120,50,255,.10)}
+  .admin-tab.active::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:1px;background:var(--card)}
+  .admin-tab .tab-ico{font-size:14px;color:var(--accent);line-height:1}
+  .admin-tab.active .tab-ico{color:#b388ff}
+  .tab-panel{display:none}
+  .tab-panel.active{display:block;animation:fadeUp .4s ease}
 </style>
 </head>
 <body>
@@ -160,141 +170,163 @@ if(window.self!==window.top){
     <a href="https://github.com/jerome93190/AL-GOMES" target="_blank" class="btn-nav" style="text-decoration:none">🐙 Dépôt GitHub</a>
   </div>
 
-  <!-- USERS + IP -->
-  <div class="card">
-    <h2><span>👥</span> Utilisateurs & Connexions</h2>
-    <div style="overflow-x:auto"><table><thead><tr>
-      <th>Identifiant</th><th>Nom</th><th>Rôle</th><th>Statut</th><th>IP / Localisation</th><th>Dernière connexion</th><th>Actions</th>
-    </tr></thead>
-    <tbody id="userTableBody"><tr><td colspan="7" style="text-align:center;padding:24px"><div class="spinner" style="width:32px;height:32px;margin:0 auto"></div></td></tr></tbody></table></div>
+  <!-- Barre de sous-onglets. data-tab = id du <div class="tab-panel"> à afficher. -->
+  <div class="admin-tabs" role="tablist">
+    <button type="button" class="admin-tab active" data-tab="tab-users" role="tab" aria-selected="true"><span class="tab-ico">👥</span>Utilisateurs</button>
+    <button type="button" class="admin-tab" data-tab="tab-security" role="tab" aria-selected="false"><span class="tab-ico">🌐</span>IP & Sécurité</button>
+    <button type="button" class="admin-tab" data-tab="tab-roles" role="tab" aria-selected="false"><span class="tab-ico">🏷</span>Rôles & Accès</button>
+    <button type="button" class="admin-tab" data-tab="tab-signatures" role="tab" aria-selected="false"><span class="tab-ico">✍️</span>Signatures</button>
+    <button type="button" class="admin-tab" data-tab="tab-console" role="tab" aria-selected="false"><span class="tab-ico">🪵</span>Console</button>
   </div>
 
-  <!-- ADD USER -->
-  <div class="card">
-    <h2><span>+</span> Ajouter un utilisateur</h2>
-    <div class="form-row four">
-      <div class="form-group"><label>Identifiant</label><input type="text" id="newLogin" placeholder="ex: jean.dupont"></div>
-      <div class="form-group"><label>Nom complet</label><input type="text" id="newName" placeholder="Jean Dupont"></div>
-      <div class="form-group"><label>Mot de passe</label><input type="password" id="newPassword" placeholder="Min. 6 caractères"></div>
-      <div class="form-group"><label>Rôle</label><select id="newUserRole"></select></div>
+  <!-- ─── ONGLET 1 : Utilisateurs ─────────────────────────────────────── -->
+  <div class="tab-panel active" id="tab-users" role="tabpanel">
+    <!-- ADD USER (en premier pour l'accès rapide) -->
+    <div class="card">
+      <h2><span>+</span> Ajouter un utilisateur</h2>
+      <div class="form-row four">
+        <div class="form-group"><label>Identifiant</label><input type="text" id="newLogin" placeholder="ex: jean.dupont"></div>
+        <div class="form-group"><label>Nom complet</label><input type="text" id="newName" placeholder="Jean Dupont"></div>
+        <div class="form-group"><label>Mot de passe</label><input type="password" id="newPassword" placeholder="Min. 6 caractères"></div>
+        <div class="form-group"><label>Rôle</label><select id="newUserRole"></select></div>
+      </div>
+      <button class="btn btn-primary" id="btnAddUser" onclick="addUser()">Créer l'utilisateur</button>
     </div>
-    <button class="btn btn-primary" id="btnAddUser" onclick="addUser()">Créer l'utilisateur</button>
-  </div>
 
-  <!-- SESSION LOG -->
-  <div class="card">
-    <h2><span>📋</span> Journal des connexions</h2>
-    <div style="overflow-x:auto;max-height:400px;overflow-y:auto" id="sessionLog">
-      <div style="text-align:center;padding:20px;color:var(--text2)">Chargement...</div>
-    </div>
-  </div>
-
-  <!-- IP TRACKING -->
-  <div class="card">
-    <h2><span>🌐</span> Suivi des IP par utilisateur</h2>
-    <div style="overflow-x:auto" id="ipTrackingTable">
-      <div style="text-align:center;padding:20px;color:var(--text2)">Chargement...</div>
+    <!-- USERS + IP -->
+    <div class="card">
+      <h2><span>👥</span> Utilisateurs & Connexions</h2>
+      <div style="overflow-x:auto"><table><thead><tr>
+        <th>Identifiant</th><th>Nom</th><th>Rôle</th><th>Statut</th><th>IP / Localisation</th><th>Dernière connexion</th><th>Actions</th>
+      </tr></thead>
+      <tbody id="userTableBody"><tr><td colspan="7" style="text-align:center;padding:24px"><div class="spinner" style="width:32px;height:32px;margin:0 auto"></div></td></tr></tbody></table></div>
     </div>
   </div>
 
-  <!-- IP MAP -->
-  <div class="card">
-    <h2><span>🗺</span> Carte des connexions</h2>
-    <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
-      <button class="btn btn-primary btn-sm" onclick="loadIpMap()">↻ Rafraîchir</button>
-      <button class="btn btn-danger btn-sm" onclick="resetAllIps()">⚠ Réinitialiser toutes les IP</button>
-      <span id="ipMapCount" style="font-size:12px;color:var(--text2)">—</span>
+  <!-- ─── ONGLET 2 : IP & Sécurité ─────────────────────────────────────── -->
+  <div class="tab-panel" id="tab-security" role="tabpanel">
+    <!-- SESSION LOG -->
+    <div class="card">
+      <h2><span>📋</span> Journal des connexions</h2>
+      <div style="overflow-x:auto;max-height:400px;overflow-y:auto" id="sessionLog">
+        <div style="text-align:center;padding:20px;color:var(--text2)">Chargement...</div>
+      </div>
     </div>
-    <div id="ipMap" style="width:100%;height:480px;border-radius:10px;border:1px solid var(--border);background:#0d0d18"></div>
-    <div style="margin-top:10px;font-size:11px;color:var(--text2);display:flex;gap:18px;flex-wrap:wrap">
-      <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#7832ff;margin-right:6px;vertical-align:middle"></span>IP active</span>
-      <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ff4466;margin-right:6px;vertical-align:middle"></span>IP bannie</span>
-      <span>Cliquer sur un point pour bannir/débloquer.</span>
+
+    <!-- IP TRACKING -->
+    <div class="card">
+      <h2><span>🌐</span> Suivi des IP par utilisateur</h2>
+      <div style="overflow-x:auto" id="ipTrackingTable">
+        <div style="text-align:center;padding:20px;color:var(--text2)">Chargement...</div>
+      </div>
+    </div>
+
+    <!-- IP MAP -->
+    <div class="card">
+      <h2><span>🗺</span> Carte des connexions</h2>
+      <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+        <button class="btn btn-primary btn-sm" onclick="loadIpMap()">↻ Rafraîchir</button>
+        <button class="btn btn-danger btn-sm" onclick="resetAllIps()">⚠ Réinitialiser toutes les IP</button>
+        <span id="ipMapCount" style="font-size:12px;color:var(--text2)">—</span>
+      </div>
+      <div id="ipMap" style="width:100%;height:480px;border-radius:10px;border:1px solid var(--border);background:#0d0d18"></div>
+      <div style="margin-top:10px;font-size:11px;color:var(--text2);display:flex;gap:18px;flex-wrap:wrap">
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#7832ff;margin-right:6px;vertical-align:middle"></span>IP active</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ff4466;margin-right:6px;vertical-align:middle"></span>IP bannie</span>
+        <span>Cliquer sur un point pour bannir/débloquer.</span>
+      </div>
+    </div>
+
+    <!-- BANNED IPs -->
+    <div class="card">
+      <h2><span>🚫</span> IP bannies</h2>
+      <div id="bannedIpsList" style="margin-bottom:18px;overflow-x:auto"></div>
+      <div class="form-row" style="margin-bottom:0;grid-template-columns:1fr auto;align-items:end">
+        <div class="form-group"><label>Bannir une IP manuellement</label><input type="text" id="newBanIp" placeholder="ex: 82.123.45.6"></div>
+        <div class="form-group"><label>&nbsp;</label><button class="btn btn-warn btn-sm" onclick="banIp()">+ Bannir</button></div>
+      </div>
     </div>
   </div>
 
-  <!-- BANNED IPs -->
-  <div class="card">
-    <h2><span>🚫</span> IP bannies</h2>
-    <div id="bannedIpsList" style="margin-bottom:18px;overflow-x:auto"></div>
-    <div class="form-row" style="margin-bottom:0;grid-template-columns:1fr auto;align-items:end">
-      <div class="form-group"><label>Bannir une IP manuellement</label><input type="text" id="newBanIp" placeholder="ex: 82.123.45.6"></div>
-      <div class="form-group"><label>&nbsp;</label><button class="btn btn-warn btn-sm" onclick="banIp()">+ Bannir</button></div>
-    </div>
-  </div>
-
-  <!-- ROLES -->
-  <div class="card">
-    <h2><span>🏷</span> Gestion des rôles</h2>
-    <div class="roles-list" id="rolesList"></div>
-    <div class="form-row three" style="margin-bottom:0">
-      <div class="form-group"><label>Identifiant</label><input type="text" id="newRoleId" placeholder="ex: technicien"></div>
-      <div class="form-group"><label>Nom affiché</label><input type="text" id="newRoleLabel" placeholder="ex: Technicien"></div>
-      <div class="form-group"><label>Couleur</label>
-        <div style="display:flex;gap:8px;align-items:center">
-          <input type="color" id="newRoleColor" value="#3b82f6">
-          <button class="btn btn-primary btn-sm" onclick="addRole()">+ Ajouter</button>
+  <!-- ─── ONGLET 3 : Rôles & Accès ─────────────────────────────────────── -->
+  <div class="tab-panel" id="tab-roles" role="tabpanel">
+    <!-- ROLES -->
+    <div class="card">
+      <h2><span>🏷</span> Gestion des rôles</h2>
+      <div class="roles-list" id="rolesList"></div>
+      <div class="form-row three" style="margin-bottom:0">
+        <div class="form-group"><label>Identifiant</label><input type="text" id="newRoleId" placeholder="ex: technicien"></div>
+        <div class="form-group"><label>Nom affiché</label><input type="text" id="newRoleLabel" placeholder="ex: Technicien"></div>
+        <div class="form-group"><label>Couleur</label>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="color" id="newRoleColor" value="#3b82f6">
+            <button class="btn btn-primary btn-sm" onclick="addRole()">+ Ajouter</button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- ACCESS -->
-  <div class="card">
-    <h2><span>🔐</span> Accès par rôle</h2>
-    <div class="access-grid" id="accessGrid"></div>
-    <div style="margin-top:20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-      <button class="btn btn-primary" id="btnSaveAccess" onclick="saveAccess()" disabled>Sauvegarder les accès</button>
-      <button class="btn btn-danger btn-sm" id="btnResetAccess" onclick="resetAccess()" style="display:none">↺ Annuler les modifications</button>
-      <span id="accessDirtyFlag" style="display:none;font-size:11px;color:#fbbf24;font-weight:700;letter-spacing:1px;text-transform:uppercase">● Modifications non enregistrées</span>
-      <span id="accessSavedFlag" style="display:none;font-size:11px;color:#4ade80;font-weight:700;letter-spacing:1px;text-transform:uppercase">✓ À jour</span>
-    </div>
-  </div>
-
-  <!-- SIGNATURES -->
-  <div class="card">
-    <h2><span>✍️</span> Bibliothèque de signatures</h2>
-    <div style="font-size:12px;color:var(--text2);margin:-8px 0 18px">Images PNG (signature + cachet scannés). Utilisées dans les attestations et documents. Taille max : 500 Ko par fichier.</div>
-
-    <div id="sigList" class="sig-grid"></div>
-
-    <div class="sig-upload">
-      <div class="form-group">
-        <label>Propriétaire</label>
-        <select id="sigOwnerSelect"></select>
+    <!-- ACCESS -->
+    <div class="card">
+      <h2><span>🔐</span> Accès par rôle</h2>
+      <div class="access-grid" id="accessGrid"></div>
+      <div style="margin-top:20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-primary" id="btnSaveAccess" onclick="saveAccess()" disabled>Sauvegarder les accès</button>
+        <button class="btn btn-danger btn-sm" id="btnResetAccess" onclick="resetAccess()" style="display:none">↺ Annuler les modifications</button>
+        <span id="accessDirtyFlag" style="display:none;font-size:11px;color:#fbbf24;font-weight:700;letter-spacing:1px;text-transform:uppercase">● Modifications non enregistrées</span>
+        <span id="accessSavedFlag" style="display:none;font-size:11px;color:#4ade80;font-weight:700;letter-spacing:1px;text-transform:uppercase">✓ À jour</span>
       </div>
-      <div class="form-group">
-        <label>Libellé (facultatif)</label>
-        <input type="text" id="sigLabel" placeholder="ex: Signature + cachet">
-      </div>
-      <label class="sig-dropzone" id="sigDropzone">
-        <input type="file" id="sigFileInput" accept="image/png">
-        <span id="sigDropzoneText">📎 Cliquer ou glisser un PNG</span>
-      </label>
-      <button class="btn btn-primary btn-sm" id="btnAddSig" onclick="addSignature()" disabled>+ Ajouter</button>
     </div>
   </div>
 
-  <!-- CONSOLE LIVE (debug) -->
-  <div class="card">
-    <h2><span>🪵</span> Console live</h2>
-    <div style="font-size:12px;color:var(--text2);margin:-8px 0 14px">
-      Logs capturés sur toutes les pages (auto-refresh 1s).
-      Activer le mode debug pour aussi les afficher dans la vraie console : <code>?debug=1</code> dans l'URL ou <code>localStorage.setItem('algomes_debug','1')</code>.
+  <!-- ─── ONGLET 4 : Signatures ────────────────────────────────────────── -->
+  <div class="tab-panel" id="tab-signatures" role="tabpanel">
+    <div class="card">
+      <h2><span>✍️</span> Bibliothèque de signatures</h2>
+      <div style="font-size:12px;color:var(--text2);margin:-8px 0 18px">Images PNG (signature + cachet scannés). Utilisées dans les attestations et documents. Taille max : 500 Ko par fichier.</div>
+
+      <div id="sigList" class="sig-grid"></div>
+
+      <div class="sig-upload">
+        <div class="form-group">
+          <label>Propriétaire</label>
+          <select id="sigOwnerSelect"></select>
+        </div>
+        <div class="form-group">
+          <label>Libellé (facultatif)</label>
+          <input type="text" id="sigLabel" placeholder="ex: Signature + cachet">
+        </div>
+        <label class="sig-dropzone" id="sigDropzone">
+          <input type="file" id="sigFileInput" accept="image/png">
+          <span id="sigDropzoneText">📎 Cliquer ou glisser un PNG</span>
+        </label>
+        <button class="btn btn-primary btn-sm" id="btnAddSig" onclick="addSignature()" disabled>+ Ajouter</button>
+      </div>
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
-      <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="logFltLog" checked> log</label>
-      <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="logFltInfo" checked> info</label>
-      <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="logFltWarn" checked> warn</label>
-      <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="logFltError" checked> error</label>
-      <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="logFltDebug" checked> debug</label>
-      <input type="text" id="logSearch" placeholder="Filtrer (texte ou page)…" style="flex:1;min-width:160px;padding:5px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px">
-      <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="logAutoScroll" checked> Auto-scroll</label>
-      <button class="btn btn-sm" onclick="copyConsoleLog()" style="background:rgba(120,50,255,.10);color:#b388ff;border:1px solid rgba(120,50,255,.25)">📋 Copier</button>
-      <button class="btn btn-danger btn-sm" onclick="clearConsoleLog()">🗑 Vider</button>
-      <span id="logCount" style="font-size:11px;color:var(--text2);margin-left:auto"></span>
+  </div>
+
+  <!-- ─── ONGLET 5 : Console live ──────────────────────────────────────── -->
+  <div class="tab-panel" id="tab-console" role="tabpanel">
+    <div class="card">
+      <h2><span>🪵</span> Console live</h2>
+      <div style="font-size:12px;color:var(--text2);margin:-8px 0 14px">
+        Logs capturés sur toutes les pages (auto-refresh 1s).
+        Activer le mode debug pour aussi les afficher dans la vraie console : <code>?debug=1</code> dans l'URL ou <code>localStorage.setItem('algomes_debug','1')</code>.
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
+        <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="logFltLog" checked> log</label>
+        <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="logFltInfo" checked> info</label>
+        <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="logFltWarn" checked> warn</label>
+        <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="logFltError" checked> error</label>
+        <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="logFltDebug" checked> debug</label>
+        <input type="text" id="logSearch" placeholder="Filtrer (texte ou page)…" style="flex:1;min-width:160px;padding:5px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px">
+        <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="logAutoScroll" checked> Auto-scroll</label>
+        <button class="btn btn-sm" onclick="copyConsoleLog()" style="background:rgba(120,50,255,.10);color:#b388ff;border:1px solid rgba(120,50,255,.25)">📋 Copier</button>
+        <button class="btn btn-danger btn-sm" onclick="clearConsoleLog()">🗑 Vider</button>
+        <span id="logCount" style="font-size:11px;color:var(--text2);margin-left:auto"></span>
+      </div>
+      <pre id="logView" style="margin:0;padding:10px;background:#0a0d14;border:1px solid var(--border);border-radius:4px;max-height:380px;overflow:auto;font-family:'Menlo','Consolas',monospace;font-size:11px;line-height:1.5;color:#cbd5e1;white-space:pre-wrap;word-break:break-word"></pre>
     </div>
-    <pre id="logView" style="margin:0;padding:10px;background:#0a0d14;border:1px solid var(--border);border-radius:4px;max-height:380px;overflow:auto;font-family:'Menlo','Consolas',monospace;font-size:11px;line-height:1.5;color:#cbd5e1;white-space:pre-wrap;word-break:break-word"></pre>
   </div>
 </div>
 
@@ -404,10 +436,45 @@ auth.onAuthStateChanged(async u=>{
     document.getElementById('currentUserName').textContent=me.name||me.login;
     document.getElementById('loadingScreen').style.display='none';
     document.getElementById('mainContent').style.display='block';
+    initAdminTabs();
     await loadRoles(); await loadUsers(); await loadPresence(); await loadAccess(); loadSessions(); loadIpTracking(); loadSignatures();
     await loadBannedIps(); loadIpMap();
   }catch(e){console.error(e);toast('Erreur','error')}
 });
+
+// ─── Sous-onglets : switch + persistance du dernier onglet ouvert ─────────
+const ADMIN_TAB_KEY = 'algomes_admin_tab';
+function showAdminTab(tabId){
+  const tabs = document.querySelectorAll('.admin-tab');
+  const panels = document.querySelectorAll('.tab-panel');
+  let matched = false;
+  tabs.forEach(t => {
+    const active = t.dataset.tab === tabId;
+    t.classList.toggle('active', active);
+    t.setAttribute('aria-selected', active ? 'true' : 'false');
+    if (active) matched = true;
+  });
+  panels.forEach(p => p.classList.toggle('active', p.id === tabId));
+  if (matched) {
+    try { localStorage.setItem(ADMIN_TAB_KEY, tabId); } catch {}
+    // Quand on ouvre la carte des IP, Leaflet a besoin d'un invalidateSize()
+    // car le conteneur était display:none au moment de l'init.
+    if (tabId === 'tab-security' && typeof ipLeafletMap !== 'undefined' && ipLeafletMap) {
+      setTimeout(() => { try { ipLeafletMap.invalidateSize(); } catch {} }, 50);
+    }
+  }
+}
+function initAdminTabs(){
+  document.querySelectorAll('.admin-tab').forEach(btn => {
+    btn.addEventListener('click', () => showAdminTab(btn.dataset.tab));
+  });
+  // Restaure le dernier onglet ouvert (par défaut : utilisateurs)
+  let saved = null;
+  try { saved = localStorage.getItem(ADMIN_TAB_KEY); } catch {}
+  if (saved && document.getElementById(saved)) {
+    showAdminTab(saved);
+  }
+}
 
 // PRESENCE (real-time)
 let _presenceUnsub = null;

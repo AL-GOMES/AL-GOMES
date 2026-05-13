@@ -189,7 +189,8 @@ if(window.self!==window.top){
   /* ─── Flux d'activité des opérations (statut par opération) ─────────── */
   .gh-tasks{display:flex;flex-direction:column;gap:6px;margin-bottom:18px}
   .gh-tasks:empty{display:none}
-  .gh-task{display:flex;align-items:center;gap:10px;background:rgba(120,50,255,.04);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;font-weight:500;color:var(--text);animation:fadeUp .25s ease}
+  .gh-task{display:flex;flex-direction:column;background:rgba(120,50,255,.04);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;font-weight:500;color:var(--text);animation:fadeUp .25s ease}
+  .gh-task-row{display:flex;align-items:center;gap:10px;width:100%}
   .gh-task.pending{background:rgba(245,158,11,.06);border-color:rgba(245,158,11,.25)}
   .gh-task.success{background:rgba(34,197,94,.05);border-color:rgba(34,197,94,.20)}
   .gh-task.error{background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.30)}
@@ -204,6 +205,11 @@ if(window.self!==window.top){
   .gh-task-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .gh-task-time{font-size:11px;color:var(--text2);flex-shrink:0;font-family:'Menlo','Consolas',monospace}
   .gh-task-err{font-size:11px;color:#f87171;flex-shrink:0;font-family:'Menlo','Consolas',monospace;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* Pourcentage + barre de progression (visible uniquement en pending) */
+  .gh-task-pct{font-size:11px;font-weight:700;color:#fbbf24;background:rgba(251,191,36,.12);padding:2px 7px;border-radius:4px;flex-shrink:0;font-family:'Menlo','Consolas',monospace;min-width:42px;text-align:center}
+  .gh-task-bar{height:4px;background:rgba(251,191,36,.12);border-radius:2px;overflow:hidden;position:relative;margin-top:6px}
+  .gh-task-bar-fill{height:100%;background:linear-gradient(90deg,#fbbf24,#f59e0b);transition:width .3s ease;border-radius:2px}
+  .gh-task-bar-indet::before{content:'';position:absolute;inset:0;width:35%;background:linear-gradient(90deg,transparent,#fbbf24,transparent);animation:ghBusySlide 1.3s linear infinite}
   /* ─── Onglet Firebase : éditeur de règles ────────────────────────────── */
   .fb-busy{display:flex;align-items:center;gap:14px;background:rgba(255,160,0,.08);border:1px solid rgba(255,160,0,.30);border-radius:10px;padding:12px 18px;margin-bottom:18px;font-size:13px;color:#ffb74d;font-weight:600;animation:fadeUp .25s ease}
   .fb-busy.hidden{display:none}
@@ -664,16 +670,33 @@ let ghCurrentFile = null;        // { path, sha, content, isImage, isText, raw }
 const ghTasks = [];          // [{ id, label, status, ts, error, fadeTimeout }]
 let _ghTaskSeq = 0;
 
-function ghShowBusy(label, existingId){
+function ghShowBusy(label, existingId, initialPct){
   if (existingId) {
     const t = ghTasks.find(x => x.id === existingId);
-    if (t) { t.label = label || t.label; ghRenderTasks(); return existingId; }
+    if (t) {
+      t.label = label || t.label;
+      if (typeof initialPct === 'number') t.progress = initialPct;
+      ghRenderTasks();
+      return existingId;
+    }
   }
   const id = ++_ghTaskSeq;
-  ghTasks.unshift({ id, label: label || 'Opération…', status: 'pending', ts: Date.now() });
+  ghTasks.unshift({
+    id, label: label || 'Opération…', status: 'pending', ts: Date.now(),
+    progress: typeof initialPct === 'number' ? initialPct : null
+  });
   if (ghTasks.length > 6) ghTasks.length = 6;
   ghRenderTasks();
   return id;
+}
+// Mise à jour du pourcentage d'avancement d'une tâche pending (0-100).
+// Si on passe aussi un label, on le met à jour aussi.
+function ghUpdateProgress(tid, pct, label){
+  const t = ghTasks.find(x => x.id === tid);
+  if (!t || t.status !== 'pending') return;
+  t.progress = Math.max(0, Math.min(100, Math.round(pct)));
+  if (label) t.label = label;
+  ghRenderTasks();
 }
 
 function ghHideBusy(id, ok, errMsg){
@@ -725,21 +748,38 @@ function ghFmtSince(ts){
 function ghRenderTasks(){
   const el = document.getElementById('ghTasks');
   if (!el) return;
-  el.innerHTML = ghTasks.map(t => {
-    const ico = t.status === 'pending' ? '⏳' : t.status === 'success' ? '✅' : '❌';
-    const cls = 'gh-task ' + t.status;
-    const errHtml = t.status === 'error' && t.error
-      ? '<span class="gh-task-err" title="' + escHtml(t.error) + '">' + escHtml(t.error) + '</span>'
-      : '';
-    const time = t.endTs ? ghFmtSince(t.endTs) : ghFmtSince(t.ts);
-    return '<div class="' + cls + '" data-tid="' + t.id + '">'
-      + '<span class="gh-task-dot"></span>'
-      + '<span class="gh-task-ico">' + ico + '</span>'
-      + '<span class="gh-task-label">' + escHtml(t.label) + '</span>'
-      + errHtml
-      + '<span class="gh-task-time">' + time + '</span>'
-      + '</div>';
-  }).join('');
+  el.innerHTML = ghTasks.map(t => renderTaskItem(t)).join('');
+}
+// Rendu d'un item du flux (utilisé par les deux flux gh/fb avec le même style)
+function renderTaskItem(t){
+  const ico = t.status === 'pending' ? '⏳' : t.status === 'success' ? '✅' : '❌';
+  const cls = 'gh-task ' + t.status;
+  const errHtml = t.status === 'error' && t.error
+    ? '<span class="gh-task-err" title="' + escHtml(t.error) + '">' + escHtml(t.error) + '</span>'
+    : '';
+  const time = t.endTs ? ghFmtSince(t.endTs) : ghFmtSince(t.ts);
+  let pctHtml = '';
+  let barHtml = '';
+  if (t.status === 'pending') {
+    if (typeof t.progress === 'number') {
+      pctHtml = '<span class="gh-task-pct">' + t.progress + '%</span>';
+      barHtml = '<div class="gh-task-bar"><div class="gh-task-bar-fill" style="width:' + t.progress + '%"></div></div>';
+    } else {
+      // Pas de % connu → barre animée (indéterminée)
+      barHtml = '<div class="gh-task-bar gh-task-bar-indet"></div>';
+    }
+  }
+  return '<div class="' + cls + '" data-tid="' + t.id + '">'
+    + '<div class="gh-task-row">'
+    + '<span class="gh-task-dot"></span>'
+    + '<span class="gh-task-ico">' + ico + '</span>'
+    + '<span class="gh-task-label">' + escHtml(t.label) + '</span>'
+    + errHtml
+    + pctHtml
+    + '<span class="gh-task-time">' + time + '</span>'
+    + '</div>'
+    + barHtml
+    + '</div>';
 }
 
 // Auto-refresh des timestamps relatifs
@@ -799,11 +839,12 @@ async function saveGhConfig(){
   const token = tokenIn || (ghCfg && ghCfg.token) || '';
   if (!token) { toast('Token GitHub requis', 'error'); return; }
   // Test : vérifie que le token donne accès au repo (rate limit + perms)
-  const _tid = ghShowBusy('Test du token GitHub sur ' + owner + '/' + repo + '…');
+  const _tid = ghShowBusy('Test du token GitHub sur ' + owner + '/' + repo + '…', null, 20);
   try {
     const r = await fetch('https://api.github.com/repos/' + owner + '/' + repo, {
       headers: { Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json' }
     });
+    ghUpdateProgress(_tid, 90);
     if (!r.ok) {
       const body = await r.text();
       ghHideBusy(_tid, false, 'HTTP ' + r.status);
@@ -833,6 +874,41 @@ async function clearGhToken(){
   toast('Token supprimé', 'success');
   ghCfg = null;
   loadGhConfig();
+}
+
+// ─── Variante XHR : permet d'avoir le vrai % d'upload via upload.onprogress
+//      (fetch() ne supporte toujours pas la progression d'upload nativement
+//      en 2026 — on retombe sur XHR pour les PUT de fichiers binaires).
+function ghApiUpload(method, path, body, onProgress){
+  if (!ghCfg || !ghCfg.token) return Promise.reject(new Error('Token GitHub non configuré'));
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open(method, 'https://api.github.com' + path);
+    xhr.setRequestHeader('Authorization', 'Bearer ' + ghCfg.token);
+    xhr.setRequestHeader('Accept', 'application/vnd.github+json');
+    xhr.setRequestHeader('X-GitHub-Api-Version', '2022-11-28');
+    if (body) xhr.setRequestHeader('Content-Type', 'application/json');
+    if (onProgress && xhr.upload) {
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+      };
+    }
+    xhr.onload = () => {
+      let data = null;
+      try { data = xhr.responseText ? JSON.parse(xhr.responseText) : null; } catch {}
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(data);
+      } else {
+        const msg = (data && data.message) || ('HTTP ' + xhr.status);
+        const err = new Error(msg);
+        err.status = xhr.status;
+        reject(err);
+      }
+    };
+    xhr.onerror = () => reject(new Error('Erreur réseau'));
+    xhr.ontimeout = () => reject(new Error('Timeout'));
+    xhr.send(body ? JSON.stringify(body) : null);
+  });
 }
 
 // ─── Appel API GitHub avec token ──────────────────────────────────────────
@@ -868,9 +944,10 @@ async function ghApi(method, path, body){
 
 // ─── Chargement de la liste des branches du dépôt ─────────────────────────
 async function loadGhBranches(){
-  const tid = ghShowBusy('Chargement des branches du dépôt…');
+  const tid = ghShowBusy('Chargement des branches du dépôt…', null, 30);
   try {
     const branches = await ghApi('GET', '/repos/' + ghCfg.owner + '/' + ghCfg.repo + '/branches?per_page=100');
+    ghUpdateProgress(tid, 90);
     const sel = document.getElementById('ghBranchSelect');
     sel.innerHTML = '';
     branches.forEach(b => {
@@ -896,9 +973,10 @@ async function loadGhTree(){
   ghCfg.branch = branch;
   const view = document.getElementById('ghTreeView');
   view.innerHTML = '<div class="gh-empty">Chargement de l\'arborescence…</div>';
-  const tid = ghShowBusy('Chargement de l\'arborescence (branche : ' + branch + ')…');
+  const tid = ghShowBusy('Chargement de l\'arborescence (branche : ' + branch + ')…', null, 20);
   try {
     const data = await ghApi('GET', '/repos/' + ghCfg.owner + '/' + ghCfg.repo + '/git/trees/' + encodeURIComponent(branch) + '?recursive=1');
+    ghUpdateProgress(tid, 70, 'Construction de l\'arbre…');
     if (!data || !Array.isArray(data.tree)) {
       view.innerHTML = '<div class="gh-empty">Arborescence vide</div>';
       return;
@@ -906,6 +984,7 @@ async function loadGhTree(){
     if (data.truncated) toast('Arborescence tronquée (>100k entrées)', 'error');
     ghTreeFlat = data.tree;
     ghTreeRoot = buildGhTree(ghTreeFlat);
+    ghUpdateProgress(tid, 95, 'Rendu de l\'arbre…');
     renderGhTree();
   } catch (e) {
     ghHideBusy(tid, false, e.message);
@@ -1036,12 +1115,13 @@ async function openGhFile(path){
   renderGhTree();
   const editor = document.getElementById('ghEditor');
   editor.innerHTML = '<div class="gh-empty-editor">Chargement…</div>';
-  const tid = ghShowBusy('Lecture de ' + path + '…');
+  const tid = ghShowBusy('Lecture de ' + path + '…', null, 20);
   try {
     const ext = (path.split('.').pop() || '').toLowerCase();
     const isText = GH_TEXT_EXT.has(ext);
     const isImage = GH_IMG_EXT.has(ext);
     const data = await ghApi('GET', '/repos/' + ghCfg.owner + '/' + ghCfg.repo + '/contents/' + ghEncodePath(path) + '?ref=' + encodeURIComponent(ghCfg.branch));
+    ghUpdateProgress(tid, 90, 'Décodage du contenu…');
     let content = '';
     if (data && data.content) {
       const b64 = data.content.replace(/\s/g, '');
@@ -1100,14 +1180,16 @@ async function ghSaveFile(){
   const newContent = ta.value;
   const msg = document.getElementById('ghCommitMsg').value.trim() || ('Update ' + f.path);
   if (!confirm('Pousser cette modification sur la branche "' + ghCfg.branch + '" ?\n\n' + f.path + '\n\nMessage : ' + msg)) return;
-  const tid = ghShowBusy('Sauvegarde de ' + f.path + ' sur ' + ghCfg.branch + '…');
+  const tid = ghShowBusy('Sauvegarde de ' + f.path + ' sur ' + ghCfg.branch + '…', null, 10);
   try {
+    ghUpdateProgress(tid, 30, 'Encodage + envoi à GitHub…');
     const res = await ghApi('PUT', '/repos/' + ghCfg.owner + '/' + ghCfg.repo + '/contents/' + ghEncodePath(f.path), {
       message: msg,
       content: ghUtf8ToB64(newContent),
       sha: f.sha,
       branch: ghCfg.branch
     });
+    ghUpdateProgress(tid, 95, 'Finalisation…');
     toast('✓ Fichier sauvegardé', 'success');
     ghCurrentFile.sha = res.content.sha;
     ghCurrentFile.content = newContent;
@@ -1126,13 +1208,15 @@ async function ghDeleteFile(){
   if (!confirm('⚠ Supprimer DÉFINITIVEMENT le fichier suivant ?\n\n' + f.path + '\n\nBranche : ' + ghCfg.branch)) return;
   const msg = prompt('Message de commit pour la suppression :', 'Delete ' + f.path);
   if (msg === null) return;
-  const tid = ghShowBusy('Suppression de ' + f.path + '…');
+  const tid = ghShowBusy('Suppression de ' + f.path + '…', null, 10);
   try {
+    ghUpdateProgress(tid, 40, 'Requête DELETE à GitHub…');
     await ghApi('DELETE', '/repos/' + ghCfg.owner + '/' + ghCfg.repo + '/contents/' + ghEncodePath(f.path), {
       message: msg || ('Delete ' + f.path),
       sha: f.sha,
       branch: ghCfg.branch
     });
+    ghUpdateProgress(tid, 70, 'Rafraîchissement de l\'arborescence…');
     toast('✓ Fichier supprimé', 'success');
     ghCurrentFile = null;
     ghSelectedPath = null;
@@ -1160,13 +1244,15 @@ async function ghCreateFilePrompt(){
   const initial = prompt('Contenu initial du fichier (laisser vide pour un fichier vide) :', '');
   if (initial === null) return;
   const msg = 'Create ' + cleanPath;
-  const tid = ghShowBusy('Création de ' + cleanPath + '…');
+  const tid = ghShowBusy('Création de ' + cleanPath + '…', null, 10);
   try {
+    ghUpdateProgress(tid, 40, 'Envoi à GitHub…');
     const res = await ghApi('PUT', '/repos/' + ghCfg.owner + '/' + ghCfg.repo + '/contents/' + ghEncodePath(cleanPath), {
       message: msg,
       content: ghUtf8ToB64(initial),
       branch: ghCfg.branch
     });
+    ghUpdateProgress(tid, 70, 'Rafraîchissement de l\'arborescence…');
     toast('✓ Fichier créé', 'success');
     await loadGhTree();
     // Ouvre directement le fichier créé
@@ -1214,11 +1300,14 @@ async function ghUploadFile(input){
     existingSha = existing.sha;
   }
 
-  const tid = ghShowBusy((existingSha ? 'Mise à jour' : 'Upload') + ' de ' + cleanPath + ' (' + (file.size / 1024).toFixed(1) + ' Ko)…');
+  const tid = ghShowBusy((existingSha ? 'Mise à jour' : 'Upload') + ' de ' + cleanPath + ' (' + (file.size / 1024).toFixed(1) + ' Ko)…', null, 0);
   let b64;
   try {
+    ghUpdateProgress(tid, 3, 'Lecture du fichier local…');
     const buf = await file.arrayBuffer();
+    ghUpdateProgress(tid, 8, 'Encodage base64…');
     b64 = ghBytesToB64(new Uint8Array(buf));
+    ghUpdateProgress(tid, 12, 'Envoi à GitHub…');
   } catch (e) {
     ghHideBusy(tid, false, e.message);
     toast('Lecture impossible : ' + e.message, 'error');
@@ -1233,7 +1322,13 @@ async function ghUploadFile(input){
       branch: ghCfg.branch
     };
     if (existingSha) body.sha = existingSha;
-    await ghApi('PUT', '/repos/' + ghCfg.owner + '/' + ghCfg.repo + '/contents/' + ghEncodePath(cleanPath), body);
+    // XHR pour avoir le VRAI % de progression de l'upload (fetch ne le
+    // supporte pas). On mappe 0-100% du XHR sur 12-90% du total.
+    await ghApiUpload('PUT', '/repos/' + ghCfg.owner + '/' + ghCfg.repo + '/contents/' + ghEncodePath(cleanPath), body, (xhrPct) => {
+      const overall = 12 + Math.round(xhrPct * 0.78);
+      ghUpdateProgress(tid, overall);
+    });
+    ghUpdateProgress(tid, 92, 'Rafraîchissement de l\'arborescence…');
     toast('✓ Fichier ' + (existingSha ? 'mis à jour' : 'uploadé'), 'success');
     await loadGhTree();
     // Ouvre le fichier uploadé si c'est une image/texte affichable
@@ -1288,16 +1383,31 @@ let fbUserEmail = null;   // email Google connecté
 // Les helpers retournent un tid à passer ensuite à fbHideBusy en cas d'erreur.
 const fbTasks = [];
 let _fbTaskSeq = 0;
-function fbShowBusy(label, existingId){
+function fbShowBusy(label, existingId, initialPct){
   if (existingId) {
     const t = fbTasks.find(x => x.id === existingId);
-    if (t) { t.label = label || t.label; fbRenderTasks(); return existingId; }
+    if (t) {
+      t.label = label || t.label;
+      if (typeof initialPct === 'number') t.progress = initialPct;
+      fbRenderTasks();
+      return existingId;
+    }
   }
   const id = ++_fbTaskSeq;
-  fbTasks.unshift({ id, label: label || 'Opération…', status: 'pending', ts: Date.now() });
+  fbTasks.unshift({
+    id, label: label || 'Opération…', status: 'pending', ts: Date.now(),
+    progress: typeof initialPct === 'number' ? initialPct : null
+  });
   if (fbTasks.length > 6) fbTasks.length = 6;
   fbRenderTasks();
   return id;
+}
+function fbUpdateProgress(tid, pct, label){
+  const t = fbTasks.find(x => x.id === tid);
+  if (!t || t.status !== 'pending') return;
+  t.progress = Math.max(0, Math.min(100, Math.round(pct)));
+  if (label) t.label = label;
+  fbRenderTasks();
 }
 function fbHideBusy(id, ok, errMsg){
   if (id == null) {
@@ -1330,21 +1440,7 @@ function fbScheduleFade(){
 function fbRenderTasks(){
   const el = document.getElementById('fbTasks');
   if (!el) return;
-  el.innerHTML = fbTasks.map(t => {
-    const ico = t.status === 'pending' ? '⏳' : t.status === 'success' ? '✅' : '❌';
-    const cls = 'gh-task ' + t.status;
-    const errHtml = t.status === 'error' && t.error
-      ? '<span class="gh-task-err" title="' + escHtml(t.error) + '">' + escHtml(t.error) + '</span>'
-      : '';
-    const time = ghFmtSince(t.endTs || t.ts);
-    return '<div class="' + cls + '">'
-      + '<span class="gh-task-dot"></span>'
-      + '<span class="gh-task-ico">' + ico + '</span>'
-      + '<span class="gh-task-label">' + escHtml(t.label) + '</span>'
-      + errHtml
-      + '<span class="gh-task-time">' + time + '</span>'
-      + '</div>';
-  }).join('');
+  el.innerHTML = fbTasks.map(t => renderTaskItem(t)).join('');
 }
 setInterval(() => { if (fbTasks.length) fbRenderTasks(); }, 5000);
 
@@ -1390,7 +1486,7 @@ function fbUpdateDisconnectedUI(){
 }
 
 async function fbConnect(){
-  const tid = fbShowBusy('Ouverture du popup Google…');
+  const tid = fbShowBusy('Ouverture du popup Google…', null, 10);
   try {
     if (!fbAdminApp) {
       fbAdminApp = firebase.initializeApp(FC, 'fbAdmin_' + Date.now());
@@ -1400,8 +1496,9 @@ async function fbConnect(){
     provider.addScope('https://www.googleapis.com/auth/firebase');
     provider.addScope('https://www.googleapis.com/auth/cloud-platform');
     provider.setCustomParameters({ prompt: 'select_account' });
-    fbShowBusy('Authentification Google…', tid);
+    fbShowBusy('Authentification Google (sélectionne ton compte)…', tid, 30);
     const result = await fbAdminApp.auth().signInWithPopup(provider);
+    fbUpdateProgress(tid, 80, 'Récupération du token OAuth…');
     const credential = result.credential;
     if (!credential || !credential.accessToken) {
       throw new Error('Pas de token Google retourné par le popup');
@@ -1483,14 +1580,16 @@ async function fbApi(method, path, body){
 
 // ─── Charge les règles Firestore actuellement déployées ───────────────────
 async function fbLoadRules(){
-  const tid = fbShowBusy('Chargement des règles Firestore actuelles…');
+  const tid = fbShowBusy('Récupération du release cloud.firestore…', null, 15);
   try {
     const projectId = FC.projectId;
     const release = await fbApi('GET', '/projects/' + projectId + '/releases/cloud.firestore');
+    fbUpdateProgress(tid, 50, 'Téléchargement du ruleset référencé…');
     if (!release || !release.rulesetName) {
       throw new Error('Aucun ruleset trouvé pour cloud.firestore');
     }
     const ruleset = await fbApi('GET', '/' + release.rulesetName);
+    fbUpdateProgress(tid, 90, 'Affichage des règles…');
     const file = (ruleset && ruleset.source && ruleset.source.files && ruleset.source.files[0]) || null;
     const content = file ? file.content : '';
     document.getElementById('fbRulesText').value = content;
@@ -1516,19 +1615,21 @@ async function fbSaveRules(){
     return;
   }
   if (!confirm('⚠ Déployer ces règles Firestore EN PRODUCTION ?\n\nLes règles actuelles seront immédiatement remplacées. Aucun retour en arrière automatique.')) return;
-  const tid = fbShowBusy('Création du nouveau ruleset…');
+  const tid = fbShowBusy('Création du nouveau ruleset…', null, 10);
   try {
     const projectId = FC.projectId;
+    fbUpdateProgress(tid, 30, 'POST /rulesets en cours…');
     const newRuleset = await fbApi('POST', '/projects/' + projectId + '/rulesets', {
       source: { files: [{ name: 'firestore.rules', content: newContent }] }
     });
-    fbShowBusy('Activation du ruleset (release cloud.firestore)…', tid);
+    fbUpdateProgress(tid, 60, 'Activation du release cloud.firestore…');
     await fbApi('PATCH', '/projects/' + projectId + '/releases/cloud.firestore', {
       release: {
         name: 'projects/' + projectId + '/releases/cloud.firestore',
         rulesetName: newRuleset.name
       }
     });
+    fbUpdateProgress(tid, 90, 'Rafraîchissement…');
     toast('✓ Règles Firestore déployées en production', 'success');
     await fbLoadRules();
   } catch (e) {

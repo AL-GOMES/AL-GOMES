@@ -503,6 +503,20 @@ function escHtml(s){
 
 // ─── Helpers fiches ──────────────────────────────────────────────────────────
 function genId(){ return 'f_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7); }
+
+// Valeurs par défaut pour une nouvelle fiche, reproduit les cases cochées
+// dans le fichier modèle "FICHE PRODUIT indice A.xls" du dépôt.
+function newFicheDefaults(){
+  return {
+    id: genId(),
+    f_emetteur: 'AL GOMES',
+    f_date: new Date().toISOString().slice(0, 10),
+    // OBJET DE LA FICHE — cases cochées par défaut comme dans le modèle Excel
+    o_conforme: true,
+    o_echantillon: true,
+    o_documentation: true
+  };
+}
 function getActive(){ return fiches.find(f => f.id === currentFicheId) || fiches[0] || null; }
 function syncFormToActive(){
   const cur = getActive();
@@ -537,8 +551,7 @@ function nextMainNumber(){
 function addNewFiche(){
   syncFormToActive();
   const num = nextMainNumber();
-  const today = new Date().toISOString().slice(0, 10);
-  const nf = { id: genId(), f_num: num, f_emetteur: 'AL GOMES', f_date: today };
+  const nf = Object.assign(newFicheDefaults(), { f_num: num });
   // Hérite du nom de projet de la fiche active pour cohérence du dossier
   const cur = getActive();
   if (cur && cur.f_project) nf.f_project = cur.f_project;
@@ -564,15 +577,12 @@ function addVariante(){
     if (!usedSuffixes.has(i)) { nextIdx = i; break; }
   }
   if (nextIdx < 0) { alert('Tous les suffixes (BIS → SEXIES) sont déjà utilisés pour la fiche ' + n); return; }
-  const today = new Date().toISOString().slice(0, 10);
-  const nf = {
-    id: genId(),
+  const nf = Object.assign(newFicheDefaults(), {
     f_num: String(n) + SUFFIXES[nextIdx],
     f_project: cur.f_project || '',
     f_lot: cur.f_lot || '',
-    f_emetteur: cur.f_emetteur || 'AL GOMES',
-    f_date: today
-  };
+    f_emetteur: cur.f_emetteur || 'AL GOMES'
+  });
   fiches.push(nf);
   currentFicheId = nf.id;
   sortFiches();
@@ -632,10 +642,10 @@ function loadDossier(){
         saveDossier(false);
       }
     }
-    // 3. Premier chargement : créer une fiche vide
+    // 3. Premier chargement : créer une fiche vide (avec les cases cochées
+    // par défaut comme dans le modèle Excel).
     if (fiches.length === 0) {
-      const today = new Date().toISOString().slice(0, 10);
-      const f = { id: genId(), f_num: '1', f_emetteur: 'AL GOMES', f_date: today };
+      const f = Object.assign(newFicheDefaults(), { f_num: '1' });
       fiches = [f];
       currentFicheId = f.id;
     }
@@ -1005,9 +1015,8 @@ async function newDossier(){
   try { localStorage.removeItem(STORAGE_KEY); } catch {}
   fiches = [];
   currentFicheId = null;
-  // Crée une nouvelle fiche vide
-  const today = new Date().toISOString().slice(0, 10);
-  const nf = { id: genId(), f_num: '1', f_emetteur: 'AL GOMES', f_date: today };
+  // Crée une nouvelle fiche vide (avec cases pré-cochées du modèle Excel)
+  const nf = Object.assign(newFicheDefaults(), { f_num: '1' });
   fiches = [nf];
   currentFicheId = nf.id;
   writeForm(nf);

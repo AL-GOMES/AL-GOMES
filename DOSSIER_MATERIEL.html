@@ -71,7 +71,11 @@ html, body { background: #2a2a35; font-family: 'Calibri', 'Segoe UI', Arial, san
 
 /* ─── La feuille (format A4 strict 210×297 mm) ─── */
 @page { size: A4 portrait; margin: 10mm; }
-.sheet-wrap { padding: 16px; display: flex; justify-content: center; }
+/* Wrapper 2 colonnes : la fiche A4 à gauche + le PDF technique à droite */
+.sheet-wrap {
+  padding: 16px; display: flex; gap: 16px; justify-content: center;
+  align-items: flex-start; flex-wrap: wrap;
+}
 .sheet {
   /* A4 portrait : 210mm de large, 297mm de haut. On retire 20mm de marge */
   width: 210mm; min-height: 297mm; max-width: 100%;
@@ -79,9 +83,39 @@ html, body { background: #2a2a35; font-family: 'Calibri', 'Segoe UI', Arial, san
   border: 1.5px solid #000; padding: 10mm;
   font-size: 10.5pt; line-height: 1.25; color: #000;
   box-shadow: 0 8px 30px rgba(0,0,0,0.45);
-  display: flex; flex-direction: column;
+  display: flex; flex-direction: column; flex-shrink: 0;
 }
 .sheet > form, .sheet form { display: flex; flex-direction: column; flex: 1; }
+
+/* Visualiseur PDF (fiche technique attachée à la fiche courante) */
+.pdf-panel {
+  width: 210mm; max-width: 100%; min-height: 297mm;
+  background: #1a1e2a; border: 1px solid #2a2f42; border-radius: 6px;
+  display: flex; flex-direction: column; overflow: hidden;
+  flex-shrink: 0;
+}
+.pdf-panel-head {
+  padding: 10px 14px; background: #13161f; border-bottom: 1px solid #2a2f42;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  color: #e2e4ea;
+}
+.pdf-panel-head .pdf-name {
+  font-size: 12px; font-weight: 600; color: #e2e4ea;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 320px;
+}
+.pdf-panel-head .pdf-empty { font-size: 12px; color: #5a5f75; font-style: italic; }
+.pdf-panel-head .pdf-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.pdf-panel iframe { flex: 1; width: 100%; border: 0; background: #fff; min-height: 297mm; }
+.pdf-dropzone {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  flex-direction: column; padding: 32px; gap: 14px; text-align: center;
+  color: #8b90a5; background: repeating-linear-gradient(45deg, #1a1e2a 0 12px, #1d2230 12px 24px);
+  cursor: pointer; transition: all 0.2s;
+}
+.pdf-dropzone:hover, .pdf-dropzone.drag-over { background: #222738; color: #e2e4ea; }
+.pdf-dropzone svg { width: 64px; height: 64px; opacity: 0.4; }
+.pdf-dropzone .hint { font-size: 12px; }
+.pdf-dropzone .label-main { font-size: 14px; font-weight: 600; letter-spacing: 0.5px; }
 
 /* Nota A/O/R tout en bas de la feuille */
 .fp-nota {
@@ -349,6 +383,23 @@ input.proj { font-size: 28pt; font-weight: 700; text-align: center; letter-spaci
   </div>
 
 </form>
+
+<!-- Panneau PDF : fiche technique multi-pages associée à la fiche courante -->
+<aside class="pdf-panel no-print" id="pdfPanel">
+  <div class="pdf-panel-head">
+    <span class="pdf-name" id="pdfName"><span class="pdf-empty">Aucun PDF associé</span></span>
+    <div class="pdf-actions">
+      <button class="btn" id="btnAttachPdf" type="button">📎 Joindre</button>
+      <button class="btn" id="btnChangePdf" type="button" style="display:none">⤴ Changer</button>
+      <button class="btn danger" id="btnRemovePdf" type="button" style="display:none">✕ Retirer</button>
+      <button class="btn" id="btnOpenPdf" type="button" style="display:none">⤢ Plein écran</button>
+    </div>
+  </div>
+  <div id="pdfBody" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+    <!-- Soit l'iframe avec le PDF, soit la dropzone si aucun PDF -->
+  </div>
+  <input type="file" id="pdfFileInput" accept="application/pdf" style="display:none">
+</aside>
 </div>
 
 <script>
@@ -601,6 +652,155 @@ function renderTabs(){
   });
 }
 
+// ─── IndexedDB pour stocker les PDF techniques (trop gros pour localStorage) ──
+const PdfDB = {
+  _db: null,
+  open() {
+    if (this._db) return Promise.resolve(this._db);
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open('algomes-dossier-pdf', 1);
+      req.onupgradeneeded = () => req.result.createObjectStore('pdf');
+      req.onsuccess = () => { this._db = req.result; resolve(this._db); };
+      req.onerror = () => reject(req.error);
+    });
+  },
+  async set(id, payload) {
+    const db = await this.open();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('pdf', 'readwrite');
+      tx.objectStore('pdf').put(payload, id);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  },
+  async get(id) {
+    const db = await this.open();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('pdf', 'readonly');
+      const req = tx.objectStore('pdf').get(id);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => reject(req.error);
+    });
+  },
+  async remove(id) {
+    const db = await this.open();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('pdf', 'readwrite');
+      tx.objectStore('pdf').delete(id);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+};
+
+// Garde la blob URL courante pour la révoquer quand on change de fiche
+let _currentPdfBlobUrl = null;
+function revokeCurrentPdfUrl(){
+  if (_currentPdfBlobUrl) {
+    try { URL.revokeObjectURL(_currentPdfBlobUrl); } catch(e) {}
+    _currentPdfBlobUrl = null;
+  }
+}
+
+async function renderPdfPanel(){
+  const cur = getActive();
+  const body = document.getElementById('pdfBody');
+  const nameEl = document.getElementById('pdfName');
+  const btnAttach = document.getElementById('btnAttachPdf');
+  const btnChange = document.getElementById('btnChangePdf');
+  const btnRemove = document.getElementById('btnRemovePdf');
+  const btnOpen   = document.getElementById('btnOpenPdf');
+  revokeCurrentPdfUrl();
+  if (!cur) return;
+  const rec = await PdfDB.get(cur.id);
+  if (rec && rec.blob) {
+    _currentPdfBlobUrl = URL.createObjectURL(rec.blob);
+    nameEl.innerHTML = '<span title="' + escHtml(rec.name) + '">' + escHtml(rec.name) + '</span>';
+    btnAttach.style.display = 'none';
+    btnChange.style.display = '';
+    btnRemove.style.display = '';
+    btnOpen.style.display = '';
+    body.innerHTML = '';
+    const iframe = document.createElement('iframe');
+    iframe.src = _currentPdfBlobUrl + '#view=FitH&toolbar=1';
+    iframe.title = 'Fiche technique ' + rec.name;
+    body.appendChild(iframe);
+  } else {
+    nameEl.innerHTML = '<span class="pdf-empty">Aucun PDF associé</span>';
+    btnAttach.style.display = '';
+    btnChange.style.display = 'none';
+    btnRemove.style.display = 'none';
+    btnOpen.style.display = 'none';
+    body.innerHTML =
+      '<div class="pdf-dropzone" id="pdfDropzone">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' +
+      '<div class="label-main">📎 Glisser-déposer un PDF</div>' +
+      '<div class="hint">ou cliquer ici pour choisir un fichier</div>' +
+      '<div class="hint" style="margin-top:8px;font-size:10px">Fiche technique multi-pages associée à la fiche N° ' + escHtml(cur.f_num || '?') + '</div>' +
+      '</div>';
+    const dz = document.getElementById('pdfDropzone');
+    dz.onclick = () => document.getElementById('pdfFileInput').click();
+    dz.ondragover = (e) => { e.preventDefault(); dz.classList.add('drag-over'); };
+    dz.ondragleave = () => dz.classList.remove('drag-over');
+    dz.ondrop = (e) => {
+      e.preventDefault();
+      dz.classList.remove('drag-over');
+      const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (f) handlePdfFile(f);
+    };
+  }
+}
+
+async function handlePdfFile(file){
+  if (!file) return;
+  if (!/pdf$/i.test(file.type) && !/\.pdf$/i.test(file.name)) {
+    alert('Seuls les fichiers PDF sont acceptés.');
+    return;
+  }
+  if (file.size > 30 * 1024 * 1024) {
+    if (!confirm('Le fichier fait ' + (file.size/1024/1024).toFixed(1) + ' Mo. Continuer ?')) return;
+  }
+  const cur = getActive();
+  if (!cur) return;
+  await PdfDB.set(cur.id, { blob: file, name: file.name, size: file.size, type: file.type });
+  await renderPdfPanel();
+  setStatus('PDF "' + file.name + '" associé', 'saved');
+}
+
+async function removePdf(){
+  const cur = getActive();
+  if (!cur) return;
+  if (!confirm('Retirer le PDF associé à cette fiche ?')) return;
+  await PdfDB.remove(cur.id);
+  await renderPdfPanel();
+  setStatus('PDF retiré', '');
+}
+
+function openPdfFullscreen(){
+  if (!_currentPdfBlobUrl) return;
+  window.open(_currentPdfBlobUrl, '_blank');
+}
+
+// Surcharge switchTo pour rafraîchir le panel PDF
+const _origSwitchTo = switchTo;
+switchTo = function(id){
+  _origSwitchTo(id);
+  renderPdfPanel();
+};
+const _origAddNew = addNewFiche;
+addNewFiche = function(){ _origAddNew(); renderPdfPanel(); };
+const _origAddVar = addVariante;
+addVariante = function(){ _origAddVar(); renderPdfPanel(); };
+const _origDelete = deleteCurrentFiche;
+deleteCurrentFiche = async function(){
+  const cur = getActive();
+  const id = cur && cur.id;
+  _origDelete();
+  // Si supprimé, retirer le PDF associé aussi
+  if (id) { try { await PdfDB.remove(id); } catch(e){} }
+  renderPdfPanel();
+};
+
 // ─── Bootstrap ───────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   loadDossier();
@@ -616,6 +816,18 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('keydown', (e) => {
     if((e.ctrlKey || e.metaKey) && e.key === 's'){ e.preventDefault(); saveDossier(true); }
   });
+  // PDF panel
+  const fileInput = document.getElementById('pdfFileInput');
+  document.getElementById('btnAttachPdf').onclick = () => fileInput.click();
+  document.getElementById('btnChangePdf').onclick = () => fileInput.click();
+  document.getElementById('btnRemovePdf').onclick = removePdf;
+  document.getElementById('btnOpenPdf').onclick   = openPdfFullscreen;
+  fileInput.onchange = (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (f) handlePdfFile(f);
+    e.target.value = ''; // reset pour pouvoir re-uploader le même fichier
+  };
+  renderPdfPanel();
 });
 </script>
 

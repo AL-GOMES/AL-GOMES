@@ -264,10 +264,13 @@ input.proj { font-size: 28pt; font-weight: 700; text-align: center; letter-spaci
     <button class="btn" onclick="addNewFiche()" title="Ajouter une nouvelle fiche numérotée">＋ Fiche</button>
     <button class="btn" onclick="addVariante()" title="Ajouter une variante BIS/TER/QUATER de la fiche courante">＋ Variante</button>
     <button class="btn danger" onclick="deleteCurrentFiche()" title="Supprimer la fiche courante">🗑 Supprimer</button>
-    <button class="btn" onclick="window.print()">🖨 Imprimer</button>
+    <button class="btn" onclick="document.getElementById('importPdfInput').click()" title="Reprendre un dossier précédemment exporté (PDF généré par ce module)">📥 Importer</button>
     <button class="btn primary" onclick="saveDossierAndExport()" title="Enregistre le dossier en local ET télécharge un PDF unique contenant toutes les fiches + leurs documents techniques">💾 Enregistrer &amp; PDF</button>
   </div>
 </div>
+
+<!-- Input caché pour l'import — accepte uniquement les PDF générés par ce module -->
+<input type="file" id="importPdfInput" accept="application/pdf" style="display:none">
 
 <!-- Barre d'onglets : un onglet par fiche du dossier, triés par numéro -->
 <div class="tabs-bar no-print" id="tabsBar"></div>
@@ -872,7 +875,10 @@ async function exportDossierPdf(){
     renderTabs();
     renderPdfPanel();
     // Save + download
-    const bytes = await out.save();
+    let bytes = await out.save();
+    // Injecter les données du dossier (fiches + PDFs techniques) en fin de
+    // fichier sous forme de commentaire PDF pour permettre la réimportation.
+    bytes = await injectDossierSidecar(bytes);
     const blob = new Blob([bytes], { type: 'application/pdf' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -897,6 +903,138 @@ async function exportDossierPdf(){
 async function saveDossierAndExport(){
   saveDossier(false);
   await exportDossierPdf();
+}
+
+// ─── Sidecar : embarquement des données dans le PDF + extraction ──────────────
+// Pattern identique à LISEUSE-PDF.html (extractEmbeddedLiseuseData / buildPdf…).
+// On encode toutes les fiches + leurs PDFs techniques attachés en base64 dans
+// un commentaire PDF placé après %%EOF. Les lecteurs PDF ignorent ce qui suit
+// %%EOF, mais on peut le retrouver à l'octet près en scannant le fichier.
+const SIDECAR_START = '%DM_DATA_START:';
+const SIDECAR_END   = ':DM_DATA_END';
+
+function _u8ToBase64(u8){
+  // Convertit Uint8Array → base64 en chunks pour ne pas dépasser la call stack
+  let s = '';
+  const CHUNK = 0x8000;
+  for (let i = 0; i < u8.length; i += CHUNK) {
+    s += String.fromCharCode.apply(null, u8.subarray(i, i + CHUNK));
+  }
+  return btoa(s);
+}
+function _base64ToU8(b64){
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+async function injectDossierSidecar(pdfBytes){
+  // Construit le payload : fiches + attachements
+  const payload = {
+    _v: 1,
+    _kind: 'algomes-dossier-materiel',
+    exportedAt: new Date().toISOString(),
+    fiches: fiches.map(f => Object.assign({}, f)), // copie défensive
+    attachments: {}
+  };
+  for (const f of fiches) {
+    try {
+      const rec = await PdfDB.get(f.id);
+      if (rec && rec.blob) {
+        const buf = await rec.blob.arrayBuffer();
+        payload.attachments[f.id] = {
+          name: rec.name,
+          type: rec.type || 'application/pdf',
+          b64: _u8ToBase64(new Uint8Array(buf))
+        };
+      }
+    } catch (e) { console.warn('attachment read fail for', f.id, e); }
+  }
+  const json = JSON.stringify(payload);
+  const b64 = btoa(unescape(encodeURIComponent(json)));
+  const marker = '\n' + SIDECAR_START + b64 + SIDECAR_END + '\n';
+  const markerBytes = new TextEncoder().encode(marker);
+  // Concat pdfBytes + markerBytes (après %%EOF, c'est ignoré par les lecteurs)
+  const out = new Uint8Array(pdfBytes.length + markerBytes.length);
+  out.set(pdfBytes, 0);
+  out.set(markerBytes, pdfBytes.length);
+  return out;
+}
+
+function extractDossierSidecar(arrayBuffer){
+  try {
+    // PDFs avec attachements peuvent être gros → on scanne jusqu'à 100 Mo
+    const maxScan = Math.min(arrayBuffer.byteLength, 100 * 1024 * 1024);
+    const view = new Uint8Array(arrayBuffer, 0, maxScan);
+    const txt = new TextDecoder('latin1').decode(view);
+    const sIdx = txt.indexOf(SIDECAR_START);
+    if (sIdx < 0) return null;
+    const eIdx = txt.indexOf(SIDECAR_END, sIdx + SIDECAR_START.length);
+    if (eIdx < 0) return null;
+    const b64 = txt.substring(sIdx + SIDECAR_START.length, eIdx).trim();
+    const json = decodeURIComponent(escape(atob(b64)));
+    return JSON.parse(json);
+  } catch (e) {
+    console.warn('extractDossierSidecar failed', e);
+    return null;
+  }
+}
+
+async function importDossierFromPdf(file){
+  if (!file) return;
+  setStatus('Lecture du PDF…', 'dirty');
+  try {
+    const buf = await file.arrayBuffer();
+    const data = extractDossierSidecar(buf);
+    if (!data) {
+      alert('Ce PDF ne contient pas de données de dossier importables.\n\nSeuls les PDF générés par ce module (Enregistrer & PDF) peuvent être réimportés.');
+      setStatus('Import annulé', '');
+      return;
+    }
+    if (!data._kind || data._kind !== 'algomes-dossier-materiel') {
+      alert('Données embarquées non reconnues.');
+      return;
+    }
+    const importedFiches = Array.isArray(data.fiches) ? data.fiches : [];
+    if (!importedFiches.length) {
+      alert('Aucune fiche trouvée dans le PDF.');
+      return;
+    }
+    // Confirme si on a déjà un dossier en cours
+    if (fiches.length > 1 || (fiches.length === 1 && (fiches[0].f_project || fiches[0].m_fournisseur))) {
+      if (!confirm('Un dossier est en cours. Le remplacer par celui du PDF (' + importedFiches.length + ' fiche' + (importedFiches.length > 1 ? 's' : '') + ') ?\n\nLe brouillon actuel sera perdu si non sauvegardé.')) {
+        setStatus('Import annulé', '');
+        return;
+      }
+    }
+    syncFormToActive();
+    // Restaure les fiches
+    fiches = importedFiches;
+    currentFicheId = fiches[0] && fiches[0].id;
+    sortFiches();
+    // Restaure les PDFs attachés dans IndexedDB (clear + rebuild pour les
+    // fiches importées seulement — on ne touche pas aux autres clés
+    // de IndexedDB pour ne pas perdre des dossiers non importés en parallèle).
+    if (data.attachments && typeof data.attachments === 'object') {
+      for (const id of Object.keys(data.attachments)) {
+        const att = data.attachments[id];
+        if (!att || !att.b64) continue;
+        const bytes = _base64ToU8(att.b64);
+        const blob = new Blob([bytes], { type: att.type || 'application/pdf' });
+        await PdfDB.set(id, { blob, name: att.name || 'attachment.pdf', size: bytes.byteLength, type: att.type });
+      }
+    }
+    saveDossier(false);
+    writeForm(getActive());
+    renderTabs();
+    await renderPdfPanel();
+    setStatus('✓ Dossier importé : ' + fiches.length + ' fiche(s)', 'saved');
+  } catch (e) {
+    console.error(e);
+    alert('Erreur lors de l\'import : ' + (e && e.message));
+    setStatus('Erreur d\'import', 'dirty');
+  }
 }
 
 // Surcharge switchTo pour rafraîchir le panel PDF
@@ -944,6 +1082,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const f = e.target.files && e.target.files[0];
     if (f) handlePdfFile(f);
     e.target.value = ''; // reset pour pouvoir re-uploader le même fichier
+  };
+  // Import du dossier depuis un PDF précédemment exporté
+  const importInput = document.getElementById('importPdfInput');
+  if (importInput) importInput.onchange = (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (f) importDossierFromPdf(f);
+    e.target.value = '';
   };
   renderPdfPanel();
 });

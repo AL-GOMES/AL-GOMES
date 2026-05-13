@@ -1132,14 +1132,28 @@ async function exportDossierPdf(){
       ficheFormEl.style.display = 'none';
       coverEl.style.display = '';
       writeCover(cover || defaultCover());
+      // ⚠ Tous les enfants de la cover sont position:absolute → scrollWidth/
+      // Height peuvent renvoyer 0 et html2canvas produit un canvas vide
+      // (toDataURL renvoie alors "data:," → pdf-lib lève "The input is not
+      // a PNG file!"). On utilise offsetWidth/Height qui renvoient bien
+      // 210×297 mm en pixels.
+      // Attend aussi que le logo soit chargé (sinon canvas vide possible).
+      const logoImg = coverEl.querySelector('.cover-logo img');
+      if (logoImg && !logoImg.complete) {
+        await new Promise((res) => { logoImg.onload = logoImg.onerror = res; });
+      }
       await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const cW = coverEl.offsetWidth || 794;   // ~210mm @ 96dpi
+      const cH = coverEl.offsetHeight || 1123; // ~297mm @ 96dpi
       const canvas = await html2canvas(coverEl, {
         scale: 2,
         backgroundColor: '#ffffff',
         useCORS: true,
         logging: false,
-        windowWidth: coverEl.scrollWidth,
-        windowHeight: coverEl.scrollHeight,
+        width: cW,
+        height: cH,
+        windowWidth: cW,
+        windowHeight: cH,
         onclone: (clonedDoc) => {
           // Remplace les <input> par des <span> pour un rendu fidèle (sans
           // bord, alignement préservé)
@@ -1185,7 +1199,13 @@ async function exportDossierPdf(){
           });
         }
       });
+      if (!canvas.width || !canvas.height) {
+        throw new Error('Capture de la page de garde vide (canvas ' + canvas.width + '×' + canvas.height + ')');
+      }
       const pngData = canvas.toDataURL('image/png');
+      if (!pngData || pngData.length < 100) {
+        throw new Error('Page de garde : PNG vide (data URL ' + (pngData || '').length + ' chars)');
+      }
       const pngBytes = await (await fetch(pngData)).arrayBuffer();
       const img = await out.embedPng(pngBytes);
       const page = out.addPage([A4W, A4H]);
@@ -1317,8 +1337,9 @@ async function exportDossierPdf(){
     }
   } catch (e) {
     console.error(e);
-    setStatus('Erreur génération PDF : ' + (e && e.message), 'dirty');
-    alert('Erreur lors de la génération du PDF : ' + (e && e.message));
+    const msg = (e && (e.message || e.toString())) || 'erreur inconnue';
+    setStatus('Erreur génération PDF : ' + msg, 'dirty');
+    alert('Erreur lors de la génération du PDF : ' + msg);
   } finally {
     document.body.classList.remove('exporting-pdf');
   }

@@ -178,6 +178,14 @@ if(window.self!==window.top){
   .gh-empty-editor{display:flex;align-items:center;justify-content:center;flex:1;color:var(--text2);font-style:italic;padding:40px}
   .gh-cfg-pill{display:inline-block;padding:3px 10px;border-radius:5px;background:rgba(34,197,94,.10);color:#4ade80;border:1px solid rgba(34,197,94,.25);font-size:11px;font-weight:700;letter-spacing:1px}
   .gh-cfg-pill.bad{background:rgba(239,68,68,.10);color:#f87171;border-color:rgba(239,68,68,.25)}
+  /* Barre de progression + libellé pour les opérations GitHub */
+  .gh-busy{display:flex;align-items:center;gap:14px;background:rgba(120,50,255,.08);border:1px solid rgba(120,50,255,.25);border-radius:10px;padding:12px 18px;margin-bottom:18px;font-size:13px;color:#b388ff;font-weight:600;animation:fadeUp .25s ease}
+  .gh-busy.hidden{display:none}
+  .gh-busy-spin{width:18px;height:18px;border:2px solid rgba(120,50,255,.20);border-top-color:#b388ff;border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+  .gh-busy-text{flex-shrink:0;white-space:nowrap}
+  .gh-busy-bar{flex:1;height:4px;background:rgba(120,50,255,.10);border-radius:2px;overflow:hidden;position:relative;min-width:120px}
+  .gh-busy-bar::before{content:'';position:absolute;inset:0;width:35%;background:linear-gradient(90deg,transparent,#b388ff,transparent);animation:ghBusySlide 1.3s linear infinite}
+  @keyframes ghBusySlide{0%{transform:translateX(-100%)}100%{transform:translateX(380%)}}
 </style>
 </head>
 <body>
@@ -360,6 +368,14 @@ if(window.self!==window.top){
 
   <!-- ─── ONGLET 6 : GitHub ────────────────────────────────────────────── -->
   <div class="tab-panel" id="tab-github" role="tabpanel">
+    <!-- Indicateur de progression (spinner + libellé + barre indéterminée).
+         Visible pendant chaque opération réseau (test token, chargement
+         arborescence, lecture/sauvegarde/suppression/création de fichier). -->
+    <div class="gh-busy hidden" id="ghBusy">
+      <div class="gh-busy-spin"></div>
+      <span class="gh-busy-text" id="ghBusyText">Chargement…</span>
+      <div class="gh-busy-bar"></div>
+    </div>
     <!-- Configuration du token + repo -->
     <div class="card">
       <h2><span>🐙</span> GitHub — Configuration</h2>
@@ -564,6 +580,20 @@ const ghExpanded = new Set([''  ]); // chemins de dossiers ouverts
 let ghSelectedPath = null;       // fichier actuellement sélectionné dans l'éditeur
 let ghCurrentFile = null;        // { path, sha, content, isImage, isText, raw }
 
+// Indicateur de progression — chaque opération réseau appelle ghShowBusy
+// au début et ghHideBusy à la fin (try/finally). Le libellé décrit ce qui
+// est en train de se passer pour rassurer l'utilisateur.
+function ghShowBusy(text){
+  const el = document.getElementById('ghBusy');
+  const lbl = document.getElementById('ghBusyText');
+  if (lbl) lbl.textContent = text || 'Chargement…';
+  if (el) el.classList.remove('hidden');
+}
+function ghHideBusy(){
+  const el = document.getElementById('ghBusy');
+  if (el) el.classList.add('hidden');
+}
+
 // Le token est stocké UNIQUEMENT dans localStorage (jamais envoyé à Firebase
 // ni à d'autres utilisateurs) → solution clé en main qui n'impose aucune
 // règle Firestore particulière. Owner/repo/branch sont aussi locaux pour
@@ -616,6 +646,7 @@ async function saveGhConfig(){
   const token = tokenIn || (ghCfg && ghCfg.token) || '';
   if (!token) { toast('Token GitHub requis', 'error'); return; }
   // Test : vérifie que le token donne accès au repo (rate limit + perms)
+  ghShowBusy('Test du token GitHub sur ' + owner + '/' + repo + '…');
   try {
     const r = await fetch('https://api.github.com/repos/' + owner + '/' + repo, {
       headers: { Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json' }
@@ -628,6 +659,8 @@ async function saveGhConfig(){
   } catch (e) {
     toast('Erreur réseau : ' + e.message, 'error');
     return;
+  } finally {
+    ghHideBusy();
   }
   try {
     localStorage.setItem(GH_LS_KEY, JSON.stringify({ owner, repo, branch, token }));
@@ -680,6 +713,7 @@ async function ghApi(method, path, body){
 
 // ─── Chargement de la liste des branches du dépôt ─────────────────────────
 async function loadGhBranches(){
+  ghShowBusy('Chargement des branches du dépôt…');
   try {
     const branches = await ghApi('GET', '/repos/' + ghCfg.owner + '/' + ghCfg.repo + '/branches?per_page=100');
     const sel = document.getElementById('ghBranchSelect');
@@ -694,6 +728,8 @@ async function loadGhBranches(){
   } catch (e) {
     console.error('loadGhBranches', e);
     toast('Branches : ' + e.message, 'error');
+  } finally {
+    ghHideBusy();
   }
 }
 
@@ -704,6 +740,7 @@ async function loadGhTree(){
   ghCfg.branch = branch;
   const view = document.getElementById('ghTreeView');
   view.innerHTML = '<div class="gh-empty">Chargement de l\'arborescence…</div>';
+  ghShowBusy('Chargement de l\'arborescence (branche : ' + branch + ')…');
   try {
     const data = await ghApi('GET', '/repos/' + ghCfg.owner + '/' + ghCfg.repo + '/git/trees/' + encodeURIComponent(branch) + '?recursive=1');
     if (!data || !Array.isArray(data.tree)) {
@@ -717,6 +754,8 @@ async function loadGhTree(){
   } catch (e) {
     console.error('loadGhTree', e);
     view.innerHTML = '<div class="gh-empty">Erreur : ' + escHtml(e.message) + '</div>';
+  } finally {
+    ghHideBusy();
   }
 }
 
@@ -840,6 +879,7 @@ async function openGhFile(path){
   renderGhTree();
   const editor = document.getElementById('ghEditor');
   editor.innerHTML = '<div class="gh-empty-editor">Chargement…</div>';
+  ghShowBusy('Lecture de ' + path + '…');
   try {
     const ext = (path.split('.').pop() || '').toLowerCase();
     const isText = GH_TEXT_EXT.has(ext);
@@ -859,6 +899,8 @@ async function openGhFile(path){
   } catch (e) {
     console.error('openGhFile', e);
     editor.innerHTML = '<div class="gh-empty-editor">Erreur : ' + escHtml(e.message) + '</div>';
+  } finally {
+    ghHideBusy();
   }
 }
 
@@ -900,6 +942,7 @@ async function ghSaveFile(){
   const newContent = ta.value;
   const msg = document.getElementById('ghCommitMsg').value.trim() || ('Update ' + f.path);
   if (!confirm('Pousser cette modification sur la branche "' + ghCfg.branch + '" ?\n\n' + f.path + '\n\nMessage : ' + msg)) return;
+  ghShowBusy('Sauvegarde de ' + f.path + ' sur ' + ghCfg.branch + '…');
   try {
     const res = await ghApi('PUT', '/repos/' + ghCfg.owner + '/' + ghCfg.repo + '/contents/' + ghEncodePath(f.path), {
       message: msg,
@@ -913,6 +956,8 @@ async function ghSaveFile(){
   } catch (e) {
     console.error('ghSaveFile', e);
     toast('Erreur : ' + e.message, 'error');
+  } finally {
+    ghHideBusy();
   }
 }
 
@@ -922,6 +967,7 @@ async function ghDeleteFile(){
   if (!confirm('⚠ Supprimer DÉFINITIVEMENT le fichier suivant ?\n\n' + f.path + '\n\nBranche : ' + ghCfg.branch)) return;
   const msg = prompt('Message de commit pour la suppression :', 'Delete ' + f.path);
   if (msg === null) return;
+  ghShowBusy('Suppression de ' + f.path + '…');
   try {
     await ghApi('DELETE', '/repos/' + ghCfg.owner + '/' + ghCfg.repo + '/contents/' + ghEncodePath(f.path), {
       message: msg || ('Delete ' + f.path),
@@ -936,6 +982,8 @@ async function ghDeleteFile(){
   } catch (e) {
     console.error('ghDeleteFile', e);
     toast('Erreur : ' + e.message, 'error');
+  } finally {
+    ghHideBusy();
   }
 }
 
@@ -952,6 +1000,7 @@ async function ghCreateFilePrompt(){
   const initial = prompt('Contenu initial du fichier (laisser vide pour un fichier vide) :', '');
   if (initial === null) return;
   const msg = 'Create ' + cleanPath;
+  ghShowBusy('Création de ' + cleanPath + '…');
   try {
     const res = await ghApi('PUT', '/repos/' + ghCfg.owner + '/' + ghCfg.repo + '/contents/' + ghEncodePath(cleanPath), {
       message: msg,
@@ -965,6 +1014,8 @@ async function ghCreateFilePrompt(){
   } catch (e) {
     console.error('ghCreateFile', e);
     toast('Erreur : ' + e.message, 'error');
+  } finally {
+    ghHideBusy();
   }
 }
 

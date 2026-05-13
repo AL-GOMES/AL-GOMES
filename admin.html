@@ -421,6 +421,8 @@ if(window.self!==window.top){
         <select id="ghBranchSelect" onchange="loadGhTree()"></select>
         <button class="btn btn-sm" onclick="loadGhTree()" style="background:rgba(120,50,255,.10);color:#b388ff;border:1px solid rgba(120,50,255,.25)">↻ Rafraîchir</button>
         <button class="btn btn-sm" onclick="ghCreateFilePrompt()" style="background:rgba(34,197,94,.10);color:#4ade80;border:1px solid rgba(34,197,94,.25)">＋ Nouveau fichier</button>
+        <button class="btn btn-sm" onclick="document.getElementById('ghUploadInput').click()" style="background:rgba(59,130,246,.10);color:#60a5fa;border:1px solid rgba(59,130,246,.25)">📤 Uploader un fichier</button>
+        <input type="file" id="ghUploadInput" style="display:none" onchange="ghUploadFile(this)">
         <input type="text" id="ghTreeFilter" placeholder="Filtrer (texte du chemin)…" oninput="renderGhTree()">
       </div>
       <div class="gh-grid">
@@ -1079,13 +1081,85 @@ async function ghCreateFilePrompt(){
   }
 }
 
+// ─── Upload d'un fichier local (binaire ou texte) ─────────────────────────
+async function ghUploadFile(input){
+  const file = input.files && input.files[0];
+  // Reset l'input tout de suite pour pouvoir re-uploader le même fichier
+  input.value = '';
+  if (!file) return;
+
+  // GitHub Contents API : limite ~100MB. Au-delà de 50MB, on prévient.
+  const MB = 1024 * 1024;
+  if (file.size > 100 * MB) {
+    toast('Fichier trop gros (' + (file.size / MB).toFixed(1) + ' Mo) — limite GitHub : 100 Mo', 'error');
+    return;
+  }
+  if (file.size > 50 * MB) {
+    if (!confirm('Le fichier fait ' + (file.size / MB).toFixed(1) + ' Mo, l\'upload peut être lent. Continuer ?')) return;
+  }
+
+  // Suggère le nom du fichier dans la racine, mais l'utilisateur peut
+  // mettre n'importe quel chemin (ex: "js/lib/foo.png" ou "docs/note.pdf")
+  const defaultPath = file.name;
+  const path = prompt('Chemin de destination dans le repo :', defaultPath);
+  if (!path) return;
+  const cleanPath = path.replace(/^\/+/, '').trim();
+  if (!cleanPath) return;
+
+  // Si un fichier existe déjà à ce chemin, on demande confirmation et on
+  // récupère son sha pour faire un UPDATE (sinon GitHub renvoie 422).
+  let existingSha = null;
+  const existing = ghTreeFlat.find(f => f.path === cleanPath);
+  if (existing) {
+    if (!confirm('Un fichier existe déjà à ce chemin :\n\n' + cleanPath + '\n\nLe remplacer par le fichier uploadé ?')) return;
+    existingSha = existing.sha;
+  }
+
+  fbShowBusyOrGh('Lecture du fichier local (' + (file.size / 1024).toFixed(1) + ' Ko)…');
+  let b64;
+  try {
+    const buf = await file.arrayBuffer();
+    b64 = ghBytesToB64(new Uint8Array(buf));
+  } catch (e) {
+    ghHideBusy();
+    toast('Lecture impossible : ' + e.message, 'error');
+    return;
+  }
+
+  const msg = (existingSha ? 'Update ' : 'Upload ') + cleanPath;
+  ghShowBusy((existingSha ? 'Mise à jour' : 'Upload') + ' de ' + cleanPath + ' sur ' + ghCfg.branch + '…');
+  try {
+    const body = {
+      message: msg,
+      content: b64,
+      branch: ghCfg.branch
+    };
+    if (existingSha) body.sha = existingSha;
+    await ghApi('PUT', '/repos/' + ghCfg.owner + '/' + ghCfg.repo + '/contents/' + ghEncodePath(cleanPath), body);
+    toast('✓ Fichier ' + (existingSha ? 'mis à jour' : 'uploadé'), 'success');
+    await loadGhTree();
+    // Ouvre le fichier uploadé si c'est une image/texte affichable
+    setTimeout(() => openGhFile(cleanPath), 200);
+  } catch (e) {
+    console.error('ghUploadFile', e);
+    toast('Erreur upload : ' + e.message, 'error');
+  } finally {
+    ghHideBusy();
+  }
+}
+// Petit wrapper utilitaire (au cas où on aurait masqué la barre Firebase)
+function fbShowBusyOrGh(t){ ghShowBusy(t); }
+
 // ─── Helpers d'encodage ───────────────────────────────────────────────────
 function ghEncodePath(path){
   // Encode chaque segment mais préserve les slashes
   return path.split('/').map(encodeURIComponent).join('/');
 }
 function ghUtf8ToB64(str){
-  const bytes = new TextEncoder().encode(str);
+  return ghBytesToB64(new TextEncoder().encode(str));
+}
+// Encode un Uint8Array brut en base64 (chunks pour éviter de dépasser la call stack)
+function ghBytesToB64(bytes){
   let s = '';
   const CHUNK = 0x8000;
   for (let i = 0; i < bytes.length; i += CHUNK) {

@@ -3305,10 +3305,12 @@ class PDFViewer {
           // Détection police + style à partir de plusieurs sources, par
           // ordre de précision décroissante.
           let realName = '', realFam = '', realBold = false, realItalic = false;
+          let _debugFontObj = null;
           try {
             const co = this.pdf && this.pdf.commonObjs;
             if (co && item.fontName && co.has && co.has(item.fontName)) {
               const fontObj = co.get(item.fontName);
+              _debugFontObj = fontObj;
               if (fontObj) {
                 realName = String(fontObj.name || fontObj.loadedName || '').toLowerCase();
                 realFam  = String(
@@ -3325,6 +3327,20 @@ class PDFViewer {
           const probe = (realName + ' ' + realFam + ' ' + styleFam.toLowerCase() + ' ' + String(item.fontName || '').toLowerCase()).trim();
           const isBold = realBold || /bold|black|heavy|extrabold|semibold/.test(probe);
           const isItalic = realItalic || /italic|oblique/.test(probe);
+          // Debug : pour comprendre pourquoi la police détectée n'est pas
+          // celle attendue, ouvre DevTools > Console et clique sur un texte.
+          // Une fois le bug compris/résolu, ce log peut être retiré.
+          try {
+            console.log('[MODIF TXT detect]', {
+              str: item.str,
+              fontName: item.fontName,
+              styleFam, style,
+              fontObj: _debugFontObj,
+              realName, realFam, isBold, isItalic,
+              transform: item.transform,
+              detectedSize: Math.abs(item.transform && item.transform[3]) || item.height || 12
+            });
+          } catch {}
           let pickedFont = 'Helvetica';
           if (/courier|consola|mono/.test(probe)) {
             pickedFont = probe.includes('consola') ? 'Consolas' : 'Courier';

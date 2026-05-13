@@ -3235,16 +3235,7 @@ class PDFViewer {
     this._hideDetectedTextsOverlays();
     if (!this.currentPage || !this.viewerInner) return;
     let textContent;
-    try {
-      // includeMarkedContent : récupère aussi les textes dans les marked content
-      // (souvent utilisés par les PDF générés par CAO/Office) qui sont sinon
-      // ignorés. disableCombineTextItems=false (défaut) garde les morceaux
-      // logiques pour ne pas exploser en mini-fragments.
-      textContent = await this.currentPage.getTextContent({
-        includeMarkedContent: true,
-        disableNormalization: false
-      });
-    } catch (e) { return; }
+    try { textContent = await this.currentPage.getTextContent(); } catch (e) { return; }
     const vp = this.viewport;
     if (!vp || !textContent || !Array.isArray(textContent.items)) return;
     // Map des annotations text-edit existantes (par clé position+texte original)
@@ -3257,8 +3248,6 @@ class PDFViewer {
       });
     const replacedKeys = new Set(existingByKey.keys());
     for (const item of textContent.items) {
-      // Marked content items (sans str réel) → skip
-      if (item.type) continue;
       if (!item.str || !item.str.trim()) continue;
       // Position et taille en coords viewport (= pixels canvas à zoom courant)
       const tx = item.transform[4];

@@ -62,10 +62,19 @@
       var role = data.role;
       db.collection('config').doc('pageAccess').get().then(function (cfgDoc) {
         var access = cfgDoc.exists ? cfgDoc.data() : {};
-        var allowed = access[page] || ['admin', 'ingenieur', 'lecteur'];
+        var allowed = access[page];
+        // Pas de config pour cette page → accès ouvert à TOUS les rôles
+        // jusqu'à ce que l'admin restreigne explicitement via admin.html →
+        // "Accès par rôle". Évite que les nouvelles pages soient bloquées
+        // par défaut pour les rôles non standard (be_al_gomes, etc.).
+        if (!allowed || !Array.isArray(allowed) || allowed.length === 0) {
+          allowed = null; // null = tout le monde a accès
+        }
         // Garde-fou : un admin a toujours accès à admin.html
-        if (page === 'admin.html' && !allowed.includes('admin')) allowed.push('admin');
-        if (!allowed.includes(role)) {
+        if (page === 'admin.html' && Array.isArray(allowed) && !allowed.includes('admin')) {
+          allowed.push('admin');
+        }
+        if (allowed && !allowed.includes(role)) {
           showBlock(
             '<div style="font-size:20px;color:#E74C3C;margin-bottom:12px">Accès refusé</div>' +
             '<div style="font-size:13px;color:#888">Votre rôle (' + role + ') ne permet pas d\'accéder à cette page.</div>'

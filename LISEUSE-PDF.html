@@ -3314,22 +3314,39 @@ class PDFViewer {
             viewer: this,
             editingId: null
           };
-          // Pré-remplit avec la police et le style détectés depuis le PDF.
-          // Le fontName de pdfjs est un identifiant interne (ex. g_d0_f1) et
-          // le vrai nom de police est dans textContent.styles[fontName].
-          // Bold/italic sont déduits du nom de la police (convention PDF :
-          // "TimesNewRoman-Bold", "Arial-Italic", etc.).
+          // Détection de la police + style à partir de plusieurs sources, par
+          // ordre de précision décroissante :
+          //   1. pdf.commonObjs.get(fontName) → propriétés bold/italic + name
+          //      PostScript réel (ex. "ArialMT", "TimesNewRoman-Bold")
+          //   2. textContent.styles[fontName] → fontFamily CSS (souvent générique
+          //      "sans-serif"/"serif"/"monospace" sauf pour les fontes reconnues)
+          //   3. item.fontName interne (peu fiable, juste pour bold/italic mots clés)
+          let realName = '', realFam = '', realBold = false, realItalic = false;
+          try {
+            const co = this.pdf && this.pdf.commonObjs;
+            if (co && item.fontName && co.has && co.has(item.fontName)) {
+              const fontObj = co.get(item.fontName);
+              if (fontObj) {
+                realName = String(fontObj.name || fontObj.loadedName || '').toLowerCase();
+                realFam  = String(
+                  (fontObj.cssFontInfo && fontObj.cssFontInfo.fontFamily) ||
+                  fontObj.fallbackName || ''
+                ).toLowerCase();
+                realBold = !!fontObj.bold;
+                realItalic = !!fontObj.italic;
+              }
+            }
+          } catch {}
           const style = textContent.styles && item.fontName ? textContent.styles[item.fontName] : null;
-          const rawFam = (style && style.fontFamily) ? String(style.fontFamily).toLowerCase() : '';
-          const rawName = String(item.fontName || '').toLowerCase();
-          const probe = (rawFam + ' ' + rawName).toLowerCase();
-          const isBold = /bold|black|heavy|extrabold|semibold/.test(probe);
-          const isItalic = /italic|oblique/.test(probe);
+          const styleFam = (style && style.fontFamily) ? String(style.fontFamily).toLowerCase() : '';
+          const probe = (realName + ' ' + realFam + ' ' + styleFam + ' ' + String(item.fontName || '').toLowerCase()).trim();
+          const isBold = realBold || /bold|black|heavy|extrabold|semibold/.test(probe);
+          const isItalic = realItalic || /italic|oblique/.test(probe);
           let pickedFont = 'Helvetica';
           if (/courier|consola|mono/.test(probe)) {
             pickedFont = probe.includes('consola') ? 'Consolas' : 'Courier';
-          } else if (/serif/.test(rawFam) && !/sans/.test(rawFam) ||
-                     /times|georgia|garamond|cambria/.test(probe)) {
+          } else if (/times|georgia|garamond|cambria/.test(probe) ||
+                     (/serif/.test(probe) && !/sans/.test(probe))) {
             if (probe.includes('georgia')) pickedFont = 'Georgia';
             else if (probe.includes('garamond')) pickedFont = 'Garamond';
             else pickedFont = 'Times-Roman';
@@ -3340,8 +3357,10 @@ class PDFViewer {
             else if (probe.includes('tahoma')) pickedFont = 'Tahoma';
             else if (probe.includes('trebuchet')) pickedFont = 'Trebuchet';
             else if (probe.includes('comic')) pickedFont = 'ComicSans';
+            else if (probe.includes('helvetica')) pickedFont = 'Helvetica';
             else pickedFont = 'Helvetica';
           }
+          // console.log('[MODIF TXT] font detect:', { item, realName, realFam, styleFam, pickedFont, isBold, isItalic });
           const fakeExisting = {
             text: item.str,
             font: pickedFont,

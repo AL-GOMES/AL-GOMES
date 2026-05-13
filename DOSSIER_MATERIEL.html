@@ -186,7 +186,7 @@ html, body { background: #2a2a35; font-family: 'Calibri', 'Segoe UI', Arial, san
 }
 .cover-logo img { width: 100%; height: 100%; object-fit: contain; }
 
-/* Zone 1 : titres DOSSIER MATERIEL + DOE (centrés, gras, typewriter 26pt) */
+/* Zone 1 : titres DOSSIER MATERIEL + EXE (centrés, gras, typewriter 26pt) */
 .cover-zone-titles {
   position: absolute; z-index: 2;
   left: 35.85mm; top: 77.92mm;
@@ -417,7 +417,7 @@ input.proj { font-size: 28pt; font-weight: 700; text-align: center; letter-spaci
   <!-- Zone 1 — Titres principaux (Lucida Sans Typewriter 26pt bold) -->
   <div class="cover-zone-titles">
     <input id="c_title1" value="DOSSIER MATERIEL" autocomplete="off">
-    <input id="c_title2" value="DOE" autocomplete="off">
+    <input id="c_title2" value="EXE" autocomplete="off">
   </div>
 
   <!-- Zone 2 — Adresse chantier + société (Lucida Sans 14pt bold) -->
@@ -621,7 +621,7 @@ const COVER_FIELDS = ['c_title1', 'c_title2', 'c_address', 'c_company1', 'c_comp
 function defaultCover(){
   return {
     c_title1: 'DOSSIER MATERIEL',
-    c_title2: 'DOE',
+    c_title2: 'EXE',
     c_address: '',
     c_company1: 'S.A.S A.L.GOMES',
     c_company2: "77, Bd d' Aulnay",

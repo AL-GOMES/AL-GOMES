@@ -34,6 +34,40 @@ html, body { background: #2a2a35; font-family: 'Calibri', 'Segoe UI', Arial, san
 #saveStatus { font-size: 11px; color: #8b90a5; margin-right: 4px; }
 #saveStatus.saved { color: #4ade80; }
 #saveStatus.dirty { color: #fbbf24; }
+.btn.danger { color: #f87171; }
+.btn.danger:hover { color: #fca5a5; border-color: rgba(248,113,113,0.4); }
+
+/* Barre d'onglets fiches */
+.tabs-bar {
+  position: sticky; top: 47px; z-index: 49;
+  background: #0c0e14; border-bottom: 1px solid #2a2f42;
+  padding: 8px 24px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
+  overflow-x: auto; min-height: 44px;
+}
+.tab {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 4px 4px 0 0;
+  background: #1a1e2a; border: 1px solid #2a2f42; border-bottom: 0;
+  color: #8b90a5; font-size: 12px; font-weight: 600; letter-spacing: 0.5px;
+  cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  font-family: 'Calibri', 'Segoe UI', Arial, sans-serif;
+}
+.tab:hover { background: #222738; color: #e2e4ea; }
+.tab.active {
+  background: #F59E0B; color: #fff; border-color: #F59E0B;
+  box-shadow: 0 -2px 8px rgba(245,158,11,0.3);
+}
+.tab.active .tab-close { color: rgba(255,255,255,0.85); }
+.tab .tab-close {
+  background: transparent; border: 0; color: #5a5f75;
+  font-size: 16px; line-height: 1; cursor: pointer;
+  padding: 0 2px; margin-left: 2px;
+}
+.tab .tab-close:hover { color: #f87171; }
+.tab-empty {
+  color: #5a5f75; font-size: 12px; font-style: italic;
+  padding: 6px 10px;
+}
 
 /* ─── La feuille (format A4 strict 210×297 mm) ─── */
 @page { size: A4 portrait; margin: 10mm; }
@@ -176,11 +210,16 @@ input.proj { font-size: 28pt; font-weight: 700; text-align: center; letter-spaci
   <div class="topbar-title">⚡ A.L.GOMES <span class="accent">— Dossier matériel</span></div>
   <div class="topbar-actions">
     <span id="saveStatus">Brouillon</span>
-    <button class="btn" onclick="newFiche()">＋ Nouvelle fiche</button>
+    <button class="btn" onclick="addNewFiche()" title="Ajouter une nouvelle fiche numérotée">＋ Fiche</button>
+    <button class="btn" onclick="addVariante()" title="Ajouter une variante BIS/TER/QUATER de la fiche courante">＋ Variante</button>
+    <button class="btn danger" onclick="deleteCurrentFiche()" title="Supprimer la fiche courante">🗑 Supprimer</button>
     <button class="btn" onclick="window.print()">🖨 Imprimer</button>
-    <button class="btn primary" onclick="saveFiche()">💾 Enregistrer</button>
+    <button class="btn primary" onclick="saveDossier(true)">💾 Enregistrer</button>
   </div>
 </div>
+
+<!-- Barre d'onglets : un onglet par fiche du dossier, triés par numéro -->
+<div class="tabs-bar no-print" id="tabsBar"></div>
 
 <div class="sheet-wrap">
 <form class="sheet" id="ficheForm" onsubmit="event.preventDefault();saveFiche();">
@@ -314,9 +353,15 @@ input.proj { font-size: 28pt; font-weight: 700; text-align: center; letter-spaci
 
 <script>
 // ============================================================================
-// Persistance — sauvegarde l'état du formulaire en localStorage.
+// Multi-fiches — un dossier matériel = un tableau de fiches.
+// Numérotation : "1", "1BIS", "1TER", "2", "2BIS", "3"...
+// Les fiches sont triées par numéro (suffixe BIS/TER/... s'intercale).
+// Stockage : localStorage.algomes_dossier_materiel = { fiches:[], currentId, lastSavedAt }
 // ============================================================================
-const FORM_KEY = 'algomes_dossier_materiel_current';
+const STORAGE_KEY = 'algomes_dossier_materiel';
+const LEGACY_KEY  = 'algomes_dossier_materiel_current'; // ancien format mono-fiche
+const SUFFIXES = ['', 'BIS', 'TER', 'QUATER', 'QUINQUIES', 'SEXIES'];
+
 const FIELDS = [
   'f_project', 'f_lot', 'f_emetteur', 'f_num', 'f_date',
   'o_conforme', 'o_echantillon', 'o_variante', 'o_documentation',
@@ -327,6 +372,11 @@ const FIELDS = [
 ];
 const RADIO_GROUPS = ['bet_aor', 'arch_aor', 'moe_aor'];
 
+// État global du dossier
+let fiches = [];
+let currentFicheId = null;
+
+// ─── Helpers form ────────────────────────────────────────────────────────────
 function readForm(){
   const data = {};
   for(const id of FIELDS){
@@ -341,15 +391,17 @@ function readForm(){
   return data;
 }
 function writeForm(data){
-  if(!data) return;
+  // Clear d'abord pour ne pas hériter de la fiche précédente
   for(const id of FIELDS){
     const el = document.getElementById(id);
     if(!el) continue;
-    if(el.type === 'checkbox'){ el.checked = !!data[id]; }
-    else { el.value = data[id] || ''; }
+    if(el.type === 'checkbox'){ el.checked = !!(data && data[id]); }
+    else { el.value = (data && data[id]) || ''; }
   }
   for(const grp of RADIO_GROUPS){
-    document.querySelectorAll('input[name="' + grp + '"]').forEach(r => { r.checked = (r.value === data[grp]); });
+    document.querySelectorAll('input[name="' + grp + '"]').forEach(r => {
+      r.checked = data ? (r.value === data[grp]) : false;
+    });
   }
 }
 function setStatus(text, cls){
@@ -357,39 +409,212 @@ function setStatus(text, cls){
   s.textContent = text;
   s.className = cls || '';
 }
-function markDirty(){ setStatus('Modifications non sauvegardées', 'dirty'); }
-function saveFiche(){
-  try{
-    const data = readForm();
-    data._savedAt = new Date().toISOString();
-    localStorage.setItem(FORM_KEY, JSON.stringify(data));
-    setStatus('✓ Enregistré ' + new Date().toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' }), 'saved');
-  } catch(e){ setStatus('Erreur de sauvegarde', 'dirty'); }
+function markDirty(){
+  syncFormToActive();
+  setStatus('Modifications non sauvegardées', 'dirty');
 }
-function loadFiche(){
-  try{
-    const raw = localStorage.getItem(FORM_KEY);
-    if(!raw) return;
-    writeForm(JSON.parse(raw));
-    setStatus('Chargé · Brouillon', '');
-  } catch(e){}
-}
-function newFiche(){
-  if(!confirm('Créer une nouvelle fiche ? Le brouillon actuel sera effacé si non enregistré.')) return;
-  document.getElementById('ficheForm').reset();
-  document.getElementById('f_emetteur').value = 'AL GOMES';
-  document.getElementById('f_date').valueAsDate = new Date();
-  localStorage.removeItem(FORM_KEY);
-  setStatus('Nouvelle fiche', '');
+function escHtml(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[m]));
 }
 
+// ─── Helpers fiches ──────────────────────────────────────────────────────────
+function genId(){ return 'f_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7); }
+function getActive(){ return fiches.find(f => f.id === currentFicheId) || fiches[0] || null; }
+function syncFormToActive(){
+  const cur = getActive();
+  if (!cur) return;
+  Object.assign(cur, readForm());
+}
+// Parse "01", "1BIS", "12TER"... → { n: 1, sIdx: 0|1|2..., raw }
+function parseFicheNum(num){
+  const raw = String(num || '').trim().toUpperCase();
+  const m = raw.match(/^0*(\d+)\s*(BIS|TER|QUATER|QUINQUIES|SEXIES)?$/);
+  if (!m) return { n: 9999, sIdx: 0, raw };
+  return { n: parseInt(m[1], 10), sIdx: SUFFIXES.indexOf(m[2] || ''), raw };
+}
+function sortFiches(){
+  fiches.sort((a, b) => {
+    const ka = parseFicheNum(a.f_num);
+    const kb = parseFicheNum(b.f_num);
+    if (ka.n !== kb.n) return ka.n - kb.n;
+    return ka.sIdx - kb.sIdx;
+  });
+}
+function nextMainNumber(){
+  let max = 0;
+  fiches.forEach(f => {
+    const { n } = parseFicheNum(f.f_num);
+    if (n < 9999 && n > max) max = n;
+  });
+  return String(max + 1);
+}
+
+// ─── Actions ─────────────────────────────────────────────────────────────────
+function addNewFiche(){
+  syncFormToActive();
+  const num = nextMainNumber();
+  const today = new Date().toISOString().slice(0, 10);
+  const nf = { id: genId(), f_num: num, f_emetteur: 'AL GOMES', f_date: today };
+  // Hérite du nom de projet de la fiche active pour cohérence du dossier
+  const cur = getActive();
+  if (cur && cur.f_project) nf.f_project = cur.f_project;
+  if (cur && cur.f_lot) nf.f_lot = cur.f_lot;
+  fiches.push(nf);
+  currentFicheId = nf.id;
+  sortFiches();
+  writeForm(getActive());
+  renderTabs();
+  setStatus('Nouvelle fiche #' + num + ' · brouillon', 'dirty');
+}
+function addVariante(){
+  const cur = getActive();
+  if (!cur) { addNewFiche(); return; }
+  syncFormToActive();
+  const { n } = parseFicheNum(cur.f_num);
+  // Cherche le prochain suffixe libre pour ce numéro principal
+  const usedSuffixes = new Set(
+    fiches.filter(f => parseFicheNum(f.f_num).n === n).map(f => parseFicheNum(f.f_num).sIdx)
+  );
+  let nextIdx = -1;
+  for (let i = 1; i < SUFFIXES.length; i++) {
+    if (!usedSuffixes.has(i)) { nextIdx = i; break; }
+  }
+  if (nextIdx < 0) { alert('Tous les suffixes (BIS → SEXIES) sont déjà utilisés pour la fiche ' + n); return; }
+  const today = new Date().toISOString().slice(0, 10);
+  const nf = {
+    id: genId(),
+    f_num: String(n) + SUFFIXES[nextIdx],
+    f_project: cur.f_project || '',
+    f_lot: cur.f_lot || '',
+    f_emetteur: cur.f_emetteur || 'AL GOMES',
+    f_date: today
+  };
+  fiches.push(nf);
+  currentFicheId = nf.id;
+  sortFiches();
+  writeForm(getActive());
+  renderTabs();
+  setStatus('Variante ' + nf.f_num + ' · brouillon', 'dirty');
+}
+function deleteCurrentFiche(){
+  if (fiches.length <= 1) { alert('Impossible de supprimer la dernière fiche du dossier.'); return; }
+  const cur = getActive();
+  if (!cur) return;
+  if (!confirm('Supprimer la fiche ' + (cur.f_num || '') + ' ?')) return;
+  fiches = fiches.filter(f => f.id !== cur.id);
+  currentFicheId = fiches[0].id;
+  writeForm(getActive());
+  renderTabs();
+  saveDossier(true);
+}
+function switchTo(id){
+  syncFormToActive();
+  currentFicheId = id;
+  writeForm(getActive());
+  renderTabs();
+  setStatus('Brouillon', '');
+}
+function saveDossier(showToast){
+  try{
+    syncFormToActive();
+    sortFiches();
+    const payload = { fiches, currentId: currentFicheId, _savedAt: new Date().toISOString() };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    renderTabs();
+    if (showToast) {
+      setStatus('✓ Enregistré ' + new Date().toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' }), 'saved');
+    }
+  } catch(e){ setStatus('Erreur de sauvegarde', 'dirty'); }
+}
+function loadDossier(){
+  try{
+    // 1. Format v2 (multi-fiches)
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const obj = JSON.parse(raw);
+      fiches = Array.isArray(obj.fiches) ? obj.fiches : [];
+      currentFicheId = obj.currentId || (fiches[0] && fiches[0].id);
+    }
+    // 2. Migration depuis l'ancien format mono-fiche
+    if (fiches.length === 0) {
+      const legacy = localStorage.getItem(LEGACY_KEY);
+      if (legacy) {
+        const f = JSON.parse(legacy);
+        f.id = genId();
+        if (!f.f_num) f.f_num = '1';
+        fiches = [f];
+        currentFicheId = f.id;
+        try { localStorage.removeItem(LEGACY_KEY); } catch {}
+        saveDossier(false);
+      }
+    }
+    // 3. Premier chargement : créer une fiche vide
+    if (fiches.length === 0) {
+      const today = new Date().toISOString().slice(0, 10);
+      const f = { id: genId(), f_num: '1', f_emetteur: 'AL GOMES', f_date: today };
+      fiches = [f];
+      currentFicheId = f.id;
+    }
+    sortFiches();
+    writeForm(getActive());
+    renderTabs();
+    setStatus(fiches.length + ' fiche(s) chargée(s)', '');
+  } catch(e){ setStatus('Erreur de chargement', 'dirty'); }
+}
+
+// ─── Rendu de la barre d'onglets ─────────────────────────────────────────────
+function renderTabs(){
+  const bar = document.getElementById('tabsBar');
+  if (!bar) return;
+  bar.innerHTML = '';
+  if (!fiches.length) {
+    bar.innerHTML = '<span class="tab-empty">Aucune fiche — cliquez sur + Fiche</span>';
+    return;
+  }
+  fiches.forEach(f => {
+    const tab = document.createElement('div');
+    tab.className = 'tab' + (f.id === currentFicheId ? ' active' : '');
+    tab.title = 'Fiche ' + (f.f_num || '?');
+    const label = document.createElement('span');
+    label.textContent = 'N° ' + (f.f_num || '?');
+    tab.appendChild(label);
+    if (fiches.length > 1) {
+      const close = document.createElement('button');
+      close.className = 'tab-close';
+      close.type = 'button';
+      close.innerHTML = '×';
+      close.title = 'Supprimer cette fiche';
+      close.onclick = (e) => {
+        e.stopPropagation();
+        if (!confirm('Supprimer la fiche ' + (f.f_num || '') + ' ?')) return;
+        const wasActive = (f.id === currentFicheId);
+        fiches = fiches.filter(x => x.id !== f.id);
+        if (wasActive) currentFicheId = fiches[0].id;
+        writeForm(getActive());
+        renderTabs();
+        saveDossier(true);
+      };
+      tab.appendChild(close);
+    }
+    tab.onclick = () => { if (f.id !== currentFicheId) switchTo(f.id); };
+    bar.appendChild(tab);
+  });
+}
+
+// ─── Bootstrap ───────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('f_date').valueAsDate = new Date();
-  loadFiche();
+  loadDossier();
+  // Le numéro de fiche est éditable manuellement — re-trie + redraw à chaque
+  // modif du champ pour que les onglets restent dans l'ordre.
+  document.getElementById('f_num').addEventListener('change', () => {
+    syncFormToActive();
+    sortFiches();
+    renderTabs();
+  });
   document.getElementById('ficheForm').addEventListener('input', markDirty);
   document.getElementById('ficheForm').addEventListener('change', markDirty);
   document.addEventListener('keydown', (e) => {
-    if((e.ctrlKey || e.metaKey) && e.key === 's'){ e.preventDefault(); saveFiche(); }
+    if((e.ctrlKey || e.metaKey) && e.key === 's'){ e.preventDefault(); saveDossier(true); }
   });
 });
 </script>

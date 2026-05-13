@@ -210,6 +210,20 @@ if(window.self!==window.top){
   .gh-task-bar{height:4px;background:rgba(251,191,36,.12);border-radius:2px;overflow:hidden;position:relative;margin-top:6px}
   .gh-task-bar-fill{height:100%;background:linear-gradient(90deg,#fbbf24,#f59e0b);transition:width .3s ease;border-radius:2px}
   .gh-task-bar-indet::before{content:'';position:absolute;inset:0;width:35%;background:linear-gradient(90deg,transparent,#fbbf24,transparent);animation:ghBusySlide 1.3s linear infinite}
+  /* Timestamp d'upload local par fichier (affiché dans l'arborescence) */
+  .gh-node-ts{font-size:10px;color:#60a5fa;font-family:'Menlo','Consolas',monospace;margin-right:6px;white-space:nowrap;opacity:.85}
+  .gh-node-ts::before{content:'📤 '}
+  /* Status pill en live à côté du titre de la section (header) */
+  .gh-header-status{display:none;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:none;padding:5px 12px;border-radius:6px;margin-left:14px;vertical-align:middle;max-width:560px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .gh-header-status.idle{display:inline-flex;background:rgba(120,50,255,.06);color:var(--text2);border:1px solid var(--border)}
+  .gh-header-status.pending{display:inline-flex;background:rgba(251,191,36,.10);color:#fbbf24;border:1px solid rgba(251,191,36,.30)}
+  .gh-header-status.success{display:inline-flex;background:rgba(34,197,94,.10);color:#4ade80;border:1px solid rgba(34,197,94,.25)}
+  .gh-header-status.error{display:inline-flex;background:rgba(239,68,68,.10);color:#f87171;border:1px solid rgba(239,68,68,.30)}
+  .gh-header-status > .gh-h-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:380px;font-weight:600;text-transform:none;letter-spacing:0}
+  .gh-header-spin{display:inline-block;width:11px;height:11px;border:2px solid rgba(251,191,36,.25);border-top-color:#fbbf24;border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+  .gh-header-bar{display:inline-block;width:80px;height:3px;background:rgba(251,191,36,.15);border-radius:2px;overflow:hidden;flex-shrink:0}
+  .gh-header-bar > i{display:block;height:100%;background:linear-gradient(90deg,#fbbf24,#f59e0b);transition:width .3s ease}
+  .gh-header-pct{font-family:'Menlo','Consolas',monospace;font-size:11px;flex-shrink:0}
   /* ─── Onglet Firebase : éditeur de règles ────────────────────────────── */
   .fb-busy{display:flex;align-items:center;gap:14px;background:rgba(255,160,0,.08);border:1px solid rgba(255,160,0,.30);border-radius:10px;padding:12px 18px;margin-bottom:18px;font-size:13px;color:#ffb74d;font-weight:600;animation:fadeUp .25s ease}
   .fb-busy.hidden{display:none}
@@ -437,7 +451,11 @@ if(window.self!==window.top){
 
     <!-- Explorateur de fichiers -->
     <div class="card" id="ghExplorerCard" style="display:none">
-      <h2><span>📂</span> Explorateur du dépôt</h2>
+      <h2 style="display:flex;align-items:center;flex-wrap:wrap;gap:4px">
+        <span>📂</span>Explorateur du dépôt
+        <!-- Status live : pending/success/error (mise à jour à chaque tâche) -->
+        <span class="gh-header-status" id="ghHeaderStatus"></span>
+      </h2>
       <div class="gh-toolbar">
         <select id="ghBranchSelect" onchange="loadGhTree()"></select>
         <button class="btn btn-sm" onclick="loadGhTree()" style="background:rgba(120,50,255,.10);color:#b388ff;border:1px solid rgba(120,50,255,.25)">↻ Rafraîchir</button>
@@ -482,7 +500,10 @@ if(window.self!==window.top){
 
     <!-- Éditeur de règles Firestore -->
     <div class="card" id="fbRulesCard" style="display:none">
-      <h2><span>📜</span> Règles Firestore</h2>
+      <h2 style="display:flex;align-items:center;flex-wrap:wrap;gap:4px">
+        <span>📜</span>Règles Firestore
+        <span class="gh-header-status" id="fbHeaderStatus"></span>
+      </h2>
       <div class="fb-toolbar">
         <button class="btn btn-sm" onclick="fbLoadRules()" style="background:rgba(255,160,0,.10);color:#ffb74d;border:1px solid rgba(255,160,0,.30)">↻ Recharger depuis Firebase</button>
         <button class="btn btn-primary btn-sm" onclick="fbSaveRules()">💾 Déployer les règles</button>
@@ -660,6 +681,34 @@ const ghExpanded = new Set([''  ]); // chemins de dossiers ouverts
 let ghSelectedPath = null;       // fichier actuellement sélectionné dans l'éditeur
 let ghCurrentFile = null;        // { path, sha, content, isImage, isText, raw }
 
+// Timestamps locaux des fichiers uploadés/édités/créés via l'admin
+// (l'API GitHub git/trees ne donne pas le commit time par fichier, donc on
+// trace en local pour rendre visible l'activité du jour). Affiché dans
+// l'arborescence à côté du nom du fichier.
+const GH_TS_KEY = 'algomes_gh_file_timestamps';
+let ghFileTs = {};
+try { ghFileTs = JSON.parse(localStorage.getItem(GH_TS_KEY) || '{}') || {}; } catch { ghFileTs = {}; }
+function ghRecordFileTs(path){
+  ghFileTs[path] = new Date().toISOString();
+  try { localStorage.setItem(GH_TS_KEY, JSON.stringify(ghFileTs)); } catch {}
+}
+function ghForgetFileTs(path){
+  if (ghFileTs[path]) {
+    delete ghFileTs[path];
+    try { localStorage.setItem(GH_TS_KEY, JSON.stringify(ghFileTs)); } catch {}
+  }
+}
+function ghFmtFileTs(iso){
+  if (!iso) return '';
+  const d = new Date(iso);
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yy = String(d.getFullYear()).slice(-2);
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mi = String(d.getMinutes()).padStart(2, '0');
+  return dd + '/' + mm + '/' + yy + ' ' + hh + ':' + mi;
+}
+
 // ─── Flux d'activité : chaque opération a un statut visuel ───────────────
 // Pattern : `const tid = ghShowBusy('label')` au début, puis
 // `ghHideBusy(tid, true)` ou `ghHideBusy(tid, false, err)` à la fin.
@@ -749,6 +798,48 @@ function ghRenderTasks(){
   const el = document.getElementById('ghTasks');
   if (!el) return;
   el.innerHTML = ghTasks.map(t => renderTaskItem(t)).join('');
+  ghUpdateHeaderStatus();
+}
+// Status pill live à côté du titre "Explorateur du dépôt" — toujours visible
+// (même en idle) pour permettre à l'utilisateur de voir l'état courant.
+function ghUpdateHeaderStatus(){
+  renderHeaderStatus(document.getElementById('ghHeaderStatus'), ghTasks);
+}
+// Rendu mutualisé pour GitHub et Firebase (DRY)
+function renderHeaderStatus(el, tasks){
+  if (!el) return;
+  // Priorité 1 : une tâche pending est en cours → afficher avec spinner + %
+  const pending = tasks.find(t => t.status === 'pending');
+  if (pending) {
+    const pct = typeof pending.progress === 'number' ? pending.progress : null;
+    const pctTxt = pct != null ? '<span class="gh-header-pct">' + pct + '%</span>' : '';
+    const bar = pct != null
+      ? '<span class="gh-header-bar"><i style="width:' + pct + '%"></i></span>'
+      : '';
+    el.className = 'gh-header-status pending';
+    el.innerHTML = '<span class="gh-header-spin"></span>'
+      + '<span class="gh-h-label">' + escHtml(pending.label) + '</span>'
+      + bar
+      + pctTxt;
+    return;
+  }
+  // Priorité 2 : dernière tâche terminée → success ou error
+  const last = tasks[0];
+  if (last && last.status === 'error') {
+    el.className = 'gh-header-status error';
+    el.innerHTML = '❌ <span class="gh-h-label" title="' + escHtml(last.error || '') + '">'
+      + escHtml(last.label) + ' — ' + escHtml(last.error || '') + '</span>';
+    return;
+  }
+  if (last && last.status === 'success') {
+    el.className = 'gh-header-status success';
+    el.innerHTML = '✓ <span class="gh-h-label">' + escHtml(last.label) + ' · '
+      + ghFmtSince(last.endTs || last.ts) + '</span>';
+    return;
+  }
+  // Idle : aucune tâche → status discret "Prêt"
+  el.className = 'gh-header-status idle';
+  el.innerHTML = '<span class="gh-h-label">Prêt</span>';
 }
 // Rendu d'un item du flux (utilisé par les deux flux gh/fb avec le même style)
 function renderTaskItem(t){
@@ -815,6 +906,7 @@ function loadGhConfig(){
       status.classList.remove('bad');
       status.style.display = 'inline-block';
       document.getElementById('ghExplorerCard').style.display = '';
+      ghUpdateHeaderStatus(); // affiche "Prêt" avant la 1re opération
       loadGhBranches().then(() => loadGhTree());
     } else {
       status.textContent = 'Non configuré';
@@ -1069,9 +1161,11 @@ function renderGhNode(node, depth, filter){
     } else {
       // Filtre : si match pas, on saute le fichier
       if (filter && !node.path.toLowerCase().includes(filter)) return '';
+      const ts = ghFileTs[node.path] ? '<span class="gh-node-ts">' + ghFmtFileTs(ghFileTs[node.path]) + '</span>' : '';
       html += '<div class="gh-node' + selected + '" data-type="blob" data-path="' + escHtml(node.path) + '" style="padding-left:' + (indent + 22) + 'px">'
             + '<span>' + ghFileIcon(node.name) + '</span>'
             + '<span class="gh-name">' + escHtml(node.name) + '</span>'
+            + ts
             + '<span class="gh-size">' + ghFmtSize(node.size) + '</span>'
             + '</div>';
     }
@@ -1190,6 +1284,7 @@ async function ghSaveFile(){
       branch: ghCfg.branch
     });
     ghUpdateProgress(tid, 95, 'Finalisation…');
+    ghRecordFileTs(f.path);
     toast('✓ Fichier sauvegardé', 'success');
     ghCurrentFile.sha = res.content.sha;
     ghCurrentFile.content = newContent;
@@ -1217,6 +1312,7 @@ async function ghDeleteFile(){
       branch: ghCfg.branch
     });
     ghUpdateProgress(tid, 70, 'Rafraîchissement de l\'arborescence…');
+    ghForgetFileTs(f.path);
     toast('✓ Fichier supprimé', 'success');
     ghCurrentFile = null;
     ghSelectedPath = null;
@@ -1253,6 +1349,7 @@ async function ghCreateFilePrompt(){
       branch: ghCfg.branch
     });
     ghUpdateProgress(tid, 70, 'Rafraîchissement de l\'arborescence…');
+    ghRecordFileTs(cleanPath);
     toast('✓ Fichier créé', 'success');
     await loadGhTree();
     // Ouvre directement le fichier créé
@@ -1329,6 +1426,7 @@ async function ghUploadFile(input){
       ghUpdateProgress(tid, overall);
     });
     ghUpdateProgress(tid, 92, 'Rafraîchissement de l\'arborescence…');
+    ghRecordFileTs(cleanPath);
     toast('✓ Fichier ' + (existingSha ? 'mis à jour' : 'uploadé'), 'success');
     await loadGhTree();
     // Ouvre le fichier uploadé si c'est une image/texte affichable
@@ -1441,6 +1539,7 @@ function fbRenderTasks(){
   const el = document.getElementById('fbTasks');
   if (!el) return;
   el.innerHTML = fbTasks.map(t => renderTaskItem(t)).join('');
+  renderHeaderStatus(document.getElementById('fbHeaderStatus'), fbTasks);
 }
 setInterval(() => { if (fbTasks.length) fbRenderTasks(); }, 5000);
 
@@ -1473,6 +1572,8 @@ function fbUpdateConnectedUI(){
   document.getElementById('fbConnectBtn').style.display = 'none';
   document.getElementById('fbDisconnectBtn').style.display = '';
   document.getElementById('fbRulesCard').style.display = '';
+  // Status pill "Prêt" tant qu'aucune opération n'est en cours
+  renderHeaderStatus(document.getElementById('fbHeaderStatus'), fbTasks);
 }
 
 function fbUpdateDisconnectedUI(){

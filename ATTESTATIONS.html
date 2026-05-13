@@ -9,6 +9,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>A.L.GOMES — Attestations sur l'honneur</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="js/firebase-init.js"></script>
+<script src="js/auth-guard.js"></script>
 <script src="js/cloud-sync.js"></script>
 <script>window.cloudSync && window.cloudSync.bindKey('algomes_attestations_v1');</script>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Times+New+Roman&display=swap" rel="stylesheet">
@@ -1092,6 +1097,8 @@ function loadUserSignature(user){
         });
       if(!docs.length) return;
       const png = docs[0].png;
+      // Validation : seules les data-URL image PNG/JPEG sont autorisées.
+      if (!/^data:image\/(png|jpe?g);base64,[A-Za-z0-9+/=]+$/.test(png)) return;
       sigImg.src = png;
       sigBlock.classList.add('has-signature');
       window._signatureDataUrl = png;

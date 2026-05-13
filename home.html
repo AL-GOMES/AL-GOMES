@@ -232,8 +232,8 @@ body::after{background:repeating-linear-gradient(0deg,transparent 0px,transparen
 
 <div class="topbar">
   <div class="topbar-left">
-    <button class="btn-admin" onclick="alert('Panneau admin à venir')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <button class="btn-admin" id="btn-admin" aria-label="Panneau d'administration" onclick="navigateTo('admin.html')" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="12" cy="12" r="3"/>
         <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
       </svg>
@@ -500,7 +500,8 @@ function updateClock(){
   if(tDate) tDate.textContent=days[now.getDay()]+' '+now.getDate()+' '+months[now.getMonth()]+' '+now.getFullYear();
 }
 updateClock();
-setInterval(updateClock,1000);
+const _clockTimerId = setInterval(updateClock, 1000);
+window.addEventListener('beforeunload', () => { try { clearInterval(_clockTimerId); } catch {} });
 
 // ═══════════════════════════════════════════════════════════════════════
 // NAVIGATION : utilise navigateTo() du shell si dispo, sinon redirection directe
@@ -521,18 +522,36 @@ function goTo(page){
 // et le rôle depuis window.parent._algomesUser
 // ═══════════════════════════════════════════════════════════════════════
 
-// Attend que _algomesUser soit prêt dans le shell parent
-// (peut prendre quelques ms car onAuthStateChanged est async).
+// Attend que _algomesUser soit prêt dans le shell parent en passant par
+// window.parent.AlgomesShell.getUser() (Promise). Fallback sur l'ancien
+// polling pour rester compatible si le shell n'a pas encore l'API.
 function waitForUser(maxMs = 5000){
   return new Promise(resolve => {
+    let done = false;
+    const finish = (res) => { if (!done) { done = true; resolve(res); } };
+    try {
+      if (window.parent && window.parent !== window &&
+          window.parent.AlgomesShell && window.parent.AlgomesShell.getUser) {
+        window.parent.AlgomesShell.getUser().then(u => {
+          try {
+            const fb = window.parent.firebase;
+            if (u && fb && fb.firestore) { finish({ user: u, fb }); return; }
+          } catch {}
+          finish(null);
+        });
+        setTimeout(() => finish(null), maxMs);
+        return;
+      }
+    } catch {}
+    // Fallback : polling court compatibilité ascendante
     const start = Date.now();
     (function poll(){
       try {
         const u = window.parent && window.parent._algomesUser;
         const fb = window.parent && window.parent.firebase;
-        if(u && fb && fb.firestore){ resolve({ user: u, fb }); return; }
-      } catch(e){}
-      if(Date.now() - start > maxMs){ resolve(null); return; }
+        if (u && fb && fb.firestore) { finish({ user: u, fb }); return; }
+      } catch {}
+      if (Date.now() - start > maxMs) { finish(null); return; }
       setTimeout(poll, 100);
     })();
   });
@@ -584,6 +603,11 @@ function waitForUser(maxMs = 5000){
       const pageId = card.dataset.page;
       if(pageId && !canAccess(pageId)) card.style.display = 'none';
     });
+
+    // Bouton admin : visible uniquement pour les rôles admin
+    const isAdmin = role === 'admin' || role === 'patron_al_gomes';
+    const btnAdmin = document.getElementById('btn-admin');
+    if (btnAdmin && isAdmin) btnAdmin.style.display = '';
 
     // Si toutes les vignettes du bandeau principal sont masquées, afficher un message
     const visibleMain = [...document.querySelectorAll('#mainCards .card')].filter(c => c.style.display !== 'none');

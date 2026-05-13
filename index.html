@@ -130,11 +130,9 @@ auth.onAuthStateChanged(async (user) => {
     try {
       const doc = await db.collection('users').doc(user.uid).get();
       if (doc.exists) {
-        if (doc.data().role === 'admin') {
-          window.location.href = 'accueil.html';
-        } else {
-          window.location.href = 'accueil.html';
-        }
+        // Tous les utilisateurs vont vers accueil.html — le routage par rôle
+        // est ensuite géré par auth-guard.js et l'access control des pages.
+        window.location.href = 'accueil.html';
         return;
       }
     } catch(e) { console.error(e); }
@@ -260,11 +258,7 @@ async function handleLogin() {
       btn.style.background = 'linear-gradient(135deg, #22c55e, #16a34a)';
 
       setTimeout(() => {
-        if (doc.data().role === 'admin') {
-          window.location.href = 'accueil.html';
-        } else {
-          window.location.href = 'accueil.html';
-        }
+        window.location.href = 'accueil.html';
       }, 600);
     }
   } catch(error) {

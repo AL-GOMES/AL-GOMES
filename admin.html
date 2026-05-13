@@ -150,6 +150,34 @@ if(window.self!==window.top){
   .admin-tab.active .tab-ico{color:#b388ff}
   .tab-panel{display:none}
   .tab-panel.active{display:block;animation:fadeUp .4s ease}
+
+  /* ─── Onglet GitHub : arborescence + éditeur ────────────────────────── */
+  .gh-grid{display:grid;grid-template-columns:minmax(260px,360px) 1fr;gap:18px;margin-top:4px}
+  @media(max-width:900px){.gh-grid{grid-template-columns:1fr}}
+  .gh-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  .gh-toolbar input[type="text"]{flex:1;min-width:140px;padding:7px 10px;background:rgba(120,50,255,.06);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:13px}
+  .gh-toolbar select{padding:7px 10px;background:rgba(120,50,255,.06);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
+  .gh-tree{max-height:560px;overflow:auto;background:rgba(10,10,18,.5);border:1px solid var(--border);border-radius:8px;padding:6px 0;font-family:'Rajdhani',sans-serif;font-size:13px}
+  .gh-node{display:flex;align-items:center;gap:6px;padding:4px 10px;cursor:pointer;user-select:none;white-space:nowrap;color:var(--text);transition:background .15s}
+  .gh-node:hover{background:rgba(120,50,255,.10)}
+  .gh-node.selected{background:rgba(120,50,255,.20);color:#fff}
+  .gh-node .gh-chevron{width:12px;display:inline-block;color:var(--text2);font-size:10px}
+  .gh-node .gh-name{flex:1;overflow:hidden;text-overflow:ellipsis}
+  .gh-node .gh-size{font-size:10px;color:var(--text2);opacity:.7}
+  .gh-empty{padding:20px;text-align:center;color:var(--text2);font-style:italic}
+  .gh-editor{background:rgba(10,10,18,.5);border:1px solid var(--border);border-radius:8px;display:flex;flex-direction:column;min-height:560px}
+  .gh-editor-head{display:flex;gap:8px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);background:rgba(120,50,255,.04)}
+  .gh-editor-path{flex:1;font-family:'Menlo','Consolas',monospace;font-size:12px;color:#b388ff;word-break:break-all}
+  .gh-editor-body{flex:1;display:flex;flex-direction:column;padding:10px 14px;gap:10px;overflow:auto}
+  .gh-editor-body textarea{flex:1;min-height:380px;background:#0a0d14;border:1px solid var(--border);border-radius:6px;padding:10px 12px;color:#cbd5e1;font-family:'Menlo','Consolas',monospace;font-size:12px;line-height:1.55;resize:vertical;white-space:pre;tab-size:2}
+  .gh-editor-body textarea:focus{outline:none;border-color:rgba(120,50,255,.5)}
+  .gh-editor-img{max-width:100%;max-height:480px;background:#fff;border-radius:6px;padding:10px;align-self:center}
+  .gh-editor-bin{padding:30px 20px;text-align:center;color:var(--text2);font-style:italic;border:1px dashed var(--border);border-radius:6px}
+  .gh-editor-foot{display:flex;gap:10px;align-items:center;padding:10px 14px;border-top:1px solid var(--border);flex-wrap:wrap}
+  .gh-editor-foot input[type="text"]{flex:1;min-width:200px;padding:7px 10px;background:rgba(120,50,255,.06);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:13px}
+  .gh-empty-editor{display:flex;align-items:center;justify-content:center;flex:1;color:var(--text2);font-style:italic;padding:40px}
+  .gh-cfg-pill{display:inline-block;padding:3px 10px;border-radius:5px;background:rgba(34,197,94,.10);color:#4ade80;border:1px solid rgba(34,197,94,.25);font-size:11px;font-weight:700;letter-spacing:1px}
+  .gh-cfg-pill.bad{background:rgba(239,68,68,.10);color:#f87171;border-color:rgba(239,68,68,.25)}
 </style>
 </head>
 <body>
@@ -177,6 +205,7 @@ if(window.self!==window.top){
     <button type="button" class="admin-tab" data-tab="tab-roles" role="tab" aria-selected="false"><span class="tab-ico">🏷</span>Rôles & Accès</button>
     <button type="button" class="admin-tab" data-tab="tab-signatures" role="tab" aria-selected="false"><span class="tab-ico">✍️</span>Signatures</button>
     <button type="button" class="admin-tab" data-tab="tab-console" role="tab" aria-selected="false"><span class="tab-ico">🪵</span>Console</button>
+    <button type="button" class="admin-tab" data-tab="tab-github" role="tab" aria-selected="false"><span class="tab-ico">🐙</span>GitHub</button>
   </div>
 
   <!-- ─── ONGLET 1 : Utilisateurs ─────────────────────────────────────── -->
@@ -328,6 +357,48 @@ if(window.self!==window.top){
       <pre id="logView" style="margin:0;padding:10px;background:#0a0d14;border:1px solid var(--border);border-radius:4px;max-height:380px;overflow:auto;font-family:'Menlo','Consolas',monospace;font-size:11px;line-height:1.5;color:#cbd5e1;white-space:pre-wrap;word-break:break-word"></pre>
     </div>
   </div>
+
+  <!-- ─── ONGLET 6 : GitHub ────────────────────────────────────────────── -->
+  <div class="tab-panel" id="tab-github" role="tabpanel">
+    <!-- Configuration du token + repo -->
+    <div class="card">
+      <h2><span>🐙</span> GitHub — Configuration</h2>
+      <div style="font-size:12px;color:var(--text2);margin:-8px 0 14px">
+        Personal Access Token (PAT) avec scope <code>repo</code>. Stocké dans
+        <code>config/github</code> (Firestore). Crée-le sur
+        <a href="https://github.com/settings/tokens/new?scopes=repo&description=AL-GOMES%20admin" target="_blank" style="color:#b388ff">github.com/settings/tokens</a>.
+        <strong style="color:#fbbf24">Important :</strong> protège <code>config/github</code> par une règle Firestore admin-only.
+      </div>
+      <div class="form-row four">
+        <div class="form-group"><label>Owner</label><input type="text" id="ghOwner" placeholder="jerome93190"></div>
+        <div class="form-group"><label>Repository</label><input type="text" id="ghRepo" placeholder="al-gomes"></div>
+        <div class="form-group"><label>Branche par défaut</label><input type="text" id="ghBranch" placeholder="main"></div>
+        <div class="form-group"><label>Token (ghp_...)</label><input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxxxxxxx"></div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-primary btn-sm" onclick="saveGhConfig()">💾 Tester &amp; enregistrer</button>
+        <button class="btn btn-danger btn-sm" onclick="clearGhToken()">🗑 Supprimer le token</button>
+        <span id="ghCfgStatus" class="gh-cfg-pill bad" style="display:none">Non configuré</span>
+      </div>
+    </div>
+
+    <!-- Explorateur de fichiers -->
+    <div class="card" id="ghExplorerCard" style="display:none">
+      <h2><span>📂</span> Explorateur du dépôt</h2>
+      <div class="gh-toolbar">
+        <select id="ghBranchSelect" onchange="loadGhTree()"></select>
+        <button class="btn btn-sm" onclick="loadGhTree()" style="background:rgba(120,50,255,.10);color:#b388ff;border:1px solid rgba(120,50,255,.25)">↻ Rafraîchir</button>
+        <button class="btn btn-sm" onclick="ghCreateFilePrompt()" style="background:rgba(34,197,94,.10);color:#4ade80;border:1px solid rgba(34,197,94,.25)">＋ Nouveau fichier</button>
+        <input type="text" id="ghTreeFilter" placeholder="Filtrer (texte du chemin)…" oninput="renderGhTree()">
+      </div>
+      <div class="gh-grid">
+        <div class="gh-tree" id="ghTreeView"><div class="gh-empty">Chargement…</div></div>
+        <div class="gh-editor" id="ghEditor">
+          <div class="gh-empty-editor" id="ghEditorEmpty">Sélectionne un fichier dans l'arborescence pour l'éditer.</div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- EDIT USER ROLE MODAL -->
@@ -466,14 +537,442 @@ function showAdminTab(tabId){
 }
 function initAdminTabs(){
   document.querySelectorAll('.admin-tab').forEach(btn => {
-    btn.addEventListener('click', () => showAdminTab(btn.dataset.tab));
+    btn.addEventListener('click', () => {
+      showAdminTab(btn.dataset.tab);
+      // Lazy-load des données de l'onglet GitHub
+      if (btn.dataset.tab === 'tab-github' && !ghCfg) loadGhConfig();
+    });
   });
   // Restaure le dernier onglet ouvert (par défaut : utilisateurs)
   let saved = null;
   try { saved = localStorage.getItem(ADMIN_TAB_KEY); } catch {}
   if (saved && document.getElementById(saved)) {
     showAdminTab(saved);
+    if (saved === 'tab-github') loadGhConfig();
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  ONGLET GITHUB — config token + API + arborescence + éditeur
+// ═══════════════════════════════════════════════════════════════════════════
+let ghCfg = null;                // { owner, repo, branch, token }
+let ghTreeFlat = [];             // [{path, type:'blob'|'tree', sha, size}]
+let ghTreeRoot = null;           // arbre construit pour le rendu
+const ghExpanded = new Set([''  ]); // chemins de dossiers ouverts
+let ghSelectedPath = null;       // fichier actuellement sélectionné dans l'éditeur
+let ghCurrentFile = null;        // { path, sha, content, isImage, isText, raw }
+
+async function loadGhConfig(){
+  try {
+    const doc = await db.collection('config').doc('github').get();
+    const data = doc.exists ? doc.data() : null;
+    ghCfg = {
+      owner:  (data && data.owner)  || 'jerome93190',
+      repo:   (data && data.repo)   || 'al-gomes',
+      branch: (data && data.branch) || 'main',
+      token:  (data && data.token)  || ''
+    };
+    document.getElementById('ghOwner').value  = ghCfg.owner;
+    document.getElementById('ghRepo').value   = ghCfg.repo;
+    document.getElementById('ghBranch').value = ghCfg.branch;
+    // On ne réaffiche pas le token (placeholder masqué) pour ne pas le révéler ;
+    // un champ vide signifie "garder l'actuel" lors d'un save.
+    document.getElementById('ghToken').value = '';
+    const status = document.getElementById('ghCfgStatus');
+    if (ghCfg.token) {
+      status.textContent = '✓ Configuré';
+      status.classList.remove('bad');
+      status.style.display = 'inline-block';
+      document.getElementById('ghExplorerCard').style.display = '';
+      loadGhBranches().then(() => loadGhTree());
+    } else {
+      status.textContent = 'Non configuré';
+      status.classList.add('bad');
+      status.style.display = 'inline-block';
+      document.getElementById('ghExplorerCard').style.display = 'none';
+    }
+  } catch (e) {
+    console.error('Erreur loadGhConfig', e);
+    toast('Impossible de charger la config GitHub', 'error');
+  }
+}
+
+async function saveGhConfig(){
+  const owner  = document.getElementById('ghOwner').value.trim();
+  const repo   = document.getElementById('ghRepo').value.trim();
+  const branch = document.getElementById('ghBranch').value.trim() || 'main';
+  const tokenIn = document.getElementById('ghToken').value.trim();
+  if (!owner || !repo) { toast('Owner et repository requis', 'error'); return; }
+  // Si le champ token est vide, on garde l'existant
+  const token = tokenIn || (ghCfg && ghCfg.token) || '';
+  if (!token) { toast('Token GitHub requis', 'error'); return; }
+  // Test : vérifie que le token donne accès au repo (rate limit + perms)
+  try {
+    const r = await fetch('https://api.github.com/repos/' + owner + '/' + repo, {
+      headers: { Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json' }
+    });
+    if (!r.ok) {
+      const body = await r.text();
+      toast('Test KO : ' + r.status + ' ' + body.slice(0, 80), 'error');
+      return;
+    }
+  } catch (e) {
+    toast('Erreur réseau : ' + e.message, 'error');
+    return;
+  }
+  await db.collection('config').doc('github').set({ owner, repo, branch, token }, { merge: true });
+  toast('Configuration GitHub enregistrée', 'success');
+  await loadGhConfig();
+}
+
+async function clearGhToken(){
+  if (!confirm('Supprimer le token stocké dans Firestore ?\n\nL\'arborescence ne sera plus accessible jusqu\'à ce que tu remettes un token.')) return;
+  await db.collection('config').doc('github').set({ token: '' }, { merge: true });
+  toast('Token supprimé', 'success');
+  ghCfg = null;
+  await loadGhConfig();
+}
+
+// ─── Appel API GitHub avec token ──────────────────────────────────────────
+async function ghApi(method, path, body){
+  if (!ghCfg || !ghCfg.token) throw new Error('Token GitHub non configuré');
+  const url = 'https://api.github.com' + path;
+  const opts = {
+    method,
+    headers: {
+      Authorization: 'Bearer ' + ghCfg.token,
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28'
+    }
+  };
+  if (body) {
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  }
+  const r = await fetch(url, opts);
+  if (r.status === 204) return null;
+  const txt = await r.text();
+  let data = null;
+  try { data = JSON.parse(txt); } catch { data = txt; }
+  if (!r.ok) {
+    const msg = (data && data.message) || (typeof data === 'string' ? data : 'HTTP ' + r.status);
+    const err = new Error(msg);
+    err.status = r.status;
+    err.data = data;
+    throw err;
+  }
+  return data;
+}
+
+// ─── Chargement de la liste des branches du dépôt ─────────────────────────
+async function loadGhBranches(){
+  try {
+    const branches = await ghApi('GET', '/repos/' + ghCfg.owner + '/' + ghCfg.repo + '/branches?per_page=100');
+    const sel = document.getElementById('ghBranchSelect');
+    sel.innerHTML = '';
+    branches.forEach(b => {
+      const opt = document.createElement('option');
+      opt.value = b.name;
+      opt.textContent = b.name + (b.protected ? ' 🔒' : '');
+      if (b.name === ghCfg.branch) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  } catch (e) {
+    console.error('loadGhBranches', e);
+    toast('Branches : ' + e.message, 'error');
+  }
+}
+
+// ─── Chargement récursif de l'arborescence ────────────────────────────────
+async function loadGhTree(){
+  const sel = document.getElementById('ghBranchSelect');
+  const branch = sel.value || ghCfg.branch;
+  ghCfg.branch = branch;
+  const view = document.getElementById('ghTreeView');
+  view.innerHTML = '<div class="gh-empty">Chargement de l\'arborescence…</div>';
+  try {
+    const data = await ghApi('GET', '/repos/' + ghCfg.owner + '/' + ghCfg.repo + '/git/trees/' + encodeURIComponent(branch) + '?recursive=1');
+    if (!data || !Array.isArray(data.tree)) {
+      view.innerHTML = '<div class="gh-empty">Arborescence vide</div>';
+      return;
+    }
+    if (data.truncated) toast('Arborescence tronquée (>100k entrées)', 'error');
+    ghTreeFlat = data.tree;
+    ghTreeRoot = buildGhTree(ghTreeFlat);
+    renderGhTree();
+  } catch (e) {
+    console.error('loadGhTree', e);
+    view.innerHTML = '<div class="gh-empty">Erreur : ' + escHtml(e.message) + '</div>';
+  }
+}
+
+function buildGhTree(flat){
+  const root = { type:'tree', path:'', name:'/', children:{} };
+  for (const item of flat) {
+    const parts = item.path.split('/');
+    let node = root;
+    for (let i = 0; i < parts.length - 1; i++) {
+      const name = parts[i];
+      if (!node.children[name]) {
+        node.children[name] = {
+          type:'tree', path: parts.slice(0, i+1).join('/'), name, children:{}
+        };
+      }
+      node = node.children[name];
+    }
+    const leafName = parts[parts.length - 1];
+    node.children[leafName] = {
+      type: item.type,
+      path: item.path,
+      name: leafName,
+      sha:  item.sha,
+      size: item.size || 0,
+      children: item.type === 'tree' ? {} : null
+    };
+  }
+  return root;
+}
+
+function renderGhTree(){
+  const view = document.getElementById('ghTreeView');
+  if (!ghTreeRoot) { view.innerHTML = '<div class="gh-empty">Aucune donnée</div>'; return; }
+  const filter = (document.getElementById('ghTreeFilter').value || '').trim().toLowerCase();
+  const html = renderGhNode(ghTreeRoot, 0, filter);
+  view.innerHTML = html || '<div class="gh-empty">Aucun résultat</div>';
+  // Bind clicks
+  view.querySelectorAll('.gh-node').forEach(el => {
+    el.addEventListener('click', () => {
+      const type = el.dataset.type;
+      const path = el.dataset.path;
+      if (type === 'tree') {
+        if (ghExpanded.has(path)) ghExpanded.delete(path);
+        else ghExpanded.add(path);
+        renderGhTree();
+      } else {
+        openGhFile(path);
+      }
+    });
+  });
+}
+
+function renderGhNode(node, depth, filter){
+  if (!node) return '';
+  // Si filtre actif, on n'affiche que les chemins qui matchent (mais on garde
+  // les dossiers parents pour le contexte)
+  const matchSelf = !filter || node.path.toLowerCase().includes(filter);
+  let html = '';
+  if (node.path !== '') { // ne pas afficher la racine
+    const indent = depth * 14;
+    const selected = (node.path === ghSelectedPath) ? ' selected' : '';
+    if (node.type === 'tree') {
+      const open = ghExpanded.has(node.path);
+      const chev = open ? '▾' : '▸';
+      const icon = open ? '📂' : '📁';
+      html += '<div class="gh-node' + selected + '" data-type="tree" data-path="' + escHtml(node.path) + '" style="padding-left:' + (indent + 10) + 'px">'
+            + '<span class="gh-chevron">' + chev + '</span>'
+            + '<span>' + icon + '</span>'
+            + '<span class="gh-name">' + escHtml(node.name) + '</span>'
+            + '</div>';
+      if (open || filter) {
+        const kids = Object.values(node.children).sort(ghSortNodes);
+        for (const kid of kids) html += renderGhNode(kid, depth + 1, filter);
+      }
+    } else {
+      // Filtre : si match pas, on saute le fichier
+      if (filter && !node.path.toLowerCase().includes(filter)) return '';
+      html += '<div class="gh-node' + selected + '" data-type="blob" data-path="' + escHtml(node.path) + '" style="padding-left:' + (indent + 22) + 'px">'
+            + '<span>' + ghFileIcon(node.name) + '</span>'
+            + '<span class="gh-name">' + escHtml(node.name) + '</span>'
+            + '<span class="gh-size">' + ghFmtSize(node.size) + '</span>'
+            + '</div>';
+    }
+  } else {
+    // Racine : on rend juste les enfants
+    const kids = Object.values(node.children).sort(ghSortNodes);
+    for (const kid of kids) html += renderGhNode(kid, 0, filter);
+  }
+  return html;
+}
+
+function ghSortNodes(a, b){
+  if (a.type !== b.type) return a.type === 'tree' ? -1 : 1;
+  return a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' });
+}
+function ghFmtSize(n){
+  if (!n) return '';
+  if (n < 1024) return n + 'B';
+  if (n < 1024*1024) return (n/1024).toFixed(1) + 'K';
+  return (n/(1024*1024)).toFixed(1) + 'M';
+}
+function ghFileIcon(name){
+  const ext = (name.split('.').pop() || '').toLowerCase();
+  if (['png','jpg','jpeg','gif','webp','svg','ico'].includes(ext)) return '🖼';
+  if (['pdf'].includes(ext)) return '📕';
+  if (['html','htm'].includes(ext)) return '🌐';
+  if (['js','mjs','ts'].includes(ext)) return '📜';
+  if (['css','scss','sass'].includes(ext)) return '🎨';
+  if (['json','xml','yml','yaml','toml'].includes(ext)) return '⚙️';
+  if (['md','txt','rst'].includes(ext)) return '📝';
+  if (['zip','tar','gz'].includes(ext)) return '📦';
+  return '📄';
+}
+
+const GH_TEXT_EXT = new Set(['html','htm','js','mjs','ts','css','scss','sass','json','xml','yml','yaml','toml','md','txt','rst','sh','py','rb','java','c','cpp','h','hpp','rs','go','svg','csv','conf','ini','env','gitignore']);
+const GH_IMG_EXT  = new Set(['png','jpg','jpeg','gif','webp','ico']);
+
+// ─── Ouverture d'un fichier dans l'éditeur ────────────────────────────────
+async function openGhFile(path){
+  ghSelectedPath = path;
+  renderGhTree();
+  const editor = document.getElementById('ghEditor');
+  editor.innerHTML = '<div class="gh-empty-editor">Chargement…</div>';
+  try {
+    const ext = (path.split('.').pop() || '').toLowerCase();
+    const isText = GH_TEXT_EXT.has(ext);
+    const isImage = GH_IMG_EXT.has(ext);
+    const data = await ghApi('GET', '/repos/' + ghCfg.owner + '/' + ghCfg.repo + '/contents/' + ghEncodePath(path) + '?ref=' + encodeURIComponent(ghCfg.branch));
+    let content = '';
+    if (data && data.content) {
+      const b64 = data.content.replace(/\s/g, '');
+      if (isText) {
+        try { content = ghB64DecodeUtf8(b64); } catch { content = atob(b64); }
+      } else {
+        content = b64; // brut base64 pour images
+      }
+    }
+    ghCurrentFile = { path, sha: data && data.sha, content, isText, isImage, ext, downloadUrl: data && data.download_url };
+    renderGhEditor();
+  } catch (e) {
+    console.error('openGhFile', e);
+    editor.innerHTML = '<div class="gh-empty-editor">Erreur : ' + escHtml(e.message) + '</div>';
+  }
+}
+
+function renderGhEditor(){
+  const f = ghCurrentFile;
+  if (!f) {
+    document.getElementById('ghEditor').innerHTML = '<div class="gh-empty-editor">Sélectionne un fichier dans l\'arborescence pour l\'éditer.</div>';
+    return;
+  }
+  let bodyHtml = '';
+  if (f.isText) {
+    bodyHtml = '<textarea id="ghEditorTextarea" spellcheck="false">' + escHtml(f.content) + '</textarea>';
+  } else if (f.isImage) {
+    const url = 'data:image/' + (f.ext === 'jpg' ? 'jpeg' : f.ext) + ';base64,' + f.content;
+    bodyHtml = '<img class="gh-editor-img" src="' + url + '" alt="' + escHtml(f.path) + '">';
+  } else {
+    bodyHtml = '<div class="gh-editor-bin">Fichier binaire (' + f.ext + ') — édition non supportée. Tu peux le supprimer ou le télécharger.</div>';
+  }
+  const downloadBtn = f.downloadUrl ?
+    '<a href="' + escHtml(f.downloadUrl) + '" target="_blank" class="btn btn-sm" style="background:rgba(120,50,255,.10);color:#b388ff;border:1px solid rgba(120,50,255,.25);text-decoration:none">⬇ Télécharger</a>' : '';
+  document.getElementById('ghEditor').innerHTML =
+    '<div class="gh-editor-head">'
+    + '<span class="gh-editor-path">' + escHtml(f.path) + '</span>'
+    + downloadBtn
+    + '<button class="btn btn-danger btn-sm" onclick="ghDeleteFile()">🗑 Supprimer</button>'
+    + '</div>'
+    + '<div class="gh-editor-body">' + bodyHtml + '</div>'
+    + '<div class="gh-editor-foot">'
+    + '<input type="text" id="ghCommitMsg" placeholder="Message de commit (ex: Update ' + escHtml(f.path) + ')" value="Update ' + escHtml(f.path) + '">'
+    + (f.isText ? '<button class="btn btn-primary btn-sm" onclick="ghSaveFile()">💾 Sauvegarder</button>' : '')
+    + '</div>';
+}
+
+// ─── Save : PUT contents/{path} ───────────────────────────────────────────
+async function ghSaveFile(){
+  const f = ghCurrentFile;
+  if (!f || !f.isText) return;
+  const ta = document.getElementById('ghEditorTextarea');
+  const newContent = ta.value;
+  const msg = document.getElementById('ghCommitMsg').value.trim() || ('Update ' + f.path);
+  if (!confirm('Pousser cette modification sur la branche "' + ghCfg.branch + '" ?\n\n' + f.path + '\n\nMessage : ' + msg)) return;
+  try {
+    const res = await ghApi('PUT', '/repos/' + ghCfg.owner + '/' + ghCfg.repo + '/contents/' + ghEncodePath(f.path), {
+      message: msg,
+      content: ghUtf8ToB64(newContent),
+      sha: f.sha,
+      branch: ghCfg.branch
+    });
+    toast('✓ Fichier sauvegardé', 'success');
+    ghCurrentFile.sha = res.content.sha;
+    ghCurrentFile.content = newContent;
+  } catch (e) {
+    console.error('ghSaveFile', e);
+    toast('Erreur : ' + e.message, 'error');
+  }
+}
+
+async function ghDeleteFile(){
+  const f = ghCurrentFile;
+  if (!f) return;
+  if (!confirm('⚠ Supprimer DÉFINITIVEMENT le fichier suivant ?\n\n' + f.path + '\n\nBranche : ' + ghCfg.branch)) return;
+  const msg = prompt('Message de commit pour la suppression :', 'Delete ' + f.path);
+  if (msg === null) return;
+  try {
+    await ghApi('DELETE', '/repos/' + ghCfg.owner + '/' + ghCfg.repo + '/contents/' + ghEncodePath(f.path), {
+      message: msg || ('Delete ' + f.path),
+      sha: f.sha,
+      branch: ghCfg.branch
+    });
+    toast('✓ Fichier supprimé', 'success');
+    ghCurrentFile = null;
+    ghSelectedPath = null;
+    document.getElementById('ghEditor').innerHTML = '<div class="gh-empty-editor">Fichier supprimé. Sélectionne un autre fichier.</div>';
+    await loadGhTree();
+  } catch (e) {
+    console.error('ghDeleteFile', e);
+    toast('Erreur : ' + e.message, 'error');
+  }
+}
+
+async function ghCreateFilePrompt(){
+  const path = prompt('Chemin complet du nouveau fichier (ex: docs/note.md) :', '');
+  if (!path) return;
+  const cleanPath = path.replace(/^\/+/, '').trim();
+  if (!cleanPath) return;
+  // Vérifier qu'il n'existe pas déjà
+  if (ghTreeFlat.some(f => f.path === cleanPath)) {
+    toast('Ce chemin existe déjà', 'error');
+    return;
+  }
+  const initial = prompt('Contenu initial du fichier (laisser vide pour un fichier vide) :', '');
+  if (initial === null) return;
+  const msg = 'Create ' + cleanPath;
+  try {
+    const res = await ghApi('PUT', '/repos/' + ghCfg.owner + '/' + ghCfg.repo + '/contents/' + ghEncodePath(cleanPath), {
+      message: msg,
+      content: ghUtf8ToB64(initial),
+      branch: ghCfg.branch
+    });
+    toast('✓ Fichier créé', 'success');
+    await loadGhTree();
+    // Ouvre directement le fichier créé
+    setTimeout(() => openGhFile(cleanPath), 200);
+  } catch (e) {
+    console.error('ghCreateFile', e);
+    toast('Erreur : ' + e.message, 'error');
+  }
+}
+
+// ─── Helpers d'encodage ───────────────────────────────────────────────────
+function ghEncodePath(path){
+  // Encode chaque segment mais préserve les slashes
+  return path.split('/').map(encodeURIComponent).join('/');
+}
+function ghUtf8ToB64(str){
+  const bytes = new TextEncoder().encode(str);
+  let s = '';
+  const CHUNK = 0x8000;
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    s += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
+  }
+  return btoa(s);
+}
+function ghB64DecodeUtf8(b64){
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder('utf-8').decode(bytes);
 }
 
 // PRESENCE (real-time)

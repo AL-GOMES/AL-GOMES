@@ -21,18 +21,54 @@
   var pageId = (window.location.pathname.split('/').pop() || '').replace('.html', '') || 'root';
 
   function safeStringify(arg) {
+    if (arg === null) return 'null';
+    if (arg === undefined) return 'undefined';
+    if (typeof arg === 'string') return arg;
+    if (typeof arg === 'number' || typeof arg === 'boolean') return String(arg);
+    // Error : on garde nom + message + stack tronquée (les vraies erreurs
+    // Firestore exposent souvent name + code + message dans des propriétés
+    // non-enumérables, donc on les lit explicitement).
+    if (arg instanceof Error) {
+      var bits = [arg.name + ': ' + arg.message];
+      if (arg.code) bits.push('code=' + arg.code);
+      if (arg.stack) bits.push(String(arg.stack).split('\n').slice(0, 4).join(' | '));
+      return bits.join(' ');
+    }
+    if (typeof Element !== 'undefined' && arg instanceof Element) {
+      return '<' + arg.tagName.toLowerCase() + '>';
+    }
+    // JSON.stringify avec replacer qui gère :
+    // - fonctions → [Function]
+    // - références circulaires → [Circular]
+    // - profondeur > 4 → [Deep]
+    // - chaînes très longues → truncated
     try {
-      if (arg === null) return 'null';
-      if (arg === undefined) return 'undefined';
-      if (typeof arg === 'string') return arg;
-      if (typeof arg === 'number' || typeof arg === 'boolean') return String(arg);
-      if (arg instanceof Error) return arg.name + ': ' + arg.message;
-      if (arg instanceof Element) return '<' + arg.tagName.toLowerCase() + '>';
-      return JSON.stringify(arg, function (k, v) {
+      var seen = new WeakSet();
+      var depth = 0;
+      var out = JSON.stringify(arg, function (k, v) {
         if (typeof v === 'function') return '[Function]';
+        if (typeof v === 'string' && v.length > 200) return v.slice(0, 200) + '…';
+        if (v && typeof v === 'object') {
+          if (seen.has(v)) return '[Circular]';
+          seen.add(v);
+        }
         return v;
-      }).slice(0, 600);
-    } catch (e) { return '[unstringifiable]'; }
+      });
+      if (out !== undefined) return out.slice(0, 800);
+    } catch (e) { /* fall through */ }
+    // Repli : lister les propriétés énumérables si JSON.stringify a échoué.
+    try {
+      var keys = Object.keys(arg).slice(0, 10);
+      var parts = keys.map(function (k) {
+        var v = arg[k];
+        if (v && typeof v === 'object') return k + ':[obj]';
+        return k + ':' + String(v).slice(0, 80);
+      });
+      return '{' + parts.join(', ') + '}';
+    } catch (e) {}
+    // Dernier repli : Object.prototype.toString donne au moins le type
+    try { return Object.prototype.toString.call(arg); } catch (e) {}
+    return '[unstringifiable]';
   }
 
   function pushLog(level, args) {

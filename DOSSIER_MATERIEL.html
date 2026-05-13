@@ -134,6 +134,22 @@ table.fp th {
   font-size: 10pt; background: #f7f7f7;
 }
 
+/* Logo AL GOMES dans le bandeau projet (haut-droite) */
+.fp-logo {
+  display: block; width: 100%; max-width: 180px; height: auto;
+  margin: 0 auto 6px;
+}
+
+/* Zone cachet + signature dans les colonnes d'approbation */
+.fp-approval td.stamp {
+  height: 90px; padding: 2px;
+  background: repeating-linear-gradient(45deg, #fafafa 0 6px, #fff 6px 12px);
+}
+.fp-approval td.stamp .stamp-label {
+  font-size: 8pt; color: #888; text-align: center; letter-spacing: 0.5px;
+  font-style: italic; text-transform: uppercase;
+}
+
 /* Inputs invisibles génériques (au survol on devine qu'ils sont éditables) */
 input.fpinp, textarea.fpinp {
   border: 0; background: transparent; font: inherit; color: inherit;
@@ -180,6 +196,30 @@ input.proj { font-size: 28pt; font-weight: 700; text-align: center; letter-spaci
         <input type="text" class="fpinp proj" id="f_project" placeholder="NOM DU PROJET" autocomplete="off">
       </td>
       <td class="info">
+        <!-- Logo AL GOMES (version flat noir, friendly pour impression) -->
+        <svg class="fp-logo" viewBox="0 0 580 370" xmlns="http://www.w3.org/2000/svg" aria-label="A.L.GOMES Entreprise">
+          <!-- Bâtiment isométrique simplifié -->
+          <g transform="translate(210, 15)">
+            <polygon points="80,22 160,58 160,148 80,184 0,148 0,58" fill="#2A1740"/>
+            <polygon points="80,22 160,58 160,148 80,184" fill="#3E2668"/>
+            <polygon points="80,22 0,58 0,148 80,184" fill="#1C1028"/>
+            <polygon points="80,22 160,58 80,95 0,58" fill="#5C3D96"/>
+            <polygon points="56,70 80,60 104,70 104,102 80,113 56,102" fill="#0A0510"/>
+            <polygon points="80,60 104,70 104,102 80,113" fill="#0A0510"/>
+          </g>
+          <!-- Texte A.L.GOMES -->
+          <g transform="translate(290, 242)">
+            <text x="0" y="0" text-anchor="middle" font-family="'Arial Black','Helvetica Neue',sans-serif" font-weight="900" font-size="52" fill="#1C1028" letter-spacing="4">A.L.GOMES</text>
+          </g>
+          <!-- Ligne décorative -->
+          <line x1="135" y1="270" x2="445" y2="270" stroke="#5C3D96" stroke-width="2"/>
+          <polygon points="135,270 140,266 140,274" fill="#5C3D96"/>
+          <polygon points="445,270 440,266 440,274" fill="#5C3D96"/>
+          <!-- ENTREPRISE -->
+          <g transform="translate(290, 302)">
+            <text x="0" y="0" text-anchor="middle" font-family="'Helvetica Neue','Arial',sans-serif" font-weight="700" font-size="16" fill="#5C3D96" letter-spacing="11">ENTREPRISE</text>
+          </g>
+        </svg>
         <div class="row"><label>Lot :</label><input type="text" class="fpinp" id="f_lot" placeholder="Electricité Cfo / Cfa"></div>
         <div class="row"><label>Emetteur :</label><input type="text" class="fpinp" id="f_emetteur" value="AL GOMES"></div>
         <div class="addr">
@@ -277,6 +317,13 @@ input.proj { font-size: 28pt; font-weight: 700; text-align: center; letter-spaci
         <div class="row"><span class="key">O</span><label><input type="radio" name="moe_aor" value="O"> OBSERVATIONS</label></div>
         <div class="row"><span class="key">R</span><label><input type="radio" name="moe_aor" value="R"> REFUSÉ</label></div>
       </td>
+    </tr>
+    <!-- Zone cachet + signature : 90 px de haut, fond hachuré clair pour suggérer
+         qu'on peut tamponner / signer ici. À l'impression, c'est juste blanc. -->
+    <tr>
+      <td class="stamp"><div class="stamp-label">Cachet + signature</div></td>
+      <td class="stamp"><div class="stamp-label">Cachet + signature</div></td>
+      <td class="stamp"><div class="stamp-label">Cachet + signature</div></td>
     </tr>
     <tr>
       <td class="date"><div class="row"><label>Le :</label><input type="date" id="bet_date"></div></td>

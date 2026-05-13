@@ -3100,7 +3100,13 @@ class PDFViewer {
                       'Courier': '"Courier New", Courier, monospace',
                       'Consolas': 'Consolas, "Lucida Console", monospace',
                       'ComicSans': '"Comic Sans MS", "Comic Sans", cursive' };
-    parts.push(fontMap[a.font] || 'sans-serif');
+    // Si une famille CSS spécifique a été détectée depuis le PDF (via MODIF TXT),
+    // on l'utilise prioritairement avec un fallback sur la police choisie dans
+    // la liste pour maximiser la fidélité visuelle.
+    const family = a.cssFontFamily
+      ? a.cssFontFamily + ', ' + (fontMap[a.font] || 'sans-serif')
+      : (fontMap[a.font] || 'sans-serif');
+    parts.push(family);
     return parts.join(' ');
   }
 
@@ -3296,20 +3302,8 @@ class PDFViewer {
           };
           if (window._openTextModal) window._openTextModal(existing);
         } else {
-          app.textData = {
-            x: pdfX, y: pdfY, w: pdfW, h: pdfH,
-            originalText: item.str,
-            type: 'text-edit',
-            viewer: this,
-            editingId: null
-          };
-          // Détection de la police + style à partir de plusieurs sources, par
-          // ordre de précision décroissante :
-          //   1. pdf.commonObjs.get(fontName) → propriétés bold/italic + name
-          //      PostScript réel (ex. "ArialMT", "TimesNewRoman-Bold")
-          //   2. textContent.styles[fontName] → fontFamily CSS (souvent générique
-          //      "sans-serif"/"serif"/"monospace" sauf pour les fontes reconnues)
-          //   3. item.fontName interne (peu fiable, juste pour bold/italic mots clés)
+          // Détection police + style à partir de plusieurs sources, par
+          // ordre de précision décroissante.
           let realName = '', realFam = '', realBold = false, realItalic = false;
           try {
             const co = this.pdf && this.pdf.commonObjs;
@@ -3327,8 +3321,8 @@ class PDFViewer {
             }
           } catch {}
           const style = textContent.styles && item.fontName ? textContent.styles[item.fontName] : null;
-          const styleFam = (style && style.fontFamily) ? String(style.fontFamily).toLowerCase() : '';
-          const probe = (realName + ' ' + realFam + ' ' + styleFam + ' ' + String(item.fontName || '').toLowerCase()).trim();
+          const styleFam = (style && style.fontFamily) ? String(style.fontFamily) : '';
+          const probe = (realName + ' ' + realFam + ' ' + styleFam.toLowerCase() + ' ' + String(item.fontName || '').toLowerCase()).trim();
           const isBold = realBold || /bold|black|heavy|extrabold|semibold/.test(probe);
           const isItalic = realItalic || /italic|oblique/.test(probe);
           let pickedFont = 'Helvetica';
@@ -3349,15 +3343,34 @@ class PDFViewer {
             else if (probe.includes('helvetica')) pickedFont = 'Helvetica';
             else pickedFont = 'Helvetica';
           }
-          // console.log('[MODIF TXT] font detect:', { item, realName, realFam, styleFam, pickedFont, isBold, isItalic });
+          // Taille : Math.abs(transform[3]) est la composante d'échelle Y de
+          // la matrice du texte, ≈ font-size en unités PDF. item.height est
+          // le repli si la matrice n'est pas exploitable.
+          const detectedSize = Math.abs(item.transform && item.transform[3]) || item.height || 12;
+          // Police CSS d'origine : utilisée prioritairement par _drawText pour
+          // le rendu (sinon notre fontMap sur les 12 polices forcerait à
+          // utiliser une font différente de l'original).
+          const cssFontFamily = (realFam || styleFam || '').trim() || null;
           const fakeExisting = {
             text: item.str,
             font: pickedFont,
-            size: Math.max(8, Math.round((item.height || 12) * 0.85)),
+            cssFontFamily,
+            size: Math.max(6, Math.round(detectedSize)),
             color: '#000000',
             bgColor: '#ffffff',
             bold: isBold, italic: isItalic, underline: false, strike: false,
             align: 'left'
+          };
+          app.textData = {
+            x: pdfX, y: pdfY, w: pdfW, h: pdfH,
+            originalText: item.str,
+            type: 'text-edit',
+            viewer: this,
+            editingId: null,
+            // Police CSS d'origine — utilisée par _drawText si l'utilisateur
+            // n'a pas modifié manuellement le choix de police.
+            cssFontFamily,
+            _originalFont: pickedFont
           };
           if (window._openTextModal) window._openTextModal(fakeExisting);
         }
@@ -5664,6 +5677,14 @@ function installEvents() {
     if (!fields.text.trim()) { showToast('Texte requis', 'warn'); return; }
     const data = app.textData;
     const viewer = (data && data.viewer) || app.primary;
+    // Si la modale a été ouverte sur un texte PDF détecté ET que l'utilisateur
+    // n'a pas modifié manuellement le choix de police, on conserve la famille
+    // CSS d'origine (cssFontFamily) pour un rendu fidèle au texte PDF.
+    if (data && data.cssFontFamily && fields.font === data._originalFont) {
+      fields.cssFontFamily = data.cssFontFamily;
+    } else {
+      fields.cssFontFamily = null;
+    }
     if (data && data.editingId) {
       // Mise à jour d'une annotation existante (type 'text' ou 'text-edit')
       const ann = viewer.state.annotations.find(a => a.id === data.editingId);
@@ -7385,7 +7406,10 @@ function drawAllAnnotationsOnCanvasForExport(ctx, viewer, pageNum, renderScale) 
                       'Courier':'"Courier New", Courier, monospace',
                       'Consolas':'Consolas, "Lucida Console", monospace',
                       'ComicSans':'"Comic Sans MS", "Comic Sans", cursive' };
-    parts.push(fontMap[a.font] || 'sans-serif');
+    const exportFamily = a.cssFontFamily
+      ? a.cssFontFamily + ', ' + (fontMap[a.font] || 'sans-serif')
+      : (fontMap[a.font] || 'sans-serif');
+    parts.push(exportFamily);
     ctx.save();
     if (rot) {
       ctx.translate(x, y);

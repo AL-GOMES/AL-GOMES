@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A.L.GOMES — Attestation d'achèvement de travaux</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="js/firebase-init.js"></script>
+<script src="js/auth-guard.js"></script>
+<!-- pdf-lib + html2canvas pour générer le PDF (qui sert aussi de sauvegarde) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  background: #2a2a35;
+  font-family: 'Times New Roman', Times, serif;
+  min-height: 100vh;
+  color: #111;
+}
+
+/* ─── Topbar (en dehors de la feuille A4) ─── */
+.topbar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 18px; background: #1a1a25; color: #eee;
+  border-bottom: 1px solid #2a2a3a; position: sticky; top: 0; z-index: 100;
+  flex-wrap: wrap;
+}
+.topbar h1 {
+  font-size: 14px; letter-spacing: 1px; font-weight: 700; color: #b388ff;
+  margin-right: auto; font-family: 'Orbitron', sans-serif;
+}
+.topbar .save-status {
+  font-size: 11px; color: #888; letter-spacing: 1px; text-transform: uppercase;
+  font-family: 'Rajdhani', sans-serif;
+}
+.topbar .save-status.dirty { color: #fbbf24; }
+.topbar .save-status.saved { color: #4ade80; }
+.btn {
+  padding: 7px 14px; border: none; border-radius: 6px;
+  font-family: 'Rajdhani', sans-serif; font-size: 12px; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase; cursor: pointer;
+  transition: all .2s; background: #2a2a3a; color: #ddd;
+}
+.btn:hover { background: #3a3a4a; }
+.btn.primary { background: linear-gradient(135deg, #7832ff, #5a1ecc); color: #fff; }
+.btn.primary:hover { box-shadow: 0 4px 12px rgba(120,50,255,.35); transform: translateY(-1px); }
+.btn.danger { background: rgba(239,68,68,.15); color: #f87171; border: 1px solid rgba(239,68,68,.25); }
+.btn.danger:hover { background: rgba(239,68,68,.3); }
+
+/* ─── Feuille A4 ─── */
+.sheet-wrap {
+  padding: 18px; display: flex; justify-content: center;
+  align-items: flex-start;
+}
+.sheet {
+  width: 210mm; min-height: 297mm; max-width: 100%;
+  background: #fff; padding: 18mm 22mm;
+  font-size: 11pt; line-height: 1.4; color: #000;
+  box-shadow: 0 8px 30px rgba(0,0,0,.45);
+  position: relative;
+}
+
+/* ─── Header avec logo ENEDIS + Electricité Réseau Distribution France ─ */
+.att-header {
+  display: flex; align-items: center; gap: 12mm;
+  margin-bottom: 8mm;
+}
+.att-header img { height: 12mm; width: auto; }
+.att-header-text {
+  font-family: Arial, sans-serif; font-weight: 700;
+  font-size: 11pt; color: #000; line-height: 1.2;
+}
+
+/* ─── Titre principal ─── */
+.att-title {
+  text-align: center;
+  font-family: Arial, sans-serif; font-weight: 700; font-size: 19pt;
+  margin-bottom: 12mm; letter-spacing: 0.5px;
+}
+.att-title .accent { color: #00b0f0; }
+
+/* ─── Corps ─── */
+.att-block { margin-bottom: 4mm; }
+.att-block.with-gap { margin-bottom: 8mm; }
+.att-label { display: inline; }
+.att-row { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 2mm; }
+.att-row .att-label { white-space: nowrap; }
+
+/* Zones rouges éditables (correspond aux zones #ff0000 du modèle d'origine) */
+.field {
+  display: inline-block; min-width: 100px; padding: 0 2px;
+  background: transparent; border: 0; border-bottom: 1px dashed transparent;
+  font: inherit; color: #ff0000; outline: 0;
+  font-family: Arial, sans-serif; font-weight: 700;
+}
+.field:focus { background: rgba(245,158,11,.08); border-bottom-color: rgba(245,158,11,.5); }
+.field.long { width: 100%; resize: vertical; min-height: 3.4em; font-family: Helvetica, Arial, sans-serif; font-size: 10pt; line-height: 1.5; }
+.field.small { min-width: 60px; }
+
+/* Liste à puces "Certifie/Précise/S'interdit" */
+.att-list { margin: 4mm 0 6mm; }
+.att-list-item { display: flex; gap: 6px; margin-bottom: 3mm; align-items: flex-start; }
+.att-list-item::before {
+  content: '•'; font-weight: 700; color: #000; margin-right: 2px;
+}
+.att-list-item p { flex: 1; margin-top: -0.1em; }
+.att-list-item p strong { font-weight: 700; }
+.att-list-item p ul {
+  list-style: none; margin: 2mm 0 0 4mm;
+}
+.att-list-item p ul li { padding-left: 8mm; position: relative; margin-bottom: 1mm; }
+
+/* Schéma */
+.att-schema-title {
+  text-align: center;
+  font-family: 'Times New Roman', serif; font-weight: 700; font-size: 14pt;
+  text-decoration: underline; margin: 6mm 0 3mm;
+}
+.att-schema-box {
+  border: 1px solid #000; min-height: 55mm;
+  background: #fafafa; margin-bottom: 6mm;
+  position: relative;
+}
+.att-schema-box.empty::before {
+  content: '— Zone schéma (vide) —'; position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: #aaa; font-style: italic; font-size: 10pt;
+}
+
+/* Pièces jointes + bloc signatures */
+.att-pj {
+  font-weight: 700; text-decoration: underline; margin-bottom: 6mm;
+}
+.att-signatures {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; margin-top: 4mm;
+}
+.att-sign-col { display: flex; flex-direction: column; gap: 2mm; min-height: 60mm; }
+.att-sign-col .role { font-weight: 700; }
+.att-sign-col .role .enedis { color: #00b0f0; }
+.att-sign-col .role-sub { font-size: 10pt; }
+.att-sign-col .who { margin-top: 2mm; }
+.att-sign-col .when {
+  display: flex; align-items: baseline; gap: 5px; flex-wrap: wrap;
+  margin-top: 1mm;
+}
+.att-sign-col .signature-label { margin-top: 4mm; font-weight: 600; }
+.att-sign-col .signature-box {
+  margin-top: 1mm; min-height: 22mm; display: flex; align-items: center; justify-content: center;
+}
+.att-sign-col .signature-box img { max-height: 24mm; max-width: 60mm; }
+
+/* ─── Mode export PDF : retirer focus, dashed borders, etc. ─── */
+body.exporting-pdf .field:focus { background: transparent; border-bottom-color: transparent; }
+body.exporting-pdf .att-schema-box.empty::before { content: ''; }
+
+/* Cache la barre du haut en print */
+@media print {
+  body { background: #fff; }
+  .topbar, .no-print { display: none !important; }
+  .sheet-wrap { padding: 0; }
+  .sheet { box-shadow: none; padding: 12mm 16mm; }
+}
+</style>
+</head>
+<body>
+
+<!-- ─── Barre du haut (hors A4) ─── -->
+<div class="topbar no-print">
+  <h1>📑 ATTESTATION D'ACHÈVEMENT DE TRAVAUX</h1>
+  <span class="save-status" id="saveStatus">Brouillon · jamais enregistré</span>
+  <button class="btn" onclick="newAttestation()" title="Repartir d'une attestation vierge">🆕 Nouveau</button>
+  <button class="btn" onclick="document.getElementById('importInput').click()" title="Réimporter une attestation à partir d'un PDF exporté">📥 Importer</button>
+  <input type="file" id="importInput" accept="application/pdf" style="display:none">
+  <button class="btn primary" onclick="exportAttestation()" title="Choisir un emplacement + nom et enregistrer en PDF (le PDF fait office de sauvegarde)">💾 Enregistrer (PDF)</button>
+</div>
+
+<!-- ─── Feuille A4 ─── -->
+<div class="sheet-wrap">
+  <section class="sheet" id="attestationSheet">
+
+    <!-- Header : logo ENEDIS + ligne "Electricité Réseau Distribution France" -->
+    <div class="att-header">
+      <img src="logo-enedis.png" alt="ENEDIS">
+      <div class="att-header-text">
+        Electricité Réseau<br>Distribution France
+      </div>
+    </div>
+
+    <!-- Titre : "ATTESTATION D'ACHEVEMENT DE TRAVAUX"
+         Les lettres A, A, T en bleu cyan pour rappeler le modèle d'origine -->
+    <div class="att-title">
+      <span class="accent">A</span>TTESTATION D'<span class="accent">A</span>CHEVEMENT DE <span class="accent">T</span>RAVAUX
+    </div>
+
+    <!-- L'entreprise + représentée par -->
+    <div class="att-row att-block">
+      <span class="att-label">L'entreprise intervenante :</span>
+      <strong>AL GOMES</strong>
+      <span class="att-label" style="margin-left:15mm">représentée par :</span>
+      <strong>Mr <input class="field" id="f_representant" value="GOMES" style="color:#000"></strong>
+    </div>
+
+    <p class="att-block with-gap">Dès la signature de la présente attestation, les travaux ci-après définis :</p>
+
+    <!-- Adresse du chantier — zone rouge éditable -->
+    <div class="att-row att-block">
+      <span class="att-label">Adresse du chantier :</span>
+      <input class="field" id="f_adresse_chantier" style="flex:1;min-width:60mm" placeholder="23 avenue de l'Orme à Martin">
+    </div>
+
+    <!-- Consistance des travaux — textarea rouge multi-ligne -->
+    <div class="att-block">
+      <div class="att-label" style="margin-bottom:2mm">Consistance des travaux :</div>
+      <textarea class="field long" id="f_consistance" rows="3"
+        placeholder="1 colonne électrique alimentant 29lgts +1 câble HN33S33 - 3x150²+70² (83ml) sur CDC en parking sous-sol depuis le transfo jusqu'aux distributeurs d'arrivée en pied de colonne RDC BAT A"></textarea>
+    </div>
+
+    <!-- Dossier — zone rouge éditable -->
+    <div class="att-row att-block">
+      <span class="att-label">Dossier :</span>
+      <input class="field" id="f_dossier" placeholder="DA21/069509">
+    </div>
+
+    <!-- Plan(s) — vide pour saisie libre -->
+    <div class="att-row att-block with-gap">
+      <span class="att-label">Plan(s) :</span>
+      <input class="field" id="f_plans" style="flex:1" placeholder="(facultatif)">
+    </div>
+
+    <!-- Certifie -->
+    <div class="att-list-item">
+      <p>
+        <strong>Certifie :</strong>
+        <ul style="margin-top:1mm;list-style:none;padding-left:6mm">
+          <li>que les travaux lui incombant sont réalisés conformément à la commande passée ;</li>
+          <li>que les travaux lui incombant sont réalisés conformément aux règles de l'art ;</li>
+          <li>que les mises en court-circuit et (ou) à la terre qu'elle aurait été amenée à mettre en place sur l'ouvrage, sont déposées.</li>
+        </ul>
+      </p>
+    </div>
+
+    <!-- Précise -->
+    <div class="att-list-item">
+      <p>
+        <strong>Précise :</strong>
+        <ul style="margin-top:1mm;list-style:none;padding-left:6mm">
+          <li>que les travaux sont complètement achevés <sup>(1)</sup></li>
+          <li>que les travaux ci-après restent à exécuter <sup>(1)</sup> :
+            <input class="field" id="f_restants" style="width:80%;color:#000" placeholder="(vide si tout est achevé)">
+          </li>
+        </ul>
+      </p>
+    </div>
+
+    <!-- S'interdit -->
+    <div class="att-list-item">
+      <p>
+        <strong>S'interdit de faire intervenir le personnel placé sous son autorité sur ou à proximité de cet ouvrage sans autorisation du chargé d'affaire ou du chargé d'exploitation (électricité) si l'ouvrage est mis en exploitation ou du chef d'exploitation (gaz).</strong>
+      </p>
+    </div>
+
+    <!-- SCHEMA -->
+    <div class="att-schema-title">SCHEMA</div>
+    <div class="att-schema-box empty"></div>
+
+    <!-- Pièces jointes -->
+    <div class="att-pj">PIECES JOINTES :</div>
+
+    <!-- Signatures : 2 colonnes -->
+    <div class="att-signatures">
+      <!-- Colonne gauche : L'Entreprise Intervenante (AL GOMES) -->
+      <div class="att-sign-col">
+        <div class="role">L'Entreprise Intervenante</div>
+        <div class="who">
+          <input class="field" id="f_signataire_ent" placeholder="M. NOM Prénom" style="width:100%">
+        </div>
+        <div class="when">
+          <span>Le :</span><input class="field small" id="f_date_ent" type="date">
+          <span style="margin-left:6mm">heure :</span><input class="field small" id="f_heure_ent" type="time">
+        </div>
+        <div class="signature-label">Signature</div>
+        <div class="signature-box" id="sigBoxEnt">
+          <img id="sigImgEnt" alt="" style="display:none">
+        </div>
+      </div>
+
+      <!-- Colonne droite : Le Chargé d'affaires ENEDIS -->
+      <div class="att-sign-col">
+        <div class="role">Le Chargé d'affaires <span class="enedis">ENEDIS</span></div>
+        <div class="role-sub">ou son représentant</div>
+        <div class="who">
+          <input class="field" id="f_signataire_enedis" placeholder="(nom)" style="width:100%">
+        </div>
+        <div class="when">
+          <span>Le :</span><input class="field small" id="f_date_enedis" type="date">
+          <span style="margin-left:6mm">heure :</span><input class="field small" id="f_heure_enedis" type="time">
+        </div>
+        <div class="signature-label">Signature</div>
+        <div class="signature-box"></div>
+      </div>
+    </div>
+
+  </section>
+</div>
+
+<script>
+// ─── État + persistance brouillon (localStorage, sans Firestore) ──────────
+const STORAGE_KEY = 'algomes_attestation_achevement';
+// Liste des champs éditables qu'on persiste / restaure / exporte.
+const FIELDS = [
+  'f_representant', 'f_adresse_chantier', 'f_consistance', 'f_dossier',
+  'f_plans', 'f_restants',
+  'f_signataire_ent', 'f_date_ent', 'f_heure_ent',
+  'f_signataire_enedis', 'f_date_enedis', 'f_heure_enedis'
+];
+
+function setStatus(text, cls){
+  const s = document.getElementById('saveStatus');
+  s.textContent = text;
+  s.className = 'save-status ' + (cls || '');
+}
+
+function readForm(){
+  const data = {};
+  for (const id of FIELDS) {
+    const el = document.getElementById(id);
+    if (el) data[id] = el.value;
+  }
+  return data;
+}
+function writeForm(data){
+  for (const id of FIELDS) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    el.value = (data && data[id] != null) ? data[id] : '';
+  }
+}
+
+function saveDraft(){
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(readForm()));
+  } catch (e) { /* localStorage plein/disabled */ }
+}
+function loadDraft(){
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) writeForm(JSON.parse(raw));
+  } catch {}
+}
+
+function markDirty(){
+  saveDraft();
+  setStatus('Modifications non enregistrées', 'dirty');
+}
+
+async function newAttestation(){
+  const hasContent = FIELDS.some(id => {
+    const el = document.getElementById(id);
+    return el && el.value && el.value.trim();
+  });
+  if (hasContent && !confirm('Repartir d\'une attestation vierge ? Le brouillon actuel sera effacé (sauf si tu as déjà enregistré le PDF).')) return;
+  for (const id of FIELDS) {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  }
+  // Replace défaut "GOMES" + date du jour côté entreprise
+  document.getElementById('f_representant').value = 'GOMES';
+  const today = new Date().toISOString().slice(0, 10);
+  document.getElementById('f_date_ent').value = today;
+  try { localStorage.removeItem(STORAGE_KEY); } catch {}
+  setStatus('Brouillon · attestation vierge', '');
+}
+
+// ─── Signature : on charge la signature perso depuis Firestore ────────────
+// (collection 'signatures' avec ownerUid = uid du user connecté, champ png =
+// data-URL PNG. Même mécanique que ATTESTATIONS.html.)
+function loadPersonalSignature(){
+  const sigImg = document.getElementById('sigImgEnt');
+  if (!sigImg) return;
+  // Attente du user via auth-guard (qui peuple window._algomesUser)
+  function tryLoad(){
+    const user = window._algomesUser;
+    if (!user || !user.uid) { setTimeout(tryLoad, 200); return; }
+    if (!window.firebase || !window.firebase.firestore) return;
+    const db = window.firebase.firestore();
+    db.collection('signatures')
+      .where('ownerUid', '==', user.uid)
+      .get()
+      .then(snap => {
+        if (snap.empty) return;
+        const docs = snap.docs.map(d => d.data())
+          .filter(d => d.png)
+          .sort((a, b) => {
+            const ta = a.createdAt && a.createdAt.seconds ? a.createdAt.seconds : 0;
+            const tb = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds : 0;
+            return tb - ta;
+          });
+        if (!docs.length) return;
+        const png = docs[0].png;
+        if (!/^data:image\/(png|jpe?g);base64,[A-Za-z0-9+/=]+$/.test(png)) return;
+        sigImg.src = png;
+        sigImg.style.display = '';
+        // Pré-remplit aussi le nom du signataire avec celui du user
+        const ent = document.getElementById('f_signataire_ent');
+        if (ent && !ent.value) {
+          ent.value = (user.name || user.login || '').toUpperCase();
+        }
+      })
+      .catch(() => {});
+  }
+  tryLoad();
+}
+
+// ─── Export PDF (le PDF fait office de sauvegarde via sidecar) ────────────
+// Sidecar : on injecte les valeurs du formulaire en JSON base64 après %%EOF
+// pour permettre la réimportation depuis le PDF.
+const SIDECAR_START = '%AA_DATA_START:';
+const SIDECAR_END   = ':AA_DATA_END';
+
+function _u8ToBase64(u8){
+  let s = '';
+  const CHUNK = 0x8000;
+  for (let i = 0; i < u8.length; i += CHUNK) {
+    s += String.fromCharCode.apply(null, u8.subarray(i, i + CHUNK));
+  }
+  return btoa(s);
+}
+function _base64ToU8(b64){
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+function injectSidecar(pdfBytes, payload){
+  const json = JSON.stringify(payload);
+  const b64 = btoa(unescape(encodeURIComponent(json)));
+  const marker = '\n' + SIDECAR_START + b64 + SIDECAR_END + '\n';
+  const markerBytes = new TextEncoder().encode(marker);
+  const out = new Uint8Array(pdfBytes.length + markerBytes.length);
+  out.set(pdfBytes, 0);
+  out.set(markerBytes, pdfBytes.length);
+  return out;
+}
+function extractSidecar(arrayBuffer){
+  try {
+    const maxScan = Math.min(arrayBuffer.byteLength, 10 * 1024 * 1024);
+    const view = new Uint8Array(arrayBuffer, 0, maxScan);
+    const txt = new TextDecoder('latin1').decode(view);
+    const sIdx = txt.indexOf(SIDECAR_START);
+    if (sIdx < 0) return null;
+    const eIdx = txt.indexOf(SIDECAR_END, sIdx + SIDECAR_START.length);
+    if (eIdx < 0) return null;
+    const b64 = txt.substring(sIdx + SIDECAR_START.length, eIdx).trim();
+    const json = decodeURIComponent(escape(atob(b64)));
+    return JSON.parse(json);
+  } catch (e) { return null; }
+}
+
+async function exportAttestation(){
+  if (typeof PDFLib === 'undefined' || typeof html2canvas === 'undefined') {
+    alert('Librairies PDF non chargées. Recharge la page (Ctrl+Shift+R).');
+    return;
+  }
+  setStatus('Génération du PDF…', 'dirty');
+  document.body.classList.add('exporting-pdf');
+  try {
+    const { PDFDocument } = PDFLib;
+    const out = await PDFDocument.create();
+    const A4W = 595.28, A4H = 841.89;
+    const sheet = document.getElementById('attestationSheet');
+    // Attend 2 frames pour que le DOM se mette à jour
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const canvas = await html2canvas(sheet, {
+      scale: 2,
+      backgroundColor: '#ffffff',
+      useCORS: true,
+      logging: false,
+      width: sheet.offsetWidth,
+      height: sheet.offsetHeight,
+      windowWidth: sheet.offsetWidth,
+      windowHeight: sheet.offsetHeight,
+      onclone: (clonedDoc) => {
+        // Remplace <input> et <textarea> par des éléments statiques
+        // pour un rendu fidèle (html2canvas gère mal les champs de
+        // formulaire — texte tronqué ou mal aligné).
+        clonedDoc.querySelectorAll('input.field').forEach(inp => {
+          const live = document.getElementById(inp.id);
+          const val = live ? (live.value || '') : (inp.value || '');
+          const span = clonedDoc.createElement('span');
+          span.textContent = val;
+          span.className = inp.className;
+          const cs = window.getComputedStyle(inp);
+          span.style.display = 'inline-block';
+          span.style.width = inp.style.width || cs.width;
+          span.style.minHeight = '1em';
+          span.style.fontSize = cs.fontSize;
+          span.style.fontWeight = cs.fontWeight;
+          span.style.fontFamily = cs.fontFamily;
+          span.style.color = cs.color;
+          span.style.padding = cs.padding;
+          span.style.whiteSpace = 'nowrap';
+          span.style.borderBottom = '1px dotted #aaa';
+          inp.parentNode.replaceChild(span, inp);
+        });
+        clonedDoc.querySelectorAll('textarea.field').forEach(ta => {
+          const live = document.getElementById(ta.id);
+          const val = live ? (live.value || '') : (ta.value || '');
+          const div = clonedDoc.createElement('div');
+          div.textContent = val;
+          div.className = ta.className;
+          const cs = window.getComputedStyle(ta);
+          div.style.cssText =
+            'white-space:pre-wrap;word-break:break-word;' +
+            'font:' + cs.font + ';' +
+            'color:' + cs.color + ';' +
+            'padding:' + cs.padding + ';' +
+            'min-height:' + cs.height + ';' +
+            'width:100%;box-sizing:border-box;border-bottom:1px dotted #aaa;';
+          ta.parentNode.replaceChild(div, ta);
+        });
+      }
+    });
+    const pngData = canvas.toDataURL('image/png');
+    if (!pngData || pngData.length < 100) {
+      throw new Error('Capture vide (canvas ' + canvas.width + '×' + canvas.height + ')');
+    }
+    const pngBytes = await (await fetch(pngData)).arrayBuffer();
+    const img = await out.embedPng(pngBytes);
+    const page = out.addPage([A4W, A4H]);
+    const ratio = Math.min(A4W / img.width, A4H / img.height);
+    const w = img.width * ratio, h = img.height * ratio;
+    page.drawImage(img, { x: (A4W - w) / 2, y: (A4H - h) / 2, width: w, height: h });
+
+    let bytes = await out.save();
+    // Inject sidecar (= sauvegarde dans le PDF)
+    bytes = injectSidecar(bytes, {
+      _v: 1, _kind: 'algomes-attestation-achevement',
+      exportedAt: new Date().toISOString(),
+      form: readForm()
+    });
+
+    const ent = document.getElementById('f_signataire_ent').value || 'attestation';
+    const safeName = ent.replace(/[^a-zA-Z0-9_-]+/g, '_').slice(0, 40);
+    const defaultName = 'attestation-achevement_' + safeName + '_' + new Date().toISOString().slice(0, 10) + '.pdf';
+
+    if (window.showSaveFilePicker) {
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: defaultName,
+          types: [{ description: 'PDF', accept: { 'application/pdf': ['.pdf'] } }]
+        });
+        const writable = await handle.createWritable();
+        await writable.write(bytes);
+        await writable.close();
+        setStatus('✓ PDF enregistré', 'saved');
+        return;
+      } catch (e) {
+        if (e && e.name === 'AbortError') { setStatus('Enregistrement annulé', ''); return; }
+        // fallback download
+      }
+    }
+    const blob = new Blob([bytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = defaultName;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setStatus('✓ PDF téléchargé', 'saved');
+  } catch (e) {
+    console.error(e);
+    const msg = (e && (e.message || e.toString())) || 'erreur inconnue';
+    setStatus('Erreur : ' + msg, 'dirty');
+    alert('Erreur lors de la génération du PDF : ' + msg);
+  } finally {
+    document.body.classList.remove('exporting-pdf');
+  }
+}
+
+// ─── Import depuis un PDF précédemment exporté ────────────────────────────
+async function importAttestation(file){
+  if (!file) return;
+  setStatus('Lecture du PDF…', 'dirty');
+  try {
+    const buf = await file.arrayBuffer();
+    const data = extractSidecar(buf);
+    if (!data || data._kind !== 'algomes-attestation-achevement') {
+      alert('Ce PDF ne contient pas de sauvegarde d\'attestation importable.\n\nSeuls les PDF générés par cette page peuvent être réimportés.');
+      setStatus('Import annulé', '');
+      return;
+    }
+    if (data.form) {
+      writeForm(data.form);
+      saveDraft();
+      setStatus('✓ Attestation importée depuis le PDF', 'saved');
+    } else {
+      alert('Sauvegarde incomplète dans le PDF.');
+    }
+  } catch (e) {
+    console.error(e);
+    alert('Erreur d\'import : ' + (e && e.message));
+    setStatus('Erreur d\'import', 'dirty');
+  }
+}
+
+// ─── Bootstrap ───────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  loadDraft();
+  // Pré-remplit la date du jour si pas déjà saisi
+  if (!document.getElementById('f_date_ent').value) {
+    document.getElementById('f_date_ent').value = new Date().toISOString().slice(0, 10);
+  }
+  // Listeners
+  for (const id of FIELDS) {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('input', markDirty);
+      el.addEventListener('change', markDirty);
+    }
+  }
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      e.preventDefault();
+      exportAttestation();
+    }
+  });
+  document.getElementById('importInput').addEventListener('change', (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (f) importAttestation(f);
+    e.target.value = '';
+  });
+  // Charge la signature perso une fois que auth-guard a peuplé _algomesUser
+  loadPersonalSignature();
+});
+</script>
+</body>
+</html>

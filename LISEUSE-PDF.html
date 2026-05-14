@@ -4406,10 +4406,27 @@ class PDFViewer {
       const cat = catById.get(c.category);
       const color = cat ? cat.color : '#ec4899';
 
-      // Rayon élargi pour mieux héberger le chiffre (lisibilité)
+      // Taille du pointeur :
+      // - Si le plan est CALIBRÉ (échelle 1:50, 1:100… définie via la
+      //   boîte échelle), on utilise une taille en monde réel : 15 cm
+      //   de rayon (= 30 cm de diamètre), ce qui correspond grosso modo
+      //   à un symbole électrique standard sur un plan d'implantation.
+      // - Sinon : taille fixe en pixels (comportement précédent).
+      // Dans tous les cas, on borne pour rester lisible et tappable.
       const x = c.pdfX * this.zoom;
       const y = c.pdfY * this.zoom;
-      const r = 17 * this.zoom;
+      const cal = this.state.calibration;
+      let r;
+      if (cal && cal.pxPerMeter > 0) {
+        const realRadiusM = 0.15; // 15 cm de rayon = 30 cm de diamètre
+        r = realRadiusM * cal.pxPerMeter * this.zoom;
+        // Borne : pas trop petit (lisible) ni trop gros (n'écrase pas le plan)
+        const minR = 8 * this.zoom;
+        const maxR = 26 * this.zoom;
+        r = Math.max(minR, Math.min(maxR, r));
+      } else {
+        r = 17 * this.zoom;
+      }
 
       // Remplissage de la pastille un peu plus opaque qu'avant pour mieux
       // faire ressortir le chiffre (l'intérieur reste semi-transparent

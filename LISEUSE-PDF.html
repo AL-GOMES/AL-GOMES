@@ -2367,16 +2367,16 @@ class PDFViewer {
     this.currentPage = page;
 
     // Cap de résolution interne du canvas. 4096 px max = suffisamment net pour
-    // Caps de rasterisation : on cherche le meilleur compromis entre netteté
-    // au zoom et empreinte mémoire / temps de rendu. Modern Chrome/Firefox
-    // acceptent jusqu'à ~268 Mpx (16k × 16k) mais ce serait trop lourd.
-    // 8192 px × 64 Mpx donnent un rendu net jusqu'à ~300% sur un plan A3,
-    // sans pour autant ramer sur les petits laptops.
-    const MAX_CANVAS_DIM = 8192;
-    const MAX_CANVAS_AREA = 64 * 1024 * 1024; // 64 Mpx
-    // outputScale : pour HiDPI on monte jusqu'à 2.5× le devicePixelRatio
-    // → texte plus net sur Retina + plus de marge quand on zoome plus tard.
-    const outputScale = Math.min(window.devicePixelRatio || 1, 2.5);
+    // Caps de rasterisation : modern Chrome/Firefox acceptent jusqu'à
+    // ~268 Mpx (16k × 16k). 12k × 100 Mpx donnent un rendu très net même
+    // sur de gros plans (A1+) à zoom élevé.
+    const MAX_CANVAS_DIM = 12288;
+    const MAX_CANVAS_AREA = 100 * 1024 * 1024; // 100 Mpx
+    // outputScale : super-sampling 3× systématique (toutes les plate-formes).
+    // Sur écran dpr=1 (Windows classique) c'était l'origine du flou — l'ancien
+    // code donnait 1× = pas d'over-sampling du tout. 3× super-sampling donne
+    // un rendu très net après down-scaling par le browser.
+    const outputScale = Math.max(3, Math.min((window.devicePixelRatio || 1) * 1.5, 3.5));
 
     // On calcule le scale de rendu idéal à ce zoom, clampé
     let targetRenderScale = this.zoom * outputScale;
@@ -2495,7 +2495,14 @@ class PDFViewer {
     this.ctx.fillStyle = '#fff';
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-    const renderTask = page.render({ canvasContext: this.ctx, viewport });
+    // intent: 'print' force PDF.js à utiliser son pipeline haute-qualité
+    // (anti-aliasing plus fin, traits plus nets, polices mieux rendues).
+    // Coût CPU un peu plus élevé, acceptable pour des plans techniques.
+    const renderTask = page.render({
+      canvasContext: this.ctx,
+      viewport,
+      intent: 'print'
+    });
     this._currentRenderTask = renderTask;
     try {
       await renderTask.promise;

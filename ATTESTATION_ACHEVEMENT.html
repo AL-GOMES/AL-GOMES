@@ -203,14 +203,12 @@ body.exporting-pdf .field:focus { background: transparent; border-bottom-color: 
       <span class="accent">A</span>TTESTATION D'<span class="accent">A</span>CHEVEMENT DE <span class="accent">T</span>RAVAUX
     </div>
 
-    <!-- L'entreprise + représentée par : 2 lignes distinctes -->
-    <div class="att-row att-block">
+    <!-- L'entreprise + représentée par : tout sur la MÊME ligne -->
+    <div class="att-block" style="display:flex;align-items:baseline;gap:6px;flex-wrap:nowrap;white-space:nowrap;margin-bottom:8mm">
       <span class="att-label">L'entreprise intervenante :</span>
       <strong>AL GOMES</strong>
-    </div>
-    <div class="att-row att-block with-gap">
-      <span class="att-label">représentée par :</span>
-      <strong>Mr <input class="field" id="f_representant" value="GOMES" style="color:#000"></strong>
+      <span class="att-label" style="margin-left:14mm">représentée par :</span>
+      <strong>Mr&nbsp;<input class="field" id="f_representant" value="GOMES" style="color:#000;min-width:50mm"></strong>
     </div>
 
     <p class="att-block with-gap">Dès la signature de la présente attestation, les travaux ci-après définis :</p>

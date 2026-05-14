@@ -2430,15 +2430,16 @@ class PDFViewer {
       // Juste le CSS à jour
       this.canvas.style.width = Math.floor(cssWidth) + 'px';
       this.canvas.style.height = Math.floor(cssHeight) + 'px';
-      // Overlay : on le resize à une résolution utile pour que les marqueurs
-      // restent nets et visibles, indépendamment du cap du PDF canvas.
-      // Cap overlay = cssWidth/Height × outputScale, avec limite MAX_CANVAS_DIM.
-      const outputScale2 = Math.min(window.devicePixelRatio || 1, 2);
-      let overlayW = Math.floor(cssWidth * outputScale2);
-      let overlayH = Math.floor(cssHeight * outputScale2);
+      // Overlay : on le resize à la même résolution super-samplée que le
+      // canvas PDF. Avant on utilisait un outputScale séparé capé à 2×, ce
+      // qui rendait les pointeurs flous sur les écrans dpr=1 (Windows).
+      // Désormais on réutilise outputScale (= 3× mini) et MAX_CANVAS_DIM
+      // (12288).
+      let overlayW = Math.floor(cssWidth * outputScale);
+      let overlayH = Math.floor(cssHeight * outputScale);
       const mx = Math.max(overlayW, overlayH);
-      if (mx > 4096) {
-        const k = 4096 / mx;
+      if (mx > MAX_CANVAS_DIM) {
+        const k = MAX_CANVAS_DIM / mx;
         overlayW = Math.floor(overlayW * k);
         overlayH = Math.floor(overlayH * k);
       }

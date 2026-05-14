@@ -8,6 +8,64 @@
    buffer en temps réel via storage events pour permettre de partager
    des logs avec le développeur sans devoir ouvrir DevTools.
    ============================================================================= */
+
+// ─── Blocage mobile/tablette ──────────────────────────────────────────────
+// L'application est conçue pour desktop uniquement (Liseuse PDF, dossiers
+// matériel, etc. nécessitent un grand écran). On détecte les appareils
+// mobiles/tablettes par user-agent + taille d'écran. Le bandeau bloquant
+// est dessiné dès que possible (DOMContentLoaded) pour empêcher toute
+// interaction avant que les autres scripts ne s'initialisent.
+(function () {
+  var ua = navigator.userAgent || '';
+  var isMobile = /iphone|ipod|android.*mobile|windows phone|blackberry|nokia|opera mini|opera mobi/i.test(ua);
+  var isTablet = /ipad|tablet|kindle|silk|playbook/i.test(ua)
+    || (/android/i.test(ua) && !/mobile/i.test(ua));
+  // iPad sur iPadOS 13+ rapporte "Macintosh" mais a un écran tactile multi-points
+  var isIPadPro = navigator.maxTouchPoints > 1 && /Macintosh/i.test(ua) && 'ontouchend' in document;
+  // Fallback : largeur d'écran physique inférieure à 1024px (déjouer UA spoof)
+  var sw = window.screen.width || 0;
+  var sh = window.screen.height || 0;
+  var smallScreen = Math.max(sw, sh) < 1024;
+  if (!isMobile && !isTablet && !isIPadPro && !smallScreen) return;
+  // Bypass possible via ?desktop=1 (utile pour tester en émulation DevTools
+  // ou pour les rares utilisateurs sur petit écran qui veulent forcer)
+  if (/[?&]desktop=1\b/.test(window.location.search || '')) return;
+
+  function showBlocker() {
+    try {
+      document.documentElement.style.background = '#0A0816';
+      document.body.innerHTML =
+        '<div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#0A0816;color:#fff;flex-direction:column;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;text-align:center;padding:24px;z-index:99999">'
+        + '<div style="font-size:72px;margin-bottom:24px">🖥️</div>'
+        + '<h1 style="font-size:22px;font-weight:700;margin:0 0 16px;letter-spacing:1px">Accès uniquement depuis un ordinateur</h1>'
+        + '<p style="font-size:14px;color:#b388ff;max-width:420px;line-height:1.6;margin:0 0 12px">'
+        + 'L\'application AL-GOMES n\'est pas accessible depuis un smartphone ou une tablette.'
+        + '</p>'
+        + '<p style="font-size:13px;color:#888;max-width:420px;line-height:1.6;margin:0">'
+        + 'Merci d\'utiliser un ordinateur (écran d\'au moins 1024px de large).'
+        + '</p>'
+        + '</div>';
+    } catch (e) {}
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', showBlocker);
+  } else {
+    showBlocker();
+  }
+  // Empêche les scripts suivants (Firebase, etc.) de continuer comme si de
+  // rien n'était. On throw → tous les scripts inline du même tag sont
+  // interrompus, mais les autres scripts de la page se chargent. Le blocker
+  // les masque visuellement.
+  // Note : on ne return PAS du IIFE outer (qui continuerait firebase init) :
+  // on stoppe l'évaluation du fichier entier.
+  window.__algomesBlocked = true;
+})();
+// Si on est sur mobile/tablette, on stoppe ici (les vars window.firebase
+// ne seront pas créées ; les pages enfants verront le blocker overlay).
+if (window.__algomesBlocked) {
+  // Inutile de continuer à charger firebase. Mais on doit terminer le
+  // fichier proprement pour ne pas casser le parsing.
+} else {
 (function () {
   // ─── Capture console.* dans un buffer localStorage ────────────────────────
   // Buffer en ring : conserve les MAX_LOGS dernières entrées. Chaque entrée :
@@ -266,3 +324,4 @@
   window.auth = firebase.auth();
   window.db   = firebase.firestore();
 })();
+} // fin de l'else (skip si appareil bloqué)

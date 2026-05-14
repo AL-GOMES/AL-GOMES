@@ -224,6 +224,32 @@ if(window.self!==window.top){
   .gh-header-bar{display:inline-block;width:80px;height:3px;background:rgba(251,191,36,.15);border-radius:2px;overflow:hidden;flex-shrink:0}
   .gh-header-bar > i{display:block;height:100%;background:linear-gradient(90deg,#fbbf24,#f59e0b);transition:width .3s ease}
   .gh-header-pct{font-family:'Menlo','Consolas',monospace;font-size:11px;flex-shrink:0}
+  /* ─── Onglet TO DO : liste de tâches admin (Firestore live) ─────────── */
+  .todo-input-row{display:grid;grid-template-columns:1fr 150px auto;gap:10px;align-items:end;margin-bottom:18px}
+  @media(max-width:700px){.todo-input-row{grid-template-columns:1fr}}
+  .todo-input-row input[type="text"],.todo-input-row select{padding:11px 14px;background:rgba(120,50,255,.06);border:1px solid rgba(120,50,255,.18);border-radius:8px;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:500;color:var(--text);outline:none}
+  .todo-input-row input[type="text"]:focus,.todo-input-row select:focus{border-color:rgba(120,50,255,.5);background:rgba(120,50,255,.10)}
+  .todo-filters{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+  .todo-filter{padding:6px 14px;background:rgba(120,50,255,.04);border:1px solid var(--border);border-radius:6px;color:var(--text2);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s}
+  .todo-filter:hover{background:rgba(120,50,255,.10);color:var(--text)}
+  .todo-filter.active{background:rgba(120,50,255,.20);color:#fff;border-color:rgba(120,50,255,.4)}
+  .todo-list{display:flex;flex-direction:column;gap:8px}
+  .todo-item{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:rgba(120,50,255,.04);border:1px solid var(--border);border-radius:10px;transition:all .15s;animation:fadeUp .25s ease}
+  .todo-item:hover{background:rgba(120,50,255,.07)}
+  .todo-item.done{opacity:.55;background:rgba(34,197,94,.04);border-color:rgba(34,197,94,.15)}
+  .todo-item.done .todo-title{text-decoration:line-through;color:var(--text2)}
+  .todo-check{width:20px;height:20px;flex-shrink:0;cursor:pointer;accent-color:var(--accent);margin-top:2px}
+  .todo-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+  .todo-title{font-size:15px;font-weight:600;color:var(--text);word-break:break-word;cursor:text}
+  .todo-title[contenteditable="true"]{outline:1px solid rgba(120,50,255,.5);background:rgba(120,50,255,.06);padding:2px 4px;border-radius:4px}
+  .todo-meta{font-size:11px;color:var(--text2);display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .todo-pri{display:inline-block;padding:2px 8px;border-radius:5px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;flex-shrink:0}
+  .todo-pri.high{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.30)}
+  .todo-pri.normal{background:rgba(245,158,11,.10);color:#fbbf24;border:1px solid rgba(245,158,11,.25)}
+  .todo-pri.low{background:rgba(34,197,94,.10);color:#4ade80;border:1px solid rgba(34,197,94,.25)}
+  .todo-actions{display:flex;gap:6px;flex-shrink:0}
+  .todo-empty{text-align:center;color:var(--text2);padding:30px 20px;font-style:italic;border:1px dashed var(--border);border-radius:10px}
+  .todo-counts{font-size:11px;color:var(--text2);margin-left:auto;font-family:'Menlo','Consolas',monospace}
   /* ─── Onglet Firebase : éditeur de règles ────────────────────────────── */
   .fb-busy{display:flex;align-items:center;gap:14px;background:rgba(255,160,0,.08);border:1px solid rgba(255,160,0,.30);border-radius:10px;padding:12px 18px;margin-bottom:18px;font-size:13px;color:#ffb74d;font-weight:600;animation:fadeUp .25s ease}
   .fb-busy.hidden{display:none}
@@ -266,6 +292,7 @@ if(window.self!==window.top){
     <button type="button" class="admin-tab" data-tab="tab-console" role="tab" aria-selected="false"><span class="tab-ico">🪵</span>Console</button>
     <button type="button" class="admin-tab" data-tab="tab-github" role="tab" aria-selected="false"><span class="tab-ico">🐙</span>GitHub</button>
     <button type="button" class="admin-tab" data-tab="tab-firebase" role="tab" aria-selected="false"><span class="tab-ico">🔥</span>Firebase</button>
+    <button type="button" class="admin-tab" data-tab="tab-todo" role="tab" aria-selected="false"><span class="tab-ico">✅</span>To do</button>
   </div>
 
   <!-- ─── ONGLET 1 : Utilisateurs ─────────────────────────────────────── -->
@@ -500,7 +527,7 @@ if(window.self!==window.top){
 
     <!-- Éditeur de règles Firestore -->
     <div class="card" id="fbRulesCard" style="display:none">
-      <h2 style="display:flex;align-items:center;flex-wrap:wrap;gap:4px">
+      <h2 style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:20px">
         <span>📜</span>Règles Firestore
         <span class="gh-header-status" id="fbHeaderStatus"></span>
       </h2>
@@ -513,6 +540,39 @@ if(window.self!==window.top){
       <div style="font-size:11px;color:var(--text2);margin-top:8px">
         ⚠ Les règles sont déployées <strong style="color:#fbbf24">immédiatement en production</strong>
         après confirmation. Teste tes changements avec l'émulateur Firestore avant de pousser.
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── ONGLET 8 : To do (liste de tâches admin partagée) ────────────── -->
+  <div class="tab-panel" id="tab-todo" role="tabpanel">
+    <div class="card">
+      <h2><span>✅</span> Tâches à faire</h2>
+      <div style="font-size:12px;color:var(--text2);margin:-8px 0 18px">
+        Liste partagée entre tous les admins, synchronisée en temps réel
+        via Firestore. Coche une tâche pour la marquer comme terminée,
+        clique sur le titre pour l'éditer.
+      </div>
+      <!-- Ajout d'une tâche -->
+      <div class="todo-input-row">
+        <input type="text" id="newTodoTitle" placeholder="Nouvelle tâche…" maxlength="200" onkeydown="if(event.key==='Enter')addTodo()">
+        <select id="newTodoPriority">
+          <option value="high">🔴 Importante</option>
+          <option value="normal" selected>🟡 Normale</option>
+          <option value="low">🟢 Faible</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="addTodo()">＋ Ajouter</button>
+      </div>
+      <!-- Filtres -->
+      <div class="todo-filters">
+        <button class="todo-filter active" data-filter="active" onclick="setTodoFilter('active')">À faire</button>
+        <button class="todo-filter" data-filter="done" onclick="setTodoFilter('done')">Terminées</button>
+        <button class="todo-filter" data-filter="all" onclick="setTodoFilter('all')">Toutes</button>
+        <span class="todo-counts" id="todoCounts"></span>
+      </div>
+      <!-- Liste -->
+      <div class="todo-list" id="todoList">
+        <div class="todo-empty">Chargement…</div>
       </div>
     </div>
   </div>
@@ -656,9 +716,10 @@ function initAdminTabs(){
   document.querySelectorAll('.admin-tab').forEach(btn => {
     btn.addEventListener('click', () => {
       showAdminTab(btn.dataset.tab);
-      // Lazy-load des données des onglets externes (GitHub / Firebase)
+      // Lazy-load des données des onglets externes (GitHub / Firebase / TO DO)
       if (btn.dataset.tab === 'tab-github' && !ghCfg) loadGhConfig();
       if (btn.dataset.tab === 'tab-firebase') fbInitFromStorage();
+      if (btn.dataset.tab === 'tab-todo' && !_todosUnsub) loadTodos();
     });
   });
   // Restaure le dernier onglet ouvert (par défaut : utilisateurs)
@@ -668,6 +729,7 @@ function initAdminTabs(){
     showAdminTab(saved);
     if (saved === 'tab-github') loadGhConfig();
     if (saved === 'tab-firebase') fbInitFromStorage();
+    if (saved === 'tab-todo') loadTodos();
   }
 }
 
@@ -1801,6 +1863,208 @@ async function fbSaveRules(){
     fbHideBusy(tid);
   }
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  ONGLET TO DO — liste de tâches admin partagée (Firestore temps réel)
+// ═══════════════════════════════════════════════════════════════════════════
+// Collection 'todos' dans Firestore. Champs par doc :
+//   title (string), priority ('high'|'normal'|'low'), status ('active'|'done'),
+//   createdAt (ts), createdBy (uid), doneAt (ts|null), doneBy (uid|null)
+// L'onSnapshot pousse les changements en live à tous les admins connectés.
+let todos = [];
+let todoFilter = 'active';  // 'active' | 'done' | 'all'
+let _todosUnsub = null;
+
+function loadTodos(){
+  if (_todosUnsub) { try { _todosUnsub(); } catch {} _todosUnsub = null; }
+  const view = document.getElementById('todoList');
+  if (!view) return;
+  view.innerHTML = '<div class="todo-empty">Chargement…</div>';
+  _todosUnsub = db.collection('todos').orderBy('createdAt', 'desc').onSnapshot(
+    (snap) => {
+      todos = [];
+      snap.forEach(doc => todos.push(Object.assign({ id: doc.id }, doc.data())));
+      renderTodos();
+    },
+    (err) => {
+      console.error('loadTodos snapshot error', err);
+      view.innerHTML = '<div class="todo-empty">Erreur de chargement : ' + escHtml(err.message || 'Firestore') + '</div>';
+    }
+  );
+}
+
+function setTodoFilter(filter){
+  todoFilter = filter;
+  document.querySelectorAll('.todo-filter').forEach(b => {
+    b.classList.toggle('active', b.dataset.filter === filter);
+  });
+  renderTodos();
+}
+
+function renderTodos(){
+  const view = document.getElementById('todoList');
+  if (!view) return;
+  // Compteurs
+  const total = todos.length;
+  const active = todos.filter(t => t.status !== 'done').length;
+  const done = total - active;
+  const cnt = document.getElementById('todoCounts');
+  if (cnt) cnt.textContent = active + ' à faire · ' + done + ' terminée' + (done > 1 ? 's' : '') + ' · ' + total + ' au total';
+  // Filtre
+  const filtered = todos.filter(t => {
+    if (todoFilter === 'all') return true;
+    if (todoFilter === 'done') return t.status === 'done';
+    return t.status !== 'done';
+  });
+  // Tri : priorité haute d'abord, puis normale, puis faible
+  const PRIO_ORDER = { high: 0, normal: 1, low: 2 };
+  filtered.sort((a, b) => {
+    if (a.status !== b.status) return a.status === 'done' ? 1 : -1;
+    const pa = PRIO_ORDER[a.priority] != null ? PRIO_ORDER[a.priority] : 1;
+    const pb = PRIO_ORDER[b.priority] != null ? PRIO_ORDER[b.priority] : 1;
+    if (pa !== pb) return pa - pb;
+    const ta = a.createdAt && a.createdAt.seconds ? a.createdAt.seconds : 0;
+    const tb = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds : 0;
+    return tb - ta; // plus récent d'abord
+  });
+  if (!filtered.length) {
+    view.innerHTML = '<div class="todo-empty">Aucune tâche ' +
+      (todoFilter === 'active' ? 'à faire 🎉' : todoFilter === 'done' ? 'terminée' : '') + '</div>';
+    return;
+  }
+  view.innerHTML = filtered.map(t => renderTodoItem(t)).join('');
+}
+
+function renderTodoItem(t){
+  const isDone = t.status === 'done';
+  const pri = t.priority || 'normal';
+  const priLabel = { high: 'Importante', normal: 'Normale', low: 'Faible' }[pri] || 'Normale';
+  const meta = [];
+  if (t.createdAt && t.createdAt.seconds) {
+    meta.push('créée ' + fmtRelativeSince(t.createdAt.seconds * 1000));
+  }
+  if (isDone && t.doneAt && t.doneAt.seconds) {
+    meta.push('✓ terminée ' + fmtRelativeSince(t.doneAt.seconds * 1000));
+  }
+  return '<div class="todo-item' + (isDone ? ' done' : '') + '" data-id="' + escHtml(t.id) + '">'
+    + '<input type="checkbox" class="todo-check"' + (isDone ? ' checked' : '') + ' onchange="toggleTodoStatus(\'' + escHtml(t.id) + '\', \'' + (isDone ? 'done' : 'active') + '\')">'
+    + '<div class="todo-body">'
+    + '<span class="todo-title" onclick="editTodoTitle(\'' + escHtml(t.id) + '\', this)">' + escHtml(t.title || '') + '</span>'
+    + '<div class="todo-meta">'
+    + '<span class="todo-pri ' + pri + '">' + priLabel + '</span>'
+    + meta.map(m => '<span>' + escHtml(m) + '</span>').join('')
+    + '</div>'
+    + '</div>'
+    + '<div class="todo-actions">'
+    + '<button class="btn btn-danger btn-xs" onclick="deleteTodo(\'' + escHtml(t.id) + '\')">Suppr.</button>'
+    + '</div>'
+    + '</div>';
+}
+
+function fmtRelativeSince(ts){
+  const s = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+  if (s < 60) return 'il y a ' + s + ' s';
+  const m = Math.floor(s / 60);
+  if (m < 60) return 'il y a ' + m + ' min';
+  const h = Math.floor(m / 60);
+  if (h < 24) return 'il y a ' + h + ' h';
+  const d = Math.floor(h / 24);
+  if (d < 30) return 'il y a ' + d + ' j';
+  return 'le ' + new Date(ts).toLocaleDateString('fr-FR');
+}
+
+async function addTodo(){
+  const titleEl = document.getElementById('newTodoTitle');
+  const prioEl = document.getElementById('newTodoPriority');
+  const title = (titleEl.value || '').trim();
+  if (!title) { toast('Saisis un titre', 'error'); return; }
+  const priority = prioEl.value || 'normal';
+  try {
+    await db.collection('todos').add({
+      title,
+      priority,
+      status: 'active',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      createdBy: me && me.uid || null,
+      doneAt: null,
+      doneBy: null
+    });
+    titleEl.value = '';
+    titleEl.focus();
+  } catch (e) {
+    console.error('addTodo', e);
+    toast('Erreur : ' + e.message, 'error');
+  }
+}
+
+async function toggleTodoStatus(id, currentStatus){
+  const newStatus = currentStatus === 'done' ? 'active' : 'done';
+  try {
+    await db.collection('todos').doc(id).update({
+      status: newStatus,
+      doneAt: newStatus === 'done' ? firebase.firestore.FieldValue.serverTimestamp() : null,
+      doneBy: newStatus === 'done' ? (me && me.uid || null) : null
+    });
+  } catch (e) {
+    console.error('toggleTodoStatus', e);
+    toast('Erreur : ' + e.message, 'error');
+  }
+}
+
+async function deleteTodo(id){
+  const t = todos.find(x => x.id === id);
+  const label = t && t.title ? '"' + t.title + '"' : 'cette tâche';
+  if (!confirm('Supprimer ' + label + ' ?')) return;
+  try {
+    await db.collection('todos').doc(id).delete();
+  } catch (e) {
+    console.error('deleteTodo', e);
+    toast('Erreur : ' + e.message, 'error');
+  }
+}
+
+// Édition inline du titre via contenteditable (clic sur le titre)
+function editTodoTitle(id, el){
+  if (el.getAttribute('contenteditable') === 'true') return;
+  const t = todos.find(x => x.id === id);
+  if (!t) return;
+  const original = t.title || '';
+  el.setAttribute('contenteditable', 'true');
+  el.focus();
+  // Sélection complète
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+  const save = async () => {
+    el.removeAttribute('contenteditable');
+    const newTitle = (el.textContent || '').trim();
+    if (!newTitle) {
+      el.textContent = original; // restore si vidé
+      return;
+    }
+    if (newTitle === original) return;
+    try {
+      await db.collection('todos').doc(id).update({ title: newTitle });
+    } catch (e) {
+      el.textContent = original;
+      toast('Erreur : ' + e.message, 'error');
+    }
+  };
+  el.addEventListener('blur', save, { once: true });
+  el.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+    if (e.key === 'Escape') { el.textContent = original; el.blur(); }
+  });
+}
+
+// Auto-refresh des temps relatifs des todos (créé/terminé il y a X min)
+setInterval(() => {
+  if (document.getElementById('tab-todo') && document.getElementById('tab-todo').classList.contains('active')) {
+    renderTodos();
+  }
+}, 30000);
 
 // PRESENCE (real-time)
 let _presenceUnsub = null;

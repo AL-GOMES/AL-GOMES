@@ -1946,6 +1946,10 @@ function renderTodoItem(t){
   const meta = [];
   if (t.createdAt) meta.push('créée ' + fmtRelativeSince(t.createdAt));
   if (isDone && t.doneAt) meta.push('✓ terminée ' + fmtRelativeSince(t.doneAt));
+  // Bouton principal selon l'état actuel
+  const toggleBtn = isDone
+    ? '<button class="btn btn-xs" style="background:rgba(120,50,255,.10);color:#b388ff;border:1px solid rgba(120,50,255,.25)" onclick="toggleTodoStatus(\'' + escHtml(t.id) + '\', \'done\')">↺ Réactiver</button>'
+    : '<button class="btn btn-success btn-xs" onclick="toggleTodoStatus(\'' + escHtml(t.id) + '\', \'active\')">✓ Terminé</button>';
   return '<div class="todo-item' + (isDone ? ' done' : '') + '" data-id="' + escHtml(t.id) + '">'
     + '<input type="checkbox" class="todo-check"' + (isDone ? ' checked' : '') + ' onchange="toggleTodoStatus(\'' + escHtml(t.id) + '\', \'' + (isDone ? 'done' : 'active') + '\')">'
     + '<div class="todo-body">'
@@ -1956,6 +1960,7 @@ function renderTodoItem(t){
     + '</div>'
     + '</div>'
     + '<div class="todo-actions">'
+    + toggleBtn
     + '<button class="btn btn-danger btn-xs" onclick="deleteTodo(\'' + escHtml(t.id) + '\')">Suppr.</button>'
     + '</div>'
     + '</div>';

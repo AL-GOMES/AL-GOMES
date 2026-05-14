@@ -4654,6 +4654,10 @@ async function exportCountsPdf(viewer) {
     // Numérotation par catégorie
     const catCounters = new Map();
     const ordered = [...pageCounts].sort((a, b) => a.created - b.created);
+    // Taille des marqueurs : mêmes règles que le viewer (échelle plan si
+    // calibration dispo, sinon fallback fixe). On utilise renderScale au
+    // lieu de zoom car l'export PDF rend à une résolution propre.
+    const cal = viewer.state.calibration;
     for (const c of ordered) {
       const num = (catCounters.get(c.category) || 0) + 1;
       catCounters.set(c.category, num);
@@ -4661,25 +4665,41 @@ async function exportCountsPdf(viewer) {
       const color = cat ? cat.color : '#ec4899';
       const x = c.pdfX * renderScale;
       const y = c.pdfY * renderScale;
-      const r = 14 * renderScale; // rayon fixe
+      let r;
+      if (cal && cal.pxPerMeter > 0) {
+        const realRadiusM = 0.15; // 15 cm de rayon = 30 cm de diamètre
+        r = realRadiusM * cal.pxPerMeter * renderScale;
+        const minR = 8 * renderScale;
+        const maxR = 26 * renderScale;
+        r = Math.max(minR, Math.min(maxR, r));
+      } else {
+        r = 17 * renderScale;
+      }
 
-      cvCtx.fillStyle = color + '33';
+      // Pastille semi-transparente (~30% opacité, comme le viewer)
+      cvCtx.fillStyle = color + '4D';
       cvCtx.strokeStyle = color;
-      cvCtx.lineWidth = 3;
+      cvCtx.lineWidth = 2.2 * renderScale / 1.5; // proportionnel au scale d'export
       cvCtx.beginPath();
       cvCtx.arc(x, y, r, 0, Math.PI * 2);
       cvCtx.fill();
       cvCtx.stroke();
 
-      const fontSize = Math.max(14, Math.min(28, Math.round(r * 0.9)));
-      cvCtx.fillStyle = color;
-      cvCtx.strokeStyle = 'rgba(255,255,255,0.9)';
-      cvCtx.lineWidth = 4;
-      cvCtx.font = 'bold ' + fontSize + 'px sans-serif';
+      // Chiffre NOIR avec halo BLANC épais (même règle que le viewer)
+      const numStr = String(num);
+      const fontSize = numStr.length >= 2
+        ? Math.max(11 * renderScale / 1.5, Math.round(r * 0.95))
+        : Math.max(13 * renderScale / 1.5, Math.round(r * 1.15));
+      cvCtx.font = '900 ' + Math.round(fontSize) + 'px sans-serif';
       cvCtx.textAlign = 'center';
       cvCtx.textBaseline = 'middle';
-      cvCtx.strokeText(String(num), x, y);
-      cvCtx.fillText(String(num), x, y);
+      cvCtx.strokeStyle = '#ffffff';
+      cvCtx.lineWidth = Math.max(4, Math.round(r * 0.35));
+      cvCtx.lineJoin = 'round';
+      cvCtx.miterLimit = 2;
+      cvCtx.strokeText(numStr, x, y);
+      cvCtx.fillStyle = '#000000';
+      cvCtx.fillText(numStr, x, y);
     }
 
     // Légende en haut à gauche

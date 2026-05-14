@@ -122,12 +122,21 @@ html, body {
 .att-schema-box {
   border: 1px solid #000; min-height: 55mm;
   background: #fafafa; margin-bottom: 6mm;
-  position: relative;
+  position: relative; overflow: hidden;
 }
-.att-schema-box.empty::before {
-  content: '— Zone schéma (vide) —'; position: absolute; inset: 0;
-  display: flex; align-items: center; justify-content: center;
-  color: #aaa; font-style: italic; font-size: 10pt;
+/* Texte "voir études" centré en diagonale, gris discret */
+.att-schema-box::after {
+  content: 'voir études';
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%) rotate(-30deg);
+  font-family: 'Times New Roman', serif;
+  font-style: italic;
+  font-size: 24pt; font-weight: 700;
+  color: #999;
+  letter-spacing: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0.55;
 }
 
 /* Pièces jointes + bloc signatures */
@@ -154,7 +163,6 @@ html, body {
 
 /* ─── Mode export PDF : retirer focus, dashed borders, etc. ─── */
 body.exporting-pdf .field:focus { background: transparent; border-bottom-color: transparent; }
-body.exporting-pdf .att-schema-box.empty::before { content: ''; }
 
 /* Cache la barre du haut en print */
 @media print {
@@ -195,11 +203,13 @@ body.exporting-pdf .att-schema-box.empty::before { content: ''; }
       <span class="accent">A</span>TTESTATION D'<span class="accent">A</span>CHEVEMENT DE <span class="accent">T</span>RAVAUX
     </div>
 
-    <!-- L'entreprise + représentée par -->
+    <!-- L'entreprise + représentée par : 2 lignes distinctes -->
     <div class="att-row att-block">
       <span class="att-label">L'entreprise intervenante :</span>
       <strong>AL GOMES</strong>
-      <span class="att-label" style="margin-left:15mm">représentée par :</span>
+    </div>
+    <div class="att-row att-block with-gap">
+      <span class="att-label">représentée par :</span>
       <strong>Mr <input class="field" id="f_representant" value="GOMES" style="color:#000"></strong>
     </div>
 
@@ -262,9 +272,9 @@ body.exporting-pdf .att-schema-box.empty::before { content: ''; }
       </p>
     </div>
 
-    <!-- SCHEMA -->
+    <!-- SCHEMA : zone vide barrée d'un texte "voir études" en diagonale -->
     <div class="att-schema-title">SCHEMA</div>
-    <div class="att-schema-box empty"></div>
+    <div class="att-schema-box"></div>
 
     <!-- Pièces jointes -->
     <div class="att-pj">PIECES JOINTES :</div>
@@ -484,9 +494,12 @@ async function exportAttestation(){
       windowWidth: sheet.offsetWidth,
       windowHeight: sheet.offsetHeight,
       onclone: (clonedDoc) => {
-        // Remplace <input> et <textarea> par des éléments statiques
-        // pour un rendu fidèle (html2canvas gère mal les champs de
-        // formulaire — texte tronqué ou mal aligné).
+        // Remplace <input> et <textarea> par des éléments statiques pour un
+        // rendu fidèle (html2canvas gère mal les champs de formulaire).
+        // IMPORTANT : à l'export PDF, la valeur effectivement saisie doit
+        // apparaître en NOIR (la couleur rouge n'est qu'un repère visuel à
+        // l'écran pour signaler "à remplir"). Les zones vides restent vides
+        // (sans placeholder rouge non plus).
         clonedDoc.querySelectorAll('input.field').forEach(inp => {
           const live = document.getElementById(inp.id);
           const val = live ? (live.value || '') : (inp.value || '');
@@ -500,7 +513,7 @@ async function exportAttestation(){
           span.style.fontSize = cs.fontSize;
           span.style.fontWeight = cs.fontWeight;
           span.style.fontFamily = cs.fontFamily;
-          span.style.color = cs.color;
+          span.style.color = '#000'; // FORÇAGE NOIR à l'export
           span.style.padding = cs.padding;
           span.style.whiteSpace = 'nowrap';
           span.style.borderBottom = '1px dotted #aaa';
@@ -516,7 +529,7 @@ async function exportAttestation(){
           div.style.cssText =
             'white-space:pre-wrap;word-break:break-word;' +
             'font:' + cs.font + ';' +
-            'color:' + cs.color + ';' +
+            'color:#000;' + // FORÇAGE NOIR à l'export
             'padding:' + cs.padding + ';' +
             'min-height:' + cs.height + ';' +
             'width:100%;box-sizing:border-box;border-bottom:1px dotted #aaa;';

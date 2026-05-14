@@ -2367,10 +2367,16 @@ class PDFViewer {
     this.currentPage = page;
 
     // Cap de résolution interne du canvas. 4096 px max = suffisamment net pour
-    // lire un plan, rasterisation 4× plus rapide que 8192.
-    const MAX_CANVAS_DIM = 4096;
-    const MAX_CANVAS_AREA = 16 * 1024 * 1024; // 16 Mpx, confortable sur tous navigateurs
-    const outputScale = Math.min(window.devicePixelRatio || 1, 2);
+    // Caps de rasterisation : on cherche le meilleur compromis entre netteté
+    // au zoom et empreinte mémoire / temps de rendu. Modern Chrome/Firefox
+    // acceptent jusqu'à ~268 Mpx (16k × 16k) mais ce serait trop lourd.
+    // 8192 px × 64 Mpx donnent un rendu net jusqu'à ~300% sur un plan A3,
+    // sans pour autant ramer sur les petits laptops.
+    const MAX_CANVAS_DIM = 8192;
+    const MAX_CANVAS_AREA = 64 * 1024 * 1024; // 64 Mpx
+    // outputScale : pour HiDPI on monte jusqu'à 2.5× le devicePixelRatio
+    // → texte plus net sur Retina + plus de marge quand on zoome plus tard.
+    const outputScale = Math.min(window.devicePixelRatio || 1, 2.5);
 
     // On calcule le scale de rendu idéal à ce zoom, clampé
     let targetRenderScale = this.zoom * outputScale;

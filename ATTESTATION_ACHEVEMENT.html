@@ -396,11 +396,14 @@ function loadUserDefaults(){
   function tryLoad(){
     const user = window._algomesUser;
     if (!user || !user.uid) { setTimeout(tryLoad, 200); return; }
-    // 1) Nom du signataire entreprise : Prénom + Nom du user enregistré
-    //    (toujours pré-rempli, indépendamment de la présence d'une signature)
+    // 1) Nom du signataire entreprise : Prénom + Nom du user enregistré.
+    //    On FORCE l'écrasement (même si une valeur est déjà présente dans
+    //    le brouillon localStorage) — le signataire correspond toujours
+    //    au compte connecté, on ne veut pas qu'un test précédent persiste.
     const ent = document.getElementById('f_signataire_ent');
-    if (ent && !ent.value) {
-      ent.value = (user.name || user.login || '').toUpperCase();
+    const expected = (user.name || user.login || '').toUpperCase();
+    if (ent && expected && ent.value !== expected) {
+      ent.value = expected;
       saveDraft();
     }
     // 2) Signature perso (depuis Firestore)

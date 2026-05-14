@@ -4406,31 +4406,42 @@ class PDFViewer {
       const cat = catById.get(c.category);
       const color = cat ? cat.color : '#ec4899';
 
-      // Rayon fixe : 14 pixels PDF à zoom=1 (s'adapte au zoom mais pas au symbole)
+      // Rayon élargi pour mieux héberger le chiffre (lisibilité)
       const x = c.pdfX * this.zoom;
       const y = c.pdfY * this.zoom;
-      const r = 14 * this.zoom;
+      const r = 17 * this.zoom;
 
-      // Remplissage semi-transparent (l'intérieur laisse voir le symbole)
-      ctx.fillStyle = color + '33'; // ~20% alpha
+      // Remplissage de la pastille un peu plus opaque qu'avant pour mieux
+      // faire ressortir le chiffre (l'intérieur reste semi-transparent
+      // pour laisser deviner ce qui se trouve sous le marqueur).
+      ctx.fillStyle = color + '4D'; // ~30% alpha (était 20%)
       ctx.strokeStyle = color;
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 2.2;
       ctx.beginPath();
       ctx.arc(x, y, r, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
 
-      // Numéro au centre, taille proportionnelle au rayon écran (qui suit le zoom)
-      const fontSize = Math.max(9, Math.round(r * 0.9));
-      ctx.fillStyle = color;
-      ctx.strokeStyle = 'rgba(255,255,255,0.85)';
-      ctx.lineWidth = 3;
-      ctx.font = 'bold ' + fontSize + 'px sans-serif';
+      // Chiffre : NOIR bold avec un halo BLANC épais. Contraste maximum
+      // quelle que soit la couleur de la catégorie (avant : chiffre dans la
+      // couleur de la catégorie → mauvais contraste sur cat pastel).
+      // Le 2-chiffres et plus reste lisible grâce à la taille augmentée.
+      const numStr = String(num);
+      const fontSize = numStr.length >= 2
+        ? Math.max(11, Math.round(r * 0.95))
+        : Math.max(13, Math.round(r * 1.15));
+      ctx.font = '900 ' + fontSize + 'px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      // Halo blanc pour lisibilité sur fond chargé
-      ctx.strokeText(String(num), x, y);
-      ctx.fillText(String(num), x, y);
+      // Halo blanc épais (fait office de contour anti-fond chargé)
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = Math.max(4, Math.round(r * 0.35));
+      ctx.lineJoin = 'round';
+      ctx.miterLimit = 2;
+      ctx.strokeText(numStr, x, y);
+      // Chiffre noir par-dessus
+      ctx.fillStyle = '#000000';
+      ctx.fillText(numStr, x, y);
     }
   }
 }

@@ -63,15 +63,19 @@ html, body {
   position: relative;
 }
 
-/* ─── Header avec logo ENEDIS + Electricité Réseau Distribution France ─ */
+/* ─── Header : logo ENEDIS centré + sous-titre centré dessous ─── */
 .att-header {
-  display: flex; align-items: center; gap: 12mm;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 3mm;
   margin-bottom: 8mm;
+  text-align: center;
 }
-.att-header img { height: 12mm; width: auto; }
+.att-header img { height: 18mm; width: auto; }
 .att-header-text {
   font-family: Arial, sans-serif; font-weight: 700;
-  font-size: 11pt; color: #000; line-height: 1.2;
+  font-size: 12pt; color: #000; line-height: 1.25;
+  text-align: center;
 }
 
 /* ─── Titre principal ─── */
@@ -189,11 +193,12 @@ body.exporting-pdf .field:focus { background: transparent; border-bottom-color: 
 <div class="sheet-wrap">
   <section class="sheet" id="attestationSheet">
 
-    <!-- Header : logo ENEDIS + ligne "Electricité Réseau Distribution France" -->
+    <!-- Header : logo ENEDIS CENTRÉ avec sous-titre "Electricité Réseau /
+         Distribution France" CENTRÉ dessous (fidèle au modèle RTF). -->
     <div class="att-header">
       <img src="logo-enedis.png" alt="ENEDIS">
       <div class="att-header-text">
-        Electricité Réseau<br>Distribution France
+        Electricité Réseau Distribution France
       </div>
     </div>
 
@@ -382,16 +387,23 @@ async function newAttestation(){
   setStatus('Brouillon · attestation vierge', '');
 }
 
-// ─── Signature : on charge la signature perso depuis Firestore ────────────
-// (collection 'signatures' avec ownerUid = uid du user connecté, champ png =
-// data-URL PNG. Même mécanique que ATTESTATIONS.html.)
-function loadPersonalSignature(){
-  const sigImg = document.getElementById('sigImgEnt');
-  if (!sigImg) return;
-  // Attente du user via auth-guard (qui peuple window._algomesUser)
+// ─── Pré-remplissage et signature à partir du user connecté ───────────────
+// Le nom (Prénom + Nom) du user est pré-rempli dans "L'Entreprise
+// Intervenante" dès qu'auth-guard expose window._algomesUser. La signature
+// est chargée en parallèle depuis Firestore (collection 'signatures' par
+// ownerUid) — même mécanique que ATTESTATIONS.html.
+function loadUserDefaults(){
   function tryLoad(){
     const user = window._algomesUser;
     if (!user || !user.uid) { setTimeout(tryLoad, 200); return; }
+    // 1) Nom du signataire entreprise : Prénom + Nom du user enregistré
+    //    (toujours pré-rempli, indépendamment de la présence d'une signature)
+    const ent = document.getElementById('f_signataire_ent');
+    if (ent && !ent.value) {
+      ent.value = (user.name || user.login || '').toUpperCase();
+      saveDraft();
+    }
+    // 2) Signature perso (depuis Firestore)
     if (!window.firebase || !window.firebase.firestore) return;
     const db = window.firebase.firestore();
     db.collection('signatures')
@@ -409,13 +421,8 @@ function loadPersonalSignature(){
         if (!docs.length) return;
         const png = docs[0].png;
         if (!/^data:image\/(png|jpe?g);base64,[A-Za-z0-9+/=]+$/.test(png)) return;
-        sigImg.src = png;
-        sigImg.style.display = '';
-        // Pré-remplit aussi le nom du signataire avec celui du user
-        const ent = document.getElementById('f_signataire_ent');
-        if (ent && !ent.value) {
-          ent.value = (user.name || user.login || '').toUpperCase();
-        }
+        const sigImg = document.getElementById('sigImgEnt');
+        if (sigImg) { sigImg.src = png; sigImg.style.display = ''; }
       })
       .catch(() => {});
   }
@@ -643,8 +650,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (f) importAttestation(f);
     e.target.value = '';
   });
-  // Charge la signature perso une fois que auth-guard a peuplé _algomesUser
-  loadPersonalSignature();
+  // Pré-remplit le nom de signataire + charge la signature perso une fois
+  // que auth-guard a peuplé _algomesUser
+  loadUserDefaults();
 });
 </script>
 </body>

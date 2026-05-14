@@ -549,9 +549,9 @@ if(window.self!==window.top){
     <div class="card">
       <h2><span>✅</span> Tâches à faire</h2>
       <div style="font-size:12px;color:var(--text2);margin:-8px 0 18px">
-        Liste partagée entre tous les admins, synchronisée en temps réel
-        via Firestore. Coche une tâche pour la marquer comme terminée,
-        clique sur le titre pour l'éditer.
+        Liste personnelle, stockée localement dans ce navigateur.
+        Coche une tâche pour la marquer comme terminée, clique sur le
+        titre pour l'éditer.
       </div>
       <!-- Ajout d'une tâche -->
       <div class="todo-input-row">
@@ -719,7 +719,7 @@ function initAdminTabs(){
       // Lazy-load des données des onglets externes (GitHub / Firebase / TO DO)
       if (btn.dataset.tab === 'tab-github' && !ghCfg) loadGhConfig();
       if (btn.dataset.tab === 'tab-firebase') fbInitFromStorage();
-      if (btn.dataset.tab === 'tab-todo' && !_todosUnsub) loadTodos();
+      if (btn.dataset.tab === 'tab-todo' && !_todosLoaded) loadTodos();
     });
   });
   // Restaure le dernier onglet ouvert (par défaut : utilisateurs)
@@ -1865,33 +1865,39 @@ async function fbSaveRules(){
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  ONGLET TO DO — liste de tâches admin partagée (Firestore temps réel)
+//  ONGLET TO DO — liste de tâches personnelles en localStorage
 // ═══════════════════════════════════════════════════════════════════════════
-// Collection 'todos' dans Firestore. Champs par doc :
-//   title (string), priority ('high'|'normal'|'low'), status ('active'|'done'),
-//   createdAt (ts), createdBy (uid), doneAt (ts|null), doneBy (uid|null)
-// L'onSnapshot pousse les changements en live à tous les admins connectés.
+// Stockage local uniquement (clé localStorage). Pas de Firestore →
+// pas de règles à configurer, ça marche tout de suite. La liste reste
+// dans le navigateur courant.
+// Format : [{ id, title, priority, status, createdAt, doneAt }] avec
+// createdAt/doneAt en ms epoch.
+const TODOS_LS_KEY = 'algomes_admin_todos';
 let todos = [];
-let todoFilter = 'active';  // 'active' | 'done' | 'all'
-let _todosUnsub = null;
+let todoFilter = 'active';   // 'active' | 'done' | 'all'
+let _todosLoaded = false;
 
 function loadTodos(){
-  if (_todosUnsub) { try { _todosUnsub(); } catch {} _todosUnsub = null; }
-  const view = document.getElementById('todoList');
-  if (!view) return;
-  view.innerHTML = '<div class="todo-empty">Chargement…</div>';
-  _todosUnsub = db.collection('todos').orderBy('createdAt', 'desc').onSnapshot(
-    (snap) => {
-      todos = [];
-      snap.forEach(doc => todos.push(Object.assign({ id: doc.id }, doc.data())));
-      renderTodos();
-    },
-    (err) => {
-      console.error('loadTodos snapshot error', err);
-      view.innerHTML = '<div class="todo-empty">Erreur de chargement : ' + escHtml(err.message || 'Firestore') + '</div>';
-    }
-  );
+  try {
+    todos = JSON.parse(localStorage.getItem(TODOS_LS_KEY) || '[]');
+    if (!Array.isArray(todos)) todos = [];
+  } catch { todos = []; }
+  _todosLoaded = true;
+  renderTodos();
 }
+
+function persistTodos(){
+  try { localStorage.setItem(TODOS_LS_KEY, JSON.stringify(todos)); } catch {}
+}
+
+// Synchronisation entre onglets : si un autre onglet modifie la liste,
+// on recharge en live (storage event).
+window.addEventListener('storage', (e) => {
+  if (e.key === TODOS_LS_KEY && _todosLoaded) {
+    try { todos = JSON.parse(e.newValue || '[]') || []; } catch { todos = []; }
+    if (document.getElementById('todoList')) renderTodos();
+  }
+});
 
 function setTodoFilter(filter){
   todoFilter = filter;
@@ -1923,9 +1929,7 @@ function renderTodos(){
     const pa = PRIO_ORDER[a.priority] != null ? PRIO_ORDER[a.priority] : 1;
     const pb = PRIO_ORDER[b.priority] != null ? PRIO_ORDER[b.priority] : 1;
     if (pa !== pb) return pa - pb;
-    const ta = a.createdAt && a.createdAt.seconds ? a.createdAt.seconds : 0;
-    const tb = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds : 0;
-    return tb - ta; // plus récent d'abord
+    return (b.createdAt || 0) - (a.createdAt || 0); // plus récent d'abord
   });
   if (!filtered.length) {
     view.innerHTML = '<div class="todo-empty">Aucune tâche ' +
@@ -1940,12 +1944,8 @@ function renderTodoItem(t){
   const pri = t.priority || 'normal';
   const priLabel = { high: 'Importante', normal: 'Normale', low: 'Faible' }[pri] || 'Normale';
   const meta = [];
-  if (t.createdAt && t.createdAt.seconds) {
-    meta.push('créée ' + fmtRelativeSince(t.createdAt.seconds * 1000));
-  }
-  if (isDone && t.doneAt && t.doneAt.seconds) {
-    meta.push('✓ terminée ' + fmtRelativeSince(t.doneAt.seconds * 1000));
-  }
+  if (t.createdAt) meta.push('créée ' + fmtRelativeSince(t.createdAt));
+  if (isDone && t.doneAt) meta.push('✓ terminée ' + fmtRelativeSince(t.doneAt));
   return '<div class="todo-item' + (isDone ? ' done' : '') + '" data-id="' + escHtml(t.id) + '">'
     + '<input type="checkbox" class="todo-check"' + (isDone ? ' checked' : '') + ' onchange="toggleTodoStatus(\'' + escHtml(t.id) + '\', \'' + (isDone ? 'done' : 'active') + '\')">'
     + '<div class="todo-body">'
@@ -1973,54 +1973,46 @@ function fmtRelativeSince(ts){
   return 'le ' + new Date(ts).toLocaleDateString('fr-FR');
 }
 
-async function addTodo(){
+function newTodoId(){
+  return 't_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+}
+
+function addTodo(){
   const titleEl = document.getElementById('newTodoTitle');
   const prioEl = document.getElementById('newTodoPriority');
   const title = (titleEl.value || '').trim();
   if (!title) { toast('Saisis un titre', 'error'); return; }
-  const priority = prioEl.value || 'normal';
-  try {
-    await db.collection('todos').add({
-      title,
-      priority,
-      status: 'active',
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      createdBy: me && me.uid || null,
-      doneAt: null,
-      doneBy: null
-    });
-    titleEl.value = '';
-    titleEl.focus();
-  } catch (e) {
-    console.error('addTodo', e);
-    toast('Erreur : ' + e.message, 'error');
-  }
+  todos.unshift({
+    id: newTodoId(),
+    title,
+    priority: prioEl.value || 'normal',
+    status: 'active',
+    createdAt: Date.now(),
+    doneAt: null
+  });
+  persistTodos();
+  renderTodos();
+  titleEl.value = '';
+  titleEl.focus();
 }
 
-async function toggleTodoStatus(id, currentStatus){
+function toggleTodoStatus(id, currentStatus){
+  const t = todos.find(x => x.id === id);
+  if (!t) return;
   const newStatus = currentStatus === 'done' ? 'active' : 'done';
-  try {
-    await db.collection('todos').doc(id).update({
-      status: newStatus,
-      doneAt: newStatus === 'done' ? firebase.firestore.FieldValue.serverTimestamp() : null,
-      doneBy: newStatus === 'done' ? (me && me.uid || null) : null
-    });
-  } catch (e) {
-    console.error('toggleTodoStatus', e);
-    toast('Erreur : ' + e.message, 'error');
-  }
+  t.status = newStatus;
+  t.doneAt = newStatus === 'done' ? Date.now() : null;
+  persistTodos();
+  renderTodos();
 }
 
-async function deleteTodo(id){
+function deleteTodo(id){
   const t = todos.find(x => x.id === id);
   const label = t && t.title ? '"' + t.title + '"' : 'cette tâche';
   if (!confirm('Supprimer ' + label + ' ?')) return;
-  try {
-    await db.collection('todos').doc(id).delete();
-  } catch (e) {
-    console.error('deleteTodo', e);
-    toast('Erreur : ' + e.message, 'error');
-  }
+  todos = todos.filter(x => x.id !== id);
+  persistTodos();
+  renderTodos();
 }
 
 // Édition inline du titre via contenteditable (clic sur le titre)
@@ -2037,20 +2029,14 @@ function editTodoTitle(id, el){
   const sel = window.getSelection();
   sel.removeAllRanges();
   sel.addRange(range);
-  const save = async () => {
+  const save = () => {
     el.removeAttribute('contenteditable');
     const newTitle = (el.textContent || '').trim();
-    if (!newTitle) {
-      el.textContent = original; // restore si vidé
-      return;
-    }
+    if (!newTitle) { el.textContent = original; return; }
     if (newTitle === original) return;
-    try {
-      await db.collection('todos').doc(id).update({ title: newTitle });
-    } catch (e) {
-      el.textContent = original;
-      toast('Erreur : ' + e.message, 'error');
-    }
+    t.title = newTitle;
+    persistTodos();
+    renderTodos();
   };
   el.addEventListener('blur', save, { once: true });
   el.addEventListener('keydown', (e) => {

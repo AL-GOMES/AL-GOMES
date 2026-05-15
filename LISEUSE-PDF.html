@@ -629,6 +629,10 @@ html, body {
 
 .pdf-canvas {
   display: block;
+  /* Hint au browser pour utiliser un down-sampling de qualité (notre canvas
+     est super-samplé à 3×, donc CSS down-scale → vouloir le meilleur filtre) */
+  image-rendering: high-quality;
+  image-rendering: -webkit-optimize-contrast;
 }
 
 /* Overlay canvas pour annotations et mesures */
@@ -636,6 +640,9 @@ html, body {
   position: absolute;
   top: 0; left: 0;
   pointer-events: none;
+  /* Idem que le canvas PDF : down-sampling de qualité demandé */
+  image-rendering: high-quality;
+  image-rendering: -webkit-optimize-contrast;
 }
 
 /* Text layer for selection and search highlight */
@@ -2430,16 +2437,16 @@ class PDFViewer {
       // Juste le CSS à jour
       this.canvas.style.width = Math.floor(cssWidth) + 'px';
       this.canvas.style.height = Math.floor(cssHeight) + 'px';
-      // Overlay : on le resize à la même résolution super-samplée que le
-      // canvas PDF. Avant on utilisait un outputScale séparé capé à 2×, ce
-      // qui rendait les pointeurs flous sur les écrans dpr=1 (Windows).
-      // Désormais on réutilise outputScale (= 3× mini) et MAX_CANVAS_DIM
-      // (12288).
+      // Overlay : super-samplé encore plus que le canvas PDF (cap 16384 au
+      // lieu de 12288) car il ne contient que des annotations légères
+      // (cercles, lignes, texte) → coût mémoire négligeable. Permet aux
+      // pointeurs de rester nets même à très fort zoom sur les gros plans.
+      const OVERLAY_MAX_DIM = 16384;
       let overlayW = Math.floor(cssWidth * outputScale);
       let overlayH = Math.floor(cssHeight * outputScale);
       const mx = Math.max(overlayW, overlayH);
-      if (mx > MAX_CANVAS_DIM) {
-        const k = MAX_CANVAS_DIM / mx;
+      if (mx > OVERLAY_MAX_DIM) {
+        const k = OVERLAY_MAX_DIM / mx;
         overlayW = Math.floor(overlayW * k);
         overlayH = Math.floor(overlayH * k);
       }
@@ -2811,6 +2818,11 @@ class PDFViewer {
   _renderOverlay() {
     if (!this.overlayCtx || !this.currentPage) return;
     const ctx = this.overlayCtx;
+    // Force le smoothing de qualité maximale (down-sampling depuis la
+    // résolution super-samplée vers la résolution CSS). Sans ça, les
+    // chiffres des pointeurs peuvent paraître pixelisés.
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     ctx.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
     // Le scale interne = ratio entre largeur canvas en pixels natifs vs pixels
     // CSS. On utilise la largeur CSS RÉELLE du canvas (pas la largeur du PDF)

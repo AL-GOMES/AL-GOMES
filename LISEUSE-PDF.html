@@ -2296,10 +2296,11 @@ class PDFViewer {
       if (ratio && ratio >= 1) {
         const pxPerMeter = 72 / (ratio * 0.0254);
         this.state.calibration = { pxPerMeter };
-        // Action système (pas une modif utilisateur) → persistance directe.
-        forceSaveDocState(this.docHash, this.state);
+        // Application en mémoire uniquement — l'utilisateur doit cliquer
+        // SAUVEGARDER pour persister. On marque comme modifié (dirty).
+        this._markDirty();
         $('scale-label').textContent = '1m = ' + pxPerMeter.toFixed(1) + 'px';
-        showToast('Échelle 1:' + ratio + ' appliquée par défaut', 'info', 2200);
+        showToast('Échelle 1:' + ratio + ' appliquée par défaut (non sauvegardé)', 'info', 2200);
       }
     }
 
@@ -2323,8 +2324,12 @@ class PDFViewer {
         this.state.counts = embedded.primary.counts || [];
         this.state.calibration = embedded.primary.calibration || null;
         this.state.categories = embedded.primary.categories || [];
-        // Restauration confirmée par l'utilisateur → persistance directe.
-        forceSaveDocState(this.docHash, this.state);
+        // Restauration en mémoire uniquement — l'utilisateur doit cliquer
+        // SAUVEGARDER explicitement pour persister dans le navigateur.
+        // C'était le bug : forceSaveDocState ici provoquait une persistance
+        // auto à chaque ouverture d'un PDF avec payload embarqué, donnant
+        // l'impression que le travail se sauvegardait "tout seul".
+        this._markDirty();
         if (this.state.calibration) {
           $('scale-label').textContent = '1m = ' + this.state.calibration.pxPerMeter.toFixed(1) + 'px';
         }

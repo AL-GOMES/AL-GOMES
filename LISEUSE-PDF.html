@@ -4449,7 +4449,7 @@ class PDFViewer {
       const cal = this.state.calibration;
       let r;
       if (cal && cal.pxPerMeter > 0) {
-        const realRadiusM = 0.15; // 15 cm de rayon = 30 cm de diamètre
+        const realRadiusM = 0.10; // 10 cm de rayon = 20 cm de diamètre
         r = realRadiusM * cal.pxPerMeter * this.zoom;
         // Borne : pas trop petit (lisible) ni trop gros (n'écrase pas le plan)
         const minR = 8 * this.zoom;
@@ -4698,7 +4698,7 @@ async function exportCountsPdf(viewer) {
       const y = c.pdfY * renderScale;
       let r;
       if (cal && cal.pxPerMeter > 0) {
-        const realRadiusM = 0.15; // 15 cm de rayon = 30 cm de diamètre
+        const realRadiusM = 0.10; // 10 cm de rayon = 20 cm de diamètre
         r = realRadiusM * cal.pxPerMeter * renderScale;
         const minR = 8 * renderScale;
         const maxR = 26 * renderScale;

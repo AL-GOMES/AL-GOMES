@@ -7718,6 +7718,10 @@ function drawAllAnnotationsOnCanvasForExport(ctx, viewer, pageNum, renderScale) 
   }
 
   // COMPTAGE (marqueurs adaptatifs numérotés par catégorie)
+  // Taille calibrée si calibration disponible (mêmes règles que le viewer
+  // et exportCountsPdf), sinon fallback fixe. CHANGEMENT IMPORTANT : avant
+  // ce code utilisait r=14*renderScale FIXE, donc les pointeurs étaient
+  // disproportionnés par rapport aux symboles électriques sur le plan.
   const counts = (viewer.state.counts || []).filter(c => c.page === pageNum);
   const cats = getCategories(viewer);
   const catById = new Map(cats.map(c => [c.id, c]));
@@ -7729,14 +7733,39 @@ function drawAllAnnotationsOnCanvasForExport(ctx, viewer, pageNum, renderScale) 
     const cat = catById.get(c.category);
     const color = cat ? cat.color : '#ec4899';
     const x = c.pdfX * renderScale, y = c.pdfY * renderScale;
-    const r = 14 * renderScale; // rayon fixe
-    ctx.fillStyle = color + '33'; ctx.strokeStyle = color; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-    const fontSize = 16; // taille de police fixe pour le numéro
-    ctx.fillStyle = color; ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-    ctx.lineWidth = 4; ctx.font = 'bold ' + fontSize + 'px sans-serif';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.strokeText(String(num), x, y); ctx.fillText(String(num), x, y);
+    let r;
+    if (cal && cal.pxPerMeter > 0) {
+      const realRadiusM = 0.10; // 10 cm de rayon = 20 cm de diamètre
+      r = realRadiusM * cal.pxPerMeter * renderScale;
+      const minR = 8 * renderScale;
+      const maxR = 26 * renderScale;
+      r = Math.max(minR, Math.min(maxR, r));
+    } else {
+      r = 17 * renderScale; // fallback (cohérent avec viewer)
+    }
+    // Pastille à 30% d'opacité (au lieu de 20% historique) + bordure colorée
+    ctx.fillStyle = color + '4D';
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.2 * renderScale / 1.5;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    // Chiffre NOIR avec halo BLANC épais (contraste max, comme le viewer)
+    const numStr = String(num);
+    const fontSize = numStr.length >= 2
+      ? Math.max(11 * renderScale / 1.5, Math.round(r * 0.95))
+      : Math.max(13 * renderScale / 1.5, Math.round(r * 1.15));
+    ctx.font = '900 ' + Math.round(fontSize) + 'px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = Math.max(4, Math.round(r * 0.35));
+    ctx.lineJoin = 'round';
+    ctx.miterLimit = 2;
+    ctx.strokeText(numStr, x, y);
+    ctx.fillStyle = '#000000';
+    ctx.fillText(numStr, x, y);
   }
 }
 

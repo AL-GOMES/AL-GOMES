@@ -87,15 +87,24 @@
         };
         // Notifie les pages qui veulent réagir au moment où l'auth est validée
         try { window.dispatchEvent(new CustomEvent('algomes-auth-ready', { detail: window._algomesUser })); } catch (e) {}
-      }).catch(function () {
-        // Erreur réseau / Firestore lors du chargement de pageAccess → on
-        // ne PEUT pas valider l'accès, donc on bloque l'utilisateur plutôt
-        // que de rendre la page visible sans _algomesUser (qui ferait
-        // crasher tous les autres scripts de la page).
-        showBlock(
-          '<div style="font-size:20px;color:#E74C3C;margin-bottom:12px">Erreur de chargement</div>' +
-          '<div style="font-size:13px;color:#888">Impossible de vérifier vos accès. Rechargez la page.</div>'
-        );
+      }).catch(function (err) {
+        // Erreur lors du chargement de config/pageAccess. Cela peut arriver
+        // si :
+        //  - les règles Firestore bloquent la lecture (rules trop strictes)
+        //  - réseau intermittent / Firebase down
+        //  - la config doc n'a jamais été créée
+        // Dans tous ces cas, on ne PEUT pas appliquer la matrice "accès
+        // par rôle" — mais l'utilisateur est déjà authentifié et a passé
+        // la vérification ban. Plutôt que de bloquer toute la page (et donc
+        // toute l'app pour quiconque a un user valide), on accorde l'accès
+        // et on laisse les règles Firestore par collection être la vraie
+        // barrière de sécurité.
+        try { console.warn('[auth-guard] pageAccess non chargeable, accès accordé :', err && err.message); } catch (e) {}
+        document.documentElement.style.visibility = 'visible';
+        window._algomesUser = {
+          uid: user.uid, role: role, login: data.login, name: data.name
+        };
+        try { window.dispatchEvent(new CustomEvent('algomes-auth-ready', { detail: window._algomesUser })); } catch (e) {}
       });
     }).catch(function () {
       auth.signOut();

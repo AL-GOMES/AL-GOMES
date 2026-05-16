@@ -2082,22 +2082,12 @@ const STORAGE_VERSION = 1;
 const EMPTY_STATE = () => ({ _v: STORAGE_VERSION, annotations: [], calibration: null, rotation: 0 });
 
 function loadDocState(docHash) {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_PREFIX + docHash);
-    if (!raw) return EMPTY_STATE();
-    const parsed = JSON.parse(raw);
-    // Migration / validation : si la version ne correspond pas, on réinitialise
-    if (!parsed || typeof parsed !== 'object') return EMPTY_STATE();
-    if (parsed._v !== STORAGE_VERSION) {
-      console.warn('[loadDocState] version localStorage différente, réinit');
-      return EMPTY_STATE();
-    }
-    if (!Array.isArray(parsed.annotations)) parsed.annotations = [];
-    if (parsed.calibration && (typeof parsed.calibration.pxPerMeter !== 'number' || parsed.calibration.pxPerMeter <= 0)) {
-      parsed.calibration = null;
-    }
-    return parsed;
-  } catch { return EMPTY_STATE(); }
+  // Sauvegarde locale désactivée par choix utilisateur : on retourne toujours
+  // un état vide. Les annotations sont uniquement en mémoire pendant la
+  // session ; pour les retrouver à la prochaine ouverture, l'utilisateur doit
+  // cliquer ENREGISTRER (qui exporte un PDF contenant le marqueur LP_DATA
+  // restaurable à la réouverture de ce même PDF).
+  return EMPTY_STATE();
 }
 // Mode "save manuel" : par défaut, les appels à saveDocState ne persistent pas
 // dans localStorage. Ils marquent simplement le viewer concerné comme "dirty"
@@ -2182,19 +2172,12 @@ function saveDocState(docHash, state) {
   }
 }
 
-// Persiste effectivement tous les viewers ouverts en localStorage et remet à
-// zéro leurs indicateurs "dirty". Appelée par le bouton SAUVEGARDER.
+// Sauvegarde locale désactivée par choix utilisateur. Le bouton SAUVEGARDER
+// ne fait plus que reset l'indicateur "dirty" (l'export PDF qui suit
+// l'utilisateur réutilise le marqueur LP_DATA pour la restauration future).
 function commitAllSaves() {
-  _suspendAutoSave = false;
-  try {
-    for (const v of [app.primary, app.secondary, app.tertiary]) {
-      if (v && v.docHash) {
-        saveDocState(v.docHash, v.state);
-        v._dirty = false;
-      }
-    }
-  } finally {
-    _suspendAutoSave = true;
+  for (const v of [app.primary, app.secondary, app.tertiary]) {
+    if (v) v._dirty = false;
   }
   updateSaveButton();
 }
@@ -2206,13 +2189,11 @@ function updateSaveButton() {
   if (btn) btn.classList.toggle('dirty', !!anyDirty);
 }
 
-// Persistance immédiate sans passer par le mécanisme "dirty" — pour les
-// initialisations système (calibration par défaut au chargement, restauration
-// d'un payload embarqué dans le PDF, etc.) qui ne sont pas des modifications
-// utilisateur à valider manuellement.
-function forceSaveDocState(docHash, state) {
-  _suspendAutoSave = false;
-  try { saveDocState(docHash, state); } finally { _suspendAutoSave = true; }
+// Sauvegarde locale désactivée par choix utilisateur — no-op.
+// Cette fonction servait aux initialisations système (calibration auto,
+// restauration LP_DATA) qui n'ont plus besoin d'être persistées.
+function forceSaveDocState(/* docHash, state */) {
+  /* sauvegarde désactivée */
 }
 
 // =============================================================================

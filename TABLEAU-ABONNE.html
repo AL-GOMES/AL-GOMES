@@ -1171,17 +1171,6 @@ function exportPDF(){
       );
     });
     pw2.document.write(`</div>`);
-    // Total bâtiment
-    const totalBatRangees = Math.ceil(totalBatimentMod * 1.2 / 13);
-    const totalRangeesParLgt = sT.reduce((s, [t, cnt]) => s + (typeModRg[t]?.rg || 0) * cnt, 0);
-    pw2.document.write(
-      `<div style="padding:10px 14px;background:rgba(31,56,100,0.05);border-radius:8px;display:flex;justify-content:space-between;align-items:center;gap:14px;font-size:10px;color:#444">` +
-      `<div><b>Total bâtiment</b> · ${totalBatimentLgts} logements</div>` +
-      `<div>Modules totaux : <span style="color:#1F3864;font-weight:700;font-size:13px">${totalBatimentMod}</span></div>` +
-      `<div>Rangées cumulées (∑ rang. × qté) : <span style="color:#BB6BD9;font-weight:700;font-size:13px">${totalRangeesParLgt}</span></div>` +
-      `<div>Si tableau unique : <span style="color:#BB6BD9;font-weight:700;font-size:13px">${totalBatRangees}</span> rangées</div>` +
-      `</div>`
-    );
     pw2.document.write(`</div>`);
 
     pw2.document.write(`<div class="card"><div class="card-t">📑 Listing par Type</div>`);

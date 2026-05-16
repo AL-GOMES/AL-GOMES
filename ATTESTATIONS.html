@@ -633,6 +633,39 @@ function getFirestore(){
 function getCurrentUser(){
   try { return window.parent && window.parent._algomesUser; } catch(e){ return null; }
 }
+// Attend que l'utilisateur soit authentifié (auth-guard côté iframe ou shell parent).
+// Sans ça, les premières requêtes Firestore après chargement déclenchent
+// `permission-denied` car les règles exigent `isSignedIn()`.
+function waitForAuthReady(maxMs){
+  if(maxMs == null) maxMs = 5000;
+  return new Promise(resolve => {
+    let done = false;
+    const finish = u => { if(!done){ done = true; resolve(u || null); } };
+    // 1. Déjà disponible côté parent (cas iframe sous accueil.html)
+    try {
+      const pu = window.parent && window.parent._algomesUser;
+      if(pu && pu.uid){ finish(pu); return; }
+    } catch(e){}
+    // 2. Déjà disponible localement (cas page chargée hors iframe)
+    if(window._algomesUser && window._algomesUser.uid){ finish(window._algomesUser); return; }
+    // 3. API Promise du shell parent
+    try {
+      if(window.parent && window.parent !== window &&
+         window.parent.AlgomesShell && window.parent.AlgomesShell.getUser){
+        window.parent.AlgomesShell.getUser().then(u => finish(u));
+        setTimeout(() => finish(null), maxMs);
+        return;
+      }
+    } catch(e){}
+    // 4. Event dispatch par auth-guard local (page hors shell)
+    const onReady = ev => finish(ev && ev.detail ? ev.detail : window._algomesUser);
+    window.addEventListener('algomes-auth-ready', onReady, { once: true });
+    setTimeout(() => {
+      window.removeEventListener('algomes-auth-ready', onReady);
+      finish(null);
+    }, maxMs);
+  });
+}
 
 // ═══════════════════════════════════════════════════════════════════════
 // TEMPLATES UI
@@ -685,6 +718,11 @@ function applyCustomTemplate(id){
 async function loadCustomTemplates(){
   const db = getFirestore();
   if(!db){ return; }
+  // Les règles Firestore exigent un utilisateur connecté (notBanned()).
+  // Sans cette attente, l'appel part avant la propagation de l'auth et
+  // retourne `permission-denied`.
+  const user = await waitForAuthReady();
+  if(!user){ return; }
   try {
     const snap = await db.collection('customTemplates').get();
     _customTemplates = snap.docs.map(d => ({ id: d.id, ...d.data() }))
@@ -987,16 +1025,6 @@ function autoZoom(){
   initPreviewState();
   load();
   applyDefaults();
-  // Charger les modèles personnalisés (partagés entre utilisateurs)
-  loadCustomTemplates();
-  // Pré-remplit avec données compte utilisateur (depuis le shell Firebase)
-  // Nom + fonction : toujours depuis le compte.
-  let user = null;
-  try { user = window.parent && window.parent._algomesUser; } catch(e){}
-  if(user){
-    // Nom complet : depuis le compte
-    if(user.name) $('f_nom').value = user.name;
-  }
   render();
   autoZoom();
   // Écoute changements
@@ -1005,11 +1033,17 @@ function autoZoom(){
     el.addEventListener('input', () => { render(); save(); });
     el.addEventListener('change', () => { render(); save(); });
   });
-  // Fonction : alimentée automatiquement depuis le label du rôle utilisateur
-  setupRoleBasedFonction(user);
-  // Signature : charge depuis la bibliothèque Firestore
-  loadUserSignature(user);
   window.addEventListener('resize', autoZoom);
+  // Tout ce qui dépend de Firestore + utilisateur connecté part en async :
+  // on attend que l'auth soit propagée pour ne pas déclencher
+  // `permission-denied` (cf. règles Firestore : notBanned() requis).
+  waitForAuthReady().then(user => {
+    if(user && user.name && !$('f_nom').value) $('f_nom').value = user.name;
+    setupRoleBasedFonction(user);
+    loadUserSignature(user);
+    loadCustomTemplates();
+    if(user) render();
+  });
 })();
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1173,6 +1207,13 @@ async function saveToHistory(generatedAs){
   try { fb = window.parent && window.parent.firebase; } catch(e){}
   if(!fb || !fb.firestore){
     console.warn('[replay] Firebase non disponible');
+    return;
+  }
+  // Attente auth : sinon `attestationsHistory.get()` peut renvoyer
+  // `permission-denied` (règles : notBanned() requis).
+  const replayUser = await waitForAuthReady();
+  if(!replayUser){
+    console.warn('[replay] utilisateur non authentifié');
     return;
   }
   const db = fb.firestore();

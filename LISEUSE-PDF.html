@@ -8355,6 +8355,18 @@ async function exportFullPdf() {
         h: a.h ? a.h * renderScale : null
       };
     }
+    // text et text-edit : x, y, w, h, size doivent tous être scalés sinon
+    // l'annotation est restaurée au mauvais endroit/taille à la réouverture.
+    if (a.type === 'text' || a.type === 'text-edit') {
+      return {
+        ...a,
+        x: a.x * renderScale,
+        y: a.y * renderScale,
+        w: a.w ? a.w * renderScale : a.w,
+        h: a.h ? a.h * renderScale : a.h,
+        size: (a.size || 14) * renderScale
+      };
+    }
     return a;
   }
   function scaleCount(c) {
@@ -8368,7 +8380,8 @@ async function exportFullPdf() {
     if (a.type === 'measure') {
       return { ...a, x1: a.x1 + ox, y1: a.y1 + oy, x2: a.x2 + ox, y2: a.y2 + oy };
     }
-    if (a.type === 'note' || a.type === 'elbow' || a.type === 'signature') {
+    if (a.type === 'note' || a.type === 'elbow' || a.type === 'signature' ||
+        a.type === 'text' || a.type === 'text-edit') {
       return { ...a, x: a.x + ox, y: a.y + oy };
     }
     return a;

@@ -1097,22 +1097,65 @@ function exportPDF(){
     // PAGE 1: Synthèse + Listing
     if(bi>0)pw2.document.write('<div class="pb"></div>');
     pw2.document.write(`<div class="pg"><div class="hdr"><img src='${_LOGO_B64}' style='height:32px;border-radius:4px'><h1>${pName} — ${b.n}</h1><span>NF C 15-100 · AL GOMES</span></div>`);
-    pw2.document.write(`<div class="card"><div class="card-t">📊 Synthèse des Types</div><table><thead><tr><th>TYPE</th><th>QTÉ</th><th>CAL.</th>`);
+
+    // Pré-calcule pour chaque type le nombre de modules et de rangées
+    // (= calcul des départs différentiels + somme modules + ⌈totalMod×1.2/13⌉)
+    // afin de pouvoir l'afficher dans la table Synthèse ci-dessous.
+    const typeModRg = {};
+    let totalBatimentMod = 0;
+    let totalBatimentLgts = 0;
+    sT.forEach(([t, cnt]) => {
+      const ref = tRef[t];
+      if (!ref._deps) {
+        if (!b.typeAuto) b.typeAuto = {};
+        if (b.typeAuto[t] !== false) computeAutoDepsType(bi, t, ref);
+      }
+      const deps = ref._deps || [];
+      const depTypes = ref._depTypes || [];
+      const allC = [];
+      CIR.forEach(c => {
+        if (c.k === 'tele' || c.k === 'sonn') return;
+        const q = ref[c.k] || 0;
+        for (let i = 0; i < q; i++) {
+          allC.push({ k: c.k, mod: c.k === 'plaq' ? 2 : c.k === 'rt' ? 6 : 1 });
+        }
+      });
+      const bD = [];
+      deps.forEach((dk, di) => {
+        const dc = [];
+        dk.forEach(k => {
+          const c = allC.find(cc => cc.k === k && !cc._u);
+          if (c) { c._u = true; dc.push(c); }
+        });
+        bD.push({ cir: dc });
+      });
+      allC.forEach(c => delete c._u);
+      let tM = 0;
+      bD.forEach(d => { d.mc = 2 + d.cir.reduce((s, c) => s + c.mod, 0); tM += d.mc; });
+      const rg = Math.ceil(tM * 1.2 / 13);
+      typeModRg[t] = { mod: tM, rg };
+      totalBatimentMod += tM * cnt;
+      totalBatimentLgts += cnt;
+    });
+
+    pw2.document.write(`<div class="card"><div class="card-t">📊 Synthèse des Types</div><table><thead><tr><th>TYPE</th><th>QTÉ</th><th>CAL.</th><th>MOD.</th><th>RG.</th>`);
     CIR.forEach(c=>{pw2.document.write(`<th>${c.n}</th>`)});
     pw2.document.write(`</tr></thead><tbody>`);
     sT.forEach(([t,cnt])=>{
       const ref=tRef[t];const tc=TYPE_COLORS[(t.charCodeAt(0)-65)%TYPE_COLORS.length];
-      pw2.document.write(`<tr><td><span class="badge" style="background:${tc.bg};border:1px solid ${tc.border};color:${tc.color}">${t}</span></td><td style="font-weight:bold;font-size:11px">${cnt}</td><td style="font-weight:bold">${ref.c}A</td>`);
+      const mr = typeModRg[t] || { mod: 0, rg: 0 };
+      pw2.document.write(`<tr><td><span class="badge" style="background:${tc.bg};border:1px solid ${tc.border};color:${tc.color}">${t}</span></td><td style="font-weight:bold;font-size:11px">${cnt}</td><td style="font-weight:bold">${ref.c}A</td><td style="font-weight:bold;color:#BB6BD9">${mr.mod}</td><td style="font-weight:bold;color:#BB6BD9">${mr.rg}</td>`);
       CIR.forEach(c=>{pw2.document.write(`<td>${ref[c.k]}</td>`)});pw2.document.write(`</tr>`);
     });
-    pw2.document.write(`<tr class="tot"><td>TOTAL</td><td>${a.length}</td><td></td>`);
+    pw2.document.write(`<tr class="tot"><td>TOTAL</td><td>${a.length}</td><td></td><td>${totalBatimentMod}</td><td>${Math.ceil(totalBatimentMod * 1.2 / 13)}</td>`);
     CIR.forEach(c=>{pw2.document.write(`<td>${a.reduce((s,x)=>s+(x[c.k]||0),0)}</td>`)});
     pw2.document.write(`</tr></tbody></table></div>`);
 
     pw2.document.write(`<div class="card"><div class="card-t">📑 Listing par Type</div>`);
     sT.forEach(([t,cnt])=>{
       const items=byT[t]||[];const ref=tRef[t];const tc=TYPE_COLORS[(t.charCodeAt(0)-65)%TYPE_COLORS.length];
-      pw2.document.write(`<div class="th"><span class="badge" style="background:${tc.bg};border:1px solid ${tc.border};color:${tc.color}">${t}</span> ${cnt} lgts — ${ref.p}kVA / ${ref.c}A</div>`);
+      const mr = typeModRg[t] || { mod: 0, rg: 0 };
+      pw2.document.write(`<div class="th"><span class="badge" style="background:${tc.bg};border:1px solid ${tc.border};color:${tc.color}">${t}</span> ${cnt} lgts — ${ref.p}kVA / ${ref.c}A · <strong style="color:#BB6BD9">${mr.mod} mod · ${mr.rg} rangée${mr.rg>1?'s':''}</strong></div>`);
       const maxRows=15;
       if(items.length<=maxRows){
         pw2.document.write(`<table><thead><tr><th>Niveau</th><th>N° Archi</th><th>N° ENEDIS</th><th>m²</th><th>kVA</th><th>Cal.</th></tr></thead><tbody>`);

@@ -161,11 +161,18 @@ function typeBadge(t){const i=t.charCodeAt(0)-65;const c=TYPE_COLORS[i%TYPE_COLO
 let B=[],curTab=null;
 
 // ═══ CLOCK ═══
-function tk(){const n=new Date(),h=String(n.getHours()).padStart(2,'0'),m=String(n.getMinutes()).padStart(2,'0'),s=String(n.getSeconds()).padStart(2,'0');
-  document.getElementById('tT').textContent=h+':'+m+':'+s;
+function tk(){
+  const n=new Date(),h=String(n.getHours()).padStart(2,'0'),m=String(n.getMinutes()).padStart(2,'0'),s=String(n.getSeconds()).padStart(2,'0');
+  // Garde-fou : si la topbar n'existe plus dans le DOM (auth-guard a remplacé
+  // body, page chargée hors-shell, etc.), on évite de spam les erreurs.
+  const elT = document.getElementById('tT');
+  if (!elT) return;
+  elT.textContent=h+':'+m+':'+s;
   const days=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
   const months=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-  document.getElementById('topDate').textContent=days[n.getDay()]+' '+n.getDate()+' '+months[n.getMonth()]+' '+n.getFullYear()}
+  const elD = document.getElementById('topDate');
+  if (elD) elD.textContent=days[n.getDay()]+' '+n.getDate()+' '+months[n.getMonth()]+' '+n.getFullYear();
+}
 tk();setInterval(tk,1000);
 
 // ═══ RENDER ═══

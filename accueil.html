@@ -2,12 +2,14 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://cdnjs.cloudflare.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://api.github.com https://ipapi.co https://dns.google https://tile.openstreetmap.org; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; worker-src 'self' blob:;">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>A.L.GOMES — Bureau d'études</title>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" integrity="sha384-sEVIly94UBRLKWdkYoPpSG7GD/e79YHMrxVyZaOk712Ga7+EAw6w1EFi+xBzBdd+" crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js" integrity="sha384-EkqK+ezBWJuvO3hfrSx2iVqr3YQbhmnzn8kPhOpBZ+0GMVU5oGSgptwIu8D84HjE" crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js" integrity="sha384-M481iNZJtbpypKgvlvZ+78Giq0BsewFLk5r2k+MOcGXlwKCc27DQRZ+WCV/zpmpC" crossorigin="anonymous"></script>
 <script src="js/firebase-init.js"></script>
+<script src="js/util.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
   *{margin:0;padding:0;box-sizing:border-box}
@@ -116,7 +118,7 @@
 <!-- TOPBAR -->
 <div class="topbar">
   <div class="topbar-left">
-    <span class="topbar-logo" role="button" tabindex="0" aria-label="Retour à l'accueil" onclick="navigateTo('home.html')">⚡ A.L.GOMES</span>
+    <span class="topbar-logo" role="button" tabindex="0" aria-label="Retour à l'accueil" onclick="navigateTo('home.html')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();navigateTo('home.html');}">⚡ A.L.GOMES</span>
     <button class="btn-admin-nav" id="btnAdmin" aria-label="Panneau d'administration" onclick="navigateTo('admin.html')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
       Admin
@@ -576,8 +578,18 @@ function initPresence() {
     presRef.set(presData, { merge: true });
   });
 
-  window.addEventListener('beforeunload', () => {
-    navigator.sendBeacon && presRef.update({ online: false }).catch(() => {});
+  // Marque offline quand la page passe en arrière-plan ou est cachée.
+  // beforeunload + presRef.update() ne fonctionne pas en pratique : l'update
+  // est asynchrone et systématiquement avorté par le navigateur lors du
+  // déchargement. visibilitychange est déclenché AVANT et l'opération a une
+  // chance d'aboutir. Le filet de sécurité reste le TTL de 5 min côté admin
+  // (lastSeen) pour les fermetures brutales.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      presRef.update({ online: false }).catch(() => {});
+    } else if (document.visibilityState === 'visible') {
+      presRef.update({ online: true, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }).catch(() => {});
+    }
   });
 
   setInterval(() => {
@@ -620,6 +632,9 @@ function initPresence() {
 // ============================================================
 function doLogout() {
   const user = currentUserData;
+  // Purge des données sensibles (logs, tokens admin) AVANT signOut
+  // — utile en particulier sur un poste partagé.
+  try { if (window.AlgomesPurgeSensitive) window.AlgomesPurgeSensitive(); } catch (e) {}
   if (user) {
     db.collection('presence').doc(user.uid).update({ online: false })
       .then(() => auth.signOut())
@@ -760,17 +775,28 @@ function handleMySigFile(file){
   if(!file) return;
   if(file.type !== 'image/png'){ sigToast('Le fichier doit être un PNG', 'error'); return; }
   if(file.size > 500 * 1024){ sigToast('PNG trop volumineux (max 500 Ko)', 'error'); return; }
-  const reader = new FileReader();
-  reader.onload = () => {
-    _mySigPending = { dataUrl: reader.result, filename: file.name, size: file.size };
-    document.getElementById('sigDzLabel').textContent = '✓ ' + file.name + ' (' + Math.round(file.size/1024) + ' Ko)';
-    document.getElementById('btnSigUpload').disabled = false;
-    // Prévisualiser le nouveau fichier avant validation
-    const preview = document.getElementById('sigCurrentPreview');
-    preview.innerHTML = `<img src="${reader.result}" alt="Prévisualisation">`;
-  };
-  reader.onerror = () => sigToast('Erreur de lecture du fichier', 'error');
-  reader.readAsDataURL(file);
+  // Vérification de la signature magique PNG (file.type peut être spoofé)
+  file.slice(0, 8).arrayBuffer().then(buf => {
+    const b = new Uint8Array(buf);
+    const isPng = b[0]===0x89 && b[1]===0x50 && b[2]===0x4E && b[3]===0x47 &&
+                  b[4]===0x0D && b[5]===0x0A && b[6]===0x1A && b[7]===0x0A;
+    if(!isPng){ sigToast('Le fichier n\'est pas un PNG valide', 'error'); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      _mySigPending = { dataUrl: reader.result, filename: file.name, size: file.size };
+      document.getElementById('sigDzLabel').textContent = '✓ ' + file.name + ' (' + Math.round(file.size/1024) + ' Ko)';
+      document.getElementById('btnSigUpload').disabled = false;
+      // Prévisualiser le nouveau fichier avant validation (DOM-safe, pas d'innerHTML)
+      const preview = document.getElementById('sigCurrentPreview');
+      preview.innerHTML = '';
+      const img = document.createElement('img');
+      img.alt = 'Prévisualisation';
+      img.src = reader.result;
+      preview.appendChild(img);
+    };
+    reader.onerror = () => sigToast('Erreur de lecture du fichier', 'error');
+    reader.readAsDataURL(file);
+  }).catch(() => sigToast('Erreur de lecture du fichier', 'error'));
 }
 
 async function uploadMySignature(){

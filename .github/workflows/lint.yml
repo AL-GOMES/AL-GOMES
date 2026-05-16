@@ -33,6 +33,7 @@ jobs:
           node-version: '20'
       - name: Install JSHint
         run: npm install -g jshint
-      - name: Run JSHint on shared scripts
-        run: |
-          jshint --config .jshintrc js/ || true
+      - name: Run JSHint on shared scripts (strict)
+        # On échoue désormais si js/ contient des erreurs : ce dossier est petit
+        # et entièrement maintenu, donc on veut zéro régression.
+        run: jshint --config .jshintrc js/

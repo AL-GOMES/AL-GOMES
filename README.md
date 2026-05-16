@@ -28,7 +28,8 @@ avec authentification et données via Firebase (Auth + Firestore).
 | `PLANNING.html` | Planning de chantier |
 | `LISEUSE-PDF.html` | Liseuse PDF (annotations, comptage, mesure) |
 | `liseuse-normes.html` | Référentiel des normes (NF C 15-100, 14-100, GP 04, IRVE, PMR…) |
-| `COMPTAGE-SYMBOLES.html` | Prototype de comptage automatique de symboles électriques |
+| `DOSSIER_MATERIEL.html` | Dossier matériel (multi-fiches + couverture) |
+| `ATTESTATION_ACHEVEMENT.html` | Attestation d'achèvement de travaux |
 
 ### Code partagé
 
@@ -53,12 +54,15 @@ avec authentification et données via Firebase (Auth + Firestore).
 | `presence/{uid}` | `{ online, lastSeen, ip, city, country, lat, lon, deviceName, os, browser, hostname, role }` |
 | `sessions` | Journal des connexions : `{ uid, login, name, ip, city, country, lat, lon, userAgent, os, browser, hostname, deviceName, timestamp }` |
 | `bannedIps/{ip}` | `{ ip, reason, bannedAt, bannedBy }` |
-| `signatures` | `{ ownerUid, ownerName, ownerRole, label, png, createdAt, createdBy }` |
+| `signatures` | `{ ownerUid, ownerName, ownerRole, label, png, createdAt, createdBy }` (data-URL PNG/JPEG validée côté rules) |
 | `attestationsHistory` | `{ affaire, objet, corps, nom, fonction, …, generatedAs, createdAt, createdBy, createdByName }` |
 | `customTemplates` | Modèles PDF personnalisés |
+| `destinataires` | Carnet d'adresses partagé (attestations) |
+| `planning` | Doc unique `main` : `{ tasks, nextId, updatedAt, updatedBy, updatedByName }` |
+| `localStorageSync/{uid__key}` | Sync localStorage ↔ cloud par utilisateur (`js/cloud-sync.js`) |
 | `config/pageAccess` | Map `{pageFichier: [roleId, …]}` qui autorise chaque rôle à chaque page |
-| `config/roles` | `{ roles: [{ id, label, color }, …] }` |
-| `schedules/{uid}` | Horaires d'accès des utilisateurs (jours + tranches) |
+| `config/roles` | `{ list: [{ id, label, color }, …] }` |
+| `schedules/{uid}` | Horaires d'accès des utilisateurs (jours + tranches) — actuellement le champ `schedule` est stocké directement dans `users/{uid}` ; cette collection séparée est réservée pour un usage futur |
 
 ### Règles Firestore
 

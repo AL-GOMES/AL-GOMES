@@ -10,6 +10,7 @@
 </style>
 
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://cdnjs.cloudflare.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://api.github.com https://ipapi.co https://dns.google https://tile.openstreetmap.org; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; worker-src 'self' blob:;">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dérivations & TGBT</title>
 <style>
@@ -151,10 +152,11 @@ tr:hover .rd{opacity:1}.rd:hover{color:#FF6B6B}
 .qfl{cursor:pointer;padding:2px 8px;border-radius:4px;background:rgba(123,95,172,0.15);border:1px solid rgba(123,95,172,0.25);color:rgba(180,165,200,0.70);font-size:10px;transition:all .15s;display:inline-block;margin:2px}.qfl:hover{background:rgba(123,95,172,0.30);color:rgba(220,210,235,0.95)}
 </style>
 
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" integrity="sha384-sEVIly94UBRLKWdkYoPpSG7GD/e79YHMrxVyZaOk712Ga7+EAw6w1EFi+xBzBdd+" crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js" integrity="sha384-EkqK+ezBWJuvO3hfrSx2iVqr3YQbhmnzn8kPhOpBZ+0GMVU5oGSgptwIu8D84HjE" crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js" integrity="sha384-M481iNZJtbpypKgvlvZ+78Giq0BsewFLk5r2k+MOcGXlwKCc27DQRZ+WCV/zpmpC" crossorigin="anonymous"></script>
 <script src="js/firebase-init.js"></script>
+<script src="js/util.js"></script>
 <script src="js/auth-guard.js"></script>
 </head>
 <body>
@@ -655,7 +657,21 @@ function aB(){const tp=document.getElementById('mType').value;const n=document.g
 
 // ═══ EXPORT EXCEL ═══
 async function exportXLS(){
-  if(typeof ExcelJS==='undefined'){alert('Chargement de la librairie Excel en cours, réessayez dans 2 secondes...');return}
+  // Si la lib n'est pas encore arrivée, on attend (jusqu'à 8 s). Évite l'ancien
+  // alert "réessayez dans 2 secondes" qui obligeait l'utilisateur à recliquer.
+  if(typeof ExcelJS==='undefined'){
+    const btn = document.querySelector('[onclick*="exportXLS"]');
+    if(btn){ btn.disabled = true; btn._origText = btn.textContent; btn.textContent = 'Chargement…'; }
+    const deadline = Date.now() + 8000;
+    while(typeof ExcelJS==='undefined' && Date.now() < deadline){
+      await new Promise(r => setTimeout(r, 200));
+    }
+    if(btn){ btn.disabled = false; if(btn._origText) btn.textContent = btn._origText; }
+    if(typeof ExcelJS==='undefined'){
+      alert('Bibliothèque Excel indisponible (réseau ?). Réessayez dans un instant.');
+      return;
+    }
+  }
   const wb=new ExcelJS.Workbook();
   wb.creator='AL GOMES — Bureau d\'Études Techniques';
   wb.created=new Date();
@@ -1080,7 +1096,17 @@ function newProject(){
 
 async function importXLS(input){
   const file=input.files[0];if(!file)return;
-  if(typeof ExcelJS==='undefined'){alert('Chargement de la librairie Excel en cours, réessayez dans 2 secondes...');input.value='';return}
+  // Attente courte si la lib n'est pas encore arrivée du CDN
+  if(typeof ExcelJS==='undefined'){
+    const deadline = Date.now() + 8000;
+    while(typeof ExcelJS==='undefined' && Date.now() < deadline){
+      await new Promise(r => setTimeout(r, 200));
+    }
+    if(typeof ExcelJS==='undefined'){
+      alert('Bibliothèque Excel indisponible (réseau ?). Réessayez dans un instant.');
+      input.value=''; return;
+    }
+  }
   try{
     const buf=await file.arrayBuffer();
     const wb=new ExcelJS.Workbook();
@@ -1102,7 +1128,16 @@ R();
 
 // ═══ EXPORT PDF ═══
 async function exportPDF(){
-  if(typeof jspdf==='undefined'||typeof jspdf.jsPDF==='undefined'){alert('Chargement de la librairie PDF en cours, réessayez dans 2 secondes...');return}
+  if(typeof jspdf==='undefined'||typeof jspdf.jsPDF==='undefined'){
+    const deadline = Date.now() + 8000;
+    while((typeof jspdf==='undefined'||typeof jspdf.jsPDF==='undefined') && Date.now() < deadline){
+      await new Promise(r => setTimeout(r, 200));
+    }
+    if(typeof jspdf==='undefined'||typeof jspdf.jsPDF==='undefined'){
+      alert('Bibliothèque PDF indisponible (réseau ?). Réessayez dans un instant.');
+      return;
+    }
+  }
   const{jsPDF}=jspdf;
   const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
   const pName=document.getElementById('projName').value.trim()||'Sans titre';

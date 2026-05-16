@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://cdnjs.cloudflare.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://api.github.com https://ipapi.co https://dns.google https://tile.openstreetmap.org; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; worker-src 'self' blob:;">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>A.L.GOMES — Administration</title>
 <script>
@@ -12,10 +13,11 @@ if(window.self!==window.top){
   });
 }
 </script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" integrity="sha384-sEVIly94UBRLKWdkYoPpSG7GD/e79YHMrxVyZaOk712Ga7+EAw6w1EFi+xBzBdd+" crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js" integrity="sha384-EkqK+ezBWJuvO3hfrSx2iVqr3YQbhmnzn8kPhOpBZ+0GMVU5oGSgptwIu8D84HjE" crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js" integrity="sha384-M481iNZJtbpypKgvlvZ+78Giq0BsewFLk5r2k+MOcGXlwKCc27DQRZ+WCV/zpmpC" crossorigin="anonymous"></script>
 <script src="js/firebase-init.js"></script>
+<script src="js/util.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
@@ -650,6 +652,15 @@ const FC = (function(){
 const toEmail=l=>l.toLowerCase().trim().replace(/\s+/g,'')+'@algomes.local';
 const hex2rgba=(h,a)=>{const r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);return`rgba(${r},${g},${b},${a})`};
 const esc=s=>{const d=document.createElement('div');d.textContent=s||'';return d.innerHTML};
+// escJs : échappement pour le contexte « JS-string-literal-dans-attribut-HTML ».
+// esc() ne suffit PAS ici : le parser HTML décode &#39; en ' AVANT que le JS soit
+// lexé, donc un login = "a';alert(1);//" casse `onclick="f('${esc(login)}')"`.
+// escJs encode tous les méta-caractères avec des escapes JS \uXXXX qui survivent
+// au passage parser HTML → lexer JS.
+const escJs=s=>String(s==null?'':s)
+  .replace(/\\/g,'\\\\').replace(/'/g,'\\u0027').replace(/"/g,'\\u0022')
+  .replace(/</g,'\\u003c').replace(/>/g,'\\u003e').replace(/&/g,'\\u0026')
+  .replace(/\n/g,'\\n').replace(/\r/g,'\\r');
 const fmtDate=ts=>ts?new Date(ts.seconds*1000).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
 
 let me=null, users=[], roles=[], access={}, presenceData={};
@@ -1001,21 +1012,34 @@ setInterval(() => {
   if (ghTasks.length) ghRenderTasks();
 }, 5000);
 
-// Le token est stocké UNIQUEMENT dans localStorage (jamais envoyé à Firebase
-// ni à d'autres utilisateurs) → solution clé en main qui n'impose aucune
-// règle Firestore particulière. Owner/repo/branch sont aussi locaux pour
-// la même raison.
-const GH_LS_KEY = 'algomes_github_config';
+// Sécurité : le PAT GitHub (scope repo write) est stocké en sessionStorage
+// — éphémère, effacé à la fermeture de l'onglet/navigateur. Toute XSS sur
+// l'app ne peut pas l'exfiltrer une fois la session terminée.
+// La méta (owner/repo/branch — non sensible) reste en localStorage pour
+// éviter de retaper à chaque ouverture.
+const GH_LS_KEY     = 'algomes_github_config';  // legacy : meta seule (owner/repo/branch)
+const GH_TOKEN_KEY  = 'algomes_github_token';   // sessionStorage : token
 
 function loadGhConfig(){
   try {
     let stored = null;
     try { stored = JSON.parse(localStorage.getItem(GH_LS_KEY) || 'null'); } catch {}
+    // Migration : si le token traîne encore en localStorage (anciennes sessions),
+    // on le déplace en sessionStorage puis on l'efface.
+    if (stored && stored.token) {
+      try { sessionStorage.setItem(GH_TOKEN_KEY, stored.token); } catch {}
+      try {
+        const { token, ...rest } = stored;
+        localStorage.setItem(GH_LS_KEY, JSON.stringify(rest));
+        stored = rest;
+      } catch {}
+    }
+    const token = sessionStorage.getItem(GH_TOKEN_KEY) || '';
     ghCfg = {
       owner:  (stored && stored.owner)  || 'jerome93190',
       repo:   (stored && stored.repo)   || 'al-gomes',
       branch: (stored && stored.branch) || 'main',
-      token:  (stored && stored.token)  || ''
+      token:  token
     };
     document.getElementById('ghOwner').value  = ghCfg.owner;
     document.getElementById('ghRepo').value   = ghCfg.repo;
@@ -1074,17 +1098,20 @@ async function saveGhConfig(){
     ghHideBusy(_tid); // no-op si déjà finalisé en erreur
   }
   try {
-    localStorage.setItem(GH_LS_KEY, JSON.stringify({ owner, repo, branch, token }));
+    // Token en sessionStorage (effacé à fermeture d'onglet), meta en localStorage
+    localStorage.setItem(GH_LS_KEY, JSON.stringify({ owner, repo, branch }));
+    sessionStorage.setItem(GH_TOKEN_KEY, token);
   } catch (e) {
-    toast('Erreur localStorage : ' + e.message, 'error');
+    toast('Erreur de stockage : ' + e.message, 'error');
     return;
   }
-  toast('Configuration GitHub enregistrée (local)', 'success');
+  toast('Configuration GitHub enregistrée (token éphémère)', 'success');
   loadGhConfig();
 }
 
 async function clearGhToken(){
   if (!confirm('Supprimer le token stocké dans ce navigateur ?\n\nL\'arborescence ne sera plus accessible jusqu\'à ce que tu remettes un token.')) return;
+  try { sessionStorage.removeItem(GH_TOKEN_KEY); } catch {}
   try { localStorage.removeItem(GH_LS_KEY); } catch {}
   toast('Token supprimé', 'success');
   ghCfg = null;
@@ -1675,8 +1702,17 @@ setInterval(() => { if (fbTasks.length) fbRenderTasks(); }, 5000);
 
 function fbInitFromStorage(){
   document.getElementById('fbProjectId').textContent = FC.projectId || '—';
+  // Migration : si un token traîne en localStorage (ancienne session), on le
+  // bascule en sessionStorage puis on le supprime du persistant.
   try {
-    const raw = localStorage.getItem(FB_LS_TOKEN);
+    const legacy = localStorage.getItem(FB_LS_TOKEN);
+    if (legacy) {
+      try { sessionStorage.setItem(FB_LS_TOKEN, legacy); } catch {}
+      localStorage.removeItem(FB_LS_TOKEN);
+    }
+  } catch {}
+  try {
+    const raw = sessionStorage.getItem(FB_LS_TOKEN);
     if (raw) {
       const obj = JSON.parse(raw);
       if (obj && obj.token && obj.expires > Date.now()) {
@@ -1686,7 +1722,7 @@ function fbInitFromStorage(){
         fbUpdateConnectedUI();
         return;
       } else {
-        localStorage.removeItem(FB_LS_TOKEN);
+        sessionStorage.removeItem(FB_LS_TOKEN);
       }
     }
   } catch {}
@@ -1739,7 +1775,9 @@ async function fbConnect(){
     fbTokenExpires = Date.now() + 55 * 60 * 1000;
     fbUserEmail = result.user && result.user.email;
     try {
-      localStorage.setItem(FB_LS_TOKEN, JSON.stringify({
+      // Token OAuth Google (scopes firebase + cloud-platform) — ultra sensible.
+      // Stocké en sessionStorage : effacé à la fermeture de l'onglet.
+      sessionStorage.setItem(FB_LS_TOKEN, JSON.stringify({
         token: fbToken, expires: fbTokenExpires, email: fbUserEmail
       }));
     } catch {}
@@ -1771,7 +1809,8 @@ function fbDisconnect(){
   fbToken = null;
   fbTokenExpires = 0;
   fbUserEmail = null;
-  try { localStorage.removeItem(FB_LS_TOKEN); } catch {}
+  try { sessionStorage.removeItem(FB_LS_TOKEN); } catch {}
+  try { localStorage.removeItem(FB_LS_TOKEN); } catch {} // au cas où legacy
   fbUpdateDisconnectedUI();
   toast('Déconnecté', 'success');
 }
@@ -2100,8 +2139,8 @@ function renderUsers(){
     const statusText=u.banned?'🚫 BLOQUÉ':isOnline?'🟢 En ligne':'⚫ Hors ligne';
     const ipInfo=p.ip?`<div class="ip-info"><strong>${esc(p.ip)}</strong><br>${esc(p.city||'')} ${esc(p.country||'')}</div>`:'<span style="color:var(--text2)">—</span>';
     const banBtn=u.banned
-      ?`<button class="btn btn-success btn-sm" onclick="toggleBan('${u.uid}',false)">Débloquer</button>`
-      :`<button class="btn btn-warn btn-sm" onclick="toggleBan('${u.uid}',true)">Bloquer</button>`;
+      ?`<button class="btn btn-success btn-sm" onclick="toggleBan('${escJs(u.uid)}',false)">Débloquer</button>`
+      :`<button class="btn btn-warn btn-sm" onclick="toggleBan('${escJs(u.uid)}',true)">Bloquer</button>`;
     return`<tr${u.banned?' style="opacity:.5"':''}>
       <td><strong style="color:${r.color}">${esc(u.login||'—')}</strong></td>
       <td>${esc(u.name||'—')}</td>
@@ -2110,11 +2149,11 @@ function renderUsers(){
       <td>${ipInfo}</td>
       <td style="font-size:12px">${fmtDate(p.lastSeen)}</td>
       <td class="actions">
-        <button class="btn btn-primary btn-sm" onclick="openEdit('${u.uid}')">Rôle</button>
-        <button class="btn btn-sm" style="background:rgba(59,130,246,.12);color:#60a5fa;border:1px solid rgba(59,130,246,.25)" onclick="openPwdModal('${u.uid}')">MdP</button>
-        <button class="btn btn-sm" style="background:rgba(245,158,11,.12);color:#fbbf24;border:1px solid rgba(245,158,11,.25)" onclick="openScheduleModal('${u.uid}')" title="Horaires d'accès">⏰</button>
+        <button class="btn btn-primary btn-sm" onclick="openEdit('${escJs(u.uid)}')">Rôle</button>
+        <button class="btn btn-sm" style="background:rgba(59,130,246,.12);color:#60a5fa;border:1px solid rgba(59,130,246,.25)" onclick="openPwdModal('${escJs(u.uid)}')">MdP</button>
+        <button class="btn btn-sm" style="background:rgba(245,158,11,.12);color:#fbbf24;border:1px solid rgba(245,158,11,.25)" onclick="openScheduleModal('${escJs(u.uid)}')" title="Horaires d'accès">⏰</button>
         ${self?'':banBtn}
-        ${self?'':`<button class="btn btn-danger btn-sm" onclick="delUser('${u.uid}','${esc(u.login)}')">Suppr.</button>`}
+        ${self?'':`<button class="btn btn-danger btn-sm" onclick="delUser('${escJs(u.uid)}','${escJs(u.login)}')">Suppr.</button>`}
       </td>
     </tr>`}).join('');
 }
@@ -2160,6 +2199,10 @@ async function addUser(){
   const r=document.getElementById('newUserRole').value,p=document.getElementById('newPassword').value;
   const btn=document.getElementById('btnAddUser');
   if(!l||!p||!n){toast('Remplir tous les champs','error');return}
+  // Validation stricte du login : alphanumérique + . _ - uniquement.
+  // Empêche l'injection de méta-caractères qui pourraient casser le quoting
+  // dans les attributs HTML (cf. onclick="delUser('...','${login}')").
+  if(!/^[a-z0-9._-]{2,32}$/i.test(l)){toast('Login invalide (2-32 car., lettres/chiffres/._- uniquement)','error');return}
   if(p.length<6){toast('Mot de passe min 6 car.','error');return}
   btn.disabled=true;btn.textContent='CRÉATION...';
   try{
@@ -2207,8 +2250,8 @@ function renderRoles(){
       <div class="role-dot" style="background:${r.color}"></div>
       <div><div class="role-chip-name" style="color:${r.color}">${esc(r.label)}</div><div class="role-chip-id">${esc(r.id)}${adm?' 🔒':''}</div></div>
       <div style="display:flex;gap:4px;margin-left:6px">
-        <button class="btn btn-primary btn-xs" onclick="openRename('${r.id}')">Renommer</button>
-        ${adm?'':`<button class="btn btn-danger btn-xs" onclick="delRole('${r.id}')">Suppr.</button>`}
+        <button class="btn btn-primary btn-xs" onclick="openRename('${escJs(r.id)}')">Renommer</button>
+        ${adm?'':`<button class="btn btn-danger btn-xs" onclick="delRole('${escJs(r.id)}')">Suppr.</button>`}
       </div>
     </div>`}).join('');
 }
@@ -2481,8 +2524,8 @@ async function loadIpTracking(){
         html+=`<td style="text-align:center">${data.count}</td>`;
         html+=`<td style="font-size:12px">${data.last?new Date(data.last*1000).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'—'}</td>`;
         html+=`<td>${banned
-          ?`<button class="btn btn-success btn-sm" onclick="unbanIp('${esc(ip)}')">Débloquer</button>`
-          :`<button class="btn btn-danger btn-sm" onclick="banIp('${esc(ip)}')">Bannir</button>`}</td>`;
+          ?`<button class="btn btn-success btn-sm" onclick="unbanIp('${escJs(ip)}')">Débloquer</button>`
+          :`<button class="btn btn-danger btn-sm" onclick="banIp('${escJs(ip)}')">Bannir</button>`}</td>`;
         html+=`</tr>`;
       }));
     }
@@ -2535,24 +2578,39 @@ function renderSignatures(){
     el.innerHTML = '<div class="sig-empty" style="grid-column:1/-1">Aucune signature enregistrée pour le moment.<br>Ajoutez un PNG ci-dessous.</div>';
     return;
   }
+  // Validation stricte du data URL : on n'accepte que les images PNG/JPEG.
+  // Sans ce filtre, un payload `data:text/html,...` ou `javascript:...` injecté
+  // dans Firestore par un user authentifié déclencherait une XSS dans la session admin.
+  const PNG_RE = /^data:image\/(png|jpe?g);base64,[A-Za-z0-9+/=]+$/;
   el.innerHTML = signatures.map(s => {
     const r = ri(s.ownerRole || '');
     const owner = esc(s.ownerName || '—');
     const lbl = s.label ? esc(s.label) : 'Signature';
     const png = s.png || '';
+    const safePng = PNG_RE.test(png) ? png : '';
+    const sid = esc(s.id);
     return `<div class="sig-card">
-      <div class="sig-preview">${png ? `<img src="${png}" alt="${owner}">` : '<span style="color:#888;font-size:11px">PNG manquant</span>'}</div>
+      <div class="sig-preview">${safePng ? `<img src="${safePng}" alt="${owner}">` : '<span style="color:#888;font-size:11px">PNG manquant</span>'}</div>
       <div class="sig-meta">
         <div class="sig-owner">${owner}</div>
         <div class="sig-label">${lbl}</div>
         <div class="sig-role" style="color:${r.color}">${esc(r.label)}</div>
       </div>
       <div class="sig-actions">
-        <button class="btn btn-primary btn-xs" onclick="downloadSignature('${s.id}')">Télécharger</button>
-        <button class="btn btn-danger btn-xs" onclick="deleteSignature('${s.id}')">Supprimer</button>
+        <button class="btn btn-primary btn-xs" data-sig-id="${sid}" data-sig-action="download">Télécharger</button>
+        <button class="btn btn-danger btn-xs" data-sig-id="${sid}" data-sig-action="delete">Supprimer</button>
       </div>
     </div>`;
   }).join('');
+  // Délégation : remplace les onclick inline (CSP-safe + pas d'injection JS via l'id)
+  el.querySelectorAll('button[data-sig-id]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-sig-id');
+      const action = btn.getAttribute('data-sig-action');
+      if (action === 'download') downloadSignature(id);
+      else if (action === 'delete') deleteSignature(id);
+    });
+  });
 }
 
 function setupSigDropzone(){
@@ -2580,15 +2638,23 @@ function handleSigFile(file){
   if(file.size > 500 * 1024){
     toast('PNG trop volumineux (max 500 Ko)', 'error'); return;
   }
-  const reader = new FileReader();
-  reader.onload = () => {
-    pendingSigData = reader.result; // data:image/png;base64,...
-    pendingSigFilename = file.name;
-    document.getElementById('sigDropzoneText').textContent = '✓ ' + file.name + ' (' + Math.round(file.size/1024) + ' Ko)';
-    document.getElementById('btnAddSig').disabled = false;
-  };
-  reader.onerror = () => toast('Erreur de lecture du fichier', 'error');
-  reader.readAsDataURL(file);
+  // Vérifie la signature magique PNG sur les premiers bytes (file.type
+  // peut être spoofé en renommant l'extension)
+  file.slice(0, 8).arrayBuffer().then(buf => {
+    const b = new Uint8Array(buf);
+    const isPng = b[0]===0x89 && b[1]===0x50 && b[2]===0x4E && b[3]===0x47 &&
+                  b[4]===0x0D && b[5]===0x0A && b[6]===0x1A && b[7]===0x0A;
+    if(!isPng){ toast('Le fichier n\'est pas un PNG valide', 'error'); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      pendingSigData = reader.result; // data:image/png;base64,...
+      pendingSigFilename = file.name;
+      document.getElementById('sigDropzoneText').textContent = '✓ ' + file.name + ' (' + Math.round(file.size/1024) + ' Ko)';
+      document.getElementById('btnAddSig').disabled = false;
+    };
+    reader.onerror = () => toast('Erreur de lecture du fichier', 'error');
+    reader.readAsDataURL(file);
+  }).catch(() => toast('Erreur de lecture du fichier', 'error'));
 }
 
 async function addSignature(){
@@ -2791,7 +2857,7 @@ function renderBannedIps(){
       <td style="font-family:monospace;font-weight:700;color:#ff4466">${esc(b.ip||b.id)}</td>
       <td style="font-size:12px">${b.bannedAt?fmtDate(b.bannedAt):'—'}</td>
       <td style="font-size:12px">${esc(b.bannedByName||'—')}</td>
-      <td><button class="btn btn-success btn-sm" onclick="unbanIp('${esc(b.ip||b.id)}')">Débloquer</button></td>
+      <td><button class="btn btn-success btn-sm" onclick="unbanIp('${escJs(b.ip||b.id)}')">Débloquer</button></td>
     </tr>`).join('') + '</tbody></table>';
 }
 
@@ -3039,8 +3105,11 @@ window.addEventListener('storage', e => { if (e.key && e.key === (window.Algomes
     const el = document.getElementById(id);
     if (el) el.addEventListener(el.type === 'checkbox' ? 'change' : 'input', () => renderConsoleLog(true));
   });
-// Refresh de secours (au cas où storage event raté)
-setInterval(renderConsoleLog, 1000);
+// Refresh de secours au cas où le storage event est raté (les logs de la
+// page admin elle-même ne déclenchent PAS de storage event car celui-ci ne
+// se déclenche que cross-tab). Le early-return par signature dans
+// renderConsoleLog rend ce poll très bon marché ; on passe à 3 s.
+setInterval(renderConsoleLog, 3000);
 renderConsoleLog(true);
 </script>
 </body>

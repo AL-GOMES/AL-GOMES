@@ -24,31 +24,53 @@ service cloud.firestore {
       return isSignedIn() &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.banned != true;
     }
+    // Une data-URL d'image (PNG/JPEG) valide, max ~700 Ko en base64 (~500 Ko binaire).
+    function isImageDataUrl(s) {
+      return s is string &&
+        s.size() < 700000 &&
+        s.matches('^data:image/(png|jpe?g);base64,[A-Za-z0-9+/=]+$');
+    }
 
-    // ─── users : lecture par les connectés non bannis ; écriture admin ──────
+    // ─── users : lecture par les admins seuls ; écriture admin ──────────────
+    // (la liste des users est sensible — elle ne doit pas être indexable par
+    // un user normal via la console JS).
     match /users/{uid} {
-      allow read: if notBanned();
+      allow read: if isAdmin() || (isSignedIn() && request.auth.uid == uid);
       allow write: if isAdmin();
     }
 
-    // ─── presence : chacun écrit son propre doc, lecture admin ──────────────
+    // ─── presence : chacun écrit son propre doc, lecture connectés non bannis
+    // (la liste des présents est affichée dans la topbar à tous les users)
     match /presence/{uid} {
-      allow read: if isAdmin();
+      allow read: if notBanned();
       allow write: if isSignedIn() && request.auth.uid == uid;
     }
 
     // ─── sessions : append-only par l'utilisateur, lecture admin ────────────
+    // Validation des champs : on n'empêche pas le forge côté client (impossible
+    // sans Cloud Function), mais on limite les tailles pour éviter le flood.
     match /sessions/{id} {
-      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+      allow create: if isSignedIn() &&
+        request.resource.data.uid == request.auth.uid &&
+        (!('ip' in request.resource.data) || request.resource.data.ip is string && request.resource.data.ip.size() < 64) &&
+        (!('userAgent' in request.resource.data) || request.resource.data.userAgent.size() < 512) &&
+        (!('hostname' in request.resource.data) || request.resource.data.hostname.size() < 256) &&
+        (!('deviceName' in request.resource.data) || request.resource.data.deviceName.size() < 64);
       allow read: if isAdmin();
       allow delete: if isAdmin();
     }
 
     // ─── signatures : lecture connectés, write par owner ou admin ───────────
+    // Validation stricte du format PNG/JPEG en data-URL (pas de javascript:,
+    // pas de text/html, pas de SVG qui pourrait contenir du script).
     match /signatures/{id} {
       allow read: if notBanned();
-      allow create: if isSignedIn() && request.resource.data.ownerUid == request.auth.uid;
-      allow update, delete: if isAdmin() ||
+      allow create: if isSignedIn() &&
+        request.resource.data.ownerUid == request.auth.uid &&
+        isImageDataUrl(request.resource.data.png);
+      allow update: if (isAdmin() || (isSignedIn() && resource.data.ownerUid == request.auth.uid))
+        && isImageDataUrl(request.resource.data.png);
+      allow delete: if isAdmin() ||
         (isSignedIn() && resource.data.ownerUid == request.auth.uid);
     }
 
@@ -96,6 +118,29 @@ service cloud.firestore {
       allow read: if isAdmin() ||
         (isSignedIn() && request.auth.uid == uid);
       allow write: if isAdmin();
+    }
+
+    // ─── planning : doc partagé unique (collection('planning').doc('main'))
+    // Lecture/écriture pour tous les connectés non bannis. La résolution
+    // de conflit est gérée côté client (last-write-wins via timestamps).
+    match /planning/{id} {
+      allow read: if notBanned();
+      allow create, update: if isSignedIn() &&
+        request.resource.data.updatedBy == request.auth.uid;
+      allow delete: if isAdmin();
+    }
+
+    // ─── localStorageSync : sync localStorage ↔ Firestore par utilisateur ──
+    // Chaque doc est cloisonné par uid : un user ne peut lire/écrire que
+    // ses propres docs. L'ID du doc doit commencer par l'uid de l'utilisateur.
+    match /localStorageSync/{docId} {
+      allow read: if isSignedIn() &&
+        resource.data.uid == request.auth.uid;
+      allow create, update: if isSignedIn() &&
+        request.resource.data.uid == request.auth.uid &&
+        docId.matches('^' + request.auth.uid + '__.*');
+      allow delete: if isSignedIn() &&
+        resource.data.uid == request.auth.uid;
     }
   }
 }

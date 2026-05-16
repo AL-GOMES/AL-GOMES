@@ -92,7 +92,7 @@
     el.id = 'cs-indicator';
     el.className = 'hidden';
     el.innerHTML = '<span class="cs-dot"></span><span class="cs-label">…</span>';
-    document.body ? document.body.appendChild(el) : document.documentElement.appendChild(el);
+    if (document.body) document.body.appendChild(el); else document.documentElement.appendChild(el);
     return el;
   }
   function setIndicator(status, label) {

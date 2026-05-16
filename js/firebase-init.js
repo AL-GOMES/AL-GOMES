@@ -172,6 +172,17 @@ if (window.__algomesBlocked) {
 
   // API publique pour le panneau admin (et autres consommateurs)
   var REC_KEY = 'algomes_recording_since';  // timestamp ms si recording actif, sinon absent
+  // Liste des clés sensibles à purger à la déconnexion. Inclut les tokens admin
+  // (au cas où ils traîneraient en localStorage suite à une migration ratée),
+  // le buffer de console (qui peut contenir des fragments de données privées),
+  // et le flag de recording.
+  var SENSITIVE_KEYS = [
+    LOG_KEY,                       // 'algomes_console_log'
+    REC_KEY,                       // 'algomes_recording_since'
+    'algomes_github_config',       // legacy token GitHub
+    'algomes_github_token',        // token GitHub (devrait être en sessionStorage)
+    'algomes_fb_admin_token'       // token OAuth Google admin
+  ];
   window.AlgomesLog = {
     getAll: function () {
       try { return JSON.parse(localStorage.getItem(LOG_KEY) || '[]'); }
@@ -206,6 +217,41 @@ if (window.__algomesBlocked) {
     KEY: LOG_KEY,
     REC_KEY: REC_KEY
   };
+
+  // ─── Purge des données sensibles à la déconnexion ─────────────────────────
+  // À appeler depuis chaque doLogout() / signOut() pour ne pas laisser de
+  // résidus exploitables (tokens, fragments de logs Firestore avec UID, …)
+  // sur le poste — utile en particulier sur un poste partagé.
+  window.AlgomesPurgeSensitive = function () {
+    SENSITIVE_KEYS.forEach(function (k) {
+      try { localStorage.removeItem(k); } catch (e) {}
+      try { sessionStorage.removeItem(k); } catch (e) {}
+    });
+  };
+
+  // ─── Styles d'accessibilité partagés (toutes les pages) ───────────────────
+  // - prefers-reduced-motion : neutralise les animations infinies (particles,
+  //   pulse, glow, dots…) pour les utilisateurs qui ont demandé un système
+  //   moins mouvant (système OS, vestibulaire).
+  // - :focus-visible : restitue un anneau de focus clair, partout où le code
+  //   d'origine avait `outline:none` sur les inputs/boutons.
+  function installA11yStyles(){
+    if (document.getElementById('algomes-a11y-styles')) return;
+    var s = document.createElement('style');
+    s.id = 'algomes-a11y-styles';
+    s.textContent =
+      '@media (prefers-reduced-motion: reduce){' +
+      '  *,*::before,*::after{animation-duration:0.001ms!important;animation-iteration-count:1!important;transition-duration:0.001ms!important;scroll-behavior:auto!important}' +
+      '}' +
+      ':focus-visible{outline:2px solid #b388ff!important;outline-offset:2px!important;border-radius:3px}' +
+      'button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:2px solid #b388ff!important;outline-offset:2px!important}';
+    (document.head || document.documentElement).appendChild(s);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', installA11yStyles, { once: true });
+  } else {
+    installA11yStyles();
+  }
 
   // ─── Bouton flottant DEBUG (toutes les pages) ─────────────────────────────
   // Petit bouton discret en bas à droite. Clic → démarre l'enregistrement

@@ -60,9 +60,18 @@ avec authentification et données via Firebase (Auth + Firestore).
 | `config/roles` | `{ roles: [{ id, label, color }, …] }` |
 | `schedules/{uid}` | Horaires d'accès des utilisateurs (jours + tranches) |
 
-### Règles Firestore minimales recommandées
+### Règles Firestore
 
-> ⚠️ **Important** : le contrôle d'accès côté client (auth-guard) est insuffisant — il **doit** être doublé par des règles Firestore strictes. Vérifier dans la Console Firebase :
+> ⚠️ **Important** : le contrôle d'accès côté client (auth-guard) est insuffisant — il **doit** être doublé par des règles Firestore strictes.
+>
+> La source de vérité est le fichier **[`firestore.rules`](firestore.rules)** à la racine du repo, déployable via :
+> ```bash
+> firebase login
+> firebase use algomes-a4e46
+> firebase deploy --only firestore:rules
+> ```
+>
+> Le bloc ci-dessous est un instantané du contenu de ce fichier — toute modification doit se faire dans `firestore.rules` puis être redéployée.
 
 ```
 rules_version = '2';

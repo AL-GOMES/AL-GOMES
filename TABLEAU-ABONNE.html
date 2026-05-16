@@ -1151,6 +1151,39 @@ function exportPDF(){
     CIR.forEach(c=>{pw2.document.write(`<td>${a.reduce((s,x)=>s+(x[c.k]||0),0)}</td>`)});
     pw2.document.write(`</tr></tbody></table></div>`);
 
+    // Carte dédiée "Récapitulatif des rangées" — bien visible, indépendante
+    // de la table Synthèse (où les colonnes MOD./RG. peuvent être cut par
+    // la largeur de page sur les bâtiments à beaucoup de circuits).
+    pw2.document.write(`<div class="card" style="border-color:rgba(187,107,217,0.35);background:linear-gradient(135deg,rgba(187,107,217,0.04),rgba(45,27,78,0.02))">`);
+    pw2.document.write(`<div class="card-t">📐 Récapitulatif des rangées</div>`);
+    pw2.document.write(`<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px">`);
+    sT.forEach(([t,cnt])=>{
+      const tc = TYPE_COLORS[(t.charCodeAt(0)-65)%TYPE_COLORS.length];
+      const mr = typeModRg[t] || { mod: 0, rg: 0 };
+      pw2.document.write(
+        `<div style="flex:0 0 auto;padding:10px 16px;border:1.5px solid ${tc.border};border-radius:10px;background:#fff;display:flex;align-items:center;gap:12px">` +
+        `<span class="badge" style="background:${tc.bg};border:1px solid ${tc.border};color:${tc.color};font-size:11px">${t}</span>` +
+        `<div style="font-size:10px;color:#666;line-height:1.4">` +
+        `<div style="font-weight:700;color:#1F3864">${cnt} lgt${cnt>1?'s':''}</div>` +
+        `<div><span style="color:#BB6BD9;font-weight:700;font-size:13px">${mr.mod}</span> modules / lgt</div>` +
+        `<div><span style="color:#BB6BD9;font-weight:700;font-size:13px">${mr.rg}</span> rangée${mr.rg>1?'s':''} / lgt</div>` +
+        `</div></div>`
+      );
+    });
+    pw2.document.write(`</div>`);
+    // Total bâtiment
+    const totalBatRangees = Math.ceil(totalBatimentMod * 1.2 / 13);
+    const totalRangeesParLgt = sT.reduce((s, [t, cnt]) => s + (typeModRg[t]?.rg || 0) * cnt, 0);
+    pw2.document.write(
+      `<div style="padding:10px 14px;background:rgba(31,56,100,0.05);border-radius:8px;display:flex;justify-content:space-between;align-items:center;gap:14px;font-size:10px;color:#444">` +
+      `<div><b>Total bâtiment</b> · ${totalBatimentLgts} logements</div>` +
+      `<div>Modules totaux : <span style="color:#1F3864;font-weight:700;font-size:13px">${totalBatimentMod}</span></div>` +
+      `<div>Rangées cumulées (∑ rang. × qté) : <span style="color:#BB6BD9;font-weight:700;font-size:13px">${totalRangeesParLgt}</span></div>` +
+      `<div>Si tableau unique : <span style="color:#BB6BD9;font-weight:700;font-size:13px">${totalBatRangees}</span> rangées</div>` +
+      `</div>`
+    );
+    pw2.document.write(`</div>`);
+
     pw2.document.write(`<div class="card"><div class="card-t">📑 Listing par Type</div>`);
     sT.forEach(([t,cnt])=>{
       const items=byT[t]||[];const ref=tRef[t];const tc=TYPE_COLORS[(t.charCodeAt(0)-65)%TYPE_COLORS.length];

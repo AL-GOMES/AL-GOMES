@@ -153,7 +153,17 @@ async function checkSetupMode() {
       document.getElementById('nameGroup').style.display = 'block';
       document.getElementById('btnLogin').textContent = 'CRÉER LE COMPTE ADMIN';
     }
-  } catch(e) { console.error('Erreur Firestore:', e); }
+  } catch(e) {
+    // Sans authentification, les rules Firestore refusent la lecture de
+    // /users — c'est attendu et sans impact (on n'est juste pas en mode
+    // 'first setup'). On log en warn discret au lieu d'error pour ne pas
+    // polluer la console.
+    if (e && e.code === 'permission-denied') {
+      console.warn('checkSetupMode skipped (Firestore rules require auth)');
+    } else {
+      console.error('Erreur Firestore:', e);
+    }
+  }
 }
 
 // ============================================================

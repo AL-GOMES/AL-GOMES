@@ -2317,24 +2317,13 @@ class PDFViewer {
       }
     }
 
-    // Si un payload est embarqué dans le PDF, DEMANDER s'il faut restaurer.
-    // Plus d'auto-restauration : sinon on superpose les annotations vectorielles
-    // sur les annotations DÉJÀ IMPRIMÉES dans l'image de la page (double
-    // affichage). L'utilisateur choisit consciemment :
-    //  - OK    = voir le PDF tel quel (annotations imprimées seules, non éditables)
-    //  - Annuler (par défaut) = restaurer les annotations en mode éditable
-    //                            (mais double affichage : imprimées + éditables)
+    // Si un payload est embarqué dans le PDF, on restaure automatiquement.
+    // Plus de risque de double affichage : depuis ce commit, l'export ne
+    // dessine plus les annotations en bitmap dans le PDF — elles sont
+    // stockées uniquement dans LP_DATA, donc la restauration vectorielle
+    // est la seule couche visible.
     if (embedded && embedded.primary) {
-      const nA = (embedded.primary.annotations || []).length;
-      const nC = (embedded.primary.counts || []).length;
-      const doRestore = confirm(
-        'Ce PDF contient ' + nA + ' annotation(s) et ' + nC + ' marqueur(s) ' +
-        'précédemment exportés.\n\n' +
-        'Voulez-vous les RESTAURER en mode éditable ?\n\n' +
-        '⚠ Si vous cliquez OK, les annotations apparaîtront en double ' +
-        '(une fois imprimées dans le PDF, une fois en éditable par-dessus).\n\n' +
-        'Cliquez Annuler pour ouvrir le PDF tel quel (recommandé).'
-      );
+      const doRestore = true;
       if (doRestore) {
         // Calcul du ratio pour rescaler les annotations vers la
         // résolution actuelle du PDF (qui peut différer de celle utilisée
@@ -7483,21 +7472,12 @@ async function renderAssembledCanvasForExport(renderScale) {
   ctx.drawImage(cvB, shiftX + txPx, shiftY + tyPx);
   ctx.restore();
 
-  // Dessiner toutes les annotations du plan 1 (offset par shiftX,shiftY)
-  ctx.save();
-  ctx.translate(shiftX, shiftY);
-  drawAllAnnotationsOnCanvasForExport(ctx, vA, vA.currentPageNum, renderScale);
-  ctx.restore();
-
-  // Dessiner les annotations du plan 2 (offset par shiftX+txPx, shiftY+tyPx)
-  // Attention : les coudes sont numérotés globalement par ordre chrono sur les 2 viewers.
-  // La fonction drawAllAnnotations ne gère que les coudes d'un seul viewer, avec ordre
-  // chrono local. Pour garder la cohérence visuelle, on dessine les annotations
-  // non-coudes séparément, puis on fait les coudes manuellement avec numérotation globale.
-  ctx.save();
-  ctx.translate(shiftX + txPx, shiftY + tyPx);
-  drawAllAnnotationsOnCanvasForExport(ctx, vB, vB.currentPageNum, renderScale);
-  ctx.restore();
+  // Annotations PLUS dessinées en bitmap dans le PDF exporté — elles sont
+  // stockées uniquement dans le marqueur LP_DATA et restaurées en éditable
+  // à la réouverture, ce qui évite le double affichage (bitmap + éditable).
+  // Voir buildPdfFromJpegs() pour l'écriture du marqueur LP_DATA.
+  /* drawAllAnnotationsOnCanvasForExport(ctx, vA, vA.currentPageNum, renderScale); */
+  /* drawAllAnnotationsOnCanvasForExport(ctx, vB, vB.currentPageNum, renderScale); */
 
   // Re-dessiner les coudes avec une numérotation globale (primary + secondary)
   // pour éviter les doublons (ex. coude #1 sur A et #1 sur B)
@@ -8329,9 +8309,10 @@ async function exportFullPdf() {
     // différer de renderScale si le navigateur a silencieusement bridé la
     // taille du canvas pour cause de mémoire). On utilise cette échelle pour
     // dessiner les annotations à la bonne position visuelle.
-    const baseVp = page.getViewport({ scale: 1, rotation: v.rotation });
+    /* Annotations NON dessinées en bitmap — voir LP_DATA pour la restauration. */
+    /* const baseVp = page.getViewport({ scale: 1, rotation: v.rotation });
     const effScale = cv.width / baseVp.width;
-    drawAllAnnotationsOnCanvasForExport(ctx, v, pageNum, effScale);
+    drawAllAnnotationsOnCanvasForExport(ctx, v, pageNum, effScale); */
     pushCanvasAsPage(cv);
   }
 
@@ -8355,9 +8336,10 @@ async function exportFullPdf() {
       const ctx = cv.getContext('2d');
       ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height);
       await page.render({ canvasContext: ctx, viewport: vp }).promise;
-      const baseVpB = page.getViewport({ scale: 1, rotation: vb.rotation });
+      /* Annotations NON dessinées en bitmap — voir LP_DATA pour la restauration. */
+      /* const baseVpB = page.getViewport({ scale: 1, rotation: vb.rotation });
       const effScaleB = cv.width / baseVpB.width;
-      drawAllAnnotationsOnCanvasForExport(ctx, vb, pageNum, effScaleB);
+      drawAllAnnotationsOnCanvasForExport(ctx, vb, pageNum, effScaleB); */
       pushCanvasAsPage(cv);
     }
   }
@@ -8381,9 +8363,10 @@ async function exportFullPdf() {
       const ctx = cv.getContext('2d');
       ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height);
       await page.render({ canvasContext: ctx, viewport: vp }).promise;
-      const baseVpC = page.getViewport({ scale: 1, rotation: vc.rotation });
+      /* Annotations NON dessinées en bitmap — voir LP_DATA pour la restauration. */
+      /* const baseVpC = page.getViewport({ scale: 1, rotation: vc.rotation });
       const effScaleC = cv.width / baseVpC.width;
-      drawAllAnnotationsOnCanvasForExport(ctx, vc, pageNum, effScaleC);
+      drawAllAnnotationsOnCanvasForExport(ctx, vc, pageNum, effScaleC); */
       pushCanvasAsPage(cv);
     }
   }

@@ -2317,21 +2317,24 @@ class PDFViewer {
       }
     }
 
-    // Si un payload est embarqué dans le PDF, proposer de restaurer le travail
+    // Si un payload est embarqué dans le PDF, DEMANDER s'il faut restaurer.
+    // Plus d'auto-restauration : sinon on superpose les annotations vectorielles
+    // sur les annotations DÉJÀ IMPRIMÉES dans l'image de la page (double
+    // affichage). L'utilisateur choisit consciemment :
+    //  - OK    = voir le PDF tel quel (annotations imprimées seules, non éditables)
+    //  - Annuler (par défaut) = restaurer les annotations en mode éditable
+    //                            (mais double affichage : imprimées + éditables)
     if (embedded && embedded.primary) {
-      const current = this.state;
-      const hasCurrent = (current.annotations || []).length > 0 || (current.counts || []).length > 0;
-      let doRestore = false;
-      if (!hasCurrent) {
-        // Auto-restaurer si rien en local
-        doRestore = true;
-      } else {
-        doRestore = confirm(
-          'Ce PDF contient des annotations LISEUSE PLAN précédemment exportées.\n\n' +
-          'Remplacer les annotations actuelles par celles du PDF ?\n\n' +
-          '(Cliquez Annuler pour garder votre travail en cours)'
-        );
-      }
+      const nA = (embedded.primary.annotations || []).length;
+      const nC = (embedded.primary.counts || []).length;
+      const doRestore = confirm(
+        'Ce PDF contient ' + nA + ' annotation(s) et ' + nC + ' marqueur(s) ' +
+        'précédemment exportés.\n\n' +
+        'Voulez-vous les RESTAURER en mode éditable ?\n\n' +
+        '⚠ Si vous cliquez OK, les annotations apparaîtront en double ' +
+        '(une fois imprimées dans le PDF, une fois en éditable par-dessus).\n\n' +
+        'Cliquez Annuler pour ouvrir le PDF tel quel (recommandé).'
+      );
       if (doRestore) {
         // Calcul du ratio pour rescaler les annotations vers la
         // résolution actuelle du PDF (qui peut différer de celle utilisée

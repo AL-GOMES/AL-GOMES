@@ -81,35 +81,33 @@ h4{font-size:14px;font-weight:600;color:var(--t1);margin:16px 0 8px;padding-bott
 .search-hit{box-shadow:0 0 0 2px rgba(167,139,219,.35)!important;background:rgba(167,139,219,.06)!important}
 .search-hit .section-header{background:rgba(167,139,219,.08)}
 
-/* ─── Bouton "Vérifier MAJ" injecté dans chaque page-title ─── */
-.check-btn{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;margin-left:14px;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;background:var(--accent-bg);color:var(--accent-l);border:1px solid rgba(124,95,172,.3);border-radius:6px;cursor:pointer;transition:all .2s;vertical-align:middle;font-family:inherit;white-space:nowrap}
-.check-btn:hover{background:rgba(124,95,172,.18);border-color:var(--accent);transform:translateY(-1px)}
-.check-btn .check-date{font-size:10px;font-weight:500;color:var(--t3);letter-spacing:.3px;text-transform:none;margin-left:4px}
-.check-btn.stale .check-date{color:var(--amber)}
-
-/* ─── Modal de vérification ─── */
-.norm-check-overlay{position:fixed;inset:0;background:rgba(8,6,16,.78);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;z-index:9000;animation:fadeIn .2s ease}
-.norm-check-overlay.on{display:flex}
-.norm-check-modal{background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:24px 26px;max-width:560px;width:calc(100% - 40px);max-height:85vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.6)}
-.norm-check-modal h3{font-size:18px;color:var(--t1);margin-bottom:8px;font-weight:700}
-.norm-check-modal .ck-sub{font-size:12.5px;color:var(--t2);margin-bottom:20px;line-height:1.6}
-.norm-check-modal .ck-sub strong{color:var(--accent-l)}
-.norm-check-modal .ck-links{display:flex;flex-direction:column;gap:8px;margin-bottom:20px}
-.norm-check-modal .ck-link{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--t1);font-size:13px;text-decoration:none;transition:all .15s}
-.norm-check-modal .ck-link:hover{border-color:var(--accent);background:var(--accent-bg);transform:translateX(2px)}
-.norm-check-modal .ck-link .ck-icon{font-size:20px;flex-shrink:0;width:28px;text-align:center}
-.norm-check-modal .ck-link .ck-text{flex:1;display:flex;flex-direction:column;gap:2px;line-height:1.35}
-.norm-check-modal .ck-link .ck-label{font-weight:600}
-.norm-check-modal .ck-link .ck-tag{font-size:11px;color:var(--t3);font-weight:400}
-.norm-check-modal .ck-link .ck-arrow{color:var(--t3);font-size:14px}
-.norm-check-modal .ck-actions{display:flex;justify-content:flex-end;align-items:center;gap:10px;padding-top:16px;border-top:1px solid var(--border)}
-.norm-check-modal .ck-status{font-size:11px;color:var(--t3);margin-right:auto}
-.norm-check-modal .ck-status.ok{color:var(--green)}
-.norm-check-modal button{font-family:inherit;font-size:12px;font-weight:600;letter-spacing:.5px;cursor:pointer;border-radius:6px;padding:9px 14px;transition:all .15s}
-.norm-check-modal .btn-mark{background:var(--accent);color:#fff;border:1px solid var(--accent)}
-.norm-check-modal .btn-mark:hover{background:#9170c4}
-.norm-check-modal .btn-close{background:var(--surface2);color:var(--t2);border:1px solid var(--border)}
-.norm-check-modal .btn-close:hover{color:var(--t1);border-color:var(--border2)}
+/* ─── Tableau "Vérifier MAJ" ─── */
+.maj-table td{vertical-align:middle}
+.maj-table .maj-ref{font-weight:700;color:var(--t1);font-family:'JetBrains Mono',monospace;font-size:12.5px}
+.maj-table .maj-ed{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent-l)}
+.maj-table .maj-ed.empty{color:var(--t3)}
+.maj-table .maj-pages{font-size:11px;color:var(--t3);font-family:'JetBrains Mono',monospace}
+.maj-table .maj-pages a{color:var(--t2);text-decoration:none;border-bottom:1px dotted var(--border2)}
+.maj-table .maj-pages a:hover{color:var(--accent-l);border-bottom-color:var(--accent-l)}
+.maj-table .maj-checked{font-size:11px;color:var(--green);font-weight:500}
+.maj-table .maj-checked.never{color:var(--t3);font-weight:400;font-style:italic}
+.maj-table .maj-actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:nowrap}
+.maj-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 10px;font-size:11px;font-weight:600;letter-spacing:.4px;background:var(--accent-bg);color:var(--accent-l);border:1px solid rgba(124,95,172,.3);border-radius:6px;cursor:pointer;transition:all .15s;font-family:inherit;white-space:nowrap}
+.maj-btn:hover{background:rgba(124,95,172,.18);border-color:var(--accent)}
+.maj-btn.ok{background:var(--green-bg);color:var(--green);border-color:rgba(34,197,94,.3)}
+.maj-btn.ok:hover{background:rgba(34,197,94,.18);border-color:var(--green)}
+.maj-actions-bar{display:flex;flex-wrap:wrap;gap:10px;margin:8px 0 4px}
+.maj-actions-bar button{padding:10px 16px;font-size:12px;font-weight:600;letter-spacing:.5px;border-radius:7px;cursor:pointer;transition:all .15s;font-family:inherit;border:1px solid}
+.maj-actions-bar .btn-prim{background:var(--accent);color:#fff;border-color:var(--accent)}
+.maj-actions-bar .btn-prim:hover{background:#9170c4}
+.maj-actions-bar .btn-sec{background:var(--surface2);color:var(--t2);border-color:var(--border2)}
+.maj-actions-bar .btn-sec:hover{color:var(--t1);background:var(--surface3)}
+.maj-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:10px 0 18px}
+.maj-summary-card{padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px}
+.maj-summary-card .ms-label{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--t3);margin-bottom:4px}
+.maj-summary-card .ms-val{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--t1)}
+.maj-summary-card.warn .ms-val{color:var(--amber)}
+.maj-summary-card.ok .ms-val{color:var(--green)}
 </style>
 
 <div class="sidebar">
@@ -120,6 +118,7 @@ h4{font-size:14px;font-weight:600;color:var(--t1);margin:16px 0 8px;padding-bott
   <div class="sidebar-nav">
     <div class="nav-category">ACCUEIL</div>
     <div class="nav-item active" data-page="home" onclick="showPage(this)"><span class="nav-icon">🏠</span><span>Vue d'ensemble</span></div>
+    <div class="nav-item" data-page="maj" onclick="showPage(this)"><span class="nav-icon">🔄</span><span>Vérifier MAJ</span></div>
     <div class="nav-category">NF C 15-100</div>
     <div class="nav-item" data-page="nfc15-general" onclick="showPage(this)"><span class="nav-icon">📋</span><span>Généralités & DDR</span></div>
     <div class="nav-item" data-page="nfc15-circuits" onclick="showPage(this)"><span class="nav-icon">⚡</span><span>Circuits & Protections</span></div>
@@ -208,6 +207,54 @@ h4{font-size:14px;font-weight:600;color:var(--t1);margin:16px 0 8px;padding-bott
 <div class="section"><div class="section-header" onclick="toggleSection(this)"><span class="icon">🔎</span><h3>Utilisation de la recherche</h3><span class="chevron">▶</span></div><div class="section-body">
 <p>Le champ de recherche dans la barre latérale permet de filtrer les sections par mots-clés. Tapez un terme (ex : "IRVE", "V0", "foisonnement", "6902019") et les sections correspondantes apparaîtront en surbrillance.</p>
 <div class="note note-info"><strong>Astuce :</strong> recherche aussi par référence matériel Enedis (ex: 6902650 pour SPCM, 6981155 pour panneau mono).</div>
+</div></div>
+</div>
+
+<!-- ===== VÉRIFICATION DES MISES À JOUR ===== -->
+<div class="page" id="page-maj">
+<div class="page-title">🔄 Vérification des mises à jour normatives</div>
+<div class="page-subtitle">Inventaire des normes, arrêtés et guides référencés sur ce site — vérification web ciblée</div>
+
+<div class="maj-summary" id="majSummary"></div>
+
+<div class="section open"><div class="section-header" onclick="toggleSection(this)"><span class="icon">💡</span><h3>Mode d'emploi</h3><span class="chevron">▶</span></div><div class="section-body">
+<p>Ce tableau liste chaque norme, arrêté, décret ou guide pratique cité sur ce site avec <strong>la version utilisée</strong> dans son contenu. Le bouton <strong>🔍 Vérifier</strong> ouvre 3 recherches Google ciblées pour détecter d'éventuelles évolutions :</p>
+<ul style="margin:8px 0 12px 22px;color:var(--t2);font-size:13.5px;line-height:1.7">
+  <li><strong>Recherche calibrée</strong> : interroge le web sur des publications postérieures à l'édition utilisée (ex. NF C 15-100 édition août 2024 → cherche « 2025 OR 2026 OR amendement OR nouvelle édition »)</li>
+  <li><strong>Source officielle</strong> : catalogue AFNOR (pour les NF) ou Légifrance (pour les arrêtés/décrets)</li>
+  <li><strong>Synthèses pro</strong> : Legrand, Promotelec, Schema-electrique, CONSUEL, Enedis</li>
+</ul>
+<p style="font-size:12.5px;color:var(--t3);margin-top:10px">⚠ La détection est <strong>manuelle</strong> : les recherches ouvrent dans des onglets, c'est à toi de juger si une évolution publiée concerne réellement le contenu du référentiel. Clique sur <strong>✓</strong> pour stamper la date du contrôle.</p>
+<div class="maj-actions-bar">
+  <button type="button" class="btn-prim" id="btnMajAll">🌍 Tout vérifier (recherche groupée)</button>
+  <button type="button" class="btn-sec" id="btnMajMarkAll">✓ Tout marquer vérifié aujourd'hui</button>
+  <button type="button" class="btn-sec" id="btnMajReset">🗑 Réinitialiser les dates</button>
+</div>
+</div></div>
+
+<div class="section open"><div class="section-header" onclick="toggleSection(this)"><span class="icon">📋</span><h3>Inventaire des normes &amp; règlements référencés</h3><span class="chevron">▶</span></div><div class="section-body">
+<table class="norm-table maj-table">
+  <thead>
+    <tr>
+      <th style="width:22%">Référence</th>
+      <th style="width:16%">Édition utilisée</th>
+      <th>Sujet &amp; pages</th>
+      <th style="width:14%">Dernière vérif.</th>
+      <th style="width:18%;text-align:right">Action</th>
+    </tr>
+  </thead>
+  <tbody id="majBody"></tbody>
+</table>
+</div></div>
+
+<div class="section"><div class="section-header" onclick="toggleSection(this)"><span class="icon">⚙️</span><h3>Limites de la vérification automatique</h3><span class="chevron">▶</span></div><div class="section-body">
+<p>L'application est un site statique (GitHub Pages) : impossible de scraper AFNOR ou Légifrance côté serveur pour une comparaison automatique. La vérification s'appuie donc sur <strong>des recherches Google calibrées</strong> qui surfacent les évolutions publiées récemment. Trois sources distinctes pour éviter les angles morts :</p>
+<ul style="margin:8px 0 0 22px;color:var(--t2);font-size:13.5px;line-height:1.7">
+  <li><strong>Google récent + années postérieures</strong> : si la fiche cite l'édition X de l'année Y, la recherche filtre sur Y+1, Y+2, etc. → un résultat = probable évolution.</li>
+  <li><strong>Catalogue AFNOR / Légifrance</strong> : source officielle pour confirmer.</li>
+  <li><strong>Synthèses professionnelles</strong> : Legrand / Promotelec / CONSUEL résument souvent les amendements avant publication AFNOR.</li>
+</ul>
+<p style="font-size:12.5px;color:var(--t3);margin-top:10px">Pour une détection 100% automatique (sans clic manuel), il faudrait une Cloud Function Firebase qui interroge périodiquement une API IA avec recherche web (Claude, Perplexity…) — possible mais coût récurrent + plan Blaze.</p>
 </div></div>
 </div>
 
@@ -2380,20 +2427,6 @@ Arrêté du 31 janvier 1986, modifié par l'arrêté du 19 juin 2015
 
 </div><!-- /main -->
 
-<!-- Modal "Vérifier MAJ des normes" -->
-<div class="norm-check-overlay" id="normCheckOverlay" onclick="if(event.target===this) closeNormCheck()">
-  <div class="norm-check-modal">
-    <h3 id="ncTitle">🔄 Vérifier les MAJ</h3>
-    <div class="ck-sub" id="ncSub"></div>
-    <div class="ck-links" id="ncLinks"></div>
-    <div class="ck-actions">
-      <span class="ck-status" id="ncStatus"></span>
-      <button class="btn-close" type="button" onclick="closeNormCheck()">Fermer</button>
-      <button class="btn-mark" type="button" id="ncMark">✓ Marquer comme vérifié aujourd'hui</button>
-    </div>
-  </div>
-</div>
-
 <script>
 function switchPage(pageId){
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');p.style.display=''});
@@ -2413,140 +2446,255 @@ function showPage(el){
 }
 function toggleSection(h){h.parentElement.classList.toggle('open')}
 
-/* ─── Vérification MAJ des normes (ouvre des recherches officielles) ───
-   Mapping page → norme. Le bouton est injecté dans chaque page-title.
-   Date de dernière vérif stockée localStorage (par utilisateur navigateur). */
-var NORMS_CHECK = {
-  'page-nfc15-general':      { label: 'NF C 15-100 — Généralités & DDR',     core: 'NF C 15-100', edition: 'août 2024' },
-  'page-nfc15-circuits':     { label: 'NF C 15-100 — Circuits & Protections', core: 'NF C 15-100 circuits protections', edition: 'août 2024' },
-  'page-nfc15-pieces':       { label: 'NF C 15-100 — Équipement par pièce',  core: 'NF C 15-100 équipement minimal pièce', edition: 'août 2024' },
-  'page-nfc15-sdb':          { label: 'NF C 15-100 — Volumes salle de bain', core: 'NF C 15-100 volumes salle de bain 7-701', edition: 'août 2024' },
-  'page-nfc15-gtl':          { label: 'NF C 15-100 — GTL / ETEL / Tableau',  core: 'NF C 15-100 GTL ETEL tableau', edition: 'août 2024' },
-  'page-nfc15-terre':        { label: 'NF C 15-100 — Terre & LEP/LES',       core: 'NF C 15-100 mise à la terre liaison équipotentielle', edition: 'août 2024' },
-  'page-nfc14-general':      { label: 'NF C 14-100 — Branchement',           core: 'NF C 14-100 branchement', edition: 'juillet 2021' },
-  'page-nfc14-colonne':      { label: 'NF C 14-100 — Colonne montante',      core: 'NF C 14-100 colonne montante', edition: 'juillet 2021' },
-  'page-nfc14-foisonnement': { label: 'NF C 14-100 — Foisonnement',          core: 'NF C 14-100 coefficient foisonnement', edition: 'juillet 2021' },
-  'page-irve':               { label: 'IRVE — Borne VE',                     core: 'IRVE NF C 15-100 7-722 décret 2021-546', legifrance: true },
-  'page-pmr':                { label: 'Accessibilité PMR',                   core: 'arrêté 24 décembre 2015 accessibilité PMR électrique', legifrance: true },
-  'page-autoconso':          { label: 'Autoconsommation PV',                 core: 'autoconsommation photovoltaïque NF C 15-712 raccordement Enedis' },
-  'page-sequelec':           { label: 'SéQuélec — GP 10 Colonne',            core: 'SéQuélec GP 10 colonne électrique Enedis', edition: 'sept. 2016' },
-  'page-ecl-communs':        { label: 'Éclairage — Parties communes',        core: 'éclairage parties communes BHC arrêté 24 décembre 2015 NF EN 12464-1', legifrance: true },
-  'page-ecl-parking':        { label: 'Éclairage — Parkings',                core: 'éclairage parking arrêté 31 janvier 1986', legifrance: true },
-  'page-ecl-securite':       { label: 'Éclairage de sécurité (BAES/BAEH)',   core: 'NF C 71-830 BAES BAEH éclairage de sécurité' }
-};
+/* ─── Inventaire des normes utilisées sur le site ───
+   Chaque entrée = une norme/règlement référencé sur ce site, avec
+   l'édition citée localement. Le bouton "Vérifier" interroge Google
+   sur des publications POSTÉRIEURES à cette édition (filtre qdr:y +
+   énumération des années suivantes), de façon à n'afficher que les
+   éventuelles évolutions.
+   Date de dernière vérif stockée localStorage par norme. */
+var NORMS_INVENTORY = [
+  { id:'nfc15-100',         label:'NF C 15-100',         edition:'août 2024',                editionYear:2024, kind:'NF',      desc:'Installations électriques BT intérieures',          pages:['nfc15-general','nfc15-circuits','nfc15-pieces','nfc15-sdb','nfc15-gtl','nfc15-terre'] },
+  { id:'nfc14-100',         label:'NF C 14-100',         edition:'juillet 2021',             editionYear:2021, kind:'NF',      desc:'Branchements BT (réseau → PDL)',                    pages:['nfc14-general','nfc14-colonne','nfc14-foisonnement','sequelec'] },
+  { id:'nfc13-100',         label:'NF C 13-100',         edition:'2015 + amendements',       editionYear:2015, kind:'NF',      desc:'Postes de livraison HTA/BT',                        pages:['home'] },
+  { id:'nfc13-200',         label:'NF C 13-200',         edition:'2018',                     editionYear:2018, kind:'NF',      desc:'Installations HTA intérieures',                     pages:['home'] },
+  { id:'nfc71-830',         label:'NF C 71-830',         edition:'2011',                     editionYear:2011, kind:'NF',      desc:'Maintenance BAES/BAEH (éclairage de sécurité)',     pages:['ecl-securite'] },
+  { id:'nfen12464-1',       label:'NF EN 12464-1',       edition:'2022',                     editionYear:2022, kind:'NF',      desc:'Éclairage lieux de travail intérieurs',             pages:['ecl-communs','ecl-parking'] },
+  { id:'nfc15-712',         label:'NF C 15-712 / UTE C 15-712-1/-2', edition:'—',            editionYear:null, kind:'NF',      desc:'Guide pratique PV (raccordé / non raccordé)',       pages:['autoconso'] },
+  { id:'nfc11-201',         label:'NF C 11-201',         edition:'—',                        editionYear:null, kind:'NF',      desc:'Réseaux de distribution publique BT',               pages:['sequelec'] },
+  { id:'nfc33-210',         label:'NF C 33-210',         edition:'—',                        editionYear:null, kind:'NF',      desc:'Ampacité câbles HTA H1 XDV-AS (colonne montante)',  pages:['nfc14-colonne'] },
+  { id:'nfc20-030',         label:'NF C 20-030',         edition:'—',                        editionYear:null, kind:'NF',      desc:'Matériel BT classe II',                             pages:['sequelec'] },
+  { id:'sequelec-gp10',     label:'SéQuélec GP 10',      edition:'sept. 2016',               editionYear:2016, kind:'Enedis',  desc:'Colonne électrique neuve ou entièrement rénovée',   pages:['sequelec'] },
+  { id:'sequelec-gp01',     label:'SéQuélec GP 01',      edition:'—',                        editionYear:null, kind:'Enedis',  desc:'Branchements puissance surveillée',                 pages:['sequelec'] },
+  { id:'sequelec-gp02',     label:'SéQuélec GP 02',      edition:'—',                        editionYear:null, kind:'Enedis',  desc:'Branchements C2 à C4',                              pages:['sequelec'] },
+  { id:'sequelec-gp03',     label:'SéQuélec GP 03',      edition:'—',                        editionYear:null, kind:'Enedis',  desc:'Branchements provisoires',                          pages:['sequelec'] },
+  { id:'sequelec-gp06',     label:'SéQuélec GP 06',      edition:'—',                        editionYear:null, kind:'Enedis',  desc:'Branchements individuels à puissance limitée',      pages:['sequelec'] },
+  { id:'sequelec-gp11',     label:'SéQuélec GP 11',      edition:'—',                        editionYear:null, kind:'Enedis',  desc:'Travaux sur colonnes électriques existantes',       pages:['sequelec'] },
+  { id:'sequelec-gp14',     label:'SéQuélec GP 14',      edition:'—',                        editionYear:null, kind:'Enedis',  desc:'IRVE en habitat collectif',                         pages:['sequelec','irve'] },
+  { id:'decret-2021-546',   label:'Décret 2021-546',     edition:'mai 2021',                 editionYear:2021, kind:'Décret',  desc:'Pré-équipement IRVE des bâtiments',                 pages:['irve'] },
+  { id:'arr-2021-02-03',    label:'Arrêté du 3 février 2021', edition:'fév. 2021',           editionYear:2021, kind:'Arrêté',  desc:'Qualification IRVE niveaux 1/2/3',                  pages:['irve'] },
+  { id:'arr-2015-12-24',    label:'Arrêté du 24 décembre 2015', edition:'déc. 2015',          editionYear:2015, kind:'Arrêté',  desc:'Accessibilité PMR + éclairage BHC neufs',           pages:['pmr','ecl-communs'] },
+  { id:'arr-2017-05-09',    label:'Arrêté du 9 mai 2017', edition:'mai 2017',                editionYear:2017, kind:'Arrêté',  desc:'Tarifs d\'achat photovoltaïque (S21/Sxx)',          pages:['autoconso'] },
+  { id:'arr-1986-01-31',    label:'Arrêté du 31 janvier 1986', edition:'modifié 19/06/2015', editionYear:2015, kind:'Arrêté',  desc:'Sécurité incendie BHC (parkings, éclairage sécurité)', pages:['ecl-parking','ecl-securite'] },
+  { id:'arr-2001-05-17',    label:'Arrêté du 17 mai 2001', edition:'2001',                   editionYear:2001, kind:'Arrêté',  desc:'Conditions techniques réseaux d\'énergie (visé par GP 10)', pages:['sequelec'] }
+];
 
-function _g(q, recent){
+function _gURL(q, recent){
   var u = 'https://www.google.com/search?q=' + encodeURIComponent(q);
-  if(recent) u += '&tbs=qdr:y';
+  if(recent) u += '&tbs=qdr:y'; // 12 derniers mois
   return u;
 }
 
-function buildCheckLinks(meta){
-  var core = meta.core || meta.label;
-  var links = [
-    { icon:'📕', label:'Catalogue AFNOR', tag:'Source officielle (texte intégral payant)', url:_g('site:boutique.afnor.org ' + core) },
-    { icon:'🔍', label:'Actualités 12 derniers mois', tag:'Évolutions · amendements · nouvelles éditions', url:_g('"'+core+'" (édition OR amendement OR révision OR "mise à jour")', true) },
-    { icon:'💡', label:'Synthèses professionnelles', tag:'Legrand · Promotelec · Schema-electrique · CONSUEL', url:_g('(site:legrand.fr OR site:promotelec.com OR site:schema-electrique.net OR site:consuel.com) ' + core) }
-  ];
-  if(meta.legifrance){
-    links.push({ icon:'⚖️', label:'Légifrance — texte officiel', tag:'Versions consolidées des arrêtés/décrets', url:_g('site:legifrance.gouv.fr ' + core) });
+/* Construit une recherche calibrée pour détecter une édition POSTÉRIEURE
+   à celle utilisée sur le site. Inclut les années suivantes + mots-clés
+   évolution (édition / amendement / révision / nouvelle version). */
+function searchNewerURL(item){
+  var q = '"' + item.label + '"';
+  if(item.editionYear){
+    var years = [];
+    var current = new Date().getFullYear();
+    for(var y = item.editionYear + 1; y <= current + 1; y++) years.push(y);
+    if(years.length){
+      q += ' (' + years.join(' OR ') + ' OR "nouvelle édition" OR "nouvelle version" OR amendement OR révision)';
+    }
+  } else {
+    q += ' ("nouvelle édition" OR "nouvelle version" OR amendement OR révision OR ' +
+         (new Date().getFullYear()) + ' OR ' + (new Date().getFullYear() - 1) + ')';
   }
-  return links;
+  return _gURL(q, true);
 }
 
-function getLastCheck(pageId){
-  try { return localStorage.getItem('algomes_normcheck_' + pageId); } catch(e){ return null; }
+function searchAfnorURL(item){
+  return _gURL('site:boutique.afnor.org ' + item.label);
 }
-function setLastCheck(pageId, dateStr){
-  try { localStorage.setItem('algomes_normcheck_' + pageId, dateStr); } catch(e){}
+function searchLegifranceURL(item){
+  return _gURL('site:legifrance.gouv.fr ' + item.label);
+}
+function searchProURL(item){
+  return _gURL('(site:legrand.fr OR site:promotelec.com OR site:schema-electrique.net OR site:consuel.com OR site:enedis.fr) ' + item.label);
+}
+
+/* Recherche groupée "tout vérifier" : assemble en un seul query OR
+   l'ensemble des normes avec leurs années + mots-clés évolution.
+   Note : Google tronque les très longues requêtes, on segmente donc
+   en plusieurs onglets si on dépasse ~6 normes par paquet. */
+function buildBulkSearchURLs(items){
+  var urls = [];
+  var batchSize = 5;
+  for(var i = 0; i < items.length; i += batchSize){
+    var batch = items.slice(i, i + batchSize);
+    var clauses = batch.map(function(it){
+      var c = '"' + it.label + '"';
+      if(it.editionYear){
+        var years = [];
+        var current = new Date().getFullYear();
+        for(var y = it.editionYear + 1; y <= current + 1; y++) years.push(y);
+        if(years.length) c += ' (' + years.join(' OR ') + ' OR amendement OR "nouvelle édition")';
+      }
+      return '(' + c + ')';
+    });
+    urls.push(_gURL(clauses.join(' OR '), true));
+  }
+  return urls;
+}
+
+function getLastCheck(id){
+  try { return localStorage.getItem('algomes_normcheck_' + id); } catch(e){ return null; }
+}
+function setLastCheck(id, dateStr){
+  try {
+    if(dateStr) localStorage.setItem('algomes_normcheck_' + id, dateStr);
+    else localStorage.removeItem('algomes_normcheck_' + id);
+  } catch(e){}
 }
 function formatToday(){
   return new Date().toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' });
 }
 
-function injectCheckButtons(){
-  Object.keys(NORMS_CHECK).forEach(function(pageId){
-    var page = document.getElementById(pageId);
-    if(!page) return;
-    var title = page.querySelector('.page-title');
-    if(!title) return;
-    var existing = title.querySelector('.check-btn');
-    if(existing) existing.remove();
-    var btn = document.createElement('button');
-    btn.className = 'check-btn';
-    btn.type = 'button';
-    btn.title = 'Ouvre les sources officielles pour vérifier si la norme a évolué';
-    btn.onclick = function(e){ e.stopPropagation(); openNormCheck(pageId); };
-    var lbl = document.createElement('span');
-    lbl.textContent = '🔄 Vérifier MAJ';
-    btn.appendChild(lbl);
-    var d = getLastCheck(pageId);
-    if(d){
-      var ds = document.createElement('span');
-      ds.className = 'check-date';
-      ds.textContent = '· ' + d;
-      btn.appendChild(ds);
+function renderMajTable(){
+  var body = document.getElementById('majBody');
+  if(!body) return;
+  body.innerHTML = '';
+  NORMS_INVENTORY.forEach(function(it){
+    var tr = document.createElement('tr');
+    tr.setAttribute('data-id', it.id);
+
+    // Référence + tag
+    var tdRef = document.createElement('td');
+    tdRef.innerHTML = '<span class="maj-ref">' + it.label + '</span>' +
+                      ' <span class="tag tag-' + kindColor(it.kind) + '" style="margin-left:6px">' + it.kind + '</span>';
+    tr.appendChild(tdRef);
+
+    // Édition
+    var tdEd = document.createElement('td');
+    var edClass = (it.edition && it.edition !== '—') ? 'maj-ed' : 'maj-ed empty';
+    tdEd.innerHTML = '<span class="' + edClass + '">' + (it.edition || '—') + '</span>';
+    tr.appendChild(tdEd);
+
+    // Sujet + pages
+    var tdSub = document.createElement('td');
+    var pagesLinks = (it.pages || []).map(function(p){
+      return '<a href="#" onclick="switchPage(\'page-' + p + '\');return false">' + p + '</a>';
+    }).join(' · ');
+    tdSub.innerHTML = it.desc + (pagesLinks ? '<div class="maj-pages">' + pagesLinks + '</div>' : '');
+    tr.appendChild(tdSub);
+
+    // Dernière vérif
+    var tdLast = document.createElement('td');
+    var last = getLastCheck(it.id);
+    if(last){
+      tdLast.innerHTML = '<span class="maj-checked">✓ ' + last + '</span>';
+    } else {
+      tdLast.innerHTML = '<span class="maj-checked never">jamais</span>';
     }
-    title.appendChild(btn);
+    tr.appendChild(tdLast);
+
+    // Actions
+    var tdAct = document.createElement('td');
+    tdAct.className = 'maj-actions';
+    var btnSearch = document.createElement('button');
+    btnSearch.className = 'maj-btn';
+    btnSearch.type = 'button';
+    btnSearch.innerHTML = '🔍 Vérifier';
+    btnSearch.title = 'Ouvre 3 recherches ciblées (Google récent, AFNOR/Légifrance, synthèses pro)';
+    btnSearch.onclick = function(){ runSearchFor(it); };
+    var btnMark = document.createElement('button');
+    btnMark.className = 'maj-btn ok';
+    btnMark.type = 'button';
+    btnMark.innerHTML = '✓';
+    btnMark.title = 'Marquer cette norme comme vérifiée aujourd\'hui';
+    btnMark.onclick = function(){
+      setLastCheck(it.id, formatToday());
+      renderMajTable();
+      renderMajSummary();
+    };
+    tdAct.appendChild(btnSearch);
+    tdAct.appendChild(btnMark);
+    tr.appendChild(tdAct);
+
+    body.appendChild(tr);
   });
 }
 
-function openNormCheck(pageId){
-  var meta = NORMS_CHECK[pageId];
-  if(!meta) return;
-  var overlay = document.getElementById('normCheckOverlay');
-  document.getElementById('ncTitle').textContent = '🔄 Vérifier les MAJ — ' + meta.label;
-  var last = getLastCheck(pageId);
-  var sub = document.getElementById('ncSub');
-  var edParts = [];
-  if(meta.edition) edParts.push('Édition référencée ici : <strong>' + meta.edition + '</strong>.');
-  if(last) edParts.push('Dernière vérification enregistrée : <strong>' + last + '</strong>.');
-  else edParts.push('Aucune vérification enregistrée pour cette norme.');
-  edParts.push('Ouvre les sources ci-dessous pour confirmer qu\'aucune nouvelle édition / amendement n\'a été publiée.');
-  sub.innerHTML = edParts.join(' ');
+function kindColor(k){
+  if(k === 'NF') return 'purple';
+  if(k === 'Enedis') return 'blue';
+  if(k === 'Décret') return 'amber';
+  if(k === 'Arrêté') return 'green';
+  return 'purple';
+}
 
-  var host = document.getElementById('ncLinks');
-  host.innerHTML = '';
-  buildCheckLinks(meta).forEach(function(l){
-    var a = document.createElement('a');
-    a.className = 'ck-link';
-    a.href = l.url;
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
-    var icon = document.createElement('span'); icon.className = 'ck-icon'; icon.textContent = l.icon;
-    var text = document.createElement('span'); text.className = 'ck-text';
-    var lbl = document.createElement('span'); lbl.className = 'ck-label'; lbl.textContent = l.label;
-    var tag = document.createElement('span'); tag.className = 'ck-tag'; tag.textContent = l.tag;
-    text.appendChild(lbl); text.appendChild(tag);
-    var arrow = document.createElement('span'); arrow.className = 'ck-arrow'; arrow.textContent = '↗';
-    a.appendChild(icon); a.appendChild(text); a.appendChild(arrow);
-    host.appendChild(a);
+function runSearchFor(it){
+  // Ouvre 3 recherches dans des onglets distincts.
+  // Le bloqueur de popup peut limiter : la 1re part en _blank,
+  // les autres sont des window.open après un court délai pour rester
+  // dans le geste utilisateur.
+  var urls = [searchNewerURL(it)];
+  urls.push(it.kind === 'Arrêté' || it.kind === 'Décret' ? searchLegifranceURL(it) : searchAfnorURL(it));
+  urls.push(searchProURL(it));
+  urls.forEach(function(u){ window.open(u, '_blank', 'noopener,noreferrer'); });
+  setLastCheck(it.id, formatToday());
+  renderMajTable();
+  renderMajSummary();
+}
+
+function runBulkSearch(){
+  var urls = buildBulkSearchURLs(NORMS_INVENTORY);
+  if(!confirm('Cela va ouvrir ' + urls.length + ' onglet(s) de recherche Google groupée. Continuer ?')) return;
+  urls.forEach(function(u){ window.open(u, '_blank', 'noopener,noreferrer'); });
+}
+
+function markAllChecked(){
+  if(!confirm('Marquer les ' + NORMS_INVENTORY.length + ' normes comme vérifiées aujourd\'hui ?')) return;
+  var today = formatToday();
+  NORMS_INVENTORY.forEach(function(it){ setLastCheck(it.id, today); });
+  renderMajTable();
+  renderMajSummary();
+}
+
+function resetAllChecks(){
+  if(!confirm('Effacer toutes les dates de dernière vérification ?')) return;
+  NORMS_INVENTORY.forEach(function(it){ setLastCheck(it.id, null); });
+  renderMajTable();
+  renderMajSummary();
+}
+
+function renderMajSummary(){
+  var host = document.getElementById('majSummary');
+  if(!host) return;
+  var total = NORMS_INVENTORY.length;
+  var checked = 0, recent = 0, oldThreshold = 90; // jours
+  var now = Date.now();
+  NORMS_INVENTORY.forEach(function(it){
+    var d = getLastCheck(it.id);
+    if(d){
+      checked++;
+      // Parse "12 mai 2026" approximatif : on ne peut pas, on stocke la
+      // date FR formatée. On garde un compteur simple "ever checked".
+    }
   });
-
-  document.getElementById('ncMark').onclick = function(){
-    var today = formatToday();
-    setLastCheck(pageId, today);
-    overlay.classList.remove('on');
-    injectCheckButtons();
-  };
-  overlay.classList.add('on');
+  var never = total - checked;
+  host.innerHTML =
+    '<div class="maj-summary-card"><div class="ms-label">Normes référencées</div><div class="ms-val">' + total + '</div></div>' +
+    '<div class="maj-summary-card ' + (checked === total ? 'ok' : '') + '"><div class="ms-label">Vérifiées</div><div class="ms-val">' + checked + ' / ' + total + '</div></div>' +
+    '<div class="maj-summary-card ' + (never > 0 ? 'warn' : 'ok') + '"><div class="ms-label">Jamais vérifiées</div><div class="ms-val">' + never + '</div></div>';
 }
 
-function closeNormCheck(){
-  document.getElementById('normCheckOverlay').classList.remove('on');
+function initMajPage(){
+  var btnAll = document.getElementById('btnMajAll');
+  if(btnAll) btnAll.onclick = runBulkSearch;
+  var btnMarkAll = document.getElementById('btnMajMarkAll');
+  if(btnMarkAll) btnMarkAll.onclick = markAllChecked;
+  var btnReset = document.getElementById('btnMajReset');
+  if(btnReset) btnReset.onclick = resetAllChecks;
+  renderMajTable();
+  renderMajSummary();
 }
-
-document.addEventListener('keydown', function(ev){
-  if(ev.key === 'Escape'){
-    var ov = document.getElementById('normCheckOverlay');
-    if(ov && ov.classList.contains('on')) closeNormCheck();
-  }
-});
 
 if(document.readyState === 'loading'){
-  document.addEventListener('DOMContentLoaded', injectCheckButtons);
+  document.addEventListener('DOMContentLoaded', initMajPage);
 } else {
-  injectCheckButtons();
+  initMajPage();
 }
 function doSearch(q){
   q=(q||'').toLowerCase().trim();

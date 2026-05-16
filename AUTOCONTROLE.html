@@ -2587,12 +2587,17 @@ async function generateOfficialPDF(download=true){
     if(_previewURL) URL.revokeObjectURL(_previewURL);
     _previewURL = URL.createObjectURL(blob);
 
-    // Injecte un <embed> dans le wrapper (plus fiable que <iframe> pour le rendu PDF inline)
+    // Injecte un <iframe> dans le wrapper. On a déjà essayé <embed> qui est
+    // un peu plus optimal pour le rendu PDF natif, mais Chrome refuse d'afficher
+    // le viewer interne dans un <embed type="application/pdf"> chargé avec une
+    // URL blob: depuis une page elle-même iframée sous accueil.html avec CSP
+    // stricte. L'<iframe src="blob:..."> passe l'aperçu au PDF viewer Chrome
+    // de manière fiable.
     const wrap = document.getElementById('pdfPreviewWrap');
     if(wrap){
       wrap.style.padding = '0';
       wrap.style.display = 'block';
-      wrap.innerHTML = `<embed id="pdfPreview" type="application/pdf" src="${_previewURL}" style="width:100%;height:100%;border:none">`;
+      wrap.innerHTML = `<iframe id="pdfPreview" src="${_previewURL}" style="width:100%;height:100%;border:none" title="Aperçu de l'autocontrôle"></iframe>`;
     }
 
     if(download){

@@ -253,6 +253,32 @@ if (window.__algomesBlocked) {
     installA11yStyles();
   }
 
+  // ─── Indicateur "hors ligne" global ───────────────────────────────────────
+  // Affiche un bandeau discret en haut de la page quand le navigateur perd
+  // la connexion. Sans ça, l'utilisateur peut saisir un long formulaire et
+  // découvrir tardivement que rien n'a été sauvé côté cloud.
+  function installOfflineBanner(){
+    if (document.getElementById('algomes-offline-banner')) return;
+    var b = document.createElement('div');
+    b.id = 'algomes-offline-banner';
+    b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99998;' +
+      'background:linear-gradient(90deg,#7c2d12 0%,#dc2626 50%,#7c2d12 100%);' +
+      'color:#fff;padding:6px 16px;text-align:center;' +
+      'font-family:system-ui,sans-serif;font-size:12px;letter-spacing:1px;' +
+      'font-weight:700;display:none;box-shadow:0 2px 10px rgba(0,0,0,.4)';
+    b.textContent = '⚠ Hors ligne — vos modifications ne sont pas synchronisées avec le cloud.';
+    (document.body || document.documentElement).appendChild(b);
+    function refresh(){ b.style.display = navigator.onLine ? 'none' : 'block'; }
+    window.addEventListener('online', refresh);
+    window.addEventListener('offline', refresh);
+    refresh();
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', installOfflineBanner, { once: true });
+  } else {
+    installOfflineBanner();
+  }
+
   // ─── Bouton flottant DEBUG (toutes les pages) ─────────────────────────────
   // Petit bouton discret en bas à droite. Clic → démarre l'enregistrement
   // (clear + flag + indicateur REC). Re-clic → arrête + copie tout au

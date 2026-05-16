@@ -3,6 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://cdnjs.cloudflare.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://api.github.com https://ipapi.co https://dns.google https://tile.openstreetmap.org; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; worker-src 'self' blob:;">
+<link rel="preconnect" href="https://www.gstatic.com">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://firestore.googleapis.com">
+<link rel="preconnect" href="https://cdnjs.cloudflare.com">
 <title>LISEUSE PLAN · A.L. GOMES</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" integrity="sha384-sEVIly94UBRLKWdkYoPpSG7GD/e79YHMrxVyZaOk712Ga7+EAw6w1EFi+xBzBdd+" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js" integrity="sha384-EkqK+ezBWJuvO3hfrSx2iVqr3YQbhmnzn8kPhOpBZ+0GMVU5oGSgptwIu8D84HjE" crossorigin="anonymous"></script>
@@ -1592,11 +1597,11 @@ html, body {
       puis saisissez cette distance ici. Toutes les mesures ultérieures utiliseront cette échelle.
     </div>
     <div class="field">
-      <label>Distance mesurée (pixels PDF)</label>
+      <label for="cal-pixel">Distance mesurée (pixels PDF)</label>
       <input type="text" id="cal-pixel" readonly>
     </div>
     <div class="field">
-      <label>Distance réelle (mètres)</label>
+      <label for="cal-meters">Distance réelle (mètres)</label>
       <input type="number" id="cal-meters" step="0.001" placeholder="Ex. 5.40">
     </div>
     <div class="modal-actions">
@@ -1613,7 +1618,7 @@ html, body {
       Donnez un nom à ce tronçon, ou cliquez sur un chemin existant pour l'ajouter à un chemin déjà créé. Les tronçons portant le même nom sont additionnés.
     </div>
     <div class="field">
-      <label>Nouveau nom</label>
+      <label for="cable-name-input">Nouveau nom</label>
       <input type="text" id="cable-name-input" list="cable-names-list" placeholder="Ex. CDC EDF BAT A, CDC SG 155x50..." autocomplete="off" maxlength="60">
       <datalist id="cable-names-list"></datalist>
     </div>
@@ -1667,7 +1672,7 @@ html, body {
   <div class="modal">
     <h3 id="modal-note-title">ANNOTATION</h3>
     <div class="field">
-      <label>Texte</label>
+      <label for="note-text">Texte</label>
       <textarea id="note-text" placeholder="Ex. Prévoir attente VDI, Circuit C12 à vérifier, etc." rows="3"></textarea>
     </div>
     <div class="modal-actions">
@@ -1683,12 +1688,12 @@ html, body {
   <div class="modal" style="min-width:480px">
     <h3 id="modal-text-title">AJOUTER DU TEXTE</h3>
     <div class="field">
-      <label>Texte</label>
+      <label for="text-content">Texte</label>
       <textarea id="text-content" placeholder="Saisissez le texte à afficher sur le plan…" rows="3" style="width:100%"></textarea>
     </div>
     <div class="field" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
       <div style="display:flex;flex-direction:column;gap:3px">
-        <label style="font-size:10px">Police</label>
+        <label for="text-font" style="font-size:10px">Police</label>
         <select id="text-font" style="padding:5px;background:var(--bg-3);color:var(--text);border:1px solid var(--panel-border);border-radius:3px">
           <option value="Helvetica">Helvetica</option>
           <option value="Arial">Arial</option>
@@ -1705,11 +1710,11 @@ html, body {
         </select>
       </div>
       <div style="display:flex;flex-direction:column;gap:3px">
-        <label style="font-size:10px">Taille (pt)</label>
+        <label for="text-size" style="font-size:10px">Taille (pt)</label>
         <input id="text-size" type="number" value="14" min="6" max="96" step="1" style="width:70px;padding:5px;background:var(--bg-3);color:var(--text);border:1px solid var(--panel-border);border-radius:3px">
       </div>
       <div style="display:flex;flex-direction:column;gap:3px">
-        <label style="font-size:10px">Couleur</label>
+        <label for="text-color" style="font-size:10px">Couleur</label>
         <input id="text-color" type="color" value="#000000" style="width:50px;height:28px;background:none;border:1px solid var(--panel-border);border-radius:3px;cursor:pointer">
       </div>
       <div style="display:flex;flex-direction:column;gap:3px">
@@ -1757,7 +1762,7 @@ html, body {
       </div>
     </div>
     <div class="field">
-      <label>Taille à l'apposition</label>
+      <label for="sig-size">Taille à l'apposition</label>
       <div style="display:flex;align-items:center;gap:8px">
         <input type="range" id="sig-size" min="60" max="400" step="10" value="160" style="flex:1">
         <span id="sig-size-label" style="font-variant-numeric:tabular-nums;font-size:11px;color:var(--text-1);min-width:55px;text-align:right">160 px</span>
@@ -1777,7 +1782,7 @@ html, body {
   <div class="modal">
     <h3>NOUVELLE CATÉGORIE</h3>
     <div class="field">
-      <label>Nom</label>
+      <label for="cat-name">Nom</label>
       <input type="text" id="cat-name" placeholder="Ex. Prises, Luminaires, PC 32A, etc." maxlength="40">
     </div>
     <div class="field">
@@ -1788,7 +1793,7 @@ html, body {
       </div>
     </div>
     <div class="field">
-      <label>Raccourci clavier (1-9, optionnel)</label>
+      <label for="cat-shortcut">Raccourci clavier (1-9, optionnel)</label>
       <input type="text" id="cat-shortcut" placeholder="Ex. 1" maxlength="1" style="width:60px;text-align:center">
     </div>
     <div class="modal-actions">
@@ -1854,7 +1859,7 @@ html, body {
       <div class="label" id="merge-progress-label">Préparation...</div>
     </div>
     <div class="field" style="margin-top:14px">
-      <label>Nom du fichier fusionné</label>
+      <label for="merge-output-name">Nom du fichier fusionné</label>
       <input type="text" id="merge-output-name" value="planning_fusionne.pdf">
     </div>
     <div class="modal-actions">

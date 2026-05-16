@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://cdnjs.cloudflare.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://api.github.com https://ipapi.co https://dns.google https://tile.openstreetmap.org; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; worker-src 'self' blob:;">
+<link rel="preconnect" href="https://www.gstatic.com">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://firestore.googleapis.com">
+<link rel="preconnect" href="https://cdnjs.cloudflare.com">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>A.L.GOMES — Dossier matériel · Fiche produit</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" integrity="sha384-sEVIly94UBRLKWdkYoPpSG7GD/e79YHMrxVyZaOk712Ga7+EAw6w1EFi+xBzBdd+" crossorigin="anonymous"></script>
@@ -460,8 +465,8 @@ input.proj { font-size: 28pt; font-weight: 700; text-align: center; letter-spaci
         <!-- Logo AL GOMES — exactement le même fichier que celui utilisé dans
              les attestations CONSUEL (logo-algomes.png) -->
         <img class="fp-logo" src="logo-algomes.png" alt="A.L. GOMES Entreprise">
-        <div class="row"><label>Lot :</label><input type="text" class="fpinp" id="f_lot" placeholder="Electricité Cfo / Cfa"></div>
-        <div class="row"><label>Emetteur :</label><input type="text" class="fpinp" id="f_emetteur" value="AL GOMES"></div>
+        <div class="row"><label for="f_lot">Lot :</label><input type="text" class="fpinp" id="f_lot" placeholder="Electricité Cfo / Cfa"></div>
+        <div class="row"><label for="f_emetteur">Emetteur :</label><input type="text" class="fpinp" id="f_emetteur" value="AL GOMES"></div>
         <div class="addr">
           77, Bd d'Aulnay - 93250 VILLEMOMBLE<br>
           Tél : 01.48.49.83.95<br>
@@ -472,8 +477,8 @@ input.proj { font-size: 28pt; font-weight: 700; text-align: center; letter-spaci
 
     <!-- N° fiche + Date -->
     <tr class="fp-id">
-      <td><label>FICHE N° :</label><input type="text" class="fpinp" id="f_num" placeholder="1.0" style="display:inline-block;width:auto;min-width:120px;border-bottom:1px dotted #000"></td>
-      <td><label>DATE :</label><input type="date" class="fpinp" id="f_date" style="display:inline-block;width:auto;min-width:140px;border-bottom:1px dotted #000"></td>
+      <td><label for="f_num">FICHE N° :</label><input type="text" class="fpinp" id="f_num" placeholder="1.0" style="display:inline-block;width:auto;min-width:120px;border-bottom:1px dotted #000"></td>
+      <td><label for="f_date">DATE :</label><input type="date" class="fpinp" id="f_date" style="display:inline-block;width:auto;min-width:140px;border-bottom:1px dotted #000"></td>
     </tr>
   </table>
 
@@ -559,9 +564,9 @@ input.proj { font-size: 28pt; font-weight: 700; text-align: center; letter-spaci
       </td>
     </tr>
     <tr>
-      <td class="date"><div class="row"><label>Le :</label><input type="date" id="bet_date"></div></td>
-      <td class="date"><div class="row"><label>Le :</label><input type="date" id="arch_date"></div></td>
-      <td class="date"><div class="row"><label>Le :</label><input type="date" id="moe_date"></div></td>
+      <td class="date"><div class="row"><label for="bet_date">Le :</label><input type="date" id="bet_date"></div></td>
+      <td class="date"><div class="row"><label for="arch_date">Le :</label><input type="date" id="arch_date"></div></td>
+      <td class="date"><div class="row"><label for="moe_date">Le :</label><input type="date" id="moe_date"></div></td>
     </tr>
   </table>
 

@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://cdnjs.cloudflare.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://api.github.com https://ipapi.co https://dns.google https://tile.openstreetmap.org; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; worker-src 'self' blob:;">
+<link rel="preconnect" href="https://www.gstatic.com">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://firestore.googleapis.com">
+<link rel="preconnect" href="https://unpkg.com">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>A.L.GOMES — Administration</title>
 <script>
@@ -303,10 +308,10 @@ if(window.self!==window.top){
     <div class="card">
       <h2><span>+</span> Ajouter un utilisateur</h2>
       <div class="form-row four">
-        <div class="form-group"><label>Identifiant</label><input type="text" id="newLogin" placeholder="ex: jean.dupont"></div>
-        <div class="form-group"><label>Nom complet</label><input type="text" id="newName" placeholder="Jean Dupont"></div>
-        <div class="form-group"><label>Mot de passe</label><input type="password" id="newPassword" placeholder="Min. 6 caractères"></div>
-        <div class="form-group"><label>Rôle</label><select id="newUserRole"></select></div>
+        <div class="form-group"><label for="newLogin">Identifiant</label><input type="text" id="newLogin" placeholder="ex: jean.dupont"></div>
+        <div class="form-group"><label for="newName">Nom complet</label><input type="text" id="newName" placeholder="Jean Dupont"></div>
+        <div class="form-group"><label for="newPassword">Mot de passe</label><input type="password" id="newPassword" placeholder="Min. 6 caractères"></div>
+        <div class="form-group"><label for="newUserRole">Rôle</label><select id="newUserRole"></select></div>
       </div>
       <button class="btn btn-primary" id="btnAddUser" onclick="addUser()">Créer l'utilisateur</button>
     </div>
@@ -360,7 +365,7 @@ if(window.self!==window.top){
       <h2><span>🚫</span> IP bannies</h2>
       <div id="bannedIpsList" style="margin-bottom:18px;overflow-x:auto"></div>
       <div class="form-row" style="margin-bottom:0;grid-template-columns:1fr auto;align-items:end">
-        <div class="form-group"><label>Bannir une IP manuellement</label><input type="text" id="newBanIp" placeholder="ex: 82.123.45.6"></div>
+        <div class="form-group"><label for="newBanIp">Bannir une IP manuellement</label><input type="text" id="newBanIp" placeholder="ex: 82.123.45.6"></div>
         <div class="form-group"><label>&nbsp;</label><button class="btn btn-warn btn-sm" onclick="banIp()">+ Bannir</button></div>
       </div>
     </div>
@@ -373,9 +378,9 @@ if(window.self!==window.top){
       <h2><span>🏷</span> Gestion des rôles</h2>
       <div class="roles-list" id="rolesList"></div>
       <div class="form-row three" style="margin-bottom:0">
-        <div class="form-group"><label>Identifiant</label><input type="text" id="newRoleId" placeholder="ex: technicien"></div>
-        <div class="form-group"><label>Nom affiché</label><input type="text" id="newRoleLabel" placeholder="ex: Technicien"></div>
-        <div class="form-group"><label>Couleur</label>
+        <div class="form-group"><label for="newRoleId">Identifiant</label><input type="text" id="newRoleId" placeholder="ex: technicien"></div>
+        <div class="form-group"><label for="newRoleLabel">Nom affiché</label><input type="text" id="newRoleLabel" placeholder="ex: Technicien"></div>
+        <div class="form-group"><label for="newRoleColor">Couleur</label>
           <div style="display:flex;gap:8px;align-items:center">
             <input type="color" id="newRoleColor" value="#3b82f6">
             <button class="btn btn-primary btn-sm" onclick="addRole()">+ Ajouter</button>
@@ -407,11 +412,11 @@ if(window.self!==window.top){
 
       <div class="sig-upload">
         <div class="form-group">
-          <label>Propriétaire</label>
+          <label for="sigOwnerSelect">Propriétaire</label>
           <select id="sigOwnerSelect"></select>
         </div>
         <div class="form-group">
-          <label>Libellé (facultatif)</label>
+          <label for="sigLabel">Libellé (facultatif)</label>
           <input type="text" id="sigLabel" placeholder="ex: Signature + cachet">
         </div>
         <label class="sig-dropzone" id="sigDropzone">
@@ -466,10 +471,10 @@ if(window.self!==window.top){
         À re-saisir sur chaque navigateur/machine.
       </div>
       <div class="form-row four">
-        <div class="form-group"><label>Owner</label><input type="text" id="ghOwner" placeholder="jerome93190"></div>
-        <div class="form-group"><label>Repository</label><input type="text" id="ghRepo" placeholder="al-gomes"></div>
-        <div class="form-group"><label>Branche par défaut</label><input type="text" id="ghBranch" placeholder="main"></div>
-        <div class="form-group"><label>Token (ghp_...)</label><input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxxxxxxx"></div>
+        <div class="form-group"><label for="ghOwner">Owner</label><input type="text" id="ghOwner" placeholder="jerome93190"></div>
+        <div class="form-group"><label for="ghRepo">Repository</label><input type="text" id="ghRepo" placeholder="al-gomes"></div>
+        <div class="form-group"><label for="ghBranch">Branche par défaut</label><input type="text" id="ghBranch" placeholder="main"></div>
+        <div class="form-group"><label for="ghToken">Token (ghp_...)</label><input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxxxxxxx"></div>
       </div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <button class="btn btn-primary btn-sm" onclick="saveGhConfig()">💾 Tester &amp; enregistrer</button>
@@ -536,12 +541,13 @@ if(window.self!==window.top){
       <div class="fb-toolbar">
         <button class="btn btn-sm" onclick="fbLoadRules()" style="background:rgba(255,160,0,.10);color:#ffb74d;border:1px solid rgba(255,160,0,.30)">↻ Recharger depuis Firebase</button>
         <button class="btn btn-primary btn-sm" onclick="fbSaveRules()">💾 Déployer les règles</button>
+        <button class="btn btn-sm" onclick="fbShowRulesHistory()" style="background:rgba(120,50,255,.10);color:#b388ff;border:1px solid rgba(120,50,255,.30)">⟲ Historique / Rollback</button>
         <span id="fbRulesInfo" class="fb-rules-info"></span>
       </div>
       <textarea id="fbRulesText" class="fb-rules-textarea" spellcheck="false" placeholder="Charge les règles depuis Firebase pour commencer…"></textarea>
       <div style="font-size:11px;color:var(--text2);margin-top:8px">
         ⚠ Les règles sont déployées <strong style="color:#fbbf24">immédiatement en production</strong>
-        après confirmation. Teste tes changements avec l'émulateur Firestore avant de pousser.
+        après confirmation. Les 5 dernières versions sont sauvegardées en local pour permettre un rollback rapide via « Historique ».
       </div>
     </div>
   </div>
@@ -584,8 +590,8 @@ if(window.self!==window.top){
 <div class="modal-overlay" id="editModal"><div class="modal">
   <h3>Modifier le rôle</h3>
   <input type="hidden" id="editUid">
-  <div class="form-group"><label>Utilisateur</label><input type="text" id="editUserLabel" disabled></div>
-  <div class="form-group" style="margin-top:12px"><label>Nouveau rôle</label><select id="editRole"></select></div>
+  <div class="form-group"><label for="editUserLabel">Utilisateur</label><input type="text" id="editUserLabel" disabled></div>
+  <div class="form-group" style="margin-top:12px"><label for="editRole">Nouveau rôle</label><select id="editRole"></select></div>
   <div class="modal-actions">
     <button class="btn btn-danger btn-sm" onclick="closeModal('editModal')">Annuler</button>
     <button class="btn btn-primary btn-sm" onclick="saveUserRole()">Enregistrer</button>
@@ -596,9 +602,9 @@ if(window.self!==window.top){
 <div class="modal-overlay" id="renameModal"><div class="modal">
   <h3>Renommer le rôle</h3>
   <input type="hidden" id="rnId">
-  <div class="form-group"><label>Identifiant (fixe)</label><input type="text" id="rnIdLabel" disabled></div>
-  <div class="form-group" style="margin-top:12px"><label>Nom affiché</label><input type="text" id="rnLabel"></div>
-  <div class="form-group" style="margin-top:12px"><label>Couleur</label><input type="color" id="rnColor"></div>
+  <div class="form-group"><label for="rnIdLabel">Identifiant (fixe)</label><input type="text" id="rnIdLabel" disabled></div>
+  <div class="form-group" style="margin-top:12px"><label for="rnLabel">Nom affiché</label><input type="text" id="rnLabel"></div>
+  <div class="form-group" style="margin-top:12px"><label for="rnColor">Couleur</label><input type="color" id="rnColor"></div>
   <div class="modal-actions">
     <button class="btn btn-danger btn-sm" onclick="closeModal('renameModal')">Annuler</button>
     <button class="btn btn-primary btn-sm" onclick="saveRename()">Enregistrer</button>
@@ -609,9 +615,9 @@ if(window.self!==window.top){
 <div class="modal-overlay" id="pwdModal"><div class="modal">
   <h3>Changer le mot de passe</h3>
   <input type="hidden" id="pwdUid">
-  <div class="form-group"><label>Utilisateur</label><input type="text" id="pwdUserLabel" disabled></div>
-  <div class="form-group" style="margin-top:12px"><label>Mot de passe actuel</label><input type="password" id="pwdOld" placeholder="Mot de passe actuel de l'utilisateur"></div>
-  <div class="form-group" style="margin-top:12px"><label>Nouveau mot de passe</label><input type="password" id="pwdNew" placeholder="Min. 6 caractères"></div>
+  <div class="form-group"><label for="pwdUserLabel">Utilisateur</label><input type="text" id="pwdUserLabel" disabled></div>
+  <div class="form-group" style="margin-top:12px"><label for="pwdOld">Mot de passe actuel</label><input type="password" id="pwdOld" placeholder="Mot de passe actuel de l'utilisateur"></div>
+  <div class="form-group" style="margin-top:12px"><label for="pwdNew">Nouveau mot de passe</label><input type="password" id="pwdNew" placeholder="Min. 6 caractères"></div>
   <div style="margin-top:12px;font-size:12px;color:var(--text2)">Le mot de passe actuel est nécessaire pour la modification. Si vous ne le connaissez pas, utilisez la <a href="https://console.firebase.google.com/project/algomes-a4e46/authentication/users" target="_blank" style="color:#b388ff">Console Firebase</a>.</div>
   <div class="modal-actions">
     <button class="btn btn-danger btn-sm" onclick="closeModal('pwdModal')">Annuler</button>
@@ -1877,6 +1883,26 @@ async function fbLoadRules(){
   }
 }
 
+// ─── Backups locaux des règles (max 5) pour rollback rapide ────────────────
+// Stocké en localStorage. Pas synchronisé cross-poste — chaque admin garde
+// ses propres backups sur son navigateur.
+const FB_RULES_BACKUPS_KEY = 'algomes_fb_rules_backups';
+function fbReadBackups(){
+  try { return JSON.parse(localStorage.getItem(FB_RULES_BACKUPS_KEY) || '[]'); }
+  catch(e){ return []; }
+}
+function fbPushBackup(content, label){
+  const list = fbReadBackups();
+  list.unshift({
+    ts: Date.now(),
+    label: label || '',
+    content: content,
+    by: (me && me.login) || 'admin'
+  });
+  while (list.length > 5) list.pop();
+  try { localStorage.setItem(FB_RULES_BACKUPS_KEY, JSON.stringify(list)); } catch(e){}
+}
+
 // ─── Déploie les règles : crée un nouveau ruleset + active le release ─────
 async function fbSaveRules(){
   const newContent = document.getElementById('fbRulesText').value;
@@ -1884,10 +1910,32 @@ async function fbSaveRules(){
     toast('Les règles ne peuvent pas être vides', 'error');
     return;
   }
-  if (!confirm('⚠ Déployer ces règles Firestore EN PRODUCTION ?\n\nLes règles actuelles seront immédiatement remplacées. Aucun retour en arrière automatique.')) return;
-  const tid = fbShowBusy('Création du nouveau ruleset…', null, 10);
+  // Confirmation forte : l'utilisateur doit retaper « DEPLOY » exactement.
+  // Empêche le déploiement par mégarde via un raccourci clavier ou un
+  // double-clic accidentel sur le bouton.
+  const typed = prompt('Confirmation : tapez DEPLOY pour déployer ces règles en production.\n\nUn backup de la version actuelle sera conservé localement pour rollback.');
+  if (typed !== 'DEPLOY') {
+    if (typed !== null) toast('Mot de confirmation incorrect — déploiement annulé', 'error');
+    return;
+  }
+  const tid = fbShowBusy('Backup de la version actuelle…', null, 5);
   try {
     const projectId = FC.projectId;
+    // 1. Backup local de la version actuelle AVANT déploiement
+    try {
+      const releaseNow = await fbApi('GET', '/projects/' + projectId + '/releases/cloud.firestore');
+      if (releaseNow && releaseNow.rulesetName) {
+        const rulesetNow = await fbApi('GET', '/' + releaseNow.rulesetName);
+        const fileNow = rulesetNow && rulesetNow.source && rulesetNow.source.files && rulesetNow.source.files[0];
+        if (fileNow && fileNow.content) {
+          fbPushBackup(fileNow.content, 'Avant déploiement du ' + new Date().toLocaleString('fr-FR'));
+        }
+      }
+    } catch (e) {
+      // Si le backup échoue, on AVERTIT mais on continue — l'utilisateur a
+      // explicitement validé le déploiement.
+      console.warn('Backup local échoué (déploiement continué) :', e.message);
+    }
     fbUpdateProgress(tid, 30, 'POST /rulesets en cours…');
     const newRuleset = await fbApi('POST', '/projects/' + projectId + '/rulesets', {
       source: { files: [{ name: 'firestore.rules', content: newContent }] }
@@ -1909,6 +1957,57 @@ async function fbSaveRules(){
   } finally {
     fbHideBusy(tid);
   }
+}
+
+// ─── Modale historique / rollback ──────────────────────────────────────────
+function fbShowRulesHistory(){
+  const list = fbReadBackups();
+  // Modale légère injectée dans le DOM (plutôt qu'une vraie modale réutilisable)
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  ov.innerHTML =
+    '<div style="background:#14141c;border:1px solid rgba(120,50,255,.3);border-radius:12px;padding:24px;max-width:720px;width:100%;max-height:80vh;overflow:auto;color:#e0d8ff;font-family:system-ui,sans-serif">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">' +
+        '<h3 style="font-size:16px;color:#d4b5ff;margin:0">Historique des règles Firestore (' + list.length + '/5)</h3>' +
+        '<button style="background:transparent;border:0;color:#888;font-size:24px;cursor:pointer" data-close>×</button>' +
+      '</div>' +
+      (list.length === 0
+        ? '<div style="padding:30px;text-align:center;color:#888;font-size:13px">Aucun backup pour l\'instant. Une copie sera créée automatiquement avant chaque déploiement.</div>'
+        : '<div style="display:flex;flex-direction:column;gap:10px">' +
+          list.map((b, i) =>
+            '<div style="border:1px solid rgba(120,50,255,.2);border-radius:8px;padding:12px;background:rgba(120,50,255,.04)">' +
+              '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+                '<div>' +
+                  '<div style="font-size:13px;font-weight:600">' + esc(b.label || ('Version ' + (i+1))) + '</div>' +
+                  '<div style="font-size:11px;color:#888">' + new Date(b.ts).toLocaleString('fr-FR') + ' · par ' + esc(b.by||'?') + ' · ' + b.content.length + ' caractères</div>' +
+                '</div>' +
+                '<button class="btn btn-sm" data-restore="' + i + '" style="background:rgba(120,50,255,.15);color:#d4b5ff;border:1px solid rgba(120,50,255,.4)">Restaurer dans l\'éditeur</button>' +
+              '</div>' +
+              '<details><summary style="cursor:pointer;font-size:11px;color:#a78bfa">Aperçu (premiers 400 car.)</summary>' +
+                '<pre style="background:#0a0a14;padding:10px;border-radius:6px;font-size:11px;max-height:200px;overflow:auto;margin-top:6px;white-space:pre-wrap">' + esc(b.content.slice(0,400)) + (b.content.length > 400 ? '…' : '') + '</pre>' +
+              '</details>' +
+            '</div>'
+          ).join('') +
+        '</div>'
+      ) +
+      '<div style="font-size:11px;color:#888;margin-top:16px;line-height:1.5">' +
+        'La restauration copie la version sélectionnée dans l\'éditeur. Tu peux l\'éditer puis cliquer sur « Déployer » pour la pousser en production. Le déploiement crée à son tour un backup de la version courante.' +
+      '</div>' +
+    '</div>';
+  ov.addEventListener('click', e => {
+    if (e.target === ov || e.target.matches('[data-close]')) { ov.remove(); return; }
+    const r = e.target.closest && e.target.closest('[data-restore]');
+    if (r){
+      const idx = parseInt(r.getAttribute('data-restore'), 10);
+      const b = list[idx];
+      if (b) {
+        document.getElementById('fbRulesText').value = b.content;
+        toast('Version chargée dans l\'éditeur — vérifiez puis déployez', 'success');
+        ov.remove();
+      }
+    }
+  });
+  document.body.appendChild(ov);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

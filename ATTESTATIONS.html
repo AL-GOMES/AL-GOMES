@@ -729,7 +729,14 @@ async function loadCustomTemplates(){
       .sort((a, b) => (a.label || '').localeCompare(b.label || ''));
     buildTemplateButtons();
   } catch(err){
-    console.warn('Chargement modèles perso échoué :', err);
+    // permission-denied : règles Firestore non déployées (voir firestore.rules
+    // à la racine du repo) ou rôle utilisateur sans droit de lecture. La
+    // feature "Mes modèles" est juste indisponible — pas un bug bloquant.
+    if(err && err.code === 'permission-denied'){
+      console.info('Modèles perso : lecture Firestore non autorisée — vérifier les règles déployées (voir firestore.rules).');
+      return;
+    }
+    console.warn('Chargement modèles perso échoué :', err && err.message || err);
   }
 }
 

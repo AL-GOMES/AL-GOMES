@@ -11,18 +11,6 @@
        jamais fail-open avec page visible sans _algomesUser)
    ============================================================================= */
 (function () {
-  if (!window.auth || !window.db) {
-    console.error('[auth-guard] firebase-init.js doit être chargé avant.');
-    // Fail-closed : on garde la page cachée et on redirige vers login.
-    document.documentElement.style.visibility = 'hidden';
-    redirectLogin();
-    return;
-  }
-  var page = (window.location.pathname.split('/').pop() || 'accueil.html');
-  if (!page.endsWith('.html')) page += '.html';
-
-  document.documentElement.style.visibility = 'hidden';
-
   // Casse les iframes imbriquées : tente window.top, puis parent, puis self.
   // Si on est dans une iframe sandbox sans allow-top-navigation, ces accès
   // peuvent throw → on retombe sur window.location.
@@ -38,6 +26,30 @@
       '<div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;font-family:sans-serif;background:#0A0816;color:#fff;text-align:center;padding:20px">' +
       html + '</div>';
   }
+
+  if (!window.auth || !window.db) {
+    // Firebase SDK n'a pas pu se charger (CDN gstatic.com down, hash SRI
+    // invalide, réseau local bloquant…). Rediriger vers index.html
+    // boucle indéfiniment puisque index.html charge aussi firebase.
+    // Plutôt : afficher un écran "Service indisponible" avec bouton
+    // « Réessayer » et bouton « Retour login ».
+    console.error('[auth-guard] firebase-init.js n\'a pas chargé Firebase.');
+    showBlock(
+      '<div style="font-size:24px;color:#fbbf24;margin-bottom:14px">⚠ Service indisponible</div>' +
+      '<div style="font-size:14px;color:#bbb;max-width:480px;line-height:1.5;margin-bottom:18px">' +
+      'Impossible de joindre le serveur d\'authentification. Vérifiez votre connexion internet ou réessayez dans quelques instants.' +
+      '</div>' +
+      '<div style="display:flex;gap:10px">' +
+      '<button onclick="window.location.reload()" style="background:rgba(120,50,255,.2);color:#d4b5ff;border:1px solid rgba(120,50,255,.4);padding:10px 22px;border-radius:8px;font-weight:700;letter-spacing:2px;cursor:pointer">Réessayer</button>' +
+      '<button onclick="window.location.href=\'index.html\'" style="background:transparent;color:#888;border:1px solid rgba(255,255,255,.15);padding:10px 22px;border-radius:8px;font-weight:700;letter-spacing:2px;cursor:pointer">Retour login</button>' +
+      '</div>'
+    );
+    return;
+  }
+  var page = (window.location.pathname.split('/').pop() || 'accueil.html');
+  if (!page.endsWith('.html')) page += '.html';
+
+  document.documentElement.style.visibility = 'hidden';
 
   auth.onAuthStateChanged(function (user) {
     if (!user) {

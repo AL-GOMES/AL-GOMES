@@ -1076,9 +1076,14 @@ function exportPDF(){
   if(!B.length){alert('Aucun bâtiment');return}
   const pName=document.getElementById('projName').value.trim()||'Sans titre';
   const pw2=window.open('','_blank');
-  
+  // Échappement HTML pour les chaînes injectées dans pw2.document.write —
+  // hygiène de base au cas où un nom de projet ou de bâtiment importé
+  // depuis Excel contiendrait des balises HTML.
+  const _e = s => String(s==null?'':s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const pNameH = _e(pName);
+
   pw2.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
-    <title>${pName} — Tableau Abonné</title>
+    <title>${pNameH} — Tableau Abonné</title>
     <style>
       @page{size:A4 landscape;margin:0}
       @media print{.pb{page-break-before:always}}
@@ -1114,7 +1119,7 @@ function exportPDF(){
 
     // PAGE 1: Synthèse + Listing
     if(bi>0)pw2.document.write('<div class="pb"></div>');
-    pw2.document.write(`<div class="pg"><div class="hdr"><img src='${_LOGO_B64}' style='height:32px;border-radius:4px'><h1>${pName} — ${b.n}</h1><span>NF C 15-100 · AL GOMES</span></div>`);
+    pw2.document.write(`<div class="pg"><div class="hdr"><img src='${_LOGO_B64}' style='height:32px;border-radius:4px'><h1>${pNameH} — ${_e(b.n)}</h1><span>NF C 15-100 · AL GOMES</span></div>`);
 
     // Pré-calcule pour chaque type le nombre de modules et de rangées
     // (= calcul des départs différentiels + somme modules + ⌈totalMod×1.2/13⌉)
@@ -1393,7 +1398,7 @@ function exportPDF(){
       svg+=`</svg>`;
 
       pw2.document.write(`<div class="pb"></div><div class="pg" style="page-break-inside:avoid">
-        <div class="hdr" style="margin-bottom:4px"><img src='${_LOGO_B64}' style='height:28px;border-radius:4px'><h1>${pName} — ${b.n} — Schéma Type ${t}</h1><span>NF C 15-100 · AL GOMES</span></div>
+        <div class="hdr" style="margin-bottom:4px"><img src='${_LOGO_B64}' style='height:28px;border-radius:4px'><h1>${pNameH} — ${_e(b.n)} — Schéma Type ${_e(t)}</h1><span>NF C 15-100 · AL GOMES</span></div>
         ${svg}
         <div class="ft" style="margin-top:4px;font-size:8px">AL GOMES — Bureau d'Études Techniques Électricité — NF C 15-100</div>
       </div>`);

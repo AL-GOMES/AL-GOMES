@@ -2099,6 +2099,31 @@ function loadDocState(docHash) {
 // remet à true.
 let _suspendAutoSave = true;
 
+// Rescale une annotation par un facteur uniforme — utilisé à la restauration
+// d'un payload embarqué pour adapter les coords aux dims actuelles du PDF.
+function scaleAnnotationByFactor(a, k) {
+  if (!a || k === 1) return a;
+  if (a.type === 'cable') {
+    return { ...a, points: (a.points || []).map(p => ({ x: p.x * k, y: p.y * k })) };
+  }
+  if (a.type === 'measure') {
+    return { ...a, x1: a.x1 * k, y1: a.y1 * k, x2: a.x2 * k, y2: a.y2 * k };
+  }
+  if (a.type === 'note' || a.type === 'elbow') {
+    return { ...a, x: a.x * k, y: a.y * k };
+  }
+  if (a.type === 'signature') {
+    return { ...a, x: a.x * k, y: a.y * k,
+             w: a.w ? a.w * k : a.w, h: a.h ? a.h * k : a.h };
+  }
+  if (a.type === 'text' || a.type === 'text-edit') {
+    return { ...a, x: a.x * k, y: a.y * k,
+             w: a.w ? a.w * k : a.w, h: a.h ? a.h * k : a.h,
+             size: (a.size || 14) * k };
+  }
+  return a;
+}
+
 function saveDocState(docHash, state) {
   if (_suspendAutoSave) {
     // Auto-save désactivé : on retrouve le viewer concerné et on le marque dirty.
@@ -2320,9 +2345,32 @@ class PDFViewer {
         );
       }
       if (doRestore) {
-        this.state.annotations = embedded.primary.annotations || [];
-        this.state.counts = embedded.primary.counts || [];
-        this.state.calibration = embedded.primary.calibration || null;
+        // Calcul du ratio pour rescaler les annotations vers la
+        // résolution actuelle du PDF (qui peut différer de celle utilisée
+        // lors de l'export, par exemple si le PDF a été régénéré ou si le
+        // canvas avait été bridé).
+        let restoreScale = 1;
+        try {
+          const firstPage = await this.pdf.getPage(1);
+          const baseVp = firstPage.getViewport({ scale: 1, rotation: this.rotation });
+          const origW = embedded.primary.originalPageWidth;
+          if (origW && origW > 0 && baseVp.width) {
+            restoreScale = baseVp.width / origW;
+          }
+        } catch {}
+        // Si payload sans originalPageWidth (ancien format), on tente le
+        // fallback historique : exportScale × (image/original) — mais sans
+        // info on ne peut que laisser tel quel (restoreScale=1).
+        this.state.annotations = (embedded.primary.annotations || []).map(a => {
+          if (restoreScale === 1) return a;
+          return scaleAnnotationByFactor(a, restoreScale);
+        });
+        this.state.counts = (embedded.primary.counts || []).map(c => {
+          if (restoreScale === 1) return c;
+          return { ...c, pdfX: c.pdfX * restoreScale, pdfY: c.pdfY * restoreScale };
+        });
+        const _cal = embedded.primary.calibration;
+        this.state.calibration = _cal ? { ...(_cal), pxPerMeter: _cal.pxPerMeter * restoreScale } : null;
         this.state.categories = embedded.primary.categories || [];
         // Restauration en mémoire uniquement — l'utilisateur doit cliquer
         // SAUVEGARDER explicitement pour persister dans le navigateur.
@@ -8264,7 +8312,13 @@ async function exportFullPdf() {
     const ctx = cv.getContext('2d');
     ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height);
     await page.render({ canvasContext: ctx, viewport: vp }).promise;
-    drawAllAnnotationsOnCanvasForExport(ctx, v, pageNum, renderScale);
+    // Échelle effective = ratio canvas réel / dims originales du PDF (peut
+    // différer de renderScale si le navigateur a silencieusement bridé la
+    // taille du canvas pour cause de mémoire). On utilise cette échelle pour
+    // dessiner les annotations à la bonne position visuelle.
+    const baseVp = page.getViewport({ scale: 1, rotation: v.rotation });
+    const effScale = cv.width / baseVp.width;
+    drawAllAnnotationsOnCanvasForExport(ctx, v, pageNum, effScale);
     pushCanvasAsPage(cv);
   }
 
@@ -8288,7 +8342,9 @@ async function exportFullPdf() {
       const ctx = cv.getContext('2d');
       ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height);
       await page.render({ canvasContext: ctx, viewport: vp }).promise;
-      drawAllAnnotationsOnCanvasForExport(ctx, vb, pageNum, renderScale);
+      const baseVpB = page.getViewport({ scale: 1, rotation: vb.rotation });
+      const effScaleB = cv.width / baseVpB.width;
+      drawAllAnnotationsOnCanvasForExport(ctx, vb, pageNum, effScaleB);
       pushCanvasAsPage(cv);
     }
   }
@@ -8312,7 +8368,9 @@ async function exportFullPdf() {
       const ctx = cv.getContext('2d');
       ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height);
       await page.render({ canvasContext: ctx, viewport: vp }).promise;
-      drawAllAnnotationsOnCanvasForExport(ctx, vc, pageNum, renderScale);
+      const baseVpC = page.getViewport({ scale: 1, rotation: vc.rotation });
+      const effScaleC = cv.width / baseVpC.width;
+      drawAllAnnotationsOnCanvasForExport(ctx, vc, pageNum, effScaleC);
       pushCanvasAsPage(cv);
     }
   }
@@ -8336,43 +8394,15 @@ async function exportFullPdf() {
   showLoader('Export PDF', 'Assemblage…', 95);
   await new Promise(r => setTimeout(r, 10));
 
-  function scaleAnnot(a) {
-    if (a.type === 'cable') {
-      return { ...a, points: (a.points || []).map(p => ({ x: p.x * renderScale, y: p.y * renderScale })) };
-    }
-    if (a.type === 'measure') {
-      return { ...a, x1: a.x1 * renderScale, y1: a.y1 * renderScale, x2: a.x2 * renderScale, y2: a.y2 * renderScale };
-    }
-    if (a.type === 'note' || a.type === 'elbow') {
-      return { ...a, x: a.x * renderScale, y: a.y * renderScale };
-    }
-    if (a.type === 'signature') {
-      return {
-        ...a,
-        x: a.x * renderScale,
-        y: a.y * renderScale,
-        w: (a.w || 160) * renderScale,
-        h: a.h ? a.h * renderScale : null
-      };
-    }
-    // text et text-edit : x, y, w, h, size doivent tous être scalés sinon
-    // l'annotation est restaurée au mauvais endroit/taille à la réouverture.
-    if (a.type === 'text' || a.type === 'text-edit') {
-      return {
-        ...a,
-        x: a.x * renderScale,
-        y: a.y * renderScale,
-        w: a.w ? a.w * renderScale : a.w,
-        h: a.h ? a.h * renderScale : a.h,
-        size: (a.size || 14) * renderScale
-      };
-    }
-    return a;
-  }
-  function scaleCount(c) {
-    return { ...c, pdfX: c.pdfX * renderScale, pdfY: c.pdfY * renderScale, radius: (c.radius || 0) * renderScale };
-  }
-  function scaleCal(cal) { return cal ? { pxPerMeter: cal.pxPerMeter * renderScale } : null; }
+  // Stratégie unifiée : on stocke TOUTES les annotations en coords PDF
+  // ORIGINALES (avant renderScale) dans le payload. À la réouverture, le
+  // restore détecte si le PDF actuel est à une dimension différente du
+  // PDF original (via originalPageWidth stocké dans payload) et rescale
+  // les coords pour matcher. Drag/move/suppression fonctionnent dans tous
+  // les cas (canvas downscalé par browser ou non, MediaBox = canvas ou non).
+  function scaleAnnot(a) { return a; }
+  function scaleCount(c) { return c; }
+  function scaleCal(cal) { return cal; }
   function offsetAnnot(a, ox, oy) {
     if (a.type === 'cable') {
       return { ...a, points: (a.points || []).map(p => ({ x: p.x + ox, y: p.y + oy })) };
@@ -8402,9 +8432,23 @@ async function exportFullPdf() {
       calibration: scaleCal(v.state.calibration),
       categories: v.state.categories || [],
       annotations: [],
-      counts: []
+      counts: [],
+      // Dims originales du PDF primaire (avant renderScale). Permet à la
+      // réouverture de calculer le ratio current/original et de rescaler
+      // les annotations pour les positionner correctement, même si le PDF
+      // exporté a été produit à une échelle différente de l'original
+      // (canvas bridé par le navigateur, mode assemblé, etc.).
+      originalPageWidth: 0,  // rempli plus bas avec page1 dims
+      originalPageHeight: 0
     }
   };
+  // Capture dims originales de la page 1 du primary (référence pour restore)
+  try {
+    const _firstPage = await v.pdf.getPage(1);
+    const _baseVp = _firstPage.getViewport({ scale: 1, rotation: v.rotation });
+    payload.primary.originalPageWidth = Math.round(_baseVp.width);
+    payload.primary.originalPageHeight = Math.round(_baseVp.height);
+  } catch {}
 
   // Si mode assemblé : annotations de la page courante des 2 viewers → page 1 du PDF exporté, coords offset
   const annotsOut = [];

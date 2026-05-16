@@ -673,9 +673,16 @@ auth.onAuthStateChanged(async u=>{
     const d=await db.collection('users').doc(u.uid).get();
     if(!d.exists){location.href='index.html';return}
     const userData = d.data();
-    // Vérifier l'accès via config/pageAccess (et non plus un hardcode role==='admin')
-    const accessDoc = await db.collection('config').doc('pageAccess').get();
-    const access = accessDoc.exists ? (accessDoc.data() || {}) : {};
+    // Vérifier l'accès via config/pageAccess. Si ce doc n'est pas lisible
+    // (rules trop strictes, hoquet réseau), on tombe sur le default
+    // 'admin uniquement' au lieu de bloquer toute la page.
+    let access = {};
+    try {
+      const accessDoc = await db.collection('config').doc('pageAccess').get();
+      access = accessDoc.exists ? (accessDoc.data() || {}) : {};
+    } catch (cfgErr) {
+      console.warn('[admin] config/pageAccess non chargeable, fallback admin-only :', cfgErr && cfgErr.message);
+    }
     const allowedAdmin = Array.isArray(access['admin.html']) ? access['admin.html'] : ['admin'];
     if(!allowedAdmin.includes(userData.role)){
       location.href='accueil.html';

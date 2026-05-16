@@ -1114,6 +1114,19 @@ async function exportDossierPdf(){
     alert('Librairies PDF non chargées. Recharge la page (Ctrl+Shift+R).');
     return;
   }
+  // Décode un data URL ("data:image/png;base64,XXX") en ArrayBuffer.
+  // On évite `fetch(dataUrl)` qui est plus capricieux (CSP, certains
+  // navigateurs renvoient un blob inattendu) et lent. atob fonctionne
+  // partout et est synchrone.
+  const _dataUrlToBytes = function (dataUrl) {
+    const i = dataUrl.indexOf(',');
+    if (i < 0) throw new Error('Data URL invalide');
+    const base64 = dataUrl.slice(i + 1);
+    const bin = atob(base64);
+    const buf = new Uint8Array(bin.length);
+    for (let j = 0; j < bin.length; j++) buf[j] = bin.charCodeAt(j);
+    return buf;
+  };
   syncFormToActive();
   syncCoverFromUI();
   const originalId = currentFicheId;
@@ -1213,7 +1226,10 @@ async function exportDossierPdf(){
       if (!pngData || pngData.length < 100) {
         throw new Error('Page de garde : PNG vide (data URL ' + (pngData || '').length + ' chars)');
       }
-      const pngBytes = await (await fetch(pngData)).arrayBuffer();
+      if (!pngData.startsWith('data:image/png;base64,')) {
+        throw new Error('Page de garde : format inattendu (' + pngData.slice(0, 30) + ')');
+      }
+      const pngBytes = _dataUrlToBytes(pngData);
       const img = await out.embedPng(pngBytes);
       const page = out.addPage([A4W, A4H]);
       const ratio = Math.min(A4W / img.width, A4H / img.height);
@@ -1295,7 +1311,10 @@ async function exportDossierPdf(){
         }
       });
       const pngData = canvas.toDataURL('image/png');
-      const pngBytes = await (await fetch(pngData)).arrayBuffer();
+      if (!pngData.startsWith('data:image/png;base64,')) {
+        throw new Error('Fiche ' + (fiche && fiche.id) + ' : format inattendu (' + pngData.slice(0, 30) + ')');
+      }
+      const pngBytes = _dataUrlToBytes(pngData);
       const img = await out.embedPng(pngBytes);
       const page = out.addPage([A4W, A4H]);
       // Centre l'image en respectant le ratio

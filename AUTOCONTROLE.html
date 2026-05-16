@@ -490,22 +490,22 @@ main{padding:24px;max-width:1400px;margin:0 auto}
 
     <div class="grid cols-2">
       <div class="field">
-        <label>N° d'affaire</label>
+        <label for="f_numAffaire">N° d'affaire</label>
         <input type="text" id="f_numAffaire" placeholder="Ex : 2026-014">
       </div>
       <div class="field">
-        <label>Libellé du chantier</label>
+        <label for="f_libelle">Libellé du chantier</label>
         <input type="text" id="f_libelle" placeholder="Ex : Résidence Les Tilleuls">
       </div>
     </div>
 
     <div class="grid cols-2 mt-12">
       <div class="field">
-        <label>Adresse</label>
+        <label for="f_adresse">Adresse</label>
         <input type="text" id="f_adresse" placeholder="Ex : 12 Rue Alexis Pesnon">
       </div>
       <div class="field">
-        <label>Commune</label>
+        <label for="f_commune">Commune</label>
         <input type="text" id="f_commune" placeholder="Ex : 93100 Montreuil">
       </div>
     </div>
@@ -525,22 +525,22 @@ main{padding:24px;max-width:1400px;margin:0 auto}
     <div class="colonne-only">
       <div class="grid cols-2 mt-12">
         <div class="field">
-          <label>Nb de logements (total chantier)</label>
+          <label for="f_nbLogts">Nb de logements (total chantier)</label>
           <input type="number" min="0" id="f_nbLogts" placeholder="14">
         </div>
         <div class="field">
-          <label>P / logement</label>
+          <label for="f_pLogts">P / logement</label>
           <input type="text" id="f_pLogts" placeholder="Ex : 12 kVA mono">
         </div>
       </div>
 
       <div class="grid cols-2 mt-12">
         <div class="field">
-          <label>Nb de Services Généraux</label>
+          <label for="f_nbSG">Nb de Services Généraux</label>
           <input type="number" min="0" id="f_nbSG" placeholder="2">
         </div>
         <div class="field">
-          <label>P / SG</label>
+          <label for="f_pSG">P / SG</label>
           <input type="text" id="f_pSG" placeholder="Ex : COMMERCE = 12 kVA / SGX-A = 12 kVA">
         </div>
       </div>
@@ -552,60 +552,60 @@ main{padding:24px;max-width:1400px;margin:0 auto}
 
     <div class="grid cols-3">
       <div class="field">
-        <label>Maître d'ouvrage — Société</label>
+        <label for="f_mo_societe">Maître d'ouvrage — Société</label>
         <input type="text" id="f_mo_societe" placeholder="Ex : SCCV Alexis Pesnon">
       </div>
       <div class="field">
-        <label>M./Mme</label>
+        <label for="f_mo_nom">M./Mme</label>
         <input type="text" id="f_mo_nom" placeholder="">
       </div>
       <div class="field">
-        <label>Téléphone</label>
+        <label for="f_mo_tel">Téléphone</label>
         <input type="text" id="f_mo_tel" placeholder="">
       </div>
     </div>
 
     <div class="grid cols-3 mt-12">
       <div class="field">
-        <label>Maître d'œuvre — Société</label>
+        <label for="f_moe_societe">Maître d'œuvre — Société</label>
         <input type="text" id="f_moe_societe">
       </div>
       <div class="field">
-        <label>M./Mme</label>
+        <label for="f_moe_nom">M./Mme</label>
         <input type="text" id="f_moe_nom">
       </div>
       <div class="field">
-        <label>Téléphone chantier</label>
+        <label for="f_moe_tel">Téléphone chantier</label>
         <input type="text" id="f_moe_tel">
       </div>
     </div>
 
     <div class="grid cols-3 mt-12">
       <div class="field">
-        <label>Entreprise réalisatrice</label>
+        <label for="f_er_societe">Entreprise réalisatrice</label>
         <input type="text" id="f_er_societe" value="AL GOMES">
       </div>
       <div class="field">
-        <label>M./Mme</label>
+        <label for="f_er_nom">M./Mme</label>
         <input type="text" id="f_er_nom" value="GOMES">
       </div>
       <div class="field">
-        <label>Téléphone</label>
+        <label for="f_er_tel">Téléphone</label>
         <input type="text" id="f_er_tel" value="01.48.49.83.95">
       </div>
     </div>
 
     <div class="grid cols-3 mt-12">
       <div class="field">
-        <label>Gestionnaire du réseau de distribution</label>
+        <label for="f_grd_nom">Gestionnaire du réseau de distribution</label>
         <input type="text" id="f_grd_nom" value="Enedis">
       </div>
       <div class="field">
-        <label>Téléphone</label>
+        <label for="f_grd_tel">Téléphone</label>
         <input type="text" id="f_grd_tel">
       </div>
       <div class="field">
-        <label>Fax</label>
+        <label for="f_grd_fax">Fax</label>
         <input type="text" id="f_grd_fax">
       </div>
     </div>
@@ -615,15 +615,15 @@ main{padding:24px;max-width:1400px;margin:0 auto}
     <div class="panel-title">Représentant du Maître d'ouvrage (auto-contrôle demandé)</div>
     <div class="grid cols-3">
       <div class="field">
-        <label>M./Mme</label>
+        <label for="f_rep_nom">M./Mme</label>
         <input type="text" id="f_rep_nom">
       </div>
       <div class="field">
-        <label>Qualité</label>
+        <label for="f_rep_qualite">Qualité</label>
         <input type="text" id="f_rep_qualite">
       </div>
       <div class="field">
-        <label>Date de la demande</label>
+        <label for="f_date">Date de la demande</label>
         <input type="date" id="f_date">
       </div>
     </div>
@@ -660,11 +660,11 @@ main{padding:24px;max-width:1400px;margin:0 auto}
     <div class="panel-title">Sélection de l'escalier à contrôler</div>
     <div class="grid cols-2">
       <div class="field">
-        <label>Bâtiment</label>
+        <label for="selBat">Bâtiment</label>
         <select id="selBat" onchange="onSelBat()"></select>
       </div>
       <div class="field">
-        <label>Escalier</label>
+        <label for="selEsc">Escalier</label>
         <select id="selEsc" onchange="onSelEsc()"></select>
       </div>
     </div>
@@ -714,7 +714,7 @@ main{padding:24px;max-width:1400px;margin:0 auto}
     <div class="panel-title">Options de rendu</div>
     <div class="grid cols-3">
       <div class="field">
-        <label>Couleur des coches</label>
+        <label for="opt_color">Couleur des coches</label>
         <select id="opt_color" onchange="schedulePreview()">
           <option value="violet" selected>Violet AL GOMES</option>
           <option value="black">Noir</option>
@@ -723,7 +723,7 @@ main{padding:24px;max-width:1400px;margin:0 auto}
         </select>
       </div>
       <div class="field">
-        <label>Style de coche</label>
+        <label for="opt_mark">Style de coche</label>
         <select id="opt_mark" onchange="schedulePreview()">
           <option value="check" selected>✓ Coche stylisée</option>
           <option value="x">✗ Croix</option>
@@ -731,7 +731,7 @@ main{padding:24px;max-width:1400px;margin:0 auto}
         </select>
       </div>
       <div class="field">
-        <label>Symbole « infini » (∞)</label>
+        <label for="opt_inf">Symbole « infini » (∞)</label>
         <select id="opt_inf" onchange="schedulePreview()">
           <option value="symbol" selected>∞ Dessiné</option>
           <option value="ol">OL (Open Loop)</option>
@@ -753,7 +753,7 @@ main{padding:24px;max-width:1400px;margin:0 auto}
         </label>
       </div>
       <div class="field">
-        <label>Page d'application</label>
+        <label for="sigPage">Page d'application</label>
         <select id="sigPage" onchange="onSigPageChange()">
           <option value="last">Dernière page (fiche d'auto-contrôle)</option>
           <option value="cover">Première page (page de couverture)</option>
@@ -804,7 +804,7 @@ main{padding:24px;max-width:1400px;margin:0 auto}
   <div class="dialog">
     <h3>Nouveau bâtiment</h3>
     <div class="grid">
-      <div class="field"><label>Nom du bâtiment</label><input type="text" id="dlgBatName" placeholder="Ex : A"></div>
+      <div class="field"><label for="dlgBatName">Nom du bâtiment</label><input type="text" id="dlgBatName" placeholder="Ex : A"></div>
     </div>
     <div class="actions">
       <button class="btn" onclick="closeDialog('dlgBuilding')">Annuler</button>
@@ -817,8 +817,8 @@ main{padding:24px;max-width:1400px;margin:0 auto}
   <div class="dialog">
     <h3>Nouvel escalier</h3>
     <div class="grid cols-2">
-      <div class="field"><label>Nom escalier</label><input type="text" id="dlgEscName" placeholder="Ex : 1, A, Cage 1"></div>
-      <div class="field"><label>Nombre de niveaux</label><input type="number" id="dlgEscLevels" min="1" value="5"></div>
+      <div class="field"><label for="dlgEscName">Nom escalier</label><input type="text" id="dlgEscName" placeholder="Ex : 1, A, Cage 1"></div>
+      <div class="field"><label for="dlgEscLevels">Nombre de niveaux</label><input type="number" id="dlgEscLevels" min="1" value="5"></div>
     </div>
     <div class="actions">
       <button class="btn" onclick="closeDialog('dlgStaircase')">Annuler</button>

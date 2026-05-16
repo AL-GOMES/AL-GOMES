@@ -194,12 +194,12 @@ tr:hover .rd{opacity:1}.rd:hover{color:#FF6B6B}
 <div class="content" id="sh"></div>
 <div class="mo" id="mo"><div class="ml">
   <h3>Ajouter</h3>
-  <label>Type</label>
+  <label for="mType">Type</label>
   <select id="mType" class="wl" style="text-align:left;margin-bottom:8px" onchange="document.getElementById('mNivRow').style.display=this.value==='bat'?'':'none'">
     <option value="bat">Bâtiment</option><option value="tgbt">TGBT</option>
   </select>
-  <label>Nom</label><input type="text" id="mN" placeholder="BAT-C">
-  <div id="mNivRow"><label>Nombre de niveaux (hors RDC)</label><input type="number" id="mNiv" value="9" min="1" max="30"></div>
+  <label for="mN">Nom</label><input type="text" id="mN" placeholder="BAT-C">
+  <div id="mNivRow"><label for="mNiv">Nombre de niveaux (hors RDC)</label><input type="number" id="mNiv" value="9" min="1" max="30"></div>
   <div class="bg_" style="margin-top:18px;justify-content:flex-end"><button class="btn" onclick="cM()">Annuler</button><button class="btn ba" onclick="aB()">Ajouter</button></div>
 </div></div>
 <script>

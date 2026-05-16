@@ -298,11 +298,11 @@ body{font-family:'Rajdhani',sans-serif;background:var(--bg);color:var(--text);mi
       <div class="section">
         <div class="section-title">Affaire</div>
         <div class="form-group">
-          <label>Nom de l'affaire / chantier</label>
+          <label for="f_affaire">Nom de l'affaire / chantier</label>
           <input type="text" class="form-input" id="f_affaire" placeholder="ex : Lallier - Mille Roses, L'Haÿ-les-Roses">
         </div>
         <div class="form-group">
-          <label>Objet de l'attestation</label>
+          <label for="f_objet">Objet de l'attestation</label>
           <input type="text" class="form-input" id="f_objet" placeholder="ex : Conformité NF C 15-100">
         </div>
       </div>
@@ -311,7 +311,7 @@ body{font-family:'Rajdhani',sans-serif;background:var(--bg);color:var(--text);mi
       <div class="section">
         <div class="section-title">Contenu de la déclaration</div>
         <div class="form-group">
-          <label>Corps du texte</label>
+          <label for="f_corps">Corps du texte</label>
           <textarea class="form-textarea" id="f_corps" rows="8" placeholder="Je rédige le texte exact que j'atteste sur l'honneur..."></textarea>
           <div class="form-hint">Astuce : les modèles ci-dessus remplissent ce champ automatiquement.</div>
         </div>
@@ -321,12 +321,12 @@ body{font-family:'Rajdhani',sans-serif;background:var(--bg);color:var(--text);mi
       <div class="section">
         <div class="section-title">Signataire <span style="font-size:9px;color:var(--text3);letter-spacing:1px;margin-left:4px">— lié à votre compte</span></div>
         <div class="form-group">
-          <label>Nom & Prénom</label>
+          <label for="f_nom">Nom & Prénom</label>
           <input type="text" class="form-input" id="f_nom" placeholder="Jérôme LEHINGUE">
           <div class="form-hint">Pré-rempli depuis votre compte A.L.GOMES.</div>
         </div>
         <div class="form-group">
-          <label>Fonction / Qualité</label>
+          <label for="f_fonction">Fonction / Qualité</label>
           <input type="text" class="form-input" id="f_fonction" placeholder="Ingénieur d'études">
           <div class="form-hint">Rempli automatiquement selon votre rôle. Modifiable ponctuellement.</div>
         </div>
@@ -342,7 +342,7 @@ body{font-family:'Rajdhani',sans-serif;background:var(--bg);color:var(--text);mi
           </div>
         </div>
         <div class="form-group">
-          <label>Adresser à</label>
+          <label for="f_destinataire">Adresser à</label>
           <textarea class="form-textarea" id="f_destinataire" rows="3" placeholder="Laisser vide pour « À qui de droit »" style="min-height:70px;font-family:'Rajdhani',sans-serif;font-size:14px"></textarea>
         </div>
       </div>
@@ -351,30 +351,30 @@ body{font-family:'Rajdhani',sans-serif;background:var(--bg);color:var(--text);mi
       <div class="section">
         <div class="section-title">Société</div>
         <div class="form-group">
-          <label>Raison sociale</label>
+          <label for="f_societe">Raison sociale</label>
           <input type="text" class="form-input" id="f_societe" value="A.L. GOMES">
         </div>
         <div class="form-group">
-          <label>Adresse</label>
+          <label for="f_adresse">Adresse</label>
           <input type="text" class="form-input" id="f_adresse" value="77 boulevard d'Aulnay" placeholder="N° et rue">
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>Code postal</label>
+            <label for="f_cp">Code postal</label>
             <input type="text" class="form-input" id="f_cp" value="93250">
           </div>
           <div class="form-group">
-            <label>Ville</label>
+            <label for="f_ville">Ville</label>
             <input type="text" class="form-input" id="f_ville" value="VILLEMOMBLE">
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>Téléphone</label>
+            <label for="f_tel">Téléphone</label>
             <input type="text" class="form-input" id="f_tel" value="01.48.49.83.95">
           </div>
           <div class="form-group">
-            <label>Email</label>
+            <label for="f_email">Email</label>
             <input type="text" class="form-input" id="f_email" value="algomes.sas@al-gomes.com">
           </div>
         </div>
@@ -384,7 +384,7 @@ body{font-family:'Rajdhani',sans-serif;background:var(--bg);color:var(--text);mi
       <div class="section">
         <div class="section-title">Pied de page</div>
         <div class="form-group">
-          <label>Mentions légales en bas de courrier</label>
+          <label for="f_footer">Mentions légales en bas de courrier</label>
           <textarea class="form-input" id="f_footer" rows="2" style="min-height:60px;font-family:'Rajdhani',sans-serif;font-size:13px" placeholder="Laisser vide pour masquer le pied de page"></textarea>
           <div class="form-hint">S'affiche en bas de chaque attestation. Sautez une ligne avec Entrée pour couper sur plusieurs lignes.</div>
         </div>
@@ -395,11 +395,11 @@ body{font-family:'Rajdhani',sans-serif;background:var(--bg);color:var(--text);mi
         <div class="section-title">Lieu & Date</div>
         <div class="form-row">
           <div class="form-group">
-            <label>Lieu de signature</label>
+            <label for="f_lieu">Lieu de signature</label>
             <input type="text" class="form-input" id="f_lieu" value="Villemomble">
           </div>
           <div class="form-group">
-            <label>Date</label>
+            <label for="f_date">Date</label>
             <input type="date" class="form-input" id="f_date">
           </div>
         </div>
@@ -1289,9 +1289,9 @@ async function saveToHistory(generatedAs){
 
     <div class="carnet-form" id="carnetForm" style="display:none">
       <input type="hidden" id="carnetEditId">
-      <label>Nom / raison sociale</label>
+      <label for="carnetName">Nom / raison sociale</label>
       <input type="text" id="carnetName" placeholder="ex: Eiffage Construction Habitat">
-      <label>Adresse (multi-lignes)</label>
+      <label for="carnetAddress">Adresse (multi-lignes)</label>
       <textarea id="carnetAddress" placeholder="ex: 11 Place de l'Europe&#10;78140 VÉLIZY-VILLACOUBLAY&#10;À l'attention de M. DURAND"></textarea>
       <div style="display:flex;gap:8px;justify-content:flex-end">
         <button class="carnet-btn carnet-btn-ghost" onclick="closeCarnetForm()">Annuler</button>
@@ -1517,9 +1517,9 @@ async function saveCurrentAsDestinataire(){
     <div class="carnet-subtitle">L'objet et le corps actuels seront enregistrés comme modèle réutilisable, partagé avec toute l'équipe.</div>
 
     <div class="carnet-form" style="display:block;margin:0 0 14px">
-      <label>Nom du modèle</label>
+      <label for="saveTplLabel">Nom du modèle</label>
       <input type="text" id="saveTplLabel" placeholder="ex: Alarme coffret incendie">
-      <label>Icône (emoji)</label>
+      <label for="saveTplIcon">Icône (emoji)</label>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px" id="saveTplEmojiPicker">
         <!-- emojis injectés par JS -->
       </div>

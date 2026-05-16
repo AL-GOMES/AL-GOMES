@@ -1222,8 +1222,11 @@ function exportPDF(){
       if(eY.length>1&&ref.sonn>0)eY[1]._s.push('SON.');
       else if(eY.length===1&&ref.sonn>0)eY[0]._s.push('SON.');
 
-      // SVG schema
-      const nD=bD.length;const depW=260;const svgW=Math.max(nD*depW+100,1200);const svgH=560+nD*25;
+      // SVG schema (svgH inclut maintenant la place pour la box "CALCUL RANGÉES"
+      // en bas, en plus de "CALCUL CALIBRES ID")
+      const nD=bD.length;const depW=260;const svgW=Math.max(nD*depW+100,1200);
+      const _rgBoxH = 12 + (nD + 2) * 14 + 12; // titre + nD lignes par départ + total + formule
+      const svgH=560+nD*25 + _rgBoxH + 14; // +14 = gap entre les 2 boxes
       const ox=(svgW-nD*depW)/2;const cxA=svgW/2;
       const purp='#BB6BD9',bluC='#3498DB',orgC='#ED7D31',yelC='#F1C40F',redC='#E74C3C',drk='#F5F5FA';
       // Helper couleur par type de différentiel pour l'export SVG
@@ -1329,8 +1332,11 @@ function exportPDF(){
       });
 
       // Calcul calibres
-      let cy=svgH-(30+bD.length*20+20);
-      svg+=`<rect x="16" y="${cy-4}" width="${svgW-32}" height="${10+bD.length*18+12}" rx="4" fill="#F8F8FA" stroke="#DDD"/>`;
+      // On positionne désormais les 2 boxes (CALIBRES puis RANGÉES) en bas
+      // du SVG, l'une au-dessus de l'autre, avec 14 px d'écart.
+      const _calBoxH = 10 + bD.length * 18 + 12;
+      let cy = svgH - _rgBoxH - 14 - _calBoxH + 4; // +4 pour compenser le rect y=cy-4
+      svg+=`<rect x="16" y="${cy-4}" width="${svgW-32}" height="${_calBoxH}" rx="4" fill="#F8F8FA" stroke="#DDD"/>`;
       svg+=`<text x="28" y="${cy+10}" font-size="10" font-weight="bold" fill="#1F3864" font-family="Segoe UI">CALCUL CALIBRES ID</text>`;
       cy+=18;
       bD.forEach((dep,di)=>{
@@ -1341,6 +1347,30 @@ function exportPDF(){
         svg+=`<text x="80" y="${cy+10}" font-size="8" fill="${col2}" font-family="Segoe UI">${fI.length?fI.join(' + ')+' (100%)':'0A'} + ${hI.length?hI.join(' + ')+' (÷2)':'0A'} = ${Math.round((f2+h2/2)*10)/10}A → ID ${dep.cal}A</text>`;
         cy+=14;
       });
+
+      // CALCUL RANGÉES : détail du calcul du nombre de rangées du tableau
+      // Formule NF C 15-100 : ⌈ (somme modules × 1.2) / 13 ⌉
+      //   - 2 modules par départ pour l'ID
+      //   - + modules des circuits (1 par disjoncteur, sauf plaque=2, RT=6)
+      //   - × 1.2 = marge de réserve 20 %
+      //   - / 13 = modules max par rangée standard
+      const _ryTop = svgH - _rgBoxH;
+      svg+=`<rect x="16" y="${_ryTop}" width="${svgW-32}" height="${_rgBoxH}" rx="4" fill="#FAF5FF" stroke="#BB6BD9" stroke-width="0.8"/>`;
+      svg+=`<text x="28" y="${_ryTop+14}" font-size="10" font-weight="bold" fill="#BB6BD9" font-family="Segoe UI">CALCUL RANGÉES</text>`;
+      let _ry = _ryTop + 26;
+      bD.forEach((dep, di) => {
+        const _col = svgColByType(dep.type);
+        const _cirMod = dep.cir.reduce((s, c) => s + c.mod, 0);
+        svg+=`<text x="28" y="${_ry+10}" font-size="8" font-weight="bold" fill="${_col}" font-family="Segoe UI">DÉP.${di+1}:</text>`;
+        svg+=`<text x="80" y="${_ry+10}" font-size="8" fill="#1F3864" font-family="Segoe UI">2 (ID) + ${_cirMod} (circuits) = ${dep.mc} modules</text>`;
+        _ry += 14;
+      });
+      const _modParts = bD.map(d => d.mc).join(' + ');
+      svg+=`<text x="28" y="${_ry+10}" font-size="8" font-weight="bold" fill="#1F3864" font-family="Segoe UI">TOTAL:</text>`;
+      svg+=`<text x="80" y="${_ry+10}" font-size="8" fill="#1F3864" font-family="Segoe UI">${_modParts} = ${tM} modules</text>`;
+      _ry += 14;
+      svg+=`<text x="28" y="${_ry+10}" font-size="8" font-weight="bold" fill="#BB6BD9" font-family="Segoe UI">FORMULE:</text>`;
+      svg+=`<text x="80" y="${_ry+10}" font-size="8" fill="#BB6BD9" font-family="Segoe UI">⌈ ${tM} × 1.2 / 13 ⌉ = ⌈ ${(tM*1.2/13).toFixed(2)} ⌉ = ${rg} rangée${rg>1?'s':''}</text>`;
 
       svg+=`</svg>`;
 

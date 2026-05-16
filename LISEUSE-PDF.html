@@ -4217,10 +4217,32 @@ class PDFViewer {
   }
 
   clearCountsCategory(catId) {
-    this.state.counts = (this.state.counts || []).filter(c => c.category !== catId);
-    saveDocState(this.docHash, this.state);
+    // Supprime les marqueurs de cette catégorie sur tous les viewers ET
+    // supprime la catégorie elle-même (puisque les catégories sont partagées
+    // entre les 2 plans, on doit les nettoyer partout). Sinon la ligne reste
+    // dans la colonne comptage avec un compteur à 0 — ce que l'utilisateur
+    // attend pas : un X doit faire disparaître la ligne complète.
+    const viewers = (typeof app !== 'undefined')
+      ? [app.primary, app.secondary, app.tertiary].filter(v => v && v.state)
+      : [this];
+    for (const v of viewers) {
+      v.state.counts = (v.state.counts || []).filter(c => c.category !== catId);
+      v.state.categories = (v.state.categories || []).filter(c => c.id !== catId);
+      // Si la catégorie supprimée était active sur ce viewer, on remet sur la 1re dispo
+      if (v.activeCategoryId === catId) {
+        v.activeCategoryId = (v.state.categories[0] && v.state.categories[0].id) || null;
+      }
+      if (v.docHash) saveDocState(v.docHash, v.state);
+    }
+    // Re-render
     this._renderOverlay();
     this._renderCountsList();
+    if (typeof app !== 'undefined' && app.primary && app.primary !== this) {
+      app.primary._renderCountsList();
+    }
+    if (typeof app !== 'undefined' && app.secondary && app.secondary !== this) {
+      app.secondary._renderOverlay && app.secondary._renderOverlay();
+    }
   }
 
   _renderCountsList() {
@@ -4259,7 +4281,7 @@ class PDFViewer {
           '<div class="cat-label">' + escapeHtml(cat.name) + '</div>' +
           '<div class="cat-shortcut">' + (cat.shortcut || '') + '</div>' +
           '<div class="cat-count">' + catCounts.length + '</div>' +
-          '<button class="cat-clear" title="Effacer tous" data-cat="' + cat.id + '">×</button>';
+          '<button class="cat-clear" title="Supprimer cette catégorie et tous ses marqueurs" data-cat="' + cat.id + '">×</button>';
         row.addEventListener('click', (ev) => {
           if (ev.target.classList.contains('cat-clear')) return;
           this.activeCategoryId = cat.id;
@@ -4296,7 +4318,7 @@ class PDFViewer {
         const catId = b.dataset.cat;
         const cat = cats.find(c => c.id === catId);
         if (!cat) return;
-        if (confirm('Effacer tous les marqueurs de "' + cat.name + '" ?')) {
+        if (confirm('Supprimer la catégorie "' + cat.name + '" et tous ses marqueurs ?')) {
           this.clearCountsCategory(catId);
         }
       });

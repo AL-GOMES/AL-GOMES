@@ -900,28 +900,40 @@ function dropCir(ev,apRef,targetDepIdx){
 //  - .xlsx exporté par Dérivations TGBT (feuille cachée _DATA avec JSON)
 //  - .alg / .ALG : fichier de partage texte/JSON (créé par Dérivations TGBT →
 //    bouton « 🔗 Partage TA »). Non lisible dans Excel, juste importable ici.
+// La détection se fait sur les MAGIC BYTES du fichier (PK = zip = xlsx,
+// sinon JSON .ALG) plutôt que sur l'extension, pour gérer correctement
+// les fichiers renommés ou les extensions différentes par majuscule.
 async function importDeriv(input){
   if(!input.files.length)return;
   const file=input.files[0];
-  const isShare=/\.alg$/i.test(file.name);
   try{
+    // Sniff des 4 premiers bytes : "PK" + 2 bytes = zip (xlsx, format ECMA-376)
+    // Tout le reste = on tente du JSON (.ALG) sinon erreur claire.
+    const head=new Uint8Array(await file.slice(0,4).arrayBuffer());
+    const isZip=head.length>=2 && head[0]===0x50 && head[1]===0x4B; // 'PK'
+
     let data=null;
-    if(isShare){
-      // Lecture directe du JSON
-      const txt=await file.text();
-      try{ data=JSON.parse(txt); }
-      catch{ alert('Fichier .ALG illisible (JSON invalide).');input.value='';return; }
-      if(!data || data._format!=='algomes-tgbt-share'){
-        alert('Ce fichier .ALG n\'est pas un partage valide A.L.GOMES.');input.value='';return;
-      }
-    } else {
+    if(isZip){
+      // Format .xlsx (Excel) — onglet caché _DATA contenant le JSON
       const buf=await file.arrayBuffer();
       const wb=new ExcelJS.Workbook();await wb.xlsx.load(buf);
       let ds=null;wb.eachSheet(ws=>{if(ws.name==='_DATA')ds=ws});
-      if(!ds){alert('Ce fichier ne provient pas de Dérivations & TGBT.\nAucun onglet _DATA trouvé.');input.value='';return}
+      if(!ds){alert('Ce fichier Excel ne provient pas de Dérivations & TGBT.\nAucun onglet _DATA trouvé.');input.value='';return}
       const raw=ds.getCell('A1').value;
       if(!raw){alert('Données vides.');input.value='';return}
       data=JSON.parse(raw);
+    } else {
+      // Format .ALG — JSON brut texte
+      const txt=await file.text();
+      try{ data=JSON.parse(txt); }
+      catch{
+        alert('Fichier non reconnu.\n\nFormats acceptés : .xlsx exporté par Dérivations TGBT, ou .ALG (Partage TA).');
+        input.value='';return;
+      }
+      if(!data || data._format!=='algomes-tgbt-share'){
+        alert('Ce fichier .ALG n\'est pas un partage valide A.L.GOMES.\n\nAttendu : un fichier généré par le bouton « 🔗 Partage TA » de Dérivations TGBT.');
+        input.value='';return;
+      }
     }
     if(data._cir)data._cir.forEach(c=>{if(!CIR.find(x=>x.k===c.k)){CIR.push(c);CIR_AMP[c.k]=parseInt(c.a)||20}});
     if(data.P)document.getElementById('projName').value=data.P;

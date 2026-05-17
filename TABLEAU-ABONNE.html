@@ -100,6 +100,7 @@ input:focus{outline:none;border-color:rgba(123,95,172,0.35)}
     <label class="btn-top" style="cursor:pointer">📤 Importer Dérivations<input type="file" accept=".xlsx,.alg,.ALG" onchange="importDeriv(this)" style="display:none"></label>
     <label class="btn-top" style="cursor:pointer">📤 Importer Tableau Abonné<input type="file" accept=".xlsx,.alg,.ALG" onchange="importTA(this)" style="display:none"></label>
     <button class="btn-top" onclick="saveTaAlg()" title="Sauvegarder le projet en .ALG (réimportable dans ce module)">💾 Sauvegarder</button>
+    <button class="btn-top" onclick="resetCalibres()" title="Réinitialiser les calibres et types d'interrupteur aux valeurs par défaut">🔄 Reset calibres</button>
     <button class="btn-top" onclick="exportPDF()">📄 PDF</button>
     <button class="btn-top" onclick="exportDXF()">📐 DXF (AutoCAD)</button>
     <span class="badge-count" id="bL">0 lgts</span>
@@ -138,6 +139,11 @@ const TYPE_BY_KEY={
   plaq:'A',ll:'A',
   pac:'F',clim:'F',pisc:'F',varm:'F',irve_ac:'F'
 };
+// Snapshots IMMUABLES des calibres + types par défaut — utilisés par le
+// bouton "🔄 Reset calibres" pour restaurer les valeurs d'origine après
+// modification manuelle par l'utilisateur. Capturé une fois au chargement.
+const CIR_DEFAULT = JSON.parse(JSON.stringify(CIR));
+const TYPE_BY_KEY_DEFAULT = JSON.parse(JSON.stringify(TYPE_BY_KEY));
 function defCir(kva){
   if(kva>=12) return{pcgtl:1,ecl:3,pc:4,tele:1,sonn:1,plaq:1,four:1,ll:1,lv:1,sl:0,ss:1,bec:0,chauf:0,chaud:1,vr:1,th:1,rt:0,mo:0,pac:0,clim:0,pisc:0,varm:0,irve_ac:0};
   if(kva>=9)  return{pcgtl:1,ecl:3,pc:4,tele:1,sonn:1,plaq:1,four:1,ll:1,lv:1,sl:0,ss:1,bec:0,chauf:0,chaud:1,vr:1,th:1,rt:0,mo:0,pac:0,clim:0,pisc:0,varm:0,irve_ac:0};
@@ -252,7 +258,9 @@ function rB(bi){
     const dt=TYPE_BY_KEY[c.k]||'AC';
     const hc=typeDiffCol(dt);      // couleur du texte
     const hb=typeDiffBg(dt);       // fond léger
-    h+=`<th class="${ci===0?'sep-l':''}" style="width:40px;background:${hb};color:${hc};border-top:2px solid ${hc}" title="Type ${dt}">${c.n}${c.k.startsWith('_a')?`<span onclick="removeAlim('${c.k}')" style="cursor:pointer;color:#E74C3C;font-size:10px;margin-left:2px" title="Supprimer">×</span>`:''}<br><span style="font-size:8px;color:${hc};opacity:0.6">${c.a}</span></th>`;
+    // Calibre éditable : input mince inline. Modifier → setCirCal() ré-rend.
+    const calInput = `<input type="text" value="${(c.a||'').replace(/"/g,'&quot;')}" onchange="setCirCal('${c.k}', this.value)" onclick="event.stopPropagation()" title="Cliquer pour modifier le calibre" style="width:36px;font-size:9px;background:transparent;border:1px solid ${hc}33;color:${hc};text-align:center;border-radius:3px;padding:1px 2px;cursor:text"/>`;
+    h+=`<th class="${ci===0?'sep-l':''}" style="width:40px;background:${hb};color:${hc};border-top:2px solid ${hc}" title="Type ${dt}">${c.n}${c.k.startsWith('_a')?`<span onclick="removeAlim('${c.k}')" style="cursor:pointer;color:#E74C3C;font-size:10px;margin-left:2px" title="Supprimer">×</span>`:''}<br>${calInput}</th>`;
   });
   h+=`<th style="width:30px;cursor:pointer;opacity:0.5" onclick="addAlim()" title="Ajouter une alimentation">＋</th>`;
   h+=`<th class="sep-l">TYPE</th>`;
@@ -571,8 +579,40 @@ function typeDiffBg(t){return t==='A'?'rgba(237,125,49,0.06)':t==='F'?'rgba(241,
 
 // Amperage par circuit
 const CIR_AMP={pcgtl:16,ecl:10,pc:16,plaq:32,four:20,ll:20,lv:20,sl:20,ss:20,bec:20,chauf:20,chaud:10,vr:10,th:2,rt:2,mo:20,pac:20,clim:16,pisc:16,varm:16,irve_ac:32};
+const CIR_AMP_DEFAULT = Object.assign({}, CIR_AMP);
 // Circuits non divisés (chauffage + ECS comptés à 100%)
 const NON_DIV=['chauf','chaud'];
+
+// ─── Édition manuelle des calibres (en-tête du tableau) ──────────────────
+// L'utilisateur peut cliquer sur un calibre dans la ligne d'en-tête pour
+// le modifier. On extrait le nombre pour mettre à jour CIR_AMP utilisé par
+// les calculs (calcIDCal, recap modules…) ; le libellé brut "32A" / "10A"
+// reste dans CIR[*].a pour l'affichage.
+function setCirCal(k, val){
+  const c = CIR.find(x => x.k === k);
+  if (!c) return;
+  c.a = String(val || '').trim();
+  const num = parseInt(c.a, 10);
+  if (!isNaN(num) && num > 0) CIR_AMP[k] = num;
+  R();
+}
+function resetCalibres(){
+  if(!confirm('Remettre tous les calibres et types d\'interrupteur à leurs valeurs par défaut ?\n\n(Les colonnes personnalisées que vous avez ajoutées sont conservées.)')) return;
+  // Restaurer CIR[*].a pour les clés "standard" (pas _a*) à partir du snapshot
+  CIR.forEach(c => {
+    const d = CIR_DEFAULT.find(x => x.k === c.k);
+    if (d) c.a = d.a;
+  });
+  // Restaurer CIR_AMP pour les clés standard
+  Object.keys(CIR_AMP_DEFAULT).forEach(k => { CIR_AMP[k] = CIR_AMP_DEFAULT[k]; });
+  // Restaurer TYPE_BY_KEY — supprime les types ajoutés manuellement sur des
+  // clés standard et remet les valeurs d'origine
+  Object.keys(TYPE_BY_KEY).forEach(k => {
+    if (!(k in TYPE_BY_KEY_DEFAULT) && !k.startsWith('_a')) delete TYPE_BY_KEY[k];
+  });
+  Object.keys(TYPE_BY_KEY_DEFAULT).forEach(k => { TYPE_BY_KEY[k] = TYPE_BY_KEY_DEFAULT[k]; });
+  R();
+}
 
 function calcIDCal(depCirs, diffType){
   let full=0,half=0;
@@ -1676,10 +1716,22 @@ function addAlim(){
   const calStr=prompt('Calibre (A) :','20');
   if(!calStr)return;
   const cal=parseInt(calStr)||20;
+  // Type d'interrupteur différentiel sous lequel placer ce nouveau circuit.
+  // AC = classique, A = composante continue, F = onduleur/variateur, B = DC.
+  const typeIn=(prompt(
+    'Type d\'interrupteur différentiel ?\n\n' +
+    '  AC  = classique (par défaut)\n' +
+    '  A   = courants à composante continue (LL, plaque…)\n' +
+    '  F   = onduleur / variateur / PAC / IRVE AC\n' +
+    '  B   = bornes IRVE en DC',
+    'AC'
+  ) || 'AC').trim().toUpperCase();
+  const type = ['AC','A','F','B'].includes(typeIn) ? typeIn : 'AC';
   let idx=1;while(CIR.find(c=>c.k==='_a'+idx))idx++;
   const k='_a'+idx;
   CIR.push({k,n:name,a:cal+'A'});
   CIR_AMP[k]=cal;
+  if (type !== 'AC') TYPE_BY_KEY[k] = type;
   B.forEach(b=>b.a.forEach(ap=>{if(ap[k]===undefined)ap[k]=0}));
   R();
 }
@@ -1688,6 +1740,7 @@ function removeAlim(k){
   const idx=CIR.findIndex(c=>c.k===k);
   if(idx>-1)CIR.splice(idx,1);
   delete CIR_AMP[k];
+  delete TYPE_BY_KEY[k];
   B.forEach(b=>b.a.forEach(ap=>{delete ap[k]}));
   R();
 }

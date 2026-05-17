@@ -1091,7 +1091,7 @@ async function exportXLS(){
 // l'importer QUE dans le module Tableau Abonné (et non dans Dérivations
 // TGBT). Contient les mêmes données utiles que l'export Excel mais dans
 // un format opaque (JSON) — pas modifiable dans Excel.
-// Nom du fichier : <NOM AFFAIRE> - DERRIVATIONS.ALG
+// Nom du fichier : <NOM AFFAIRE> - DERIVATIONS.ALG
 async function exportShareTA(){
   const pName=document.getElementById('projName').value.trim()||'Sans titre';
   const payload={
@@ -1106,8 +1106,8 @@ async function exportShareTA(){
   };
   const json=JSON.stringify(payload,null,2);
   const blob=new Blob([json],{type:'application/octet-stream'});
-  // Format demandé : "<NOM AFFAIRE> - DERRIVATIONS.ALG"
-  const safeName=(pName.replace(/[^a-zA-Z0-9éèêëàâùûôîïçÉÈÊËÀÂÙÛÔÎÏÇ _-]/g,'_').trim())+' - DERRIVATIONS.ALG';
+  // Format demandé : "<NOM AFFAIRE> - DERIVATIONS.ALG"
+  const safeName=(pName.replace(/[^a-zA-Z0-9éèêëàâùûôîïçÉÈÊËÀÂÙÛÔÎÏÇ _-]/g,'_').trim())+' - DERIVATIONS.ALG';
   if(window.showSaveFilePicker){
     try{
       const handle=await window.showSaveFilePicker({

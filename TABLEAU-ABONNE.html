@@ -97,7 +97,7 @@ input:focus{outline:none;border-color:rgba(123,95,172,0.35)}
       color:rgba(232,224,242,0.95);font-size:13px;font-weight:600;padding:5px 14px;width:260px">
   </div>
   <div class="topbar-center">
-    <label class="btn-top" style="cursor:pointer">📤 Importer Dérivations<input type="file" accept=".xlsx,.algomes" onchange="importDeriv(this)" style="display:none"></label>
+    <label class="btn-top" style="cursor:pointer">📤 Importer Dérivations<input type="file" accept=".xlsx,.alg,.ALG" onchange="importDeriv(this)" style="display:none"></label>
     <label class="btn-top" style="cursor:pointer">📤 Importer Tableau Abonné<input type="file" accept=".xlsx" onchange="importTA(this)" style="display:none"></label>
     <button class="btn-top" onclick="exportXLS()">📥 Excel</button>
     <button class="btn-top" onclick="exportPDF()">📄 PDF</button>
@@ -898,21 +898,21 @@ function dropCir(ev,apRef,targetDepIdx){
 // ═══ IMPORT DERIVATIONS ═══
 // Accepte 2 formats :
 //  - .xlsx exporté par Dérivations TGBT (feuille cachée _DATA avec JSON)
-//  - .algomes : fichier de partage texte/JSON (créé par Dérivations TGBT →
+//  - .alg / .ALG : fichier de partage texte/JSON (créé par Dérivations TGBT →
 //    bouton « 🔗 Partage TA »). Non lisible dans Excel, juste importable ici.
 async function importDeriv(input){
   if(!input.files.length)return;
   const file=input.files[0];
-  const isShare=/\.algomes$/i.test(file.name);
+  const isShare=/\.alg$/i.test(file.name);
   try{
     let data=null;
     if(isShare){
       // Lecture directe du JSON
       const txt=await file.text();
       try{ data=JSON.parse(txt); }
-      catch{ alert('Fichier .algomes illisible (JSON invalide).');input.value='';return; }
+      catch{ alert('Fichier .ALG illisible (JSON invalide).');input.value='';return; }
       if(!data || data._format!=='algomes-tgbt-share'){
-        alert('Ce fichier .algomes n\'est pas un partage valide A.L.GOMES.');input.value='';return;
+        alert('Ce fichier .ALG n\'est pas un partage valide A.L.GOMES.');input.value='';return;
       }
     } else {
       const buf=await file.arrayBuffer();

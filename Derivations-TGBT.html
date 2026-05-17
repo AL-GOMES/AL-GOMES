@@ -1087,10 +1087,11 @@ async function exportXLS(){
 }
 
 // ═══ EXPORT SAUVEGARDE PARTAGE TABLEAU ABONNÉ ═══
-// Génère un fichier .algomes à envoyer à un autre B.E. qui ne pourra
+// Génère un fichier .ALG à envoyer à un autre B.E. qui ne pourra
 // l'importer QUE dans le module Tableau Abonné (et non dans Dérivations
 // TGBT). Contient les mêmes données utiles que l'export Excel mais dans
 // un format opaque (JSON) — pas modifiable dans Excel.
+// Nom du fichier : <NOM AFFAIRE> - DERRIVATIONS.ALG
 async function exportShareTA(){
   const pName=document.getElementById('projName').value.trim()||'Sans titre';
   const payload={
@@ -1105,12 +1106,13 @@ async function exportShareTA(){
   };
   const json=JSON.stringify(payload,null,2);
   const blob=new Blob([json],{type:'application/octet-stream'});
-  const safeName=(pName.replace(/[^a-zA-Z0-9éèêëàâùûôîïç _-]/g,'_'))+'_partage_TA.algomes';
+  // Format demandé : "<NOM AFFAIRE> - DERRIVATIONS.ALG"
+  const safeName=(pName.replace(/[^a-zA-Z0-9éèêëàâùûôîïçÉÈÊËÀÂÙÛÔÎÏÇ _-]/g,'_').trim())+' - DERRIVATIONS.ALG';
   if(window.showSaveFilePicker){
     try{
       const handle=await window.showSaveFilePicker({
         suggestedName:safeName,
-        types:[{description:'Sauvegarde de partage A.L.GOMES',accept:{'application/octet-stream':['.algomes']}}]
+        types:[{description:'Sauvegarde de partage A.L.GOMES',accept:{'application/octet-stream':['.ALG','.alg']}}]
       });
       const wr=await handle.createWritable();await wr.write(blob);await wr.close();
     }catch(e){if(e.name!=='AbortError')alert('Erreur : '+e.message)}

@@ -97,7 +97,7 @@ input:focus{outline:none;border-color:rgba(123,95,172,0.35)}
       color:rgba(232,224,242,0.95);font-size:13px;font-weight:600;padding:5px 14px;width:260px">
   </div>
   <div class="topbar-center">
-    <label class="btn-top" style="cursor:pointer">📤 Importer Dérivations<input type="file" accept=".xlsx" onchange="importDeriv(this)" style="display:none"></label>
+    <label class="btn-top" style="cursor:pointer">📤 Importer Dérivations<input type="file" accept=".xlsx,.algotgbt" onchange="importDeriv(this)" style="display:none"></label>
     <label class="btn-top" style="cursor:pointer">📤 Importer Tableau Abonné<input type="file" accept=".xlsx" onchange="importTA(this)" style="display:none"></label>
     <button class="btn-top" onclick="exportXLS()">📥 Excel</button>
     <button class="btn-top" onclick="exportPDF()">📄 PDF</button>
@@ -896,16 +896,33 @@ function dropCir(ev,apRef,targetDepIdx){
 
 
 // ═══ IMPORT DERIVATIONS ═══
+// Accepte 2 formats :
+//  - .xlsx exporté par Dérivations TGBT (feuille cachée _DATA avec JSON)
+//  - .algotgbt : fichier de partage texte/JSON (créé par Dérivations TGBT →
+//    bouton « 🔗 Partage TA »). Non lisible dans Excel, juste importable ici.
 async function importDeriv(input){
   if(!input.files.length)return;
+  const file=input.files[0];
+  const isShare=/\.algotgbt$/i.test(file.name);
   try{
-    const buf=await input.files[0].arrayBuffer();
-    const wb=new ExcelJS.Workbook();await wb.xlsx.load(buf);
-    let ds=null;wb.eachSheet(ws=>{if(ws.name==='_DATA')ds=ws});
-    if(!ds){alert('Ce fichier ne provient pas de Dérivations & TGBT.\nAucun onglet _DATA trouvé.');input.value='';return}
-    const raw=ds.getCell('A1').value;
-    if(!raw){alert('Données vides.');input.value='';return}
-    const data=JSON.parse(raw);
+    let data=null;
+    if(isShare){
+      // Lecture directe du JSON
+      const txt=await file.text();
+      try{ data=JSON.parse(txt); }
+      catch{ alert('Fichier .algotgbt illisible (JSON invalide).');input.value='';return; }
+      if(!data || data._format!=='algomes-tgbt-share'){
+        alert('Ce fichier .algotgbt n\'est pas un partage valide A.L.GOMES.');input.value='';return;
+      }
+    } else {
+      const buf=await file.arrayBuffer();
+      const wb=new ExcelJS.Workbook();await wb.xlsx.load(buf);
+      let ds=null;wb.eachSheet(ws=>{if(ws.name==='_DATA')ds=ws});
+      if(!ds){alert('Ce fichier ne provient pas de Dérivations & TGBT.\nAucun onglet _DATA trouvé.');input.value='';return}
+      const raw=ds.getCell('A1').value;
+      if(!raw){alert('Données vides.');input.value='';return}
+      data=JSON.parse(raw);
+    }
     if(data._cir)data._cir.forEach(c=>{if(!CIR.find(x=>x.k===c.k)){CIR.push(c);CIR_AMP[c.k]=parseInt(c.a)||20}});
     if(data.P)document.getElementById('projName').value=data.P;
     if(data.B&&data.B.length>0){

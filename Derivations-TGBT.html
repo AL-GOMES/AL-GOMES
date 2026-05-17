@@ -184,6 +184,7 @@ tr:hover .rd{opacity:1}.rd:hover{color:#FF6B6B}
     <button class="btn-top" onclick="newProject()">🗒️ Nouveau</button>
     <label class="btn-top" style="cursor:pointer">📤 Import<input type="file" accept=".xlsx" onchange="importXLS(this)" style="display:none"></label>
     <button class="btn-top" onclick="exportXLS()">📥 Excel</button>
+    <button class="btn-top" onclick="exportShareTA()" title="Sauvegarde pour partage : un autre B.E. pourra l'importer dans Tableau Abonné uniquement">🔗 Partage TA</button>
     <button class="btn-top" onclick="exportPDF()">📄 PDF</button>
     <span class="topbar-badge badge-count" id="bL">0 lgts</span>
   </div>
@@ -1081,6 +1082,41 @@ async function exportXLS(){
   }else{
     const url=URL.createObjectURL(blob);const link=document.createElement('a');
     link.href=url;link.download=(pName.replace(/[^a-zA-Z0-9éèêëàâùûôîïç _-]/g,'_'))+'_Derivations_TGBT.xlsx';
+    document.body.appendChild(link);link.click();document.body.removeChild(link);URL.revokeObjectURL(url);
+  }
+}
+
+// ═══ EXPORT SAUVEGARDE PARTAGE TABLEAU ABONNÉ ═══
+// Génère un fichier .algotgbt à envoyer à un autre B.E. qui ne pourra
+// l'importer QUE dans le module Tableau Abonné (et non dans Dérivations
+// TGBT). Contient les mêmes données utiles que l'export Excel mais dans
+// un format opaque (JSON) — pas modifiable dans Excel.
+async function exportShareTA(){
+  const pName=document.getElementById('projName').value.trim()||'Sans titre';
+  const payload={
+    _format:'algomes-tgbt-share',
+    _version:1,
+    _exportedAt:new Date().toISOString(),
+    _note:'Fichier de partage pour le module Tableau Abonné — A.L. GOMES',
+    P:pName,
+    T:T,
+    TG:TG,
+    B:B
+  };
+  const json=JSON.stringify(payload,null,2);
+  const blob=new Blob([json],{type:'application/octet-stream'});
+  const safeName=(pName.replace(/[^a-zA-Z0-9éèêëàâùûôîïç _-]/g,'_'))+'_partage_TA.algotgbt';
+  if(window.showSaveFilePicker){
+    try{
+      const handle=await window.showSaveFilePicker({
+        suggestedName:safeName,
+        types:[{description:'Sauvegarde de partage A.L.GOMES',accept:{'application/octet-stream':['.algotgbt']}}]
+      });
+      const wr=await handle.createWritable();await wr.write(blob);await wr.close();
+    }catch(e){if(e.name!=='AbortError')alert('Erreur : '+e.message)}
+  }else{
+    const url=URL.createObjectURL(blob);const link=document.createElement('a');
+    link.href=url;link.download=safeName;
     document.body.appendChild(link);link.click();document.body.removeChild(link);URL.revokeObjectURL(url);
   }
 }

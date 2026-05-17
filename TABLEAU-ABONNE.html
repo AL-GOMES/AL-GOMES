@@ -98,8 +98,8 @@ input:focus{outline:none;border-color:rgba(123,95,172,0.35)}
   </div>
   <div class="topbar-center">
     <label class="btn-top" style="cursor:pointer">📤 Importer Dérivations<input type="file" accept=".xlsx,.alg,.ALG" onchange="importDeriv(this)" style="display:none"></label>
-    <label class="btn-top" style="cursor:pointer">📤 Importer Tableau Abonné<input type="file" accept=".xlsx" onchange="importTA(this)" style="display:none"></label>
-    <button class="btn-top" onclick="exportXLS()">📥 Excel</button>
+    <label class="btn-top" style="cursor:pointer">📤 Importer Tableau Abonné<input type="file" accept=".xlsx,.alg,.ALG" onchange="importTA(this)" style="display:none"></label>
+    <button class="btn-top" onclick="saveTaAlg()" title="Sauvegarder le projet en .ALG (réimportable dans ce module)">💾 Sauvegarder</button>
     <button class="btn-top" onclick="exportPDF()">📄 PDF</button>
     <button class="btn-top" onclick="exportDXF()">📐 DXF (AutoCAD)</button>
     <span class="badge-count" id="bL">0 lgts</span>
@@ -951,16 +951,33 @@ async function importDeriv(input){
   input.value='';
 }
 // ═══ IMPORT TABLEAU ABONNÉ ═══
+// Import Tableau Abonné — accepte :
+//  - .xlsx (export historique avec onglet caché _DATA)
+//  - .ALG  (sauvegarde du bouton « 💾 Sauvegarder » — signature algomes-ta-save)
+// Détection par magic bytes (PK = zip = xlsx, sinon JSON .ALG).
 async function importTA(input){
   if(!input.files.length)return;
+  const file=input.files[0];
   try{
-    const buf=await input.files[0].arrayBuffer();
-    const wb=new ExcelJS.Workbook();await wb.xlsx.load(buf);
-    let ds=null;wb.eachSheet(ws=>{if(ws.name==='_DATA')ds=ws});
-    if(!ds){alert('Ce fichier ne provient pas de Tableau Abonné.\nAucun onglet _DATA trouvé.');input.value='';return}
-    const raw=ds.getCell('A1').value;
-    if(!raw){alert('Données vides.');input.value='';return}
-    const data=JSON.parse(raw);
+    const head=new Uint8Array(await file.slice(0,4).arrayBuffer());
+    const isZip=head.length>=2 && head[0]===0x50 && head[1]===0x4B;
+    let data=null;
+    if(isZip){
+      const buf=await file.arrayBuffer();
+      const wb=new ExcelJS.Workbook();await wb.xlsx.load(buf);
+      let ds=null;wb.eachSheet(ws=>{if(ws.name==='_DATA')ds=ws});
+      if(!ds){alert('Ce fichier Excel ne provient pas de Tableau Abonné.\nAucun onglet _DATA trouvé.');input.value='';return}
+      const raw=ds.getCell('A1').value;
+      if(!raw){alert('Données vides.');input.value='';return}
+      data=JSON.parse(raw);
+    } else {
+      const txt=await file.text();
+      try{ data=JSON.parse(txt); }
+      catch{ alert('Fichier non reconnu.\n\nFormats acceptés : .xlsx exporté par Tableau Abonné, ou .ALG (Sauvegarde).');input.value='';return; }
+      if(!data || data._format!=='algomes-ta-save'){
+        alert('Ce fichier .ALG n\'est pas une sauvegarde Tableau Abonné valide.\n\nAttendu : un fichier généré par le bouton « 💾 Sauvegarder » de Tableau Abonné.');input.value='';return;
+      }
+    }
     if(data._cir)data._cir.forEach(c=>{if(!CIR.find(x=>x.k===c.k)){CIR.push(c);CIR_AMP[c.k]=parseInt(c.a)||20}});
     if(data.P)document.getElementById('projName').value=data.P;
     if(data.B&&data.B.length>0){
@@ -980,7 +997,47 @@ async function importTA(input){
   }catch(e){alert('Erreur : '+e.message)}
   input.value='';
 }
+
+// ═══ SAUVEGARDE .ALG (bouton « 💾 Sauvegarder ») ═══
+// Génère un fichier "<NOM AFFAIRE> - TABLEAUX ABONNES.ALG" qui contient
+// l'état complet du projet Tableau Abonné, réimportable via le bouton
+// « 📤 Importer Tableau Abonné » (qui détecte automatiquement le format).
+// Le payload reprend EXACTEMENT la même structure que celle écrite dans
+// l'onglet _DATA de l'export Excel — d'où la compatibilité totale.
+async function saveTaAlg(){
+  const pName=document.getElementById('projName').value.trim()||'Sans titre';
+  const payload={
+    _format:'algomes-ta-save',
+    _version:1,
+    _exportedAt:new Date().toISOString(),
+    _note:'Sauvegarde Tableau Abonné — A.L. GOMES',
+    P:pName,
+    _cir:CIR.filter(c=>c.k.startsWith('_a')),
+    B:B.map(b=>({n:b.n,niv:b.niv,fl:b.fl,typeAuto:b.typeAuto,
+      a:b.a.map(x=>{const o={f:x.f,r:x.r,e:x.e,u:x.u};CIR.forEach(c=>{o[c.k]=x[c.k]});if(x.tb)o.tb=x.tb;if(x._deps)o._deps=x._deps;return o})}))
+  };
+  const json=JSON.stringify(payload,null,2);
+  const blob=new Blob([json],{type:'application/octet-stream'});
+  // Format demandé : "<NOM AFFAIRE> - TABLEAUX ABONNES.ALG"
+  const safeName=(pName.replace(/[^a-zA-Z0-9éèêëàâùûôîïçÉÈÊËÀÂÙÛÔÎÏÇ _-]/g,'_').trim())+' - TABLEAUX ABONNES.ALG';
+  if(window.showSaveFilePicker){
+    try{
+      const handle=await window.showSaveFilePicker({
+        suggestedName:safeName,
+        types:[{description:'Sauvegarde A.L.GOMES',accept:{'application/octet-stream':['.ALG','.alg']}}]
+      });
+      const wr=await handle.createWritable();await wr.write(blob);await wr.close();
+    }catch(e){if(e.name!=='AbortError')alert('Erreur : '+e.message)}
+  }else{
+    const url=URL.createObjectURL(blob);const link=document.createElement('a');
+    link.href=url;link.download=safeName;
+    document.body.appendChild(link);link.click();document.body.removeChild(link);URL.revokeObjectURL(url);
+  }
+}
+
 // ═══ EXPORT EXCEL ═══
+// (Conservé pour compatibilité — accessible via la console JS. Le bouton
+// visible a été remplacé par « 💾 Sauvegarder » qui appelle saveTaAlg.)
 async function exportXLS(){
   if(typeof ExcelJS==='undefined'){
     const deadline = Date.now() + 8000;

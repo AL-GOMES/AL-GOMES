@@ -627,10 +627,10 @@ function calcIDCal(depCirs, diffType){
   const minCal=full+half/2;
   if(minCal<=25)return 25;
   if(minCal<=40)return 40;
-  if(minCal<=63)return 63;
-  if(minCal<=80)return 80;
-  if(minCal<=100)return 100;
-  return 125;
+  // 63A est le calibre maximum autorisé pour les interrupteurs différentiels
+  // dans ce projet — au-delà, on reste à 63A (l'utilisateur doit alors
+  // répartir manuellement les circuits sur plusieurs interrupteurs).
+  return 63;
 }
 
 function drawPanel(type,ap,bi,isAuto){

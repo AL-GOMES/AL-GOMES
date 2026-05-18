@@ -850,34 +850,37 @@ function autoFit(){
   const pageHeight = letter.clientHeight;
   if(pageHeight <= 0) return;
 
-  // Reset au scale max (1) pour mesurer la hauteur naturelle
-  letter.style.setProperty('--auto-scale', '1');
-
-  // Le footer est positionné absolu (bottom:10mm, hors flux), donc
-  // inner.scrollHeight ne le compte pas. On mesure son emprise et on
-  // l'ajoute à la hauteur "occupée" pour éviter le chevauchement avec
-  // la signature quand le corps est dense.
+  const sig    = letter.querySelector('.signature-block');
   const footer = letter.querySelector('.letter-footer');
-  let footerReserve = 0;
+
+  // Y limite (relative au top de .letter) au-delà duquel un élément du
+  // bloc signature chevaucherait le footer absolu. Si pas de footer
+  // visible, on tolère jusqu'au bas de la page.
+  let footerTopRel = pageHeight;
   if(footer && footer.offsetHeight > 0
      && getComputedStyle(footer).display !== 'none'){
     const cs = getComputedStyle(footer);
     const bottomOffset = parseFloat(cs.bottom) || 0;
-    // Padding-bottom de inner (22mm) absorbe déjà une partie de l'emprise
-    // du footer ; on ne réserve que le surplus.
-    const innerCs = getComputedStyle(inner);
-    const padBottom = parseFloat(innerCs.paddingBottom) || 0;
-    const footerTopFromInnerBottom = footer.offsetHeight + bottomOffset;
-    footerReserve = Math.max(0, footerTopFromInnerBottom - padBottom);
+    footerTopRel = pageHeight - bottomOffset - footer.offsetHeight - 4; // 4px de garde
   }
 
-  // Hauteur cible : la page moins la zone que le footer mord au-delà du
-  // padding inner. Au-delà de cette cible, signature et footer se
-  // chevauchent.
-  const targetHeight = pageHeight - footerReserve;
+  // Mesure : bas du dernier bloc in-flow (signature) en coord relatives
+  // au top de .letter. inner.scrollHeight ne sert à rien ici car inner
+  // est en height:100%.
+  function contentExceedsTarget(){
+    if(inner.scrollHeight > inner.clientHeight) return true;
+    if(sig){
+      const letterRect = letter.getBoundingClientRect();
+      const sigRect    = sig.getBoundingClientRect();
+      const sigBottomRel = sigRect.bottom - letterRect.top;
+      if(sigBottomRel > footerTopRel) return true;
+    }
+    return false;
+  }
 
-  // Si ça rentre déjà, on est bon
-  if(inner.scrollHeight <= targetHeight){
+  // Reset au scale max (1) pour mesurer la disposition naturelle
+  letter.style.setProperty('--auto-scale', '1');
+  if(!contentExceedsTarget()){
     return;
   }
 
@@ -886,8 +889,7 @@ function autoFit(){
   for(let i = 0; i < 10; i++){
     const mid = (lo + hi) / 2;
     letter.style.setProperty('--auto-scale', mid.toFixed(3));
-    const h = inner.scrollHeight;
-    if(h <= targetHeight){
+    if(!contentExceedsTarget()){
       best = mid;
       lo = mid;
     } else {

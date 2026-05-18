@@ -843,10 +843,28 @@ function render(){
 // AUTO-FIT A4 : trouve par dichotomie le plus grand scale ∈ [0.55, 1]
 // qui permet au contenu de tenir dans la hauteur de la page
 // ═══════════════════════════════════════════════════════════════════════
-function autoFit(){
+async function autoFit(){
   const letter = $('letter');
   const inner  = $('letterInner');
   if(!letter || !inner) return;
+
+  // Attendre que toutes les images visibles dans la lettre soient
+  // décodées : autrement, naturalHeight=0 → offsetHeight sous-évalué
+  // → autoFit pense que ça rentre alors que la signature image va
+  // grossir le bloc une fois rendue et chevaucher le footer.
+  const imgs = Array.from(letter.querySelectorAll('img'))
+    .filter(img => img.src && getComputedStyle(img).display !== 'none');
+  await Promise.all(imgs.map(img => {
+    if(img.complete && img.naturalHeight > 0) return Promise.resolve();
+    if(typeof img.decode === 'function'){
+      return img.decode().catch(() => {});
+    }
+    return new Promise(resolve => {
+      img.addEventListener('load',  resolve, { once: true });
+      img.addEventListener('error', resolve, { once: true });
+    });
+  }));
+
   const pageHeight = letter.clientHeight;
   if(pageHeight <= 0) return;
 
@@ -1170,11 +1188,12 @@ function loadUserSignature(user){
       const png = docs[0].png;
       // Validation : seules les data-URL image PNG/JPEG sont autorisées.
       if (!/^data:image\/(png|jpe?g);base64,[A-Za-z0-9+/=]+$/.test(png)) return;
-      sigImg.src = png;
       sigBlock.classList.add('has-signature');
       window._signatureDataUrl = png;
-      // Re-ajuster la page au cas où l'image change la hauteur
-      setTimeout(() => autoFit(), 50);
+      // Re-ajuster une fois l'image décodée (autoFit attend déjà
+      // img.decode() en interne ; on l'appelle juste après l'avoir armée).
+      sigImg.addEventListener('load', () => autoFit(), { once: true });
+      sigImg.src = png;
     })
     .catch(err => {
       console.warn('Chargement signature échoué :', err);

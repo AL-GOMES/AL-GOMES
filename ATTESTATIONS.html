@@ -884,8 +884,10 @@ function autoFit(){
     return;
   }
 
-  // Sinon, dichotomie entre 0.55 et 1.0 (précision ≈ 0.001 sur 10 itérations)
-  let lo = 0.55, hi = 1.0, best = 0.55;
+  // Sinon, dichotomie entre 0.45 et 1.0 (précision ≈ 0.0005 sur 10 itérations).
+  // Borne basse à 0.45 (≈5.4pt) pour absorber les modèles longs (Désenfumage,
+  // Éclairement parking) avec signature image qui prennent davantage de place.
+  let lo = 0.45, hi = 1.0, best = 0.45;
   for(let i = 0; i < 10; i++){
     const mid = (lo + hi) / 2;
     letter.style.setProperty('--auto-scale', mid.toFixed(3));

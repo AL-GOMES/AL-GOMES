@@ -183,11 +183,16 @@ body{font-family:'Rajdhani',sans-serif;background:var(--bg);color:var(--text);mi
   border-radius:2px;overflow:hidden;box-sizing:border-box;
   --auto-scale:1
 }
-/* Wrapper du contenu — c'est lui qui scale */
+/* Wrapper du contenu — c'est lui qui scale.
+   Flex column : le footer (.letter-footer) pousse vers le bas via
+   margin-top:auto, sans sortir du flux. Ainsi autoFit() mesure
+   correctement la hauteur totale (footer compris) et scale tout le
+   contenu pour éviter le chevauchement avec la signature. */
 .letter-inner{
   padding:22mm 22mm 22mm 22mm;
   font-size:calc(12pt * var(--auto-scale));
-  height:100%;box-sizing:border-box;position:relative
+  height:100%;box-sizing:border-box;position:relative;
+  display:flex;flex-direction:column
 }
 
 /* Header */
@@ -229,8 +234,10 @@ body{font-family:'Rajdhani',sans-serif;background:var(--bg);color:var(--text);mi
 .signature-name{font-weight:700}
 .signature-role{font-size:0.875em;color:#555;font-style:italic}
 
-/* Footer */
-.letter-footer{position:absolute;bottom:10mm;left:22mm;right:22mm;text-align:center;font-size:0.708em;color:#888;padding-top:3mm;border-top:.5px solid #ddd;font-style:italic}
+/* Footer — dans le flux (flex column), poussé en bas par margin-top:auto
+   pour rester sous la signature même si le corps est court, sans
+   chevaucher quand le corps est long (autoFit() le mesure alors). */
+.letter-footer{margin-top:auto;text-align:center;font-size:0.708em;color:#888;padding-top:3mm;border-top:.5px solid #ddd;font-style:italic}
 
 /* ============ PRINT ============ */
 @media print{

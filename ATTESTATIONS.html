@@ -939,14 +939,22 @@ async function autoFit(){
   }
 
   // Mesure : bas du dernier bloc in-flow (signature) en coord relatives
-  // au top de .letter. inner.scrollHeight ne sert à rien ici car inner
-  // est en height:100%.
+  // au top de .letter. On utilise offsetTop/offsetHeight (pré-transform)
+  // pour ignorer le transform:scale() appliqué par applyZoom — sinon
+  // getBoundingClientRect rendrait des valeurs scalées et la comparaison
+  // ferait croire à tort que le contenu rentre.
+  function relTopWithinLetter(el){
+    let y = 0, cur = el;
+    while(cur && cur !== letter){
+      y += cur.offsetTop || 0;
+      cur = cur.offsetParent;
+    }
+    return y;
+  }
   function contentExceedsTarget(){
     if(inner.scrollHeight > inner.clientHeight) return true;
     if(sig){
-      const letterRect = letter.getBoundingClientRect();
-      const sigRect    = sig.getBoundingClientRect();
-      const sigBottomRel = sigRect.bottom - letterRect.top;
+      const sigBottomRel = relTopWithinLetter(sig) + sig.offsetHeight;
       if(sigBottomRel > footerTopRel) return true;
     }
     return false;

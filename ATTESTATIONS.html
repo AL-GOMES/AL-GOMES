@@ -183,16 +183,11 @@ body{font-family:'Rajdhani',sans-serif;background:var(--bg);color:var(--text);mi
   border-radius:2px;overflow:hidden;box-sizing:border-box;
   --auto-scale:1
 }
-/* Wrapper du contenu — c'est lui qui scale.
-   Flex column : le footer (.letter-footer) pousse vers le bas via
-   margin-top:auto, sans sortir du flux. Ainsi autoFit() mesure
-   correctement la hauteur totale (footer compris) et scale tout le
-   contenu pour éviter le chevauchement avec la signature. */
+/* Wrapper du contenu — c'est lui qui scale */
 .letter-inner{
   padding:22mm 22mm 22mm 22mm;
   font-size:calc(12pt * var(--auto-scale));
-  height:100%;box-sizing:border-box;position:relative;
-  display:flex;flex-direction:column
+  height:100%;box-sizing:border-box;position:relative
 }
 
 /* Header */
@@ -234,10 +229,8 @@ body{font-family:'Rajdhani',sans-serif;background:var(--bg);color:var(--text);mi
 .signature-name{font-weight:700}
 .signature-role{font-size:0.875em;color:#555;font-style:italic}
 
-/* Footer — dans le flux (flex column), poussé en bas par margin-top:auto
-   pour rester sous la signature même si le corps est court, sans
-   chevaucher quand le corps est long (autoFit() le mesure alors). */
-.letter-footer{margin-top:auto;text-align:center;font-size:0.708em;color:#888;padding-top:3mm;border-top:.5px solid #ddd;font-style:italic}
+/* Footer */
+.letter-footer{position:absolute;bottom:10mm;left:22mm;right:22mm;text-align:center;font-size:0.708em;color:#888;padding-top:3mm;border-top:.5px solid #ddd;font-style:italic}
 
 /* ============ PRINT ============ */
 @media print{
@@ -859,22 +852,42 @@ function autoFit(){
 
   // Reset au scale max (1) pour mesurer la hauteur naturelle
   letter.style.setProperty('--auto-scale', '1');
-  // Force un reflow
-  let natural = inner.scrollHeight;
+
+  // Le footer est positionné absolu (bottom:10mm, hors flux), donc
+  // inner.scrollHeight ne le compte pas. On mesure son emprise et on
+  // l'ajoute à la hauteur "occupée" pour éviter le chevauchement avec
+  // la signature quand le corps est dense.
+  const footer = letter.querySelector('.letter-footer');
+  let footerReserve = 0;
+  if(footer && footer.offsetHeight > 0
+     && getComputedStyle(footer).display !== 'none'){
+    const cs = getComputedStyle(footer);
+    const bottomOffset = parseFloat(cs.bottom) || 0;
+    // Padding-bottom de inner (22mm) absorbe déjà une partie de l'emprise
+    // du footer ; on ne réserve que le surplus.
+    const innerCs = getComputedStyle(inner);
+    const padBottom = parseFloat(innerCs.paddingBottom) || 0;
+    const footerTopFromInnerBottom = footer.offsetHeight + bottomOffset;
+    footerReserve = Math.max(0, footerTopFromInnerBottom - padBottom);
+  }
+
+  // Hauteur cible : la page moins la zone que le footer mord au-delà du
+  // padding inner. Au-delà de cette cible, signature et footer se
+  // chevauchent.
+  const targetHeight = pageHeight - footerReserve;
 
   // Si ça rentre déjà, on est bon
-  if(natural <= pageHeight){
+  if(inner.scrollHeight <= targetHeight){
     return;
   }
 
-  // Sinon, dichotomie entre 0.55 et 1.0 (précision 0.005 ≈ 8 itérations)
+  // Sinon, dichotomie entre 0.55 et 1.0 (précision ≈ 0.001 sur 10 itérations)
   let lo = 0.55, hi = 1.0, best = 0.55;
   for(let i = 0; i < 10; i++){
     const mid = (lo + hi) / 2;
     letter.style.setProperty('--auto-scale', mid.toFixed(3));
-    // Lire scrollHeight force un reflow
     const h = inner.scrollHeight;
-    if(h <= pageHeight){
+    if(h <= targetHeight){
       best = mid;
       lo = mid;
     } else {

@@ -183,54 +183,36 @@ body{font-family:'Rajdhani',sans-serif;background:var(--bg);color:var(--text);mi
   border-radius:2px;overflow:hidden;box-sizing:border-box;
   --auto-scale:1
 }
-/* Wrapper du contenu — c'est lui qui scale.
-   Padding défini par des CSS vars pour que le cadre redimensionnable
-   manuel (.content-frame) puisse les piloter à la souris. */
+/* Wrapper du contenu — c'est lui qui scale */
 .letter-inner{
-  padding: var(--pad-top, 22mm) var(--pad-right, 22mm) var(--pad-bottom, 22mm) var(--pad-left, 22mm);
+  padding:22mm 22mm 22mm 22mm;
   font-size:calc(12pt * var(--auto-scale));
   height:100%;box-sizing:border-box;position:relative
 }
 
-/* ============ CADRE REDIMENSIONNABLE (mask manuel) ============
-   Overlay qui matérialise les marges courantes. L'utilisateur tire les
-   8 poignées (4 coins + 4 bords) pour ajuster la zone de contenu ; le
-   texte se réduit automatiquement à l'intérieur via autoFit(). */
-.content-frame{
-  position:absolute;
-  top: var(--pad-top, 22mm);
-  right: var(--pad-right, 22mm);
-  bottom: var(--pad-bottom, 22mm);
-  left: var(--pad-left, 22mm);
-  border:1.5px dashed rgba(120,50,255,.35);
-  pointer-events:none;
-  z-index:5;
-  transition:border-color .15s
+/* ============ CURSEUR « TAILLE DU TEXTE » ============
+   Slider 50% → 150% qui pilote directement --auto-scale. Plus
+   d'autoFit automatique : l'utilisateur ajuste à l'œil. */
+.text-scale-control{display:flex;align-items:center;gap:8px;padding:0 6px;border-right:1px solid var(--border)}
+.text-scale-label{font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--text3);font-weight:700;white-space:nowrap}
+.text-scale-slider{
+  -webkit-appearance:none;appearance:none;
+  width:110px;height:4px;background:var(--surface2);border-radius:2px;outline:none;cursor:pointer
 }
-.content-frame:hover, .content-frame.dragging{border-color:rgba(120,50,255,.75)}
-.frame-handle{
-  position:absolute;width:12px;height:12px;
-  background:#7832ff;border:2px solid #fff;border-radius:50%;
-  box-shadow:0 1px 3px rgba(0,0,0,.4);
-  pointer-events:auto;z-index:6;
-  transition:transform .12s
+.text-scale-slider::-webkit-slider-thumb{
+  -webkit-appearance:none;width:14px;height:14px;border-radius:50%;
+  background:var(--accent);border:2px solid var(--surface);cursor:pointer;
+  box-shadow:0 1px 3px rgba(0,0,0,.4)
 }
-.frame-handle:hover{background:#9b5cff;transform:scale(1.3)}
-.frame-h-tl{top:-7px;left:-7px;cursor:nwse-resize}
-.frame-h-tr{top:-7px;right:-7px;cursor:nesw-resize}
-.frame-h-bl{bottom:-7px;left:-7px;cursor:nesw-resize}
-.frame-h-br{bottom:-7px;right:-7px;cursor:nwse-resize}
-.frame-h-t {top:-7px; left:calc(50% - 6px);cursor:ns-resize}
-.frame-h-b {bottom:-7px;left:calc(50% - 6px);cursor:ns-resize}
-.frame-h-l {left:-7px; top:calc(50% - 6px);cursor:ew-resize}
-.frame-h-r {right:-7px;top:calc(50% - 6px);cursor:ew-resize}
-.btn-reset-frame{
-  padding:6px 10px;background:var(--surface2);border:1px solid var(--border);
-  color:var(--text2);border-radius:6px;font-family:'Rajdhani',sans-serif;
-  font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
-  cursor:pointer;transition:all .15s
+.text-scale-slider::-moz-range-thumb{
+  width:14px;height:14px;border-radius:50%;background:var(--accent);
+  border:2px solid var(--surface);cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.4)
 }
-.btn-reset-frame:hover{background:var(--surface3);color:var(--accent);border-color:var(--accent)}
+.text-scale-value{
+  font-size:11px;font-weight:700;color:var(--text2);font-variant-numeric:tabular-nums;
+  min-width:34px;text-align:right;cursor:pointer;user-select:none
+}
+.text-scale-value:hover{color:var(--accent)}
 
 /* Header */
 .letter-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:30mm}
@@ -289,7 +271,6 @@ body{font-family:'Rajdhani',sans-serif;background:var(--bg);color:var(--text);mi
     box-shadow:none!important;border-radius:0!important;
     page-break-after:auto;transform:none!important
   }
-  .content-frame,.frame-handle{display:none!important}
 }
 
 /* ============ TOAST ============ */
@@ -471,7 +452,11 @@ body{font-family:'Rajdhani',sans-serif;background:var(--bg);color:var(--text);mi
     <div class="preview-toolbar">
       <div class="preview-title">Aperçu — A4 · 210 × 297 mm</div>
       <div class="zoom-controls">
-        <button class="btn-reset-frame" onclick="resetFrame()" title="Restaurer les marges par défaut (22mm)">↺ Cadre</button>
+        <div class="text-scale-control">
+          <span class="text-scale-label">Taille texte</span>
+          <input type="range" id="textScale" class="text-scale-slider" min="50" max="150" step="1" value="100">
+          <span class="text-scale-value" id="textScaleVal" title="Double-clic pour revenir à 100%">100%</span>
+        </div>
         <button class="zoom-btn" onclick="zoomOut()" title="Zoom arrière">−</button>
         <button class="zoom-btn" onclick="zoomReset()" title="Zoom 100%">◯</button>
         <button class="zoom-btn" onclick="zoomIn()" title="Zoom avant">+</button>
@@ -532,18 +517,6 @@ body{font-family:'Rajdhani',sans-serif;background:var(--bg);color:var(--text);mi
         <div class="letter-footer" id="p_footer"></div>
 
        </div><!-- /letter-inner -->
-       <!-- Cadre redimensionnable manuel : 8 poignées pour ajuster les
-            marges à la souris ; l'autoFit() s'adapte automatiquement -->
-       <div class="content-frame" id="contentFrame" aria-hidden="true">
-         <div class="frame-handle frame-h-tl" data-handle="tl"></div>
-         <div class="frame-handle frame-h-tr" data-handle="tr"></div>
-         <div class="frame-handle frame-h-bl" data-handle="bl"></div>
-         <div class="frame-handle frame-h-br" data-handle="br"></div>
-         <div class="frame-handle frame-h-t"  data-handle="t"></div>
-         <div class="frame-handle frame-h-b"  data-handle="b"></div>
-         <div class="frame-handle frame-h-l"  data-handle="l"></div>
-         <div class="frame-handle frame-h-r"  data-handle="r"></div>
-       </div>
       </div>
     </div>
   </main>
@@ -890,200 +863,50 @@ function render(){
     footerEl.style.display = 'none';
   }
 
-  // Ajustement automatique : réduit l'échelle du contenu pour faire
-  // tenir la lettre sur une page A4 quelle que soit la longueur du texte
-  autoFit();
+  // La taille du texte est contrôlée par le curseur « Taille texte » du
+  // toolbar (--auto-scale piloté par initTextScaleControl) — plus
+  // d'autoFit automatique : l'utilisateur ajuste à l'œil.
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// AUTO-FIT A4 : trouve par dichotomie le plus grand scale ∈ [0.55, 1]
-// qui permet au contenu de tenir dans la hauteur de la page
+// TAILLE DU TEXTE — curseur 50% → 150% pilote directement --auto-scale.
+// Plus de redimensionnement automatique : contrôle manuel à l'œil.
 // ═══════════════════════════════════════════════════════════════════════
-async function autoFit(){
+const TEXT_SCALE_KEY = 'algomes_attestation_text_scale_v1';
+const TEXT_SCALE_DEFAULT = 100;
+
+function applyTextScale(percent){
   const letter = $('letter');
-  const inner  = $('letterInner');
-  if(!letter || !inner) return;
-
-  // Attendre que toutes les images visibles dans la lettre soient
-  // décodées (sinon naturalHeight=0 → offsetHeight sous-évalué).
-  const imgs = Array.from(letter.querySelectorAll('img'))
-    .filter(img => img.src && getComputedStyle(img).display !== 'none');
-  await Promise.all(imgs.map(img => {
-    if(img.complete && img.naturalHeight > 0) return Promise.resolve();
-    if(typeof img.decode === 'function'){
-      return img.decode().catch(() => {});
-    }
-    return new Promise(resolve => {
-      img.addEventListener('load',  resolve, { once: true });
-      img.addEventListener('error', resolve, { once: true });
-    });
-  }));
-
-  const pageHeight = letter.clientHeight;
-  if(pageHeight <= 0) return;
-
-  const sig    = letter.querySelector('.signature-block');
-  const footer = letter.querySelector('.letter-footer');
-  const innerCs = getComputedStyle(inner);
-
-  // Limite verticale = la plus restrictive entre :
-  //   1) bord inférieur du cadre manuel (= pageHeight - pad-bottom),
-  //      pour que redimensionner le cadre change vraiment la taille du texte
-  //   2) top du footer absolu (le bloc signature ne doit pas le chevaucher)
-  const padBottom = parseFloat(innerCs.paddingBottom) || 0;
-  const frameLimit = pageHeight - padBottom;
-  let footerLimit = pageHeight;
-  if(footer && footer.offsetHeight > 0
-     && getComputedStyle(footer).display !== 'none'){
-    const cs = getComputedStyle(footer);
-    const bottomOffset = parseFloat(cs.bottom) || 0;
-    footerLimit = pageHeight - bottomOffset - footer.offsetHeight - 4;
-  }
-  const limitY = Math.min(frameLimit, footerLimit);
-
-  // Coord relative au top de .letter, pré-transform (offsetTop ignore le
-  // transform:scale appliqué par applyZoom).
-  function relTopWithinLetter(el){
-    let y = 0, cur = el;
-    while(cur && cur !== letter){
-      y += cur.offsetTop || 0;
-      cur = cur.offsetParent;
-    }
-    return y;
-  }
-  function contentExceeds(){
-    if(inner.scrollHeight > inner.clientHeight) return true;
-    if(sig){
-      const sigBottomRel = relTopWithinLetter(sig) + sig.offsetHeight;
-      if(sigBottomRel > limitY) return true;
-    }
-    return false;
-  }
-
-  // Dichotomie entre 0.45 et 1.5 (toujours exécutée, pas de cap à 1.0
-  // — agrandir le cadre fait grossir le texte de manière continue).
-  let lo = 0.45, hi = 1.5, best = lo;
-  for(let i = 0; i < 12; i++){
-    const mid = (lo + hi) / 2;
-    letter.style.setProperty('--auto-scale', mid.toFixed(3));
-    if(!contentExceeds()){
-      best = mid;
-      lo = mid;
-    } else {
-      hi = mid;
-    }
-  }
-  letter.style.setProperty('--auto-scale', best.toFixed(3));
+  if(letter) letter.style.setProperty('--auto-scale', (percent / 100).toFixed(3));
+  const val = $('textScaleVal');
+  if(val) val.textContent = percent + '%';
+  const slider = $('textScale');
+  if(slider && Number(slider.value) !== percent) slider.value = String(percent);
 }
 
-// Throttle autoFit à un appel par frame (rAF) — autrement le drag du
-// cadre déclenche un autoFit complet (12 reflows) par pointermove et
-// l'expérience devient saccadée.
-let _autoFitRaf = null;
-function autoFitThrottled(){
-  if(_autoFitRaf) return;
-  _autoFitRaf = requestAnimationFrame(() => {
-    _autoFitRaf = null;
-    autoFit();
-  });
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-// CADRE REDIMENSIONNABLE — mask manuel piloté à la souris
-// ═══════════════════════════════════════════════════════════════════════
-const FRAME_KEY = 'algomes_attestation_frame_v1';
-const FRAME_DEFAULT = { top:22, right:22, bottom:22, left:22 }; // mm
-const FRAME_BOUNDS  = { topMax:120, bottomMax:120, sideMax:80, min:5 };
-let _frame = { ...FRAME_DEFAULT };
-
-function loadFrame(){
+function loadTextScale(){
+  let v = TEXT_SCALE_DEFAULT;
   try {
-    const raw = localStorage.getItem(FRAME_KEY);
-    if(raw){
-      const p = JSON.parse(raw);
-      if(p && typeof p === 'object'){
-        _frame = {
-          top:    clampN(p.top,    FRAME_BOUNDS.min, FRAME_BOUNDS.topMax,    FRAME_DEFAULT.top),
-          right:  clampN(p.right,  FRAME_BOUNDS.min, FRAME_BOUNDS.sideMax,   FRAME_DEFAULT.right),
-          bottom: clampN(p.bottom, FRAME_BOUNDS.min, FRAME_BOUNDS.bottomMax, FRAME_DEFAULT.bottom),
-          left:   clampN(p.left,   FRAME_BOUNDS.min, FRAME_BOUNDS.sideMax,   FRAME_DEFAULT.left)
-        };
-      }
-    }
-  } catch(e){ /* localStorage indisponible : on reste sur les defaults */ }
-  applyFrame();
-}
-function clampN(v, lo, hi, fb){
-  const n = Number(v);
-  if(!isFinite(n)) return fb;
-  return Math.max(lo, Math.min(hi, n));
-}
-function saveFrame(){
-  try { localStorage.setItem(FRAME_KEY, JSON.stringify(_frame)); } catch(e){}
-}
-function applyFrame(opts){
-  const letter = $('letter');
-  if(!letter) return;
-  letter.style.setProperty('--pad-top',    _frame.top + 'mm');
-  letter.style.setProperty('--pad-right',  _frame.right + 'mm');
-  letter.style.setProperty('--pad-bottom', _frame.bottom + 'mm');
-  letter.style.setProperty('--pad-left',   _frame.left + 'mm');
-  // Pendant un drag, throttle pour ne pas saccader ; sinon synchronisation
-  // finale (drag end, reset, init…).
-  if(opts && opts.throttle) autoFitThrottled();
-  else autoFit();
-}
-function resetFrame(){
-  _frame = { ...FRAME_DEFAULT };
-  saveFrame();
-  applyFrame();
-  showToast('Cadre réinitialisé (22 mm)');
+    const raw = localStorage.getItem(TEXT_SCALE_KEY);
+    const n = Number(raw);
+    if(isFinite(n) && n >= 50 && n <= 150) v = Math.round(n);
+  } catch(e){}
+  applyTextScale(v);
 }
 
-function initFrameHandles(){
-  const frameEl = $('contentFrame');
-  const letter  = $('letter');
-  if(!frameEl || !letter) return;
-
-  frameEl.addEventListener('pointerdown', e => {
-    const handle = e.target.closest('.frame-handle');
-    if(!handle) return;
-    e.preventDefault();
-    const type = handle.dataset.handle; // tl,tr,bl,br,t,b,l,r
-    const lrect = letter.getBoundingClientRect();
-    // Conversion : combien de mm représente 1 px à l'écran actuel
-    const mmPerPx = 210 / lrect.width;
-    const startX = e.clientX, startY = e.clientY;
-    const startFrame = { ..._frame };
-    frameEl.classList.add('dragging');
-    try { handle.setPointerCapture(e.pointerId); } catch(err){}
-
-    function onMove(ev){
-      const dxMm = (ev.clientX - startX) * mmPerPx;
-      const dyMm = (ev.clientY - startY) * mmPerPx;
-      const f = { ...startFrame };
-      if(type.indexOf('t') !== -1) f.top    = clampN(startFrame.top    + dyMm, FRAME_BOUNDS.min, FRAME_BOUNDS.topMax,    FRAME_DEFAULT.top);
-      if(type.indexOf('b') !== -1) f.bottom = clampN(startFrame.bottom - dyMm, FRAME_BOUNDS.min, FRAME_BOUNDS.bottomMax, FRAME_DEFAULT.bottom);
-      if(type.indexOf('l') !== -1) f.left   = clampN(startFrame.left   + dxMm, FRAME_BOUNDS.min, FRAME_BOUNDS.sideMax,   FRAME_DEFAULT.left);
-      if(type.indexOf('r') !== -1) f.right  = clampN(startFrame.right  - dxMm, FRAME_BOUNDS.min, FRAME_BOUNDS.sideMax,   FRAME_DEFAULT.right);
-      // Cohérence : top+bottom < 290mm, left+right < 200mm
-      if(f.top + f.bottom > 290) return;
-      if(f.left + f.right > 200) return;
-      _frame = f;
-      applyFrame({ throttle: true });
-    }
-    function onUp(ev){
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup',   onUp);
-      window.removeEventListener('pointercancel', onUp);
-      frameEl.classList.remove('dragging');
-      try { handle.releasePointerCapture(ev.pointerId); } catch(err){}
-      applyFrame(); // re-fit final sans throttle
-      saveFrame();
-    }
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup',   onUp);
-    window.addEventListener('pointercancel', onUp);
+function initTextScaleControl(){
+  const slider = $('textScale');
+  const val    = $('textScaleVal');
+  if(!slider || !val) return;
+  slider.addEventListener('input', () => {
+    const v = Number(slider.value);
+    applyTextScale(v);
+    try { localStorage.setItem(TEXT_SCALE_KEY, String(v)); } catch(e){}
+  });
+  // Double-clic sur la valeur → retour à 100 %
+  val.addEventListener('dblclick', () => {
+    applyTextScale(TEXT_SCALE_DEFAULT);
+    try { localStorage.setItem(TEXT_SCALE_KEY, String(TEXT_SCALE_DEFAULT)); } catch(e){}
   });
 }
 
@@ -1101,9 +924,9 @@ function togglePreview(){
   btn.classList.toggle('active', !hidden);
   $('btnPreviewLabel').textContent = hidden ? 'Aperçu' : 'Masquer';
   try { localStorage.setItem(PREVIEW_KEY, hidden ? '0' : '1'); } catch(e){}
-  // Après affichage, refaire le rendu et recalculer le zoom / auto-fit
+  // Après affichage, refaire le rendu et recalculer le zoom
   if(!hidden){
-    setTimeout(() => { render(); autoZoom(); autoFit(); }, 50);
+    setTimeout(() => { render(); autoZoom(); }, 50);
   }
 }
 
@@ -1248,8 +1071,8 @@ function autoZoom(){
   initPreviewState();
   load();
   applyDefaults();
-  loadFrame();
-  initFrameHandles();
+  loadTextScale();
+  initTextScaleControl();
   render();
   autoZoom();
   // Écoute changements
@@ -1360,9 +1183,6 @@ function loadUserSignature(user){
       if (!/^data:image\/(png|jpe?g);base64,[A-Za-z0-9+/=]+$/.test(png)) return;
       sigBlock.classList.add('has-signature');
       window._signatureDataUrl = png;
-      // Re-ajuster une fois l'image décodée (autoFit attend déjà
-      // img.decode() en interne ; on l'appelle juste après l'avoir armée).
-      sigImg.addEventListener('load', () => autoFit(), { once: true });
       sigImg.src = png;
     })
     .catch(err => {

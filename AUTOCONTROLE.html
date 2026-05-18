@@ -1175,12 +1175,20 @@ function bindProjectForm(){
     f_grd_nom:'grd_nom', f_grd_tel:'grd_tel', f_grd_fax:'grd_fax',
     f_rep_nom:'rep_nom', f_rep_qualite:'rep_qualite', f_date:'date'
   };
+  let seeded = false;
   Object.entries(map).forEach(([id,key])=>{
     const el = document.getElementById(id);
     if(!el) return;
-    if(state.project[key]!=null) el.value = state.project[key];
+    if(state.project[key]!=null){
+      el.value = state.project[key];
+    } else if(el.value!==''){
+      // Récupère les valeurs par défaut définies dans le HTML (ex. "AL GOMES", "Enedis", …)
+      state.project[key] = el.value;
+      seeded = true;
+    }
     el.addEventListener('input', ()=>{ state.project[key] = el.value; save(); });
   });
+  if(seeded) save();
   document.querySelectorAll('input[name=typeOp]').forEach(r=>{
     if(state.project.typeOp){
       if(r.value===state.project.typeOp) r.checked = true;

@@ -17,6 +17,10 @@
 <script src="js/auth-guard.js"></script>
 <script src="js/cloud-sync.js"></script>
 <script>window.cloudSync && window.cloudSync.bindKey('algomes_autocontrole_v1');</script>
+<!-- pdf.js (rendu inline de l'aperçu, contourne les blocages navigateur
+     sur les iframes blob:PDF en sandbox). Worker désactivé : CSP
+     worker-src 'self' blob: n'autorise pas cdnjs ; rendu main-thread. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 /* ==================== AL GOMES THEME ==================== */
 :root{
@@ -2582,64 +2586,28 @@ async function buildFilledPDF(){
 }
 
 async function generateOfficialPDF(mode){
-  // mode : 'download' (téléchargement direct) ou 'preview' (ouverture dans un
-  // nouvel onglet). Toute autre valeur (ou false) = génération silencieuse.
+  // mode : 'download' (téléchargement direct). Toute autre valeur = no-op.
   // Rétrocompatibilité : un argument booléen true === 'download'.
   if(mode === true) mode = 'download';
+  if(mode !== 'download') return;
   const btn = document.getElementById('btnGenPDF');
   const prog = document.getElementById('genProgress');
   if(btn) btn.disabled = true;
   if(prog) prog.textContent = '⏳ Génération en cours…';
-  // Pour l'aperçu : ouvrir la fenêtre SYNCHRONEMENT pour éviter le blocage
-  // de pop-up. On y posera l'URL une fois le PDF généré.
-  let previewWin = null;
-  if(mode === 'preview'){
-    previewWin = window.open('', '_blank');
-    if(previewWin){
-      try {
-        previewWin.document.write('<title>Aperçu PDF — génération en cours…</title><body style="margin:0;background:#1a1a26;color:#a8a8b8;font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh">⏳ Génération de l\'aperçu en cours…</body>');
-      } catch(e){ /* cross-origin, ignore */ }
-    }
-  }
   try{
-    // Router selon le type d'attestation
     const bytes = isC4() ? await buildC4PDF() : await buildFilledPDF();
     const blob = new Blob([bytes], {type:'application/pdf'});
-
-    // Libère l'ancienne URL si présente
     if(_previewURL) URL.revokeObjectURL(_previewURL);
     _previewURL = URL.createObjectURL(blob);
-
-    if(mode === 'download'){
-      const a = document.createElement('a');
-      a.href = _previewURL;
-      const ref = (state.project.numAffaire||'autocontrole').replace(/[^\w-]/g,'_');
-      const prefix = isC4() ? 'AUTOCONTROLE_C4' : 'AUTOCONTROLE';
-      a.download = `${prefix}_${ref}_${new Date().toISOString().slice(0,10)}.pdf`;
-      a.click();
-    } else if(mode === 'preview'){
-      // Le viewer PDF natif de Chrome ne se charge pas dans un <iframe>/<embed>
-      // d'une page elle-même iframée sous accueil.html (sandbox + CSP) — il
-      // retombe sur un téléchargement. On contourne en ouvrant l'aperçu dans
-      // un nouvel onglet hors sandbox (allow-popups-to-escape-sandbox).
-      if(previewWin && !previewWin.closed){
-        previewWin.location.replace(_previewURL);
-      } else {
-        // Pop-up bloqué : on propose un lien de secours dans la zone d'aperçu
-        const wrap = document.getElementById('pdfPreviewWrap');
-        if(wrap){
-          wrap.style.padding = '20px';
-          wrap.style.display = 'flex';
-          wrap.innerHTML = `Pop-up bloqué par le navigateur. <a href="${_previewURL}" target="_blank" rel="noopener" style="color:var(--accent);margin-left:6px">Ouvrir l'aperçu dans un nouvel onglet</a>.`;
-        }
-        toast('Pop-up bloqué : autorisez les fenêtres pop-up pour ce site.', 'warning');
-      }
-    }
-
+    const a = document.createElement('a');
+    a.href = _previewURL;
+    const ref = (state.project.numAffaire||'autocontrole').replace(/[^\w-]/g,'_');
+    const prefix = isC4() ? 'AUTOCONTROLE_C4' : 'AUTOCONTROLE';
+    a.download = `${prefix}_${ref}_${new Date().toISOString().slice(0,10)}.pdf`;
+    a.click();
     if(prog) prog.textContent = `✅ PDF généré (${(bytes.length/1024).toFixed(0)} Ko)`;
   } catch(err){
     console.error(err);
-    if(previewWin && !previewWin.closed){ try { previewWin.close(); } catch(e){} }
     if(prog) prog.textContent = '❌ Erreur : '+(err.message||err);
     toast('Erreur génération PDF','error');
   } finally {
@@ -2647,15 +2615,74 @@ async function generateOfficialPDF(mode){
   }
 }
 
-/* Ouvre l'aperçu PDF dans un nouvel onglet (déclenché par le bouton). */
-function openPDFPreview(){
-  generateOfficialPDF('preview');
+/* Rendu de l'aperçu inline via pdf.js (canvas par page).
+   Évite les comportements navigateur sur <iframe src="blob:...pdf"> qui,
+   dans une page elle-même iframée sous accueil.html (sandbox + CSP),
+   peuvent déclencher un téléchargement à la place de l'affichage. */
+async function openPDFPreview(){
+  const wrap = document.getElementById('pdfPreviewWrap');
+  const prog = document.getElementById('genProgress');
+  if(!wrap) return;
+  if(!window.pdfjsLib){
+    toast('Bibliothèque d\'aperçu indisponible — téléchargement à la place.', 'warning');
+    generateOfficialPDF('download');
+    return;
+  }
+  wrap.style.padding = '12px';
+  wrap.style.display = 'block';
+  wrap.style.height = '85vh';
+  wrap.style.overflowY = 'auto';
+  wrap.innerHTML = '<div style="color:var(--txt-3);padding:20px;text-align:center">⏳ Génération de l\'aperçu en cours…</div>';
+  if(prog) prog.textContent = '⏳ Génération de l\'aperçu…';
+  try {
+    const bytes = isC4() ? await buildC4PDF() : await buildFilledPDF();
+    if(_previewURL) URL.revokeObjectURL(_previewURL);
+    _previewURL = URL.createObjectURL(new Blob([bytes], {type:'application/pdf'}));
+    // pdf.js consomme le buffer : on lui passe une copie.
+    const data = new Uint8Array(bytes);
+    const loadingTask = pdfjsLib.getDocument({
+      data,
+      disableWorker: true,
+      isEvalSupported: false,
+      disableAutoFetch: true,
+      disableStream: true
+    });
+    const pdf = await loadingTask.promise;
+    wrap.innerHTML = '';
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const wrapWidth = Math.max(320, wrap.clientWidth - 24);
+    for(let i = 1; i <= pdf.numPages; i++){
+      const page = await pdf.getPage(i);
+      const baseVp = page.getViewport({scale: 1});
+      const scale = wrapWidth / baseVp.width;
+      const viewport = page.getViewport({scale});
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.floor(viewport.width * dpr);
+      canvas.height = Math.floor(viewport.height * dpr);
+      canvas.style.width = viewport.width + 'px';
+      canvas.style.height = viewport.height + 'px';
+      canvas.style.display = 'block';
+      canvas.style.margin = '0 auto 12px';
+      canvas.style.boxShadow = '0 2px 8px rgba(0,0,0,0.5)';
+      canvas.style.background = '#fff';
+      wrap.appendChild(canvas);
+      const ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+      await page.render({canvasContext: ctx, viewport}).promise;
+      if(prog) prog.textContent = `⏳ Aperçu : page ${i}/${pdf.numPages}`;
+    }
+    if(prog) prog.textContent = `✅ Aperçu prêt (${pdf.numPages} pages)`;
+  } catch(err){
+    console.error(err);
+    if(prog) prog.textContent = '❌ Erreur : '+(err.message||err);
+    wrap.innerHTML = `<div style="color:#ef4444;padding:20px;text-align:center">❌ Aperçu indisponible : ${err.message||err}</div>`;
+    toast('Erreur génération aperçu','error');
+  }
 }
 
-/* Conservé pour rétrocompatibilité : ne déclenche plus de rendu (la zone
-   d'aperçu inline était bloquée par le sandbox du parent et finissait par
-   provoquer un téléchargement intempestif). L'utilisateur clique sur le
-   bouton dédié pour ouvrir l'aperçu dans un nouvel onglet. */
+/* Conservé pour rétrocompatibilité (callers : save(), opt_*, customTpl…).
+   N'effectue plus de rendu automatique : l'utilisateur clique sur le
+   bouton « Afficher l'aperçu » pour déclencher pdf.js. */
 function schedulePreview(){ /* no-op */ }
 
 /* PDF perso (override le template intégré) */

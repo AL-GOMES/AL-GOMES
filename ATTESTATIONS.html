@@ -905,9 +905,7 @@ async function autoFit(){
   if(!letter || !inner) return;
 
   // Attendre que toutes les images visibles dans la lettre soient
-  // décodées : autrement, naturalHeight=0 → offsetHeight sous-évalué
-  // → autoFit pense que ça rentre alors que la signature image va
-  // grossir le bloc une fois rendue et chevaucher le footer.
+  // décodées (sinon naturalHeight=0 → offsetHeight sous-évalué).
   const imgs = Array.from(letter.querySelectorAll('img'))
     .filter(img => img.src && getComputedStyle(img).display !== 'none');
   await Promise.all(imgs.map(img => {
@@ -926,23 +924,25 @@ async function autoFit(){
 
   const sig    = letter.querySelector('.signature-block');
   const footer = letter.querySelector('.letter-footer');
+  const innerCs = getComputedStyle(inner);
 
-  // Y limite (relative au top de .letter) au-delà duquel un élément du
-  // bloc signature chevaucherait le footer absolu. Si pas de footer
-  // visible, on tolère jusqu'au bas de la page.
-  let footerTopRel = pageHeight;
+  // Limite verticale = la plus restrictive entre :
+  //   1) bord inférieur du cadre manuel (= pageHeight - pad-bottom),
+  //      pour que redimensionner le cadre change vraiment la taille du texte
+  //   2) top du footer absolu (le bloc signature ne doit pas le chevaucher)
+  const padBottom = parseFloat(innerCs.paddingBottom) || 0;
+  const frameLimit = pageHeight - padBottom;
+  let footerLimit = pageHeight;
   if(footer && footer.offsetHeight > 0
      && getComputedStyle(footer).display !== 'none'){
     const cs = getComputedStyle(footer);
     const bottomOffset = parseFloat(cs.bottom) || 0;
-    footerTopRel = pageHeight - bottomOffset - footer.offsetHeight - 4; // 4px de garde
+    footerLimit = pageHeight - bottomOffset - footer.offsetHeight - 4;
   }
+  const limitY = Math.min(frameLimit, footerLimit);
 
-  // Mesure : bas du dernier bloc in-flow (signature) en coord relatives
-  // au top de .letter. On utilise offsetTop/offsetHeight (pré-transform)
-  // pour ignorer le transform:scale() appliqué par applyZoom — sinon
-  // getBoundingClientRect rendrait des valeurs scalées et la comparaison
-  // ferait croire à tort que le contenu rentre.
+  // Coord relative au top de .letter, pré-transform (offsetTop ignore le
+  // transform:scale appliqué par applyZoom).
   function relTopWithinLetter(el){
     let y = 0, cur = el;
     while(cur && cur !== letter){
@@ -951,29 +951,22 @@ async function autoFit(){
     }
     return y;
   }
-  function contentExceedsTarget(){
+  function contentExceeds(){
     if(inner.scrollHeight > inner.clientHeight) return true;
     if(sig){
       const sigBottomRel = relTopWithinLetter(sig) + sig.offsetHeight;
-      if(sigBottomRel > footerTopRel) return true;
+      if(sigBottomRel > limitY) return true;
     }
     return false;
   }
 
-  // Reset au scale max (1) pour mesurer la disposition naturelle
-  letter.style.setProperty('--auto-scale', '1');
-  if(!contentExceedsTarget()){
-    return;
-  }
-
-  // Sinon, dichotomie entre 0.45 et 1.0 (précision ≈ 0.0005 sur 10 itérations).
-  // Borne basse à 0.45 (≈5.4pt) pour absorber les modèles longs (Désenfumage,
-  // Éclairement parking) avec signature image qui prennent davantage de place.
-  let lo = 0.45, hi = 1.0, best = 0.45;
-  for(let i = 0; i < 10; i++){
+  // Dichotomie entre 0.45 et 1.5 (toujours exécutée, pas de cap à 1.0
+  // — agrandir le cadre fait grossir le texte de manière continue).
+  let lo = 0.45, hi = 1.5, best = lo;
+  for(let i = 0; i < 12; i++){
     const mid = (lo + hi) / 2;
     letter.style.setProperty('--auto-scale', mid.toFixed(3));
-    if(!contentExceedsTarget()){
+    if(!contentExceeds()){
       best = mid;
       lo = mid;
     } else {
@@ -981,6 +974,18 @@ async function autoFit(){
     }
   }
   letter.style.setProperty('--auto-scale', best.toFixed(3));
+}
+
+// Throttle autoFit à un appel par frame (rAF) — autrement le drag du
+// cadre déclenche un autoFit complet (12 reflows) par pointermove et
+// l'expérience devient saccadée.
+let _autoFitRaf = null;
+function autoFitThrottled(){
+  if(_autoFitRaf) return;
+  _autoFitRaf = requestAnimationFrame(() => {
+    _autoFitRaf = null;
+    autoFit();
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1016,14 +1021,17 @@ function clampN(v, lo, hi, fb){
 function saveFrame(){
   try { localStorage.setItem(FRAME_KEY, JSON.stringify(_frame)); } catch(e){}
 }
-function applyFrame(){
+function applyFrame(opts){
   const letter = $('letter');
   if(!letter) return;
   letter.style.setProperty('--pad-top',    _frame.top + 'mm');
   letter.style.setProperty('--pad-right',  _frame.right + 'mm');
   letter.style.setProperty('--pad-bottom', _frame.bottom + 'mm');
   letter.style.setProperty('--pad-left',   _frame.left + 'mm');
-  autoFit();
+  // Pendant un drag, throttle pour ne pas saccader ; sinon synchronisation
+  // finale (drag end, reset, init…).
+  if(opts && opts.throttle) autoFitThrottled();
+  else autoFit();
 }
 function resetFrame(){
   _frame = { ...FRAME_DEFAULT };
@@ -1062,7 +1070,7 @@ function initFrameHandles(){
       if(f.top + f.bottom > 290) return;
       if(f.left + f.right > 200) return;
       _frame = f;
-      applyFrame();
+      applyFrame({ throttle: true });
     }
     function onUp(ev){
       window.removeEventListener('pointermove', onMove);
@@ -1070,6 +1078,7 @@ function initFrameHandles(){
       window.removeEventListener('pointercancel', onUp);
       frameEl.classList.remove('dragging');
       try { handle.releasePointerCapture(ev.pointerId); } catch(err){}
+      applyFrame(); // re-fit final sans throttle
       saveFrame();
     }
     window.addEventListener('pointermove', onMove);

@@ -183,12 +183,54 @@ body{font-family:'Rajdhani',sans-serif;background:var(--bg);color:var(--text);mi
   border-radius:2px;overflow:hidden;box-sizing:border-box;
   --auto-scale:1
 }
-/* Wrapper du contenu — c'est lui qui scale */
+/* Wrapper du contenu — c'est lui qui scale.
+   Padding défini par des CSS vars pour que le cadre redimensionnable
+   manuel (.content-frame) puisse les piloter à la souris. */
 .letter-inner{
-  padding:22mm 22mm 22mm 22mm;
+  padding: var(--pad-top, 22mm) var(--pad-right, 22mm) var(--pad-bottom, 22mm) var(--pad-left, 22mm);
   font-size:calc(12pt * var(--auto-scale));
   height:100%;box-sizing:border-box;position:relative
 }
+
+/* ============ CADRE REDIMENSIONNABLE (mask manuel) ============
+   Overlay qui matérialise les marges courantes. L'utilisateur tire les
+   8 poignées (4 coins + 4 bords) pour ajuster la zone de contenu ; le
+   texte se réduit automatiquement à l'intérieur via autoFit(). */
+.content-frame{
+  position:absolute;
+  top: var(--pad-top, 22mm);
+  right: var(--pad-right, 22mm);
+  bottom: var(--pad-bottom, 22mm);
+  left: var(--pad-left, 22mm);
+  border:1.5px dashed rgba(120,50,255,.35);
+  pointer-events:none;
+  z-index:5;
+  transition:border-color .15s
+}
+.content-frame:hover, .content-frame.dragging{border-color:rgba(120,50,255,.75)}
+.frame-handle{
+  position:absolute;width:12px;height:12px;
+  background:#7832ff;border:2px solid #fff;border-radius:50%;
+  box-shadow:0 1px 3px rgba(0,0,0,.4);
+  pointer-events:auto;z-index:6;
+  transition:transform .12s
+}
+.frame-handle:hover{background:#9b5cff;transform:scale(1.3)}
+.frame-h-tl{top:-7px;left:-7px;cursor:nwse-resize}
+.frame-h-tr{top:-7px;right:-7px;cursor:nesw-resize}
+.frame-h-bl{bottom:-7px;left:-7px;cursor:nesw-resize}
+.frame-h-br{bottom:-7px;right:-7px;cursor:nwse-resize}
+.frame-h-t {top:-7px; left:calc(50% - 6px);cursor:ns-resize}
+.frame-h-b {bottom:-7px;left:calc(50% - 6px);cursor:ns-resize}
+.frame-h-l {left:-7px; top:calc(50% - 6px);cursor:ew-resize}
+.frame-h-r {right:-7px;top:calc(50% - 6px);cursor:ew-resize}
+.btn-reset-frame{
+  padding:6px 10px;background:var(--surface2);border:1px solid var(--border);
+  color:var(--text2);border-radius:6px;font-family:'Rajdhani',sans-serif;
+  font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  cursor:pointer;transition:all .15s
+}
+.btn-reset-frame:hover{background:var(--surface3);color:var(--accent);border-color:var(--accent)}
 
 /* Header */
 .letter-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:30mm}
@@ -247,6 +289,7 @@ body{font-family:'Rajdhani',sans-serif;background:var(--bg);color:var(--text);mi
     box-shadow:none!important;border-radius:0!important;
     page-break-after:auto;transform:none!important
   }
+  .content-frame,.frame-handle{display:none!important}
 }
 
 /* ============ TOAST ============ */
@@ -428,6 +471,7 @@ body{font-family:'Rajdhani',sans-serif;background:var(--bg);color:var(--text);mi
     <div class="preview-toolbar">
       <div class="preview-title">Aperçu — A4 · 210 × 297 mm</div>
       <div class="zoom-controls">
+        <button class="btn-reset-frame" onclick="resetFrame()" title="Restaurer les marges par défaut (22mm)">↺ Cadre</button>
         <button class="zoom-btn" onclick="zoomOut()" title="Zoom arrière">−</button>
         <button class="zoom-btn" onclick="zoomReset()" title="Zoom 100%">◯</button>
         <button class="zoom-btn" onclick="zoomIn()" title="Zoom avant">+</button>
@@ -488,6 +532,18 @@ body{font-family:'Rajdhani',sans-serif;background:var(--bg);color:var(--text);mi
         <div class="letter-footer" id="p_footer"></div>
 
        </div><!-- /letter-inner -->
+       <!-- Cadre redimensionnable manuel : 8 poignées pour ajuster les
+            marges à la souris ; l'autoFit() s'adapte automatiquement -->
+       <div class="content-frame" id="contentFrame" aria-hidden="true">
+         <div class="frame-handle frame-h-tl" data-handle="tl"></div>
+         <div class="frame-handle frame-h-tr" data-handle="tr"></div>
+         <div class="frame-handle frame-h-bl" data-handle="bl"></div>
+         <div class="frame-handle frame-h-br" data-handle="br"></div>
+         <div class="frame-handle frame-h-t"  data-handle="t"></div>
+         <div class="frame-handle frame-h-b"  data-handle="b"></div>
+         <div class="frame-handle frame-h-l"  data-handle="l"></div>
+         <div class="frame-handle frame-h-r"  data-handle="r"></div>
+       </div>
       </div>
     </div>
   </main>
@@ -920,6 +976,101 @@ async function autoFit(){
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+// CADRE REDIMENSIONNABLE — mask manuel piloté à la souris
+// ═══════════════════════════════════════════════════════════════════════
+const FRAME_KEY = 'algomes_attestation_frame_v1';
+const FRAME_DEFAULT = { top:22, right:22, bottom:22, left:22 }; // mm
+const FRAME_BOUNDS  = { topMax:120, bottomMax:120, sideMax:80, min:5 };
+let _frame = { ...FRAME_DEFAULT };
+
+function loadFrame(){
+  try {
+    const raw = localStorage.getItem(FRAME_KEY);
+    if(raw){
+      const p = JSON.parse(raw);
+      if(p && typeof p === 'object'){
+        _frame = {
+          top:    clampN(p.top,    FRAME_BOUNDS.min, FRAME_BOUNDS.topMax,    FRAME_DEFAULT.top),
+          right:  clampN(p.right,  FRAME_BOUNDS.min, FRAME_BOUNDS.sideMax,   FRAME_DEFAULT.right),
+          bottom: clampN(p.bottom, FRAME_BOUNDS.min, FRAME_BOUNDS.bottomMax, FRAME_DEFAULT.bottom),
+          left:   clampN(p.left,   FRAME_BOUNDS.min, FRAME_BOUNDS.sideMax,   FRAME_DEFAULT.left)
+        };
+      }
+    }
+  } catch(e){ /* localStorage indisponible : on reste sur les defaults */ }
+  applyFrame();
+}
+function clampN(v, lo, hi, fb){
+  const n = Number(v);
+  if(!isFinite(n)) return fb;
+  return Math.max(lo, Math.min(hi, n));
+}
+function saveFrame(){
+  try { localStorage.setItem(FRAME_KEY, JSON.stringify(_frame)); } catch(e){}
+}
+function applyFrame(){
+  const letter = $('letter');
+  if(!letter) return;
+  letter.style.setProperty('--pad-top',    _frame.top + 'mm');
+  letter.style.setProperty('--pad-right',  _frame.right + 'mm');
+  letter.style.setProperty('--pad-bottom', _frame.bottom + 'mm');
+  letter.style.setProperty('--pad-left',   _frame.left + 'mm');
+  autoFit();
+}
+function resetFrame(){
+  _frame = { ...FRAME_DEFAULT };
+  saveFrame();
+  applyFrame();
+  showToast('Cadre réinitialisé (22 mm)');
+}
+
+function initFrameHandles(){
+  const frameEl = $('contentFrame');
+  const letter  = $('letter');
+  if(!frameEl || !letter) return;
+
+  frameEl.addEventListener('pointerdown', e => {
+    const handle = e.target.closest('.frame-handle');
+    if(!handle) return;
+    e.preventDefault();
+    const type = handle.dataset.handle; // tl,tr,bl,br,t,b,l,r
+    const lrect = letter.getBoundingClientRect();
+    // Conversion : combien de mm représente 1 px à l'écran actuel
+    const mmPerPx = 210 / lrect.width;
+    const startX = e.clientX, startY = e.clientY;
+    const startFrame = { ..._frame };
+    frameEl.classList.add('dragging');
+    try { handle.setPointerCapture(e.pointerId); } catch(err){}
+
+    function onMove(ev){
+      const dxMm = (ev.clientX - startX) * mmPerPx;
+      const dyMm = (ev.clientY - startY) * mmPerPx;
+      const f = { ...startFrame };
+      if(type.indexOf('t') !== -1) f.top    = clampN(startFrame.top    + dyMm, FRAME_BOUNDS.min, FRAME_BOUNDS.topMax,    FRAME_DEFAULT.top);
+      if(type.indexOf('b') !== -1) f.bottom = clampN(startFrame.bottom - dyMm, FRAME_BOUNDS.min, FRAME_BOUNDS.bottomMax, FRAME_DEFAULT.bottom);
+      if(type.indexOf('l') !== -1) f.left   = clampN(startFrame.left   + dxMm, FRAME_BOUNDS.min, FRAME_BOUNDS.sideMax,   FRAME_DEFAULT.left);
+      if(type.indexOf('r') !== -1) f.right  = clampN(startFrame.right  - dxMm, FRAME_BOUNDS.min, FRAME_BOUNDS.sideMax,   FRAME_DEFAULT.right);
+      // Cohérence : top+bottom < 290mm, left+right < 200mm
+      if(f.top + f.bottom > 290) return;
+      if(f.left + f.right > 200) return;
+      _frame = f;
+      applyFrame();
+    }
+    function onUp(ev){
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup',   onUp);
+      window.removeEventListener('pointercancel', onUp);
+      frameEl.classList.remove('dragging');
+      try { handle.releasePointerCapture(ev.pointerId); } catch(err){}
+      saveFrame();
+    }
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup',   onUp);
+    window.addEventListener('pointercancel', onUp);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // TOGGLE APERÇU — masqué par défaut, préférence mémorisée
 // ═══════════════════════════════════════════════════════════════════════
 const PREVIEW_KEY = 'algomes_preview_visible';
@@ -1080,6 +1231,8 @@ function autoZoom(){
   initPreviewState();
   load();
   applyDefaults();
+  loadFrame();
+  initFrameHandles();
   render();
   autoZoom();
   // Écoute changements

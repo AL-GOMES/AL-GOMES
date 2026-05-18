@@ -36,6 +36,7 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
   background:radial-gradient(ellipse 70% 40% at 50% 0%,rgba(124,106,173,.04),transparent),
   radial-gradient(ellipse 50% 50% at 100% 100%,rgba(124,106,173,.02),transparent)}
 
+/* ============ TOPBAR ============ */
 .topbar{position:sticky;top:0;z-index:100;height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:rgba(17,17,19,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
 .topbar-brand{display:flex;align-items:center;gap:12px}
 .topbar-logo{font-family:'Plus Jakarta Sans';font-weight:800;font-size:1rem;letter-spacing:.5px;color:var(--t1)}
@@ -50,96 +51,121 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 .btn-back svg{width:12px;height:12px;opacity:.6}
 .topbar-sep{width:1px;height:18px;background:rgba(124,106,173,0.1);flex-shrink:0}
 
-.wrapper{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:28px 20px 60px}
-.title-block{text-align:center;margin-bottom:32px}
+/* ============ WRAPPER + TITLE ============ */
+.wrapper{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:24px 20px 60px}
+.title-block{text-align:center;margin-bottom:28px}
 .title-main{font-family:'Plus Jakarta Sans';font-size:1.2rem;font-weight:700;letter-spacing:.8px;color:var(--t1)}
 .title-sub{font-size:.7rem;color:var(--t3);margin-top:4px;font-weight:400}
 .title-line{width:48px;height:1.5px;margin:10px auto 0;background:var(--accent);border-radius:1px;opacity:.5}
 
-.panel{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:16px}
-.sec-label{font-family:'Plus Jakarta Sans';font-size:.65rem;font-weight:600;letter-spacing:1.5px;color:var(--t3);text-transform:uppercase;margin-bottom:14px}
+/* ============ MAIN GRID : entrées | résultat ============ */
+.main-grid{display:grid;grid-template-columns:340px 1fr;gap:18px;align-items:start}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:22px;position:relative}
+.card-title{font-family:'Plus Jakarta Sans';font-size:.68rem;font-weight:700;letter-spacing:1.6px;color:var(--t3);text-transform:uppercase;margin-bottom:18px;display:flex;align-items:center;gap:10px}
+.card-title::before{content:'';width:3px;height:13px;background:var(--accent);border-radius:2px}
+.card-title .badge{font-size:.6rem;background:rgba(124,106,173,.12);color:var(--accent-l);padding:2px 8px;border-radius:4px;font-weight:600;letter-spacing:.5px;margin-left:auto}
 
-.param-row{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;margin-bottom:18px}
-.param-group{display:flex;flex-direction:column;gap:5px}
-.param-label{font-size:.7rem;font-weight:500;color:var(--t3)}
-.toggle{display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden;background:var(--bg)}
-.toggle-btn{padding:7px 18px;font-family:'DM Sans';font-size:.82rem;font-weight:600;color:var(--t3);cursor:pointer;border:none;background:none;transition:all .2s;user-select:none}
-.toggle-btn.on{background:var(--bg4);color:var(--t1)}
-.toggle-btn:hover:not(.on){color:var(--t2)}
+/* ============ FORM (colonne entrées) ============ */
+.form-group{margin-bottom:16px}
+.form-group:last-child{margin-bottom:0}
+.form-label{display:flex;align-items:center;justify-content:space-between;font-size:.7rem;font-weight:600;color:var(--t3);letter-spacing:.4px;text-transform:uppercase;margin-bottom:6px}
+.form-label .help-link{font-size:.62rem;color:var(--accent-l);text-decoration:none;font-weight:500;letter-spacing:.3px;text-transform:none;border-bottom:1px dotted var(--accent-l);padding-bottom:1px;cursor:pointer;background:none;border-left:none;border-right:none;border-top:none}
+.form-label .help-link:hover{color:var(--accent-xl);border-color:var(--accent-xl)}
+.form-input{width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border-h);border-radius:6px;color:var(--t1);font-family:'IBM Plex Mono';font-size:.95rem;outline:none;transition:border-color .15s,background .15s}
+.form-input:focus{border-color:var(--accent);background:rgba(124,106,173,.04)}
+.form-input::placeholder{color:var(--t3)}
+.input-suffix{position:relative}
+.input-suffix .form-input{padding-right:42px}
+.input-suffix .suffix{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:.7rem;color:var(--t3);font-family:'DM Sans';pointer-events:none}
 
-.chk-wrap{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;padding-bottom:2px}
-.chk-box{width:18px;height:18px;border:1.5px solid var(--border-h);border-radius:4px;background:var(--bg);display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
-.chk-box.on{background:var(--accent);border-color:var(--accent)}
-.chk-box svg{width:12px;height:12px;color:#fff;opacity:0;transition:opacity .15s}
-.chk-box.on svg{opacity:1}
-.chk-label{font-size:.8rem;color:var(--t2)}
-.chk-tag{font-size:.6rem;font-weight:600;background:rgba(124,106,173,.12);color:var(--accent-l);padding:1px 6px;border-radius:3px;margin-left:4px}
-.mode-tag{margin-left:auto;font-size:.65rem;font-weight:600;color:var(--accent-l);background:rgba(124,106,173,.08);padding:4px 10px;border-radius:4px}
+.seg{display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden;background:var(--bg)}
+.seg-btn{flex:1;padding:9px 8px;font-family:'DM Sans';font-size:.78rem;font-weight:600;color:var(--t3);cursor:pointer;border:none;background:none;transition:all .15s;user-select:none}
+.seg-btn.on{background:var(--bg4);color:var(--t1);box-shadow:inset 0 -2px 0 var(--accent)}
+.seg-btn:hover:not(.on){color:var(--t2)}
+.seg-btn .tag{font-size:.55rem;font-weight:600;background:rgba(124,106,173,.18);color:var(--accent-l);padding:1px 5px;border-radius:3px;margin-left:5px;vertical-align:middle}
 
-.legend-row{display:flex;gap:18px;margin-bottom:14px;flex-wrap:wrap}
-.legend-item{display:flex;align-items:center;gap:6px;font-size:.72rem;color:var(--t3)}
-.legend-dot{width:10px;height:10px;border-radius:3px}
-.legend-dot.fill{background:rgba(124,106,173,.1);border:1px solid rgba(124,106,173,.3)}
-.legend-dot.nofill{background:var(--bg);border:1.5px solid var(--border-h)}
+.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 
-.grid{display:grid;gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--bg)}
-.grid-main{grid-template-columns:64px 48px 1fr 1fr 1fr 1fr 1fr 1fr}
-.grid-cable{grid-template-columns:1fr 1fr;margin-top:10px}
-.cell{padding:9px 12px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:center;text-align:center;font-size:.8rem;min-height:40px}
-.cell:last-child{border-right:none}
-.cell.hd{background:rgba(255,255,255,.02);font-family:'Plus Jakarta Sans';font-size:.55rem;font-weight:600;letter-spacing:.8px;color:var(--t3);text-transform:uppercase;line-height:1.5;padding:7px 8px}
-.cell.lab{color:var(--t3);font-weight:500;font-size:.78rem}
-.cell.val{font-family:'IBM Plex Mono';font-weight:500}
-.cell.in{background:rgba(124,106,173,.04);padding:3px}
-.cell-input{width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border-h);border-radius:5px;color:var(--t1);font-family:'IBM Plex Mono';font-size:.95rem;text-align:center;outline:none;transition:border-color .2s}
-.cell-input:focus{border-color:var(--accent)}
-.cell-input::placeholder{color:var(--t3);font-size:.75rem}
+/* ============ RÉSULTAT (colonne droite) ============ */
+.result-empty{text-align:center;padding:30px 20px;color:var(--t3);font-size:.85rem}
+.result-empty b{color:var(--t2);font-weight:600;display:block;margin-bottom:6px}
 
-.v-tension{color:var(--accent-l)}.v-intensity{color:var(--accent-xl)}.v-calibre{color:var(--t1);font-weight:600}
-.cable-hd{font-family:'Plus Jakarta Sans';font-size:.6rem;font-weight:600;letter-spacing:.8px;color:var(--t3);text-transform:uppercase}
-.cable-hd.cu{border-bottom:2px solid var(--copper)}.cable-hd.al{border-bottom:2px solid var(--alu)}
-.cable-val{flex-direction:column;gap:3px;min-height:50px}
-.cable-sec{font-family:'IBM Plex Mono';font-size:1rem;font-weight:600}
-.cable-sec.cu{color:var(--copper)}.cable-sec.al{color:var(--alu)}
-.cable-drop{font-family:'IBM Plex Mono';font-size:.72rem}
-.drop-ok{color:var(--ok)}.drop-warn{color:var(--warn)}.drop-bad{color:var(--bad)}
+.cable-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+.cable-card{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:18px;position:relative;overflow:hidden}
+.cable-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.cable-card.cu::before{background:var(--copper)}
+.cable-card.al::before{background:var(--alu)}
+.cable-card-tag{font-size:.62rem;font-weight:600;color:var(--t3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px}
+.cable-card-tag.cu{color:var(--copper)}
+.cable-card-tag.al{color:var(--alu)}
+.cable-card-cable{font-family:'IBM Plex Mono';font-size:1.6rem;font-weight:600;color:var(--t1);line-height:1.1;margin-bottom:4px}
+.cable-card-cable .unit{font-size:.85rem;color:var(--t3);font-weight:400;margin-left:4px}
+.cable-card-ref{font-size:.65rem;color:var(--t3);font-family:'IBM Plex Mono'}
+.cable-card-drop{margin-top:12px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.drop-label{font-size:.7rem;color:var(--t3)}
+.drop-val{font-family:'IBM Plex Mono';font-size:.88rem;font-weight:600}
+.drop-val.drop-ok{color:var(--ok)}
+.drop-val.drop-warn{color:var(--warn)}
+.drop-val.drop-bad{color:var(--bad)}
+.cable-card-bar{margin-top:8px;height:5px;background:rgba(255,255,255,.04);border-radius:3px;position:relative;overflow:hidden}
+.cable-card-bar-fill{height:100%;border-radius:3px;transition:width .35s ease;width:0}
+.cable-card-bar-limit{position:absolute;top:-2px;bottom:-2px;width:1.5px;background:var(--t3);opacity:.5}
 
-.bars{margin-top:14px;display:none}
-.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:6px}
-.bar-label{font-size:.65rem;font-weight:500;color:var(--t3);width:48px;text-align:right}
-.bar-track{flex:1;height:5px;background:rgba(255,255,255,.03);border-radius:3px;position:relative;overflow:hidden}
-.bar-fill{height:100%;border-radius:3px;transition:width .5s ease}
-.bar-limit{position:absolute;top:-2px;bottom:-2px;width:1.5px;background:var(--t3);opacity:.35}
-.bar-pct{font-family:'IBM Plex Mono';font-size:.68rem;width:52px}
+/* ============ DETAILS (sous les câbles) ============ */
+.details{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.details-cell{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
+.details-tag{font-size:.58rem;font-weight:600;color:var(--t3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:4px}
+.details-val{font-family:'IBM Plex Mono';font-size:.95rem;color:var(--t1);font-weight:600;line-height:1.1}
+.details-sub{font-size:.65rem;color:var(--t3);margin-top:2px}
+.details-val.tension{color:var(--accent-l)}
+.details-val.intensity{color:var(--accent-xl)}
 
-.notice-text{font-size:.76rem;color:var(--t3);line-height:1.85}
-.notice-text b{color:var(--t2);font-weight:500}
-.notice-code{color:var(--accent-l);font-family:'IBM Plex Mono';font-size:.72rem}
-.notice-sep{height:1px;background:var(--border);margin:10px 0}
-.cal-row{display:flex;gap:4px;margin-top:12px}
-.cal-cell{flex:1;background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:5px;padding:6px 4px;text-align:center}
-.cal-hd{font-size:.55rem;font-weight:600;color:var(--t3);letter-spacing:.5px}
-.cal-val{font-family:'IBM Plex Mono';font-size:.75rem;color:var(--t2);margin-top:2px}
-.cal-unit{font-size:.5rem;color:var(--t3)}
+/* ============ ACCORDÉON DOCUMENTATION ============ */
+.docs{margin-top:22px}
+.doc-section{background:var(--bg2);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden}
+.doc-head{display:flex;align-items:center;gap:12px;padding:14px 22px;cursor:pointer;user-select:none;transition:background .15s}
+.doc-head:hover{background:rgba(124,106,173,.04)}
+.doc-head-icon{width:26px;height:26px;border-radius:6px;background:rgba(124,106,173,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--accent-l);font-size:.85rem}
+.doc-head-title{font-family:'Plus Jakarta Sans';font-size:.85rem;font-weight:600;color:var(--t1);flex:1}
+.doc-head-sub{font-size:.7rem;color:var(--t3)}
+.doc-head-chevron{width:16px;height:16px;color:var(--t3);transition:transform .2s}
+.doc-section.open .doc-head-chevron{transform:rotate(180deg)}
+.doc-body{display:none;padding:6px 22px 20px;border-top:1px solid var(--border)}
+.doc-section.open .doc-body{display:block}
 
+.notice-text{font-size:.78rem;color:var(--t2);line-height:1.9}
+.notice-text b{color:var(--t1);font-weight:600}
+.notice-code{color:var(--accent-l);font-family:'IBM Plex Mono';font-size:.74rem}
+.notice-sep{height:1px;background:var(--border);margin:14px 0}
+
+.cal-row{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}
+.cal-cell{flex:1 1 90px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 6px;text-align:center}
+.cal-hd{font-size:.6rem;font-weight:600;color:var(--t3);letter-spacing:.4px}
+.cal-val{font-family:'IBM Plex Mono';font-size:.82rem;color:var(--t1);margin-top:3px;font-weight:600}
+.cal-val.star{color:var(--accent-l)}
+.cal-unit{font-size:.55rem;color:var(--t3)}
+
+.verif-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.verif-card{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px}
+.verif-tag{font-size:.6rem;font-weight:600;color:var(--accent-l);letter-spacing:.5px;margin-bottom:10px;text-transform:uppercase}
 .verif-row{display:flex;justify-content:space-between;font-size:.75rem;color:var(--t2);padding:3px 0}
-.verif-row span:last-child{font-family:'IBM Plex Mono';color:var(--t1)}
-.verif-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.verif-card{background:rgba(255,255,255,.015);border:1px solid var(--border);border-radius:8px;padding:14px}
-.verif-tag{font-size:.6rem;font-weight:600;color:var(--t3);letter-spacing:.5px;margin-bottom:8px;text-transform:uppercase}
-.verif-formula{font-size:.75rem;color:var(--t2);margin-bottom:12px}
+.verif-row span:last-child{font-family:'IBM Plex Mono';color:var(--t1);font-weight:500}
+.verif-formula{font-size:.74rem;color:var(--t2);margin-bottom:6px;line-height:1.6}
 .verif-formula b{color:var(--accent-l)}
 
-@media(max-width:700px){
-  .grid-main{grid-template-columns:52px 40px 1fr 1fr 1fr 1fr 1fr 1fr;font-size:.7rem}
-  .cell{padding:6px 6px}.param-row{gap:10px}.wrapper{padding:16px 10px 40px}
-  .title-main{font-size:1rem}.panel{padding:16px}.verif-cards{grid-template-columns:1fr}
-  .topbar-date{display:none}
+/* Responsive */
+@media(max-width:880px){
+  .main-grid{grid-template-columns:1fr}
+  .details{grid-template-columns:repeat(2,1fr)}
+  .verif-cards{grid-template-columns:1fr}
 }
-@media(max-width:500px){
-  .grid-main{grid-template-columns:44px 36px repeat(6,1fr)}
-  .cell.hd{font-size:.45rem;padding:5px 3px}
-  .toggle-btn{padding:6px 10px;font-size:.75rem}
+@media(max-width:560px){
+  .cable-cards{grid-template-columns:1fr}
+  .topbar-date{display:none}
+  .wrapper{padding:16px 12px 40px}
+  .card{padding:16px}
+  .doc-head{padding:12px 14px}
+  .doc-body{padding:6px 14px 16px}
 }
 </style>
 
@@ -172,199 +198,304 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 <div class="wrapper">
   <div class="title-block">
     <div class="title-main">Calcul Section de Câble</div>
-    <div class="title-sub">Dimensionnement hors dérivation et colonne — alims spécifiques</div>
+    <div class="title-sub">Dimensionnement hors dérivation et colonne — alimentations spécifiques</div>
     <div class="title-line"></div>
   </div>
 
-  <div class="panel">
-    <div class="sec-label">Paramètres</div>
-    <div class="param-row">
-      <div class="param-group">
-        <div class="param-label">Alimentation</div>
-        <div class="toggle" id="tPhase">
-          <button class="toggle-btn" data-v="mono" onclick="setT('phase','mono')">Mono</button>
-          <button class="toggle-btn on" data-v="tri" onclick="setT('phase','tri')">Tri</button>
+  <div class="main-grid">
+
+    <!-- ═══════════ COLONNE 1 : ENTRÉES ═══════════ -->
+    <div class="card">
+      <div class="card-title">Paramètres<span class="badge" id="modeLabel">AL GOMES</span></div>
+
+      <div class="form-group">
+        <div class="form-label">Alimentation</div>
+        <div class="seg" id="tPhase">
+          <button class="seg-btn" data-v="mono" onclick="setT('phase','mono')">Mono 230 V</button>
+          <button class="seg-btn on" data-v="tri" onclick="setT('phase','tri')">Tri 400 V</button>
         </div>
       </div>
-      <div class="param-group">
-        <div class="param-label">Type</div>
-        <div class="toggle" id="tType">
-          <button class="toggle-btn" data-v="ecl" onclick="setT('type','ecl')">Éclairage</button>
-          <button class="toggle-btn on" data-v="force" onclick="setT('type','force')">Force</button>
+
+      <div class="form-group">
+        <div class="form-label">Type de circuit</div>
+        <div class="seg" id="tType">
+          <button class="seg-btn" data-v="ecl" onclick="setT('type','ecl')">Éclairage <span class="tag">ΔU 3 %</span></button>
+          <button class="seg-btn on" data-v="force" onclick="setT('type','force')">Force <span class="tag">ΔU 5 %</span></button>
         </div>
       </div>
-      <div class="chk-wrap" onclick="toggleALG()">
-        <div class="chk-box on" id="chkALG">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>
+
+      <div class="form-group">
+        <div class="form-label">Tranches de calibres</div>
+        <div class="seg" id="tCal">
+          <button class="seg-btn on" data-v="alg" onclick="toggleALG(true)">AL GOMES</button>
+          <button class="seg-btn" data-v="perso" onclick="toggleALG(false)">Standard NFC</button>
         </div>
-        <span class="chk-label">Calibres<span class="chk-tag">AL GOMES</span></span>
       </div>
-      <div class="param-group">
-        <div class="param-label">cos φ</div>
-        <input type="number" id="inCosPhi" value="0.85" step="0.05" min="0.3" max="1" class="cell-input" style="width:70px;padding:5px 6px">
+
+      <div class="form-group">
+        <div class="form-label">Puissance</div>
+        <div class="input-suffix">
+          <input type="number" id="inP" class="form-input" value="8" step="0.1" min="0">
+          <span class="suffix">kVA</span>
+        </div>
       </div>
-      <div class="param-group">
-        <div class="param-label">K (K1×K2×K3)</div>
-        <input type="number" id="inK" value="1" step="0.05" min="0.3" max="1.5" class="cell-input" style="width:70px;padding:5px 6px">
+
+      <div class="form-group">
+        <div class="form-label">Longueur</div>
+        <div class="input-suffix">
+          <input type="number" id="inL" class="form-input" value="120" step="1" min="0">
+          <span class="suffix">m</span>
+        </div>
       </div>
-      <div class="mode-tag" id="modeLabel">AL GOMES</div>
-    </div>
-    <div class="legend-row">
-      <div class="legend-item"><div class="legend-dot fill"></div>Remplir</div>
-      <div class="legend-item"><div class="legend-dot nofill"></div>Ne pas remplir</div>
+
+      <div class="form-row-2">
+        <div class="form-group" style="margin:0">
+          <div class="form-label">cos φ<button type="button" class="help-link" onclick="openDoc('docCosPhi')">aide</button></div>
+          <input type="number" id="inCosPhi" class="form-input" value="0.85" step="0.05" min="0.3" max="1">
+        </div>
+        <div class="form-group" style="margin:0">
+          <div class="form-label">K = K₁·K₂·K₃<button type="button" class="help-link" onclick="openDoc('docK')">aide</button></div>
+          <input type="number" id="inK" class="form-input" value="1" step="0.05" min="0.3" max="1.5">
+        </div>
+      </div>
     </div>
 
-    <div class="sec-label">Calcul</div>
-    <div class="grid grid-main">
-      <div class="cell hd" id="hPhase">TRI</div>
-      <div class="cell hd" id="hType">Force</div>
-      <div class="cell hd">Puissance<br>(kVA)</div>
-      <div class="cell hd">Longueur<br>(ml)</div>
-      <div class="cell hd">Tension<br>nominale</div>
-      <div class="cell hd">Intensité<br>I<sub>b</sub></div>
-      <div class="cell hd">Calibre<br>I<sub>n</sub></div>
-      <div class="cell hd">I<sub>z</sub> requis<br>(I<sub>n</sub>/K)</div>
-      <div class="cell lab" id="dPhase">TRI</div>
-      <div class="cell lab" id="dDrop">5 %</div>
-      <div class="cell in"><input type="number" class="cell-input" id="inP" value="8" step="0.1" min="0"></div>
-      <div class="cell in"><input type="number" class="cell-input" id="inL" value="120" step="1" min="0"></div>
-      <div class="cell val v-tension" id="oT">—</div>
-      <div class="cell val v-intensity" id="oI">—</div>
-      <div class="cell val v-calibre" id="oC">—</div>
-      <div class="cell val" style="color:var(--t2)" id="oD">—</div>
-    </div>
+    <!-- ═══════════ COLONNE 2 : RÉSULTAT ═══════════ -->
+    <div class="card">
+      <div class="card-title">Résultat</div>
 
-    <div class="grid grid-cable">
-      <div class="cell hd cable-hd cu">Cuivre — U1000R2V</div>
-      <div class="cell hd cable-hd al">Aluminium — U1000R02V</div>
-      <div class="cell val cable-val" id="oCu">—</div>
-      <div class="cell val cable-val" id="oAlu">—</div>
-    </div>
+      <div id="resultBody">
+        <!-- Cartes câble Cu / Al -->
+        <div class="cable-cards">
+          <div class="cable-card cu">
+            <div class="cable-card-tag cu">Cuivre — U1000R2V</div>
+            <div class="cable-card-cable" id="oCuMain">—</div>
+            <div class="cable-card-ref" id="oCuRef">en attente de saisie</div>
+            <div class="cable-card-drop">
+              <span class="drop-label">Chute de tension</span>
+              <span class="drop-val" id="oCuDrop">—</span>
+            </div>
+            <div class="cable-card-bar"><div class="cable-card-bar-fill" id="bCu"></div><div class="cable-card-bar-limit" id="lCu"></div></div>
+          </div>
+          <div class="cable-card al">
+            <div class="cable-card-tag al">Aluminium — U1000R02V</div>
+            <div class="cable-card-cable" id="oAluMain">—</div>
+            <div class="cable-card-ref" id="oAluRef">en attente de saisie</div>
+            <div class="cable-card-drop">
+              <span class="drop-label">Chute de tension</span>
+              <span class="drop-val" id="oAluDrop">—</span>
+            </div>
+            <div class="cable-card-bar"><div class="cable-card-bar-fill" id="bAlu"></div><div class="cable-card-bar-limit" id="lAlu"></div></div>
+          </div>
+        </div>
 
-    <div class="bars" id="bars">
-      <div class="bar-row">
-        <div class="bar-label" style="color:var(--copper)">Cuivre</div>
-        <div class="bar-track"><div class="bar-fill" id="bCu"></div><div class="bar-limit" id="lCu"></div></div>
-        <div class="bar-pct" id="pCu">—</div>
+        <!-- 4 metrics dérivées -->
+        <div class="details">
+          <div class="details-cell">
+            <div class="details-tag">Tension U</div>
+            <div class="details-val tension" id="oT">—</div>
+            <div class="details-sub" id="oTSub">&nbsp;</div>
+          </div>
+          <div class="details-cell">
+            <div class="details-tag">Intensité I<sub>b</sub></div>
+            <div class="details-val intensity" id="oI">—</div>
+            <div class="details-sub">d'emploi</div>
+          </div>
+          <div class="details-cell">
+            <div class="details-tag">Calibre I<sub>n</sub></div>
+            <div class="details-val" id="oC">—</div>
+            <div class="details-sub">protection amont</div>
+          </div>
+          <div class="details-cell">
+            <div class="details-tag">I<sub>z</sub> requis</div>
+            <div class="details-val" id="oD">—</div>
+            <div class="details-sub">= I<sub>n</sub> / K</div>
+          </div>
+        </div>
       </div>
-      <div class="bar-row">
-        <div class="bar-label" style="color:var(--alu)">Alu</div>
-        <div class="bar-track"><div class="bar-fill" id="bAlu"></div><div class="bar-limit" id="lAlu"></div></div>
-        <div class="bar-pct" id="pAlu">—</div>
+
+      <!-- Conserve les anciens éléments invisibles pour rétro-compat JS -->
+      <div style="display:none">
+        <span id="hPhase">TRI</span><span id="hType">Force</span>
+        <span id="dPhase">TRI</span><span id="dDrop">5 %</span>
+        <span id="oCu"></span><span id="oAlu"></span>
+        <div id="bars"></div><span id="pCu"></span><span id="pAlu"></span>
+        <span id="chkALG"></span>
       </div>
     </div>
   </div>
 
-  <div class="panel">
-    <div class="sec-label">Notice</div>
-    <div class="notice-text">
-      <b>Résistivité (cuivre) :</b> <span class="notice-code">ρ = 0,0175 Ω·mm²/m</span> à 20 °C — <b>(alu)</b> <span class="notice-code">ρ = 0,028 Ω·mm²/m</span><br>
-      <b>Chute de tension max (NF C 15-100 §525) :</b> <span class="notice-code">3 %</span> éclairage &nbsp;|&nbsp; <span class="notice-code">5 %</span> autres usages<br>
-      <b>Formule chute de tension :</b> mono <span class="notice-code">ΔU = 2·ρ·L·I·cosφ / S</span> — tri <span class="notice-code">ΔU = √3·ρ·L·I·cosφ / S</span><br>
-      <b>Intensité d'emploi :</b> mono <span class="notice-code">I<sub>b</sub> = P/U</span> — tri <span class="notice-code">I<sub>b</sub> = P/(√3·U)</span> avec U = 230 / 400 V (P en VA)<br>
-      <b>Coefficient K (NF C 15-100 §523) :</b> K = K1 × K2 × K3 (mode de pose × température × groupement). I<sub>z</sub> requis = I<sub>n</sub> / K
-      <div class="notice-sep"></div>
-      <b>Tableau 52H habitat (NF C 15-100 §771) :</b> PC 16 A → 1,5 mm² | PC 20 A → 2,5 mm² | Lave-linge / chauffe-eau 20 A → 2,5 mm² | Plaque cuisson 32 A → 6 mm² | Branchement 63 A → 16 mm²<br>
-      <b>Perso :</b> mini 1,5 mm² — Tranches : 10 / 16 / 20 / 25 / 32 / 40 / 50 / 63 A<br>
-      <b>AL Gomes Force :</b> mini 2×20 A / 4×20 A — mini 2,5 mm² — Tranches : 20 / 40 / 63 A<br>
-      <b>AL Gomes Éclairage :</b> mini 2×10 A / 4×10 A — mini 1,5 mm² — Tranches : 10 / 20 / 40 / 63 A
-    </div>
-    <div class="cal-row">
-      <div class="cal-cell"><div class="cal-hd">10 A</div><div class="cal-val">1,5 <span class="cal-unit">mm²</span></div></div>
-      <div class="cal-cell"><div class="cal-hd">16 A</div><div class="cal-val">1,5 <span class="cal-unit">mm²</span></div></div>
-      <div class="cal-cell"><div class="cal-hd">20 A</div><div class="cal-val">2,5 <span class="cal-unit">mm²</span></div></div>
-      <div class="cal-cell"><div class="cal-hd">25 A</div><div class="cal-val">4 <span class="cal-unit">mm²</span></div></div>
-      <div class="cal-cell"><div class="cal-hd">32 A</div><div class="cal-val">6 <span class="cal-unit">mm²</span></div></div>
-      <div class="cal-cell"><div class="cal-hd">40 A</div><div class="cal-val">10 <span class="cal-unit">mm²</span></div></div>
-      <div class="cal-cell"><div class="cal-hd">50 A</div><div class="cal-val">10 <span class="cal-unit">mm²</span></div></div>
-      <div class="cal-cell"><div class="cal-hd">63 A</div><div class="cal-val">16 <span class="cal-unit">mm²</span></div></div>
-    </div>
-  </div>
+  <!-- ═══════════ DOCUMENTATION (accordéon) ═══════════ -->
+  <div class="docs">
 
-  <div class="panel">
-    <div class="sec-label">Vérification — extrait Tableau 52H NF C 15-100 (habitat)</div>
-    <div id="verifC"></div>
-  </div>
-
-  <div class="panel">
-    <div class="sec-label">Sécurité — vérifications complémentaires NF C 15-100</div>
-    <div class="notice-text" id="securityInfo">
-      <b>Tenue thermique du conducteur (§434) :</b> <span class="notice-code">k²·S² ≥ I<sub>cc</sub>²·t</span> — k = 115 (Cu PVC), 76 (Alu PVC). Vérifier que la section choisie supporte l'I<sub>cc</sub> max au point d'installation pendant le temps de coupure du dispositif de protection.<br>
-      <b>Contacts indirects (§413) :</b> <span class="notice-code">Z<sub>s</sub> × I<sub>a</sub> ≤ U<sub>0</sub></span> — la boucle de défaut doit garantir le déclenchement instantané de la protection (I<sub>a</sub> = courant de fonctionnement magnétique : 5×I<sub>n</sub> en courbe B, 10×I<sub>n</sub> en C, 20×I<sub>n</sub> en D).<br>
-      <b>Sélectivité :</b> calibres et courbes des protections amont/aval doivent assurer la sélectivité (rapport ≥ 1,6 entre calibres en pratique).<br>
-      <b>Protection différentielle :</b> 30 mA obligatoire pour les circuits desservant les locaux d'habitation (§771), classes A/AC/F selon usages.
-    </div>
-  </div>
-
-  <!-- ═══════════ TUTO COS φ + K ═══════════ -->
-  <div class="panel">
-    <div class="sec-label">Comment renseigner cos φ et K ?</div>
-
-    <div class="notice-text" style="margin-bottom:14px">
-      <b style="color:var(--accent-l)">cos φ</b> — facteur de puissance du circuit. C'est le rapport entre la puissance utile (kW) et la puissance apparente (kVA). En habitat il dépend du type d'appareil :
-    </div>
-    <div class="cal-row" style="margin-bottom:14px">
-      <div class="cal-cell"><div class="cal-hd">Résistif (chauffage, chauffe-eau, plaque)</div><div class="cal-val">1,0</div></div>
-      <div class="cal-cell"><div class="cal-hd">LED moderne</div><div class="cal-val">0,9 – 1,0</div></div>
-      <div class="cal-cell"><div class="cal-hd" style="color:var(--accent-l)">Habitat général (mix)</div><div class="cal-val" style="color:var(--accent-l)">0,85 ★</div></div>
-      <div class="cal-cell"><div class="cal-hd">Moteurs (lave-linge, ventilation)</div><div class="cal-val">0,7 – 0,8</div></div>
-      <div class="cal-cell"><div class="cal-hd">Tubes fluo non compensés</div><div class="cal-val">0,5</div></div>
-    </div>
-    <div class="notice-text" style="margin-bottom:18px;font-style:italic;color:var(--t3)">
-      ★ Valeur par défaut. Saisissez 1,0 pour un circuit purement résistif (chauffe-eau, radiateur), 0,8 pour un départ moteur.
+    <div class="doc-section" id="docFormulas">
+      <div class="doc-head" onclick="toggleDoc('docFormulas')">
+        <div class="doc-head-icon">∑</div>
+        <div>
+          <div class="doc-head-title">Formules &amp; valeurs de référence</div>
+          <div class="doc-head-sub">NF C 15-100 §525 — résistivité, chute de tension, intensité d'emploi</div>
+        </div>
+        <div style="flex:1"></div>
+        <svg class="doc-head-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="doc-body">
+        <div class="notice-text">
+          <b>Résistivité :</b> Cu <span class="notice-code">ρ = 0,0175 Ω·mm²/m</span> · Alu <span class="notice-code">ρ = 0,028 Ω·mm²/m</span> (à 20 °C)<br>
+          <b>Chute de tension max (§525) :</b> <span class="notice-code">3 %</span> éclairage · <span class="notice-code">5 %</span> autres usages<br>
+          <b>Chute de tension :</b> mono <span class="notice-code">ΔU = 2·ρ·L·I·cosφ / S</span> · tri <span class="notice-code">ΔU = √3·ρ·L·I·cosφ / S</span><br>
+          <b>Intensité d'emploi I<sub>b</sub> :</b> mono <span class="notice-code">I<sub>b</sub> = P/U</span> · tri <span class="notice-code">I<sub>b</sub> = P/(√3·U)</span> avec U = 230 / 400 V (P en VA)<br>
+          <b>Coefficient K (§523) :</b> <span class="notice-code">K = K₁ × K₂ × K₃</span> (mode de pose × température × groupement). I<sub>z</sub> requis = I<sub>n</sub> / K
+        </div>
+      </div>
     </div>
 
-    <div class="notice-sep"></div>
-
-    <div class="notice-text" style="margin:14px 0">
-      <b style="color:var(--accent-l)">K = K<sub>1</sub> × K<sub>2</sub> × K<sub>3</sub></b> — coefficient correctif d'installation (NF C 15-100 §523). Il réduit l'intensité admissible du câble selon la pose, la température et le voisinage.
+    <div class="doc-section" id="docCosPhi">
+      <div class="doc-head" onclick="toggleDoc('docCosPhi')">
+        <div class="doc-head-icon">cos&nbsp;φ</div>
+        <div>
+          <div class="doc-head-title">Comment choisir cos φ ?</div>
+          <div class="doc-head-sub">Facteur de puissance = puissance utile (kW) / apparente (kVA)</div>
+        </div>
+        <div style="flex:1"></div>
+        <svg class="doc-head-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="doc-body">
+        <div class="cal-row">
+          <div class="cal-cell"><div class="cal-hd">Résistif (chauffage, chauffe-eau)</div><div class="cal-val">1,0</div></div>
+          <div class="cal-cell"><div class="cal-hd">LED moderne</div><div class="cal-val">0,9 – 1,0</div></div>
+          <div class="cal-cell"><div class="cal-hd">Habitat général (mix) ★</div><div class="cal-val star">0,85</div></div>
+          <div class="cal-cell"><div class="cal-hd">Moteurs (lave-linge, ventilation)</div><div class="cal-val">0,7 – 0,8</div></div>
+          <div class="cal-cell"><div class="cal-hd">Tubes fluo non compensés</div><div class="cal-val">0,5</div></div>
+        </div>
+        <div class="notice-text" style="margin-top:12px;font-style:italic;color:var(--t3)">
+          ★ Valeur par défaut. Saisir 1,0 pour un circuit purement résistif (chauffe-eau, radiateur), 0,8 pour un départ moteur.
+        </div>
+      </div>
     </div>
 
-    <div class="notice-text" style="margin:8px 0 6px"><b>K<sub>1</sub></b> — mode de pose :</div>
-    <div class="cal-row" style="margin-bottom:14px">
-      <div class="cal-cell"><div class="cal-hd">Conduit encastré dans isolant</div><div class="cal-val">0,77</div></div>
-      <div class="cal-cell"><div class="cal-hd" style="color:var(--accent-l)">Conduit en paroi maçonnée (B1) ★</div><div class="cal-val" style="color:var(--accent-l)">0,95</div></div>
-      <div class="cal-cell"><div class="cal-hd">Câble fixé sur paroi (C)</div><div class="cal-val">1,0</div></div>
-      <div class="cal-cell"><div class="cal-hd">Câble dans goulotte / gaine sol</div><div class="cal-val">0,9</div></div>
-      <div class="cal-cell"><div class="cal-hd">Câble enterré sous fourreau</div><div class="cal-val">0,8</div></div>
+    <div class="doc-section" id="docK">
+      <div class="doc-head" onclick="toggleDoc('docK')">
+        <div class="doc-head-icon">K</div>
+        <div>
+          <div class="doc-head-title">Coefficient K = K₁ · K₂ · K₃</div>
+          <div class="doc-head-sub">NF C 15-100 §523 — corrige l'intensité admissible selon la pose</div>
+        </div>
+        <div style="flex:1"></div>
+        <svg class="doc-head-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="doc-body">
+
+        <div class="notice-text" style="margin:6px 0 4px"><b>K₁</b> — mode de pose :</div>
+        <div class="cal-row">
+          <div class="cal-cell"><div class="cal-hd">Conduit encastré dans isolant</div><div class="cal-val">0,77</div></div>
+          <div class="cal-cell"><div class="cal-hd">Conduit en paroi maçonnée (B1) ★</div><div class="cal-val star">0,95</div></div>
+          <div class="cal-cell"><div class="cal-hd">Câble fixé sur paroi (C)</div><div class="cal-val">1,0</div></div>
+          <div class="cal-cell"><div class="cal-hd">Câble dans goulotte / gaine sol</div><div class="cal-val">0,9</div></div>
+          <div class="cal-cell"><div class="cal-hd">Câble enterré sous fourreau</div><div class="cal-val">0,8</div></div>
+        </div>
+
+        <div class="notice-text" style="margin:14px 0 4px"><b>K₂</b> — température ambiante (PVC, air) :</div>
+        <div class="cal-row">
+          <div class="cal-cell"><div class="cal-hd">25 °C</div><div class="cal-val">1,06</div></div>
+          <div class="cal-cell"><div class="cal-hd">30 °C ★</div><div class="cal-val star">1,0</div></div>
+          <div class="cal-cell"><div class="cal-hd">35 °C</div><div class="cal-val">0,94</div></div>
+          <div class="cal-cell"><div class="cal-hd">40 °C</div><div class="cal-val">0,87</div></div>
+          <div class="cal-cell"><div class="cal-hd">45 °C</div><div class="cal-val">0,79</div></div>
+          <div class="cal-cell"><div class="cal-hd">50 °C</div><div class="cal-val">0,71</div></div>
+        </div>
+
+        <div class="notice-text" style="margin:14px 0 4px"><b>K₃</b> — groupement (circuits côte à côte) :</div>
+        <div class="cal-row">
+          <div class="cal-cell"><div class="cal-hd">1 circuit ★</div><div class="cal-val star">1,0</div></div>
+          <div class="cal-cell"><div class="cal-hd">2</div><div class="cal-val">0,80</div></div>
+          <div class="cal-cell"><div class="cal-hd">3</div><div class="cal-val">0,70</div></div>
+          <div class="cal-cell"><div class="cal-hd">4</div><div class="cal-val">0,65</div></div>
+          <div class="cal-cell"><div class="cal-hd">6</div><div class="cal-val">0,57</div></div>
+          <div class="cal-cell"><div class="cal-hd">≥ 9</div><div class="cal-val">0,50</div></div>
+        </div>
+
+        <div class="notice-sep"></div>
+
+        <div class="notice-text" style="margin-top:10px">
+          <b style="color:var(--ok)">Exemples</b><br>
+          • Logement, conduit dans cloison maçonnée, 1 circuit, 30 °C :
+            <span class="notice-code">K = 0,95 × 1,0 × 1,0 = <b>0,95</b></span><br>
+          • Tableau divisionnaire, 4 circuits en goulotte, 30 °C :
+            <span class="notice-code">K = 1,0 × 1,0 × 0,65 = <b>0,65</b></span><br>
+          • Combles non isolés (40 °C), 2 circuits voisins, mode B1 :
+            <span class="notice-code">K = 0,95 × 0,87 × 0,80 ≈ <b>0,66</b></span>
+        </div>
+        <div class="notice-text" style="margin-top:8px;color:var(--t3);font-style:italic">
+          ★ Cas par défaut (K = 1,0). En cas de doute, garder 1,0 — la chute de tension reste vérifiée mais la marge sur I<sub>z</sub> disparaît.
+        </div>
+      </div>
     </div>
 
-    <div class="notice-text" style="margin:8px 0 6px"><b>K<sub>2</sub></b> — température ambiante (PVC, air) :</div>
-    <div class="cal-row" style="margin-bottom:14px">
-      <div class="cal-cell"><div class="cal-hd">25 °C</div><div class="cal-val">1,06</div></div>
-      <div class="cal-cell"><div class="cal-hd" style="color:var(--accent-l)">30 °C ★</div><div class="cal-val" style="color:var(--accent-l)">1,0</div></div>
-      <div class="cal-cell"><div class="cal-hd">35 °C</div><div class="cal-val">0,94</div></div>
-      <div class="cal-cell"><div class="cal-hd">40 °C</div><div class="cal-val">0,87</div></div>
-      <div class="cal-cell"><div class="cal-hd">45 °C</div><div class="cal-val">0,79</div></div>
-      <div class="cal-cell"><div class="cal-hd">50 °C</div><div class="cal-val">0,71</div></div>
+    <div class="doc-section" id="docCalibres">
+      <div class="doc-head" onclick="toggleDoc('docCalibres')">
+        <div class="doc-head-icon">▦</div>
+        <div>
+          <div class="doc-head-title">Tableau 52H habitat (NF C 15-100 §771)</div>
+          <div class="doc-head-sub">Section minimale par calibre de disjoncteur — abaque rapide</div>
+        </div>
+        <div style="flex:1"></div>
+        <svg class="doc-head-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="doc-body">
+        <div class="cal-row">
+          <div class="cal-cell"><div class="cal-hd">10 A</div><div class="cal-val">1,5 <span class="cal-unit">mm²</span></div></div>
+          <div class="cal-cell"><div class="cal-hd">16 A</div><div class="cal-val">1,5 <span class="cal-unit">mm²</span></div></div>
+          <div class="cal-cell"><div class="cal-hd">20 A</div><div class="cal-val">2,5 <span class="cal-unit">mm²</span></div></div>
+          <div class="cal-cell"><div class="cal-hd">25 A</div><div class="cal-val">4 <span class="cal-unit">mm²</span></div></div>
+          <div class="cal-cell"><div class="cal-hd">32 A</div><div class="cal-val">6 <span class="cal-unit">mm²</span></div></div>
+          <div class="cal-cell"><div class="cal-hd">40 A</div><div class="cal-val">10 <span class="cal-unit">mm²</span></div></div>
+          <div class="cal-cell"><div class="cal-hd">50 A</div><div class="cal-val">10 <span class="cal-unit">mm²</span></div></div>
+          <div class="cal-cell"><div class="cal-hd">63 A</div><div class="cal-val">16 <span class="cal-unit">mm²</span></div></div>
+        </div>
+        <div class="notice-text" style="margin-top:14px">
+          <b>PC 16 A</b> → 1,5 mm² · <b>PC 20 A</b> → 2,5 mm² · <b>Lave-linge / chauffe-eau 20 A</b> → 2,5 mm² · <b>Plaque cuisson 32 A</b> → 6 mm² · <b>Branchement 63 A</b> → 16 mm²<br>
+          <b>Tranches « Standard NFC » :</b> 10 / 16 / 20 / 25 / 32 / 40 / 50 / 63 A — mini 1,5 mm²<br>
+          <b>Tranches « AL GOMES Force » :</b> 20 / 40 / 63 A — mini 2×20 A / 4×20 A — mini 2,5 mm²<br>
+          <b>Tranches « AL GOMES Éclairage » :</b> 10 / 20 / 40 / 63 A — mini 2×10 A / 4×10 A — mini 1,5 mm²
+        </div>
+      </div>
     </div>
 
-    <div class="notice-text" style="margin:8px 0 6px"><b>K<sub>3</sub></b> — groupement (nombre de circuits côte à côte) :</div>
-    <div class="cal-row" style="margin-bottom:14px">
-      <div class="cal-cell"><div class="cal-hd" style="color:var(--accent-l)">1 circuit ★</div><div class="cal-val" style="color:var(--accent-l)">1,0</div></div>
-      <div class="cal-cell"><div class="cal-hd">2</div><div class="cal-val">0,80</div></div>
-      <div class="cal-cell"><div class="cal-hd">3</div><div class="cal-val">0,70</div></div>
-      <div class="cal-cell"><div class="cal-hd">4</div><div class="cal-val">0,65</div></div>
-      <div class="cal-cell"><div class="cal-hd">6</div><div class="cal-val">0,57</div></div>
-      <div class="cal-cell"><div class="cal-hd">≥ 9</div><div class="cal-val">0,50</div></div>
+    <div class="doc-section" id="docVerif">
+      <div class="doc-head" onclick="toggleDoc('docVerif')">
+        <div class="doc-head-icon">⇄</div>
+        <div>
+          <div class="doc-head-title">Comparaison Mono 230 V / Tri 400 V</div>
+          <div class="doc-head-sub">Vérification croisée pour la puissance et la longueur saisies</div>
+        </div>
+        <div style="flex:1"></div>
+        <svg class="doc-head-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="doc-body">
+        <div id="verifC"></div>
+      </div>
     </div>
 
-    <div class="notice-sep"></div>
+    <div class="doc-section" id="docSecurity">
+      <div class="doc-head" onclick="toggleDoc('docSecurity')">
+        <div class="doc-head-icon">⚠</div>
+        <div>
+          <div class="doc-head-title">Vérifications de sécurité complémentaires</div>
+          <div class="doc-head-sub">Tenue thermique (§434), contacts indirects (§413), sélectivité, différentielle</div>
+        </div>
+        <div style="flex:1"></div>
+        <svg class="doc-head-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="doc-body">
+        <div class="notice-text">
+          <b>Tenue thermique du conducteur (§434) :</b> <span class="notice-code">k²·S² ≥ I<sub>cc</sub>²·t</span> — k = 115 (Cu PVC), 76 (Alu PVC). Vérifier que la section choisie supporte l'I<sub>cc</sub> max pendant le temps de coupure du dispositif amont.<br>
+          <b>Contacts indirects (§413) :</b> <span class="notice-code">Z<sub>s</sub> × I<sub>a</sub> ≤ U<sub>0</sub></span> — la boucle de défaut doit garantir le déclenchement instantané de la protection (I<sub>a</sub> = courant magnétique : 5×I<sub>n</sub> en courbe B, 10×I<sub>n</sub> en C, 20×I<sub>n</sub> en D).<br>
+          <b>Sélectivité :</b> calibres et courbes amont/aval doivent assurer la sélectivité (rapport ≥ 1,6 entre calibres en pratique).<br>
+          <b>Protection différentielle :</b> 30 mA obligatoire pour les circuits desservant les locaux d'habitation (§771), classes A/AC/F selon usages.
+        </div>
+      </div>
+    </div>
 
-    <div class="notice-text" style="margin-top:14px">
-      <b style="color:var(--ok)">Exemples concrets</b><br>
-      • Logement classique, câble en conduit dans cloison maçonnée, 1 circuit, 30 °C :
-        <span class="notice-code">K = 0,95 × 1,0 × 1,0 = <b>0,95</b></span><br>
-      • Tableau divisionnaire, 4 circuits côte à côte en goulotte, 30 °C :
-        <span class="notice-code">K = 1,0 × 1,0 × 0,65 = <b>0,65</b></span><br>
-      • Câble dans combles non isolés (40 °C), 2 circuits voisins, mode B1 :
-        <span class="notice-code">K = 0,95 × 0,87 × 0,80 ≈ <b>0,66</b></span><br>
-      • Câble en conduit encastré dans isolant (laine), 1 circuit, 30 °C :
-        <span class="notice-code">K = 0,77 × 1,0 × 1,0 = <b>0,77</b></span>
-    </div>
-    <div class="notice-text" style="margin-top:10px;color:var(--t3);font-style:italic">
-      ★ Cas par défaut (K = 1,0) : circuit unique, pose normale en cloison maçonnée, 30 °C. En cas de doute, garder 1,0 — la chute de tension reste vérifiée mais la marge sur Iz disparaît.
-    </div>
   </div>
 </div>
 
@@ -396,18 +527,35 @@ function tick(){
 tick(); setInterval(tick,1000);
 
 // =====================================================
-// TOGGLES
+// TOGGLES (segmented controls)
 // =====================================================
-function setT(g,v){
-  S[g==='phase'?'phase':'type']=v;
-  document.querySelectorAll(`#${g==='phase'?'tPhase':'tType'} .toggle-btn`).forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+function setT(g, v){
+  S[g === 'phase' ? 'phase' : 'type'] = v;
+  document.querySelectorAll(`#${g === 'phase' ? 'tPhase' : 'tType'} .seg-btn`)
+    .forEach(b => b.classList.toggle('on', b.dataset.v === v));
   compute();
 }
-function toggleALG(){
-  S.alg=!S.alg;
-  document.getElementById('chkALG').classList.toggle('on',S.alg);
-  document.getElementById('modeLabel').textContent=S.alg?'AL GOMES':'PERSO';
+function toggleALG(on){
+  S.alg = !!on;
+  document.querySelectorAll('#tCal .seg-btn').forEach(b => {
+    b.classList.toggle('on', (b.dataset.v === 'alg') === S.alg);
+  });
+  document.getElementById('modeLabel').textContent = S.alg ? 'AL GOMES' : 'STANDARD NFC';
   compute();
+}
+
+// =====================================================
+// ACCORDEON DOC
+// =====================================================
+function toggleDoc(id){
+  const el = document.getElementById(id);
+  if(el) el.classList.toggle('open');
+}
+function openDoc(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  if(!el.classList.contains('open')) el.classList.add('open');
+  el.scrollIntoView({ behavior:'smooth', block:'center' });
 }
 
 // =====================================================
@@ -418,22 +566,18 @@ function toggleALG(){
 
 // --- Calibre standard NF C 15-100 (avec 16 A en habitat) ---
 function pickCalibre(I, isTri, isForce, alg){
-  const allow10 = !alg || !isForce;     // AL GOMES Force exclut le 10 A
-  // Tranches selon le mode choisi
+  const allow10 = !alg || !isForce;
   let calibres;
   if (alg){
     calibres = isForce ? [20, 40, 63] : [10, 20, 40, 63];
   } else {
-    // Perso : tous les calibres NFC 15-100 incluant 16 A et 50 A
     calibres = [10, 16, 20, 25, 32, 40, 50, 63];
   }
   if (!allow10) calibres = calibres.filter(c => c >= 16);
   for (const c of calibres) if (I <= c) return c;
-  return calibres[calibres.length-1];
+  return calibres[calibres.length - 1];
 }
 
-// --- Section normalisée par chute de tension ---
-// Sections NF C 32-201 : 1.5, 2.5, 4, 6, 10, 16, 25, 35
 function dropSection(needed, alg, isForce){
   const allow15 = !alg || !isForce;
   const sections = [1.5, 2.5, 4, 6, 10, 16, 25, 35, 50];
@@ -444,52 +588,42 @@ function dropSection(needed, alg, isForce){
   return 70;
 }
 
-// --- Section minimale par calibre (Tableau 52H NF C 15-100 habitat, mode B1) ---
-// Le câble doit pouvoir supporter le calibre du disjoncteur amont (Iz_table ≥ In)
 function intensitySection(In, alg, isForce){
   const allow15 = !alg || !isForce;
   if (alg){
-    // Mode AL GOMES (plus conservatif)
     if (In <= 10 && allow15) return 1.5;
     if (In <= 20) return 2.5;
     if (In <= 40) return 10;
-    return 16;                          // 63 A → 16 mm²
+    return 16;
   }
-  // Perso — Tableau 52H NF C 15-100 §771 (habitat)
-  if (In <= 16 && allow15) return 1.5;  // PC 16 A → 1,5 mm²
-  if (In <= 20) return 2.5;             // PC 20 A, lave-linge, chauffe-eau
+  if (In <= 16 && allow15) return 1.5;
+  if (In <= 20) return 2.5;
   if (In <= 25) return 4;
-  if (In <= 32) return 6;               // plaque cuisson, four
+  if (In <= 32) return 6;
   if (In <= 50) return 10;
-  return 16;                            // 63 A → 16 mm²
+  return 16;
 }
 
-// --- Chute de tension réelle pour une section donnée ---
-// mono : ΔU = 2·ρ·L·I·cosφ / S
-// tri  : ΔU = √3·ρ·L·I·cosφ / S
 function calcDrop(I, L, rho, section, U_nominal, cosPhi, isTri){
   const factor = isTri ? Math.sqrt(3) : 2;
   const dU = (factor * rho * L * I * cosPhi) / section;
   return Math.round((dU / U_nominal) * 100 * 100) / 100;
 }
 
-// --- Section nécessaire pour respecter ΔU% max ---
 function neededSectionByDrop(I, L, rho, deltaU_pct, U_nominal, cosPhi, isTri){
   const factor = isTri ? Math.sqrt(3) : 2;
-  return (factor * rho * L * I * cosPhi) / ((deltaU_pct/100) * U_nominal);
+  return (factor * rho * L * I * cosPhi) / ((deltaU_pct / 100) * U_nominal);
 }
 
 // =====================================================
-// VÉRIFICATION — extrait Tableau 52H NF C 15-100 (habitat)
-// Utilise les MÊMES formules et constantes que le calcul principal.
+// VÉRIFICATION (panneau Comparaison)
 // =====================================================
 function verifSection(P_kva, L, U_nominal, isTri, deltaU_pct, cosPhi){
   const I = isTri
     ? (P_kva * 1000) / (Math.sqrt(3) * U_nominal)
     : (P_kva * 1000) / U_nominal;
   const needed = neededSectionByDrop(I, L, RCU, deltaU_pct, U_nominal, cosPhi, isTri);
-  const dropSec = dropSection(needed, false, false); // mode habitat
-  // Section par calibre = on dimensionne sur le calibre normalisé immédiatement supérieur à I
+  const dropSec = dropSection(needed, false, false);
   const In = pickCalibreHabitat(I);
   const intSec = intensitySection(In, false, false);
   return { I, In, section: Math.max(dropSec, intSec) };
@@ -499,98 +633,98 @@ function pickCalibreHabitat(I){
   for (const c of cals) if (I <= c) return c;
   return 80;
 }
-function verifCalibre(I){
-  return pickCalibreHabitat(I) + ' A';
-}
+function verifCalibre(I){ return pickCalibreHabitat(I) + ' A'; }
 
 // =====================================================
 // MAIN COMPUTE
 // =====================================================
+function clearOut(){
+  document.getElementById('oCuMain').textContent  = '—';
+  document.getElementById('oAluMain').textContent = '—';
+  document.getElementById('oCuRef').textContent   = 'en attente de saisie';
+  document.getElementById('oAluRef').textContent  = 'en attente de saisie';
+  document.getElementById('oCuDrop').textContent  = '—';
+  document.getElementById('oAluDrop').textContent = '—';
+  document.getElementById('oCuDrop').className    = 'drop-val';
+  document.getElementById('oAluDrop').className   = 'drop-val';
+  document.getElementById('bCu').style.width      = '0';
+  document.getElementById('bAlu').style.width     = '0';
+  ['oT','oI','oC','oD'].forEach(i => document.getElementById(i).textContent = '—');
+  document.getElementById('oTSub').innerHTML      = '&nbsp;';
+  document.getElementById('verifC').innerHTML     = '<div class="notice-text" style="color:var(--t3);font-style:italic">Saisir une puissance et une longueur pour voir la comparaison.</div>';
+}
+
 function compute(){
-  const P_kva = parseFloat(document.getElementById('inP').value);
-  const L = parseFloat(document.getElementById('inL').value);
+  const P_kva  = parseFloat(document.getElementById('inP').value);
+  const L      = parseFloat(document.getElementById('inL').value);
   const cosPhi = getCosPhi();
-  const K = getK();
-  const tri = S.phase === 'tri';
-  const force = S.type === 'force';
-  const alg = S.alg;
-  const md = force ? 5 : 3;       // ΔU max NFC 15-100 §525
-  const U = tri ? 400 : 230;       // tension nominale entre phases (tri) ou phase-N (mono)
-  const pfx = tri ? '4x' : '2x';
-  const sfx = tri ? '' : '+N';
-  const cg  = tri ? '5G ' : '3G ';
+  const K      = getK();
+  const tri    = S.phase === 'tri';
+  const force  = S.type  === 'force';
+  const alg    = S.alg;
+  const md     = force ? 5 : 3;
+  const U      = tri   ? 400 : 230;
+  const pfx    = tri   ? '4×' : '2×';
+  const sfx    = tri   ? ''   : ' + N';
+  const cg     = tri   ? '5G' : '3G';
 
-  document.getElementById('hPhase').textContent = tri ? 'TRI' : 'MONO';
-  document.getElementById('hType').textContent  = force ? 'Force' : 'Éclairage';
-  document.getElementById('dPhase').textContent = tri ? 'TRI' : 'MONO';
-  document.getElementById('dDrop').textContent  = md + ' %';
+  if (!P_kva || !L || P_kva <= 0 || L <= 0){ clearOut(); return; }
 
-  if (!P_kva || !L || P_kva <= 0 || L <= 0){
-    ['oT','oI','oC','oD'].forEach(i => document.getElementById(i).textContent = '—');
-    document.getElementById('oCu').innerHTML  = '—';
-    document.getElementById('oAlu').innerHTML = '—';
-    document.getElementById('bars').style.display = 'none';
-    document.getElementById('verifC').innerHTML = '';
-    return;
-  }
-
-  // ---- INTENSITÉ D'EMPLOI Ib (apparente, à partir de kVA) ----
-  // mono : Ib = S / U      (S = P_kva × 1000 VA)
-  // tri  : Ib = S / (√3·U)
+  // Intensité d'emploi (apparente)
   const Ib = tri ? (P_kva * 1000) / (Math.sqrt(3) * U) : (P_kva * 1000) / U;
-
-  // ---- CALIBRE In ----
+  // Calibre amont
   const In = pickCalibre(Ib, tri, force, alg);
-
-  // ---- Iz REQUIS (admissible câble après coefficient K) ----
-  // NF C 15-100 §523 : Ib ≤ In ≤ Iz × K  →  Iz ≥ In / K
+  // Iz requis (NFC 15-100 §523)
   const Iz_requis = In / K;
 
-  // ---- CUIVRE ----
+  // Cuivre
   const neededCu  = neededSectionByDrop(Ib, L, RCU, md, U, cosPhi, tri);
   const dropSecCu = dropSection(neededCu, alg, force);
-  const intSecCu  = intensitySection(In, alg, force);  // dimensionnement sur le calibre, pas Ib
+  const intSecCu  = intensitySection(In, alg, force);
   const sCu       = Math.max(dropSecCu, intSecCu);
   const dCu       = calcDrop(Ib, L, RCU, sCu, U, cosPhi, tri);
 
-  // ---- ALU ----
+  // Alu
   const neededAlu = neededSectionByDrop(Ib, L, RALU, md, U, cosPhi, tri);
   const dropSecAl = dropSection(neededAlu, alg, force);
   const intSecAl  = intensitySection(In, alg, force);
   const sAlu      = Math.max(dropSecAl, intSecAl);
   const dAlu      = calcDrop(Ib, L, RALU, sAlu, U, cosPhi, tri);
 
-  // ---- AFFICHAGE ----
-  document.getElementById('oT').textContent = U + ' V' + (tri ? ' (entre phases)' : '');
-  document.getElementById('oI').textContent = Ib.toFixed(2) + ' A';
-  document.getElementById('oC').textContent = pfx + In + ' A' + sfx;
-  document.getElementById('oD').textContent = Iz_requis.toFixed(1) + ' A';
+  // === Affichage Cartes câbles ===
+  document.getElementById('oCuMain').innerHTML  = `${cg} ${sCu}<span class="unit">mm²</span>`;
+  document.getElementById('oAluMain').innerHTML = `${cg} ${sAlu}<span class="unit">mm²</span>`;
+  document.getElementById('oCuRef').textContent  = `${pfx}${sCu} mm²${sfx} — U1000R2V`;
+  document.getElementById('oAluRef').textContent = `${pfx}${sAlu} mm²${sfx} — U1000R02V`;
 
+  const cuC = dCu > md ? 'drop-bad' : dCu > md * 0.8 ? 'drop-warn' : 'drop-ok';
+  const alC = dAlu > md ? 'drop-bad' : dAlu > md * 0.8 ? 'drop-warn' : 'drop-ok';
   const cuW = dCu > md;
-  const cuC = cuW ? 'drop-bad' : dCu > md * 0.8 ? 'drop-warn' : 'drop-ok';
-  document.getElementById('oCu').innerHTML =
-    `<span class="cable-sec cu">${cg}${sCu} mm²</span>` +
-    `<span class="cable-drop ${cuC}">${cuW ? '⚠ ' : ''}ΔU = ${dCu.toFixed(2)} %</span>`;
-
   const alW = dAlu > md;
-  const alC = alW ? 'drop-bad' : dAlu > md * 0.8 ? 'drop-warn' : 'drop-ok';
-  document.getElementById('oAlu').innerHTML =
-    `<span class="cable-sec al">${cg}${sAlu} mm²</span>` +
-    `<span class="cable-drop ${alC}">${alW ? '⚠ ' : ''}ΔU = ${dAlu.toFixed(2)} %</span>`;
+  document.getElementById('oCuDrop').className   = 'drop-val ' + cuC;
+  document.getElementById('oCuDrop').textContent = (cuW ? '⚠ ' : '') + dCu.toFixed(2) + ' %';
+  document.getElementById('oAluDrop').className  = 'drop-val ' + alC;
+  document.getElementById('oAluDrop').textContent= (alW ? '⚠ ' : '') + dAlu.toFixed(2) + ' %';
 
-  // Barres
+  // === Barres de chute (toujours visibles) ===
   const bx = md * 1.3;
-  document.getElementById('bars').style.display = 'block';
-  setBar('bCu','lCu','pCu', dCu, md, bx, cuC);
-  setBar('bAlu','lAlu','pAlu', dAlu, md, bx, alC);
+  setBar('bCu', 'lCu', dCu, md, bx, cuC);
+  setBar('bAlu', 'lAlu', dAlu, md, bx, alC);
 
-  // ---- VÉRIFICATION (Tableau 52H habitat — mono ET tri pour comparaison) ----
+  // === Details (U, Ib, In, Iz) ===
+  document.getElementById('oT').textContent     = U + ' V';
+  document.getElementById('oTSub').textContent  = tri ? 'entre phases' : 'phase-neutre';
+  document.getElementById('oI').textContent     = Ib.toFixed(2) + ' A';
+  document.getElementById('oC').textContent     = pfx + In + ' A' + sfx;
+  document.getElementById('oD').textContent     = Iz_requis.toFixed(1) + ' A';
+
+  // === Comparaison Mono / Tri ===
   const formuleMono = `<b>I<sub>b</sub></b> = P/U = ${(P_kva*1000).toFixed(0)} / ${U} = <b>${(P_kva*1000/U).toFixed(2)} A</b>`;
   const formuleTri  = `<b>I<sub>b</sub></b> = P/(√3·U) = ${(P_kva*1000).toFixed(0)} / (1,732×${U}) = <b>${(P_kva*1000/(Math.sqrt(3)*U)).toFixed(2)} A</b>`;
   const vMono = verifSection(P_kva, L, 230, false, md, cosPhi);
   const vTri  = verifSection(P_kva, L, 400, true,  md, cosPhi);
   document.getElementById('verifC').innerHTML = `
-    <div class="verif-formula">${tri ? formuleTri : formuleMono} — calcul actif : <b style="color:var(--accent-l)">${tri?'TRI 400 V':'MONO 230 V'}</b>, cos φ = ${cosPhi.toFixed(2)}, ΔU max = ${md}%</div>
+    <div class="verif-formula">${tri ? formuleTri : formuleMono} — calcul actif : <b>${tri ? 'TRI 400 V' : 'MONO 230 V'}</b>, cos φ = ${cosPhi.toFixed(2)}, ΔU max = ${md}%</div>
     <div class="verif-cards">
       <div class="verif-card">
         <div class="verif-tag">Mono — référence 230 V</div>
@@ -611,14 +745,13 @@ function compute(){
     </div>`;
 }
 
-function setBar(bId, lId, pId, d, md, bx, cls) {
+function setBar(bId, lId, d, md, bx, cls){
   const b = document.getElementById(bId);
   b.style.width = Math.min(d / bx * 100, 100) + '%';
-  b.style.background = cls==='drop-ok' ? 'linear-gradient(90deg,#16a34a,#4ade80)'
-    : cls==='drop-warn' ? 'linear-gradient(90deg,#ca8a04,#facc15)'
-    : 'linear-gradient(90deg,#dc2626,#f87171)';
+  b.style.background = cls === 'drop-ok'   ? 'linear-gradient(90deg,#16a34a,#4ade80)'
+                     : cls === 'drop-warn' ? 'linear-gradient(90deg,#ca8a04,#facc15)'
+                                           : 'linear-gradient(90deg,#dc2626,#f87171)';
   document.getElementById(lId).style.left = (md / bx * 100) + '%';
-  document.getElementById(pId).innerHTML = `<span class="${cls}">${d.toFixed(2)} %</span>`;
 }
 
 ['inP','inL','inCosPhi','inK'].forEach(id =>

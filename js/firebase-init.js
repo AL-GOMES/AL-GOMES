@@ -242,6 +242,13 @@ if (window.__algomesBlocked) {
     s.textContent =
       '@media (prefers-reduced-motion: reduce){' +
       '  *,*::before,*::after{animation-duration:0.001ms!important;animation-iteration-count:1!important;transition-duration:0.001ms!important;scroll-behavior:auto!important}' +
+      // Exemptions : animations décoratives très douces (oscillation lente,
+      // <20px d'amplitude, pas de rotation) — conformes WCAG, on les conserve
+      // pour préserver l'identité visuelle de la page d'accueil.
+      '  .logo-float{animation:floatUp 4s ease-in-out infinite!important}' +
+      '  .ambient-glow{animation:ambientPulse 6s ease-in-out infinite!important}' +
+      '  .ground-shadow{animation:shadowPulse 4s ease-in-out infinite!important}' +
+      '  .ground-glow{animation:glowLine 4s ease-in-out infinite!important}' +
       '}' +
       ':focus-visible{outline:2px solid #b388ff!important;outline-offset:2px!important;border-radius:3px}' +
       'button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:2px solid #b388ff!important;outline-offset:2px!important}';

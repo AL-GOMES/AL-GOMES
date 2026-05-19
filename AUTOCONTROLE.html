@@ -2605,7 +2605,23 @@ async function generateOfficialPDF(mode){
    Évite les comportements navigateur sur <iframe src="blob:...pdf"> qui,
    dans une page elle-même iframée sous accueil.html (sandbox + CSP),
    peuvent déclencher un téléchargement à la place de l'affichage. */
+// Jeton incrémental : un nouvel appel invalide les rendus en cours pour éviter
+// les conflits si l'utilisateur déplace la signature pendant qu'un PDF est en
+// train d'être généré.
+let _previewVersion = 0;
+let _previewRefreshTimer = null;
+
+function schedulePreviewRefresh(delay = 300){
+  if(_previewRefreshTimer) clearTimeout(_previewRefreshTimer);
+  _previewRefreshTimer = setTimeout(() => {
+    _previewRefreshTimer = null;
+    openPDFPreview();
+  }, delay);
+}
+
 async function openPDFPreview(){
+  const myVersion = ++_previewVersion;
+  const isStale = () => myVersion !== _previewVersion;
   const wrap = document.getElementById('pdfPreviewWrap');
   const prog = document.getElementById('genProgress');
   if(!wrap) return;
@@ -2622,6 +2638,7 @@ async function openPDFPreview(){
   if(prog) prog.textContent = '⏳ Génération de l\'aperçu…';
   try {
     const bytes = isC4() ? await buildC4PDF() : await buildFilledPDF();
+    if(isStale()) return;
     if(_previewURL) URL.revokeObjectURL(_previewURL);
     _previewURL = URL.createObjectURL(new Blob([bytes], {type:'application/pdf'}));
     // pdf.js consomme le buffer : on lui passe une copie.
@@ -2634,10 +2651,12 @@ async function openPDFPreview(){
       disableStream: true
     });
     const pdf = await loadingTask.promise;
+    if(isStale()) return;
     wrap.innerHTML = '';
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const wrapWidth = Math.max(320, wrap.clientWidth - 24);
     for(let i = 1; i <= pdf.numPages; i++){
+      if(isStale()) return;
       const page = await pdf.getPage(i);
       const baseVp = page.getViewport({scale: 1});
       const scale = wrapWidth / baseVp.width;
@@ -2655,10 +2674,12 @@ async function openPDFPreview(){
       const ctx = canvas.getContext('2d');
       ctx.scale(dpr, dpr);
       await page.render({canvasContext: ctx, viewport}).promise;
+      if(isStale()) return;
       if(prog) prog.textContent = `⏳ Aperçu : page ${i}/${pdf.numPages}`;
     }
     if(prog) prog.textContent = `✅ Aperçu prêt (${pdf.numPages} pages)`;
   } catch(err){
+    if(isStale()) return;
     console.error(err);
     if(prog) prog.textContent = '❌ Erreur : '+(err.message||err);
     wrap.innerHTML = `<div style="color:#ef4444;padding:20px;text-align:center">❌ Aperçu indisponible : ${err.message||err}</div>`;
@@ -2696,7 +2717,7 @@ function resetTemplate(){
 }
 
 /* stats du panneau Officiel + déclenche l'aperçu */
-function renderOfficiel(){
+async function renderOfficiel(){
   const c4 = isC4();
   const totalEsc = state.buildings.reduce((s,b)=>s+b.escaliers.length, 0);
   if(c4){
@@ -2721,11 +2742,12 @@ function renderOfficiel(){
     const tplStatus = document.getElementById('tplStatus');
     if(tplStatus) tplStatus.textContent = _customPdfBytes ? 'PDF maison utilisé' : 'PDF officiel intégré ✓';
   }
-  // L'aperçu n'est PAS généré automatiquement (le navigateur peut télécharger le PDF
-  // au lieu de l'afficher selon ses réglages). L'utilisateur clique sur le bouton dédié.
-
-  // Initialise le widget signature (chargement + drag/resize)
-  initSignatureWidget();
+  // Initialise le widget signature (chargement + drag/resize) avant le rendu
+  // de l'aperçu, pour que la position/taille soit appliquée au PDF.
+  await initSignatureWidget();
+  // Génère l'aperçu automatiquement à l'ouverture de l'étape (pdf.js rend
+  // dans des canvas — pas de téléchargement déclenché par le navigateur).
+  openPDFPreview();
 }
 
 /* ====================================================================
@@ -2858,6 +2880,7 @@ function setupSigDragResize(){
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
       saveSigPositionFromUI();
+      schedulePreviewRefresh();
     };
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
@@ -2882,6 +2905,7 @@ function setupSigDragResize(){
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
       saveSigPositionFromUI();
+      schedulePreviewRefresh();
     };
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
@@ -2893,12 +2917,14 @@ function onSigToggle(){
   cfg.enabled = document.getElementById('sigEnabled').checked;
   save();
   refreshSigUI();
+  schedulePreviewRefresh();
 }
 
 function onSigPageChange(){
   const cfg = getSigConfig();
   cfg.page = document.getElementById('sigPage').value;
   save();
+  schedulePreviewRefresh();
 }
 
 function resetSigPosition(){
@@ -2906,6 +2932,7 @@ function resetSigPosition(){
   cfg.x = 0.60; cfg.y = 0.82; cfg.w = 0.25;
   save();
   applySigPositionToUI();
+  schedulePreviewRefresh();
 }
 
 function removeSig(){
@@ -2914,6 +2941,7 @@ function removeSig(){
   save();
   document.getElementById('sigEnabled').checked = false;
   refreshSigUI();
+  schedulePreviewRefresh();
 }
 
 // Embed la signature sur une page du PDFDocument généré.

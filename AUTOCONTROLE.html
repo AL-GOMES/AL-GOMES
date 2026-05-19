@@ -108,6 +108,15 @@ nav.tabs{
 }
 .tab:hover{color:var(--violet-2);background:rgba(139,92,246,.05)}
 .tab.active{color:var(--violet-2);border-bottom-color:var(--violet)}
+.tab .tab-step{
+  display:inline-block;font-size:10px;font-weight:700;letter-spacing:.8px;
+  text-transform:uppercase;color:var(--txt-3);
+  background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.15);
+  padding:1px 7px;border-radius:4px;margin-right:8px;vertical-align:1px
+}
+.tab.active .tab-step,.tab:hover .tab-step{
+  color:var(--violet-2);background:rgba(139,92,246,.15);border-color:rgba(139,92,246,.35)
+}
 .tab .badge{
   display:inline-block;background:var(--violet-3);color:#fff;
   border-radius:10px;padding:1px 7px;font-size:10px;margin-left:6px;font-weight:600;
@@ -473,10 +482,10 @@ main{padding:24px;max-width:1400px;margin:0 auto}
 <body>
 
 <nav class="tabs no-print">
-  <button class="tab active" data-view="projet">📋 Projet</button>
-  <button class="tab" data-view="batiments">🏢 Bâtiments / Escaliers</button>
-  <button class="tab" data-view="fiches">✅ Fiches d'autocontrôle</button>
-  <button class="tab" data-view="officiel">📑 PDF Officiel SéQuélec</button>
+  <button class="tab active" data-view="projet"><span class="tab-step">Étape 1</span>📋 Projet</button>
+  <button class="tab" data-view="batiments"><span class="tab-step">Étape 2</span>🏢 Bâtiments / Escaliers</button>
+  <button class="tab" data-view="fiches"><span class="tab-step">Étape 3</span>✅ Fiches d'autocontrôle</button>
+  <button class="tab" data-view="officiel"><span class="tab-step">Étape 4</span>📑 PDF Officiel SéQuélec</button>
   
 </nav>
 

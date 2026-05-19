@@ -238,4 +238,12 @@
     confirm: confirmModal,
     prompt: promptModal
   };
+
+  // Désactive le menu contextuel natif sur tout le site. Les outils de la
+  // liseuse PDF qui utilisent le clic droit (count-manual, cable, elbow)
+  // déclenchent leurs actions via mousedown (button === 2) et restent donc
+  // fonctionnels — seul le menu navigateur est supprimé.
+  document.addEventListener('contextmenu', function (e) {
+    e.preventDefault();
+  });
 })();

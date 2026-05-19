@@ -6,7 +6,7 @@
 //   - AL_VERSION_TIME  : HH:MM      (heure de la MAJ — local Paris)
 //   - AL_VERSION_NOTE  : 1 phrase courte qui décrit le motif de la MAJ
 // =====================================================================
-window.AL_VERSION      = 'v1.7';
+window.AL_VERSION      = 'v1.8';
 window.AL_VERSION_DATE = '2026-05-19';
-window.AL_VERSION_TIME = '18:43';
-window.AL_VERSION_NOTE = 'Bandeau du haut : boutons « Signature » et « Poste » retirés.';
+window.AL_VERSION_TIME = '19:14';
+window.AL_VERSION_NOTE = 'Admin : panneau d\'alertes IP — détecte les comptes connectés depuis plusieurs IPs sur courte fenêtre, avec badge ⚠ et bouton « Marquer comme normal ».';

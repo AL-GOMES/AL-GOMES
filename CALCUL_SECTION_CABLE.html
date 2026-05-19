@@ -74,6 +74,9 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 .form-input{width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border-h);border-radius:6px;color:var(--t1);font-family:'IBM Plex Mono';font-size:.95rem;outline:none;transition:border-color .15s,background .15s}
 .form-input:focus{border-color:var(--accent);background:rgba(124,106,173,.04)}
 .form-input::placeholder{color:var(--t3)}
+/* <select> stylé comme un .form-input — chevron custom */
+select.form-input{appearance:none;-webkit-appearance:none;-moz-appearance:none;padding-right:34px;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237c6aad' stroke-width='2'><polyline points='6 9 12 15 18 9'/></svg>");background-repeat:no-repeat;background-position:right 10px center;background-size:14px 14px;font-family:'DM Sans',sans-serif;font-size:.85rem;cursor:pointer}
+select.form-input option{background:var(--bg2);color:var(--t1);font-family:'DM Sans'}
 .input-suffix{position:relative}
 .input-suffix .form-input{padding-right:42px}
 .input-suffix .suffix{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:.7rem;color:var(--t3);font-family:'DM Sans';pointer-events:none}
@@ -248,15 +251,50 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
         </div>
       </div>
 
-      <div class="form-row-2">
-        <div class="form-group" style="margin:0">
-          <div class="form-label">cos φ<button type="button" class="help-link" onclick="openDoc('docCosPhi')">aide</button></div>
-          <input type="number" id="inCosPhi" class="form-input" value="0.85" step="0.05" min="0.3" max="1">
-        </div>
-        <div class="form-group" style="margin:0">
-          <div class="form-label">K = K₁·K₂·K₃<button type="button" class="help-link" onclick="openDoc('docK')">aide</button></div>
-          <input type="number" id="inK" class="form-input" value="1" step="0.05" min="0.3" max="1.5">
-        </div>
+      <div class="form-group">
+        <div class="form-label">cos φ<button type="button" class="help-link" onclick="openDoc('docCosPhi')">aide</button></div>
+        <select id="inCosPhi" class="form-input">
+          <option value="1.0">1,00 — Résistif (chauffage, chauffe-eau, plaque)</option>
+          <option value="0.95">0,95 — LED moderne</option>
+          <option value="0.85" selected>0,85 — Habitat général (mix) ★</option>
+          <option value="0.8">0,80 — Moteurs (lave-linge, ventilation)</option>
+          <option value="0.5">0,50 — Tubes fluo non compensés</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <div class="form-label">K₁ — Mode de pose<button type="button" class="help-link" onclick="openDoc('docK')">aide</button></div>
+        <select id="inK1" class="form-input">
+          <option value="0.77">0,77 — Conduit encastré dans isolant</option>
+          <option value="0.95">0,95 — Conduit en paroi maçonnée (B1)</option>
+          <option value="1.0" selected>1,00 — Câble fixé sur paroi (C) ★</option>
+          <option value="0.9">0,90 — Goulotte / gaine sol</option>
+          <option value="0.8">0,80 — Enterré sous fourreau</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <div class="form-label">K₂ — Température ambiante</div>
+        <select id="inK2" class="form-input">
+          <option value="1.06">1,06 — 25 °C</option>
+          <option value="1.0" selected>1,00 — 30 °C ★</option>
+          <option value="0.94">0,94 — 35 °C</option>
+          <option value="0.87">0,87 — 40 °C</option>
+          <option value="0.79">0,79 — 45 °C</option>
+          <option value="0.71">0,71 — 50 °C</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <div class="form-label">K₃ — Groupement<span id="kComputed" style="margin-left:auto;font-family:'IBM Plex Mono';color:var(--accent-l);text-transform:none;letter-spacing:0">K = 1,00</span></div>
+        <select id="inK3" class="form-input">
+          <option value="1.0" selected>1,00 — 1 circuit ★</option>
+          <option value="0.8">0,80 — 2 circuits</option>
+          <option value="0.7">0,70 — 3 circuits</option>
+          <option value="0.65">0,65 — 4 circuits</option>
+          <option value="0.57">0,57 — 6 circuits</option>
+          <option value="0.5">0,50 — ≥ 9 circuits</option>
+        </select>
       </div>
     </div>
 
@@ -510,8 +548,16 @@ function getCosPhi(){
   return (isFinite(v) && v > 0 && v <= 1) ? v : 0.85;
 }
 function getK(){
-  const v = parseFloat(document.getElementById('inK').value);
-  return (isFinite(v) && v > 0) ? v : 1;
+  // K = K₁ × K₂ × K₃ — lus depuis les 3 menus déroulants
+  const get = id => {
+    const v = parseFloat(document.getElementById(id).value);
+    return (isFinite(v) && v > 0) ? v : 1;
+  };
+  const K = get('inK1') * get('inK2') * get('inK3');
+  // Affichage du produit dans le label de K₃
+  const kEl = document.getElementById('kComputed');
+  if (kEl) kEl.textContent = 'K = ' + K.toFixed(2).replace('.', ',');
+  return K;
 }
 
 // =====================================================
@@ -754,8 +800,11 @@ function setBar(bId, lId, d, md, bx, cls){
   document.getElementById(lId).style.left = (md / bx * 100) + '%';
 }
 
-['inP','inL','inCosPhi','inK'].forEach(id =>
+['inP','inL'].forEach(id =>
   document.getElementById(id).addEventListener('input', compute)
+);
+['inCosPhi','inK1','inK2','inK3'].forEach(id =>
+  document.getElementById(id).addEventListener('change', compute)
 );
 compute();
 </script>

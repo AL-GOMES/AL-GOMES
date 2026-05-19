@@ -472,14 +472,33 @@ function initClock() {
 }
 
 // ─── Badge version ───────────────────────────────────────────────────────
-// Source : window.AL_VERSION défini dans js/version.js (bumpé à chaque MAJ).
+// Source : window.AL_VERSION / _DATE / _TIME / _NOTE définis dans
+// js/version.js (bumpés à chaque MAJ mergée sur main).
 (function showVersion(){
   const el = document.getElementById('appVersion');
   if (!el) return;
-  const v = (typeof window.AL_VERSION === 'string' && window.AL_VERSION) || '—';
-  const d = (typeof window.AL_VERSION_DATE === 'string' && window.AL_VERSION_DATE) || '';
+  const v    = (typeof window.AL_VERSION       === 'string' && window.AL_VERSION)       || '—';
+  const date = (typeof window.AL_VERSION_DATE  === 'string' && window.AL_VERSION_DATE)  || '';
+  const time = (typeof window.AL_VERSION_TIME  === 'string' && window.AL_VERSION_TIME)  || '';
+  const note = (typeof window.AL_VERSION_NOTE  === 'string' && window.AL_VERSION_NOTE)  || '';
+
   el.textContent = v;
-  el.title = d ? 'Version ' + v + ' — ' + d : 'Version ' + v;
+
+  // Convertit YYYY-MM-DD → DD/MM/YYYY pour l'affichage FR
+  let dateFr = date;
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  if (m) dateFr = m[3] + '/' + m[2] + '/' + m[1];
+
+  const lines = ['Version ' + v];
+  if (dateFr || time){
+    let when = 'Mise à jour';
+    if (dateFr) when += ' le ' + dateFr;
+    if (time)   when += ' à ' + time;
+    lines.push(when);
+  }
+  if (note) lines.push('Motif : ' + note);
+  // \n est rendu comme retour à la ligne dans l'info-bulle native
+  el.title = lines.join('\n');
 })();
 
 // ============================================================

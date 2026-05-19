@@ -12,6 +12,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" integrity="sha384-sEVIly94UBRLKWdkYoPpSG7GD/e79YHMrxVyZaOk712Ga7+EAw6w1EFi+xBzBdd+" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js" integrity="sha384-EkqK+ezBWJuvO3hfrSx2iVqr3YQbhmnzn8kPhOpBZ+0GMVU5oGSgptwIu8D84HjE" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js" integrity="sha384-M481iNZJtbpypKgvlvZ+78Giq0BsewFLk5r2k+MOcGXlwKCc27DQRZ+WCV/zpmpC" crossorigin="anonymous"></script>
+<script src="js/version.js"></script>
 <script src="js/firebase-init.js"></script>
 <script src="js/util.js"></script>
 <style>
@@ -23,6 +24,8 @@
   .topbar{height:50px;min-height:50px;background:rgba(10,10,18,.97);border-bottom:1px solid rgba(120,50,255,.15);display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:100;backdrop-filter:blur(16px)}
   .topbar-left{display:flex;align-items:center;gap:12px}
   .topbar-logo{font-family:'Orbitron',sans-serif;font-size:16px;font-weight:900;letter-spacing:3px;background:linear-gradient(135deg,#fff,#b388ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;cursor:pointer}
+  .topbar-version{font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;color:rgba(180,165,200,.55);padding:2px 7px;border:1px solid rgba(120,50,255,.18);border-radius:4px;background:rgba(120,50,255,.05);text-transform:uppercase;transition:color .2s,border-color .2s;cursor:help;user-select:none}
+  .topbar-version:hover{color:rgba(220,210,235,.85);border-color:rgba(120,50,255,.35)}
   .btn-admin-nav{display:none;align-items:center;gap:5px;padding:4px 12px;border:1px solid rgba(120,50,255,.25);border-radius:6px;background:rgba(120,50,255,.08);color:#b388ff;font-size:12px;font-weight:600;cursor:pointer;transition:all .3s;font-family:'Rajdhani',sans-serif;letter-spacing:1px}
   .btn-admin-nav:hover{background:rgba(120,50,255,.2)}
   .btn-admin-nav svg{width:13px;height:13px}
@@ -123,6 +126,7 @@
 <div class="topbar">
   <div class="topbar-left">
     <span class="topbar-logo" role="button" tabindex="0" aria-label="Retour à l'accueil" onclick="navigateTo('home.html')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();navigateTo('home.html');}">⚡ A.L.GOMES</span>
+    <span class="topbar-version" id="appVersion" title="">—</span>
     <button class="btn-admin-nav" id="btnAdmin" aria-label="Panneau d'administration" onclick="navigateTo('admin.html')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
       Admin
@@ -466,6 +470,17 @@ function initClock() {
   update();
   setInterval(update, 30000);
 }
+
+// ─── Badge version ───────────────────────────────────────────────────────
+// Source : window.AL_VERSION défini dans js/version.js (bumpé à chaque MAJ).
+(function showVersion(){
+  const el = document.getElementById('appVersion');
+  if (!el) return;
+  const v = (typeof window.AL_VERSION === 'string' && window.AL_VERSION) || '—';
+  const d = (typeof window.AL_VERSION_DATE === 'string' && window.AL_VERSION_DATE) || '';
+  el.textContent = v;
+  el.title = d ? 'Version ' + v + ' — ' + d : 'Version ' + v;
+})();
 
 // ============================================================
 // PRESENCE

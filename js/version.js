@@ -6,7 +6,7 @@
 //   - AL_VERSION_TIME  : HH:MM      (heure de la MAJ — local Paris)
 //   - AL_VERSION_NOTE  : 1 phrase courte qui décrit le motif de la MAJ
 // =====================================================================
-window.AL_VERSION      = 'v1.14';
+window.AL_VERSION      = 'v1.15';
 window.AL_VERSION_DATE = '2026-05-19';
-window.AL_VERSION_TIME = '23:27';
-window.AL_VERSION_NOTE = 'Accueil : PNG du wordmark passé en 1983×963 (3× plus grand) — rendu net sur écrans HiDPI/Retina, fini l\'aliasing.';
+window.AL_VERSION_TIME = '23:41';
+window.AL_VERSION_NOTE = 'Accueil : nouvelle itération du PNG du wordmark (1983×963).';

@@ -6,7 +6,7 @@
 //   - AL_VERSION_TIME  : HH:MM      (heure de la MAJ — local Paris)
 //   - AL_VERSION_NOTE  : 1 phrase courte qui décrit le motif de la MAJ
 // =====================================================================
-window.AL_VERSION      = 'v1.10';
+window.AL_VERSION      = 'v1.11';
 window.AL_VERSION_DATE = '2026-05-19';
-window.AL_VERSION_TIME = '21:44';
-window.AL_VERSION_NOTE = 'Clic droit : blocage renforcé via attribut <body oncontextmenu="return false"> sur les 15 pages (insensible au cache JS du navigateur).';
+window.AL_VERSION_TIME = '22:50';
+window.AL_VERSION_NOTE = 'Accueil : remplacement du logo 3D par le wordmark A.L.GOMES en lévitation (float + tilt + halo) — design handoff appliqué sur le thème sombre.';

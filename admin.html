@@ -146,6 +146,24 @@ if(window.self!==window.top){
   .toast.visible{transform:translateY(0);opacity:1}
   .toast.success{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:#4ade80}
   .toast.error{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#f87171}
+  .ip-anom-panel{margin:14px 0 18px 0;border-radius:8px;padding:12px 16px;display:flex;flex-direction:column;gap:8px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.25)}
+  .ip-anom-panel.empty{display:none}
+  .ip-anom-panel h3{margin:0;font-size:14px;color:#f87171;display:flex;align-items:center;gap:8px;font-weight:700}
+  .ip-anom-list{display:flex;flex-direction:column;gap:6px;margin-top:4px}
+  .ip-anom-row{display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:6px;background:rgba(0,0,0,.20);font-size:12px;flex-wrap:wrap}
+  .ip-anom-row.sev-red{border-left:3px solid #ff4466}
+  .ip-anom-row.sev-orange{border-left:3px solid #fbbf24}
+  .ip-anom-row.sev-yellow{border-left:3px solid #facc15}
+  .ip-anom-row .ip-user{font-weight:700;min-width:140px}
+  .ip-anom-row .ip-sev-tag{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+  .ip-anom-row.sev-red .ip-sev-tag{background:rgba(255,68,102,.18);color:#ff4466}
+  .ip-anom-row.sev-orange .ip-sev-tag{background:rgba(251,191,36,.18);color:#fbbf24}
+  .ip-anom-row.sev-yellow .ip-sev-tag{background:rgba(250,204,21,.18);color:#facc15}
+  .ip-anom-row .ip-list{font-family:monospace;color:var(--text2);font-size:11px;flex:1;min-width:200px;word-break:break-all}
+  .ip-anom-badge{display:inline-flex;align-items:center;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;margin-left:6px;vertical-align:middle}
+  .ip-anom-badge.sev-red{background:rgba(255,68,102,.18);color:#ff4466}
+  .ip-anom-badge.sev-orange{background:rgba(251,191,36,.18);color:#fbbf24}
+  .ip-anom-badge.sev-yellow{background:rgba(250,204,21,.18);color:#facc15}
   .loading-screen{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px}
   .spinner{width:48px;height:48px;border:3px solid rgba(120,50,255,.15);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
@@ -292,6 +310,13 @@ if(window.self!==window.top){
   <div class="quick-links">
     <a href="https://console.firebase.google.com/project/algomes-a4e46/authentication/users" target="_blank" class="btn-nav" style="text-decoration:none">🔥 Console Firebase</a>
     <a href="https://github.com/jerome93190/AL-GOMES" target="_blank" class="btn-nav" style="text-decoration:none">🐙 Dépôt GitHub</a>
+  </div>
+
+  <!-- Panneau d'alertes IP : visible quand un utilisateur s'est connecté
+       depuis plusieurs IPs distinctes dans une fenêtre courte. -->
+  <div class="ip-anom-panel empty" id="ipAnomPanel">
+    <h3>⚠ Alertes IP — <span id="ipAnomCount">0</span> utilisateur(s) avec activité suspecte</h3>
+    <div class="ip-anom-list" id="ipAnomList"></div>
   </div>
 
   <!-- Barre de sous-onglets. data-tab = id du <div class="tab-panel"> à afficher. -->
@@ -2241,11 +2266,13 @@ function renderUsers(){
     const statusClass=u.banned?'status-banned':isOnline?'status-online':'status-offline';
     const statusText=u.banned?'🚫 BLOQUÉ':isOnline?'🟢 En ligne':'⚫ Hors ligne';
     const ipInfo=p.ip?`<div class="ip-info"><strong>${esc(p.ip)}</strong><br>${esc(p.city||'')} ${esc(p.country||'')}</div>`:'<span style="color:var(--text2)">—</span>';
+    const anom=_ipAnomaliesByUid[u.uid];
+    const anomBadge=anom?`<span class="ip-anom-badge sev-${anom.severity}" title="${esc(anom.windowLabel)} — voir le panneau d'alertes en haut">⚠</span>`:'';
     const banBtn=u.banned
       ?`<button class="btn btn-success btn-sm" onclick="toggleBan('${escJs(u.uid)}',false)">Débloquer</button>`
       :`<button class="btn btn-warn btn-sm" onclick="toggleBan('${escJs(u.uid)}',true)">Bloquer</button>`;
     return`<tr${u.banned?' style="opacity:.5"':''}>
-      <td><strong style="color:${r.color}">${esc(u.login||'—')}</strong></td>
+      <td><strong style="color:${r.color}">${esc(u.login||'—')}</strong>${anomBadge}</td>
       <td>${esc(u.name||'—')}</td>
       <td><span class="role-badge" style="background:${hex2rgba(r.color,.12)};color:${r.color};border:1px solid ${hex2rgba(r.color,.3)}">${esc(r.label)}</span></td>
       <td><span class="${statusClass}">${statusText}</span></td>
@@ -2580,10 +2607,121 @@ async function doChangePwd(){
   }
 }
 
+// ============================================================================
+//  ALERTES IP — détection d'activité suspecte (multi-IPs sur courte fenêtre)
+// ============================================================================
+// _ipAnomalies : liste des anomalies en cours, calculée par computeIpAnomalies()
+// _ipAnomaliesByUid : index par uid pour le rendu des badges dans renderUsers()
+// _ipAnomFirstToastShown : on n'affiche le toast d'avertissement qu'une fois
+//   par chargement de la page admin.
+let _ipAnomalies = [];
+let _ipAnomaliesByUid = {};
+let _ipAnomFirstToastShown = false;
+
+// Seuils : ordre du plus sévère au moins sévère. Le premier match l'emporte.
+const IP_ANOM_WINDOWS = [
+  { ms: 60*60*1000,        threshold: 2, severity: 'red',    label: '≥ 2 IPs en < 1 h' },
+  { ms: 24*60*60*1000,     threshold: 3, severity: 'orange', label: '≥ 3 IPs en 24 h'  },
+  { ms: 7*24*60*60*1000,   threshold: 4, severity: 'yellow', label: '≥ 4 IPs en 7 j'   }
+];
+
+// Calcule les anomalies à partir des sessions chargées (snap.docs Firestore).
+// usersByUid : map uid → user, utilisée pour lire trustedIps[] (IPs déjà
+// validées par l'admin via « Marquer comme normal »).
+function computeIpAnomalies(sessionDocs, usersByUid){
+  const now = Date.now();
+  const bySession = {};
+  sessionDocs.forEach(doc => {
+    const s = doc.data ? doc.data() : doc;
+    if(!s.uid || !s.ip || !s.timestamp) return;
+    const t = s.timestamp.seconds ? s.timestamp.seconds * 1000 : 0;
+    if(!t) return;
+    if(!bySession[s.uid]) bySession[s.uid] = { login:s.login||'?', name:s.name||s.login||'?', sessions:[] };
+    bySession[s.uid].sessions.push({ ip:s.ip, t });
+  });
+  const anomalies = [];
+  for(const uid in bySession){
+    const grp = bySession[uid];
+    const trusted = new Set(((usersByUid[uid]||{}).trustedIps) || []);
+    // On ne considère que les IPs non validées par l'admin.
+    const filtered = grp.sessions.filter(s => !trusted.has(s.ip));
+    if(!filtered.length) continue;
+    for(const w of IP_ANOM_WINDOWS){
+      const inWindow = filtered.filter(s => (now - s.t) <= w.ms);
+      const ips = [...new Set(inWindow.map(s => s.ip))];
+      if(ips.length >= w.threshold){
+        anomalies.push({
+          uid, login:grp.login, name:grp.name,
+          severity:w.severity, windowLabel:w.label,
+          ips, lastSeen: Math.max(...grp.sessions.map(s => s.t))
+        });
+        break;
+      }
+    }
+  }
+  const sevOrder = { red:0, orange:1, yellow:2 };
+  anomalies.sort((a,b) => sevOrder[a.severity] - sevOrder[b.severity] || b.lastSeen - a.lastSeen);
+  return anomalies;
+}
+
+function renderIpAnomaliesPanel(){
+  const panel = document.getElementById('ipAnomPanel');
+  const list = document.getElementById('ipAnomList');
+  const count = document.getElementById('ipAnomCount');
+  if(!panel || !list || !count) return;
+  if(!_ipAnomalies.length){
+    panel.classList.add('empty');
+    list.innerHTML = '';
+    return;
+  }
+  panel.classList.remove('empty');
+  count.textContent = _ipAnomalies.length;
+  list.innerHTML = _ipAnomalies.map(a => `
+    <div class="ip-anom-row sev-${a.severity}">
+      <span class="ip-user">${esc(a.name)} <span style="font-weight:400;color:var(--text2);font-size:11px">@${esc(a.login)}</span></span>
+      <span class="ip-sev-tag">${esc(a.windowLabel)}</span>
+      <span class="ip-list">${a.ips.length} IPs : ${a.ips.map(esc).join(', ')}</span>
+      <button class="btn btn-sm" onclick="ackIpAnomaly('${escJs(a.uid)}')" style="background:rgba(34,197,94,.10);color:#4ade80;border:1px solid rgba(34,197,94,.25)">✓ Marquer comme normal</button>
+    </div>
+  `).join('');
+}
+
+// Ajoute les IPs courantes de l'anomalie au tableau trustedIps[] de l'user :
+// elles ne déclencheront plus d'alerte tant qu'elles restent dans la liste.
+async function ackIpAnomaly(uid){
+  const anom = _ipAnomalies.find(a => a.uid === uid);
+  if(!anom){ toast('Anomalie introuvable','error'); return; }
+  try{
+    const user = users.find(u => u.uid === uid);
+    const existing = (user && user.trustedIps) || [];
+    const merged = [...new Set([...existing, ...anom.ips])];
+    await db.collection('users').doc(uid).update({ trustedIps: merged });
+    if(user) user.trustedIps = merged;
+    _ipAnomalies = _ipAnomalies.filter(a => a.uid !== uid);
+    _ipAnomaliesByUid = Object.fromEntries(_ipAnomalies.map(a => [a.uid, a]));
+    renderIpAnomaliesPanel();
+    renderUsers();
+    toast('IPs marquées comme normales pour '+anom.name,'success');
+  } catch(e){
+    toast('Erreur : '+e.message,'error');
+  }
+}
+
 // IP TRACKING TABLE
 async function loadIpTracking(){
   try{
     const snap=await db.collection('sessions').orderBy('timestamp','desc').limit(500).get();
+    // Calcule les anomalies IP à partir de ces mêmes sessions et rafraîchit
+    // le panneau d'alertes en haut + la liste utilisateurs (pour les badges).
+    const usersByUid = Object.fromEntries(users.map(u => [u.uid, u]));
+    _ipAnomalies = computeIpAnomalies(snap.docs, usersByUid);
+    _ipAnomaliesByUid = Object.fromEntries(_ipAnomalies.map(a => [a.uid, a]));
+    renderIpAnomaliesPanel();
+    renderUsers();
+    if(!_ipAnomFirstToastShown && _ipAnomalies.length){
+      _ipAnomFirstToastShown = true;
+      toast('⚠ '+_ipAnomalies.length+' alerte(s) IP — voir le panneau en haut','error');
+    }
     const ipMap={};
     snap.forEach(doc=>{
       const s=doc.data();

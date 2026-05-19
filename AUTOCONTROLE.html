@@ -727,52 +727,6 @@ main{padding:24px;max-width:1400px;margin:0 auto}
 
   <div class="panel">
     <div class="panel-title">
-      Modèle utilisé
-      <span class="right" id="tplStatus">PDF officiel intégré ✓</span>
-    </div>
-    <div class="row-flex">
-      <span class="tag violet">Annexe GP10 / GP11 — 10 pages A4</span>
-      <span class="spacer"></span>
-      <button class="btn sm" onclick="loadCustomTemplate()">📤 Charger un PDF maison…</button>
-      <button class="btn sm" onclick="resetTemplate()">↺ Officiel</button>
-      <input type="file" id="customTplFile" accept="application/pdf" style="display:none" onchange="onCustomTpl(event)">
-    </div>
-    <div id="customTplInfo" style="margin-top:10px;font-size:12px;color:var(--txt-3)"></div>
-  </div>
-
-  <div class="panel">
-    <div class="panel-title">Options de rendu</div>
-    <div class="grid cols-3">
-      <div class="field">
-        <label for="opt_color">Couleur des coches</label>
-        <select id="opt_color" onchange="schedulePreview()">
-          <option value="violet" selected>Violet AL GOMES</option>
-          <option value="black">Noir</option>
-          <option value="blue">Bleu (stylo)</option>
-          <option value="red">Rouge (NC)</option>
-        </select>
-      </div>
-      <div class="field">
-        <label for="opt_mark">Style de coche</label>
-        <select id="opt_mark" onchange="schedulePreview()">
-          <option value="check" selected>✓ Coche stylisée</option>
-          <option value="x">✗ Croix</option>
-          <option value="bullet">● Point plein</option>
-        </select>
-      </div>
-      <div class="field">
-        <label for="opt_inf">Symbole « infini » (∞)</label>
-        <select id="opt_inf" onchange="schedulePreview()">
-          <option value="symbol" selected>∞ Dessiné</option>
-          <option value="ol">OL (Open Loop)</option>
-          <option value="gt500">&gt; 500 MΩ</option>
-        </select>
-      </div>
-    </div>
-  </div>
-
-  <div class="panel">
-    <div class="panel-title">
       Signature personnelle
       <span class="right" style="font-weight:400;color:var(--txt-3)" id="sigStatus">Aucune signature chargée</span>
     </div>

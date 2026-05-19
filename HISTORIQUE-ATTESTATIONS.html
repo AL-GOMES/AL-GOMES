@@ -125,6 +125,12 @@
 <div class="toast" id="toast"></div>
 
 <script>
+// Cohérence avec util.js (non chargé sur cette page) : désactive le
+// menu contextuel natif du navigateur sur tout le site.
+document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+</script>
+
+<script>
 // ═══════════════════════════════════════════════════════════════════════
 // HISTORIQUE DES ATTESTATIONS
 // Lecture de la collection Firestore 'attestationsHistory', filtres en JS,

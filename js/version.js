@@ -6,7 +6,7 @@
 //   - AL_VERSION_TIME  : HH:MM      (heure de la MAJ — local Paris)
 //   - AL_VERSION_NOTE  : 1 phrase courte qui décrit le motif de la MAJ
 // =====================================================================
-window.AL_VERSION      = 'v1.5';
+window.AL_VERSION      = 'v1.6';
 window.AL_VERSION_DATE = '2026-05-19';
-window.AL_VERSION_TIME = '08:50';
-window.AL_VERSION_NOTE = 'Autocontrôle/Étape 4 : panels « Modèle utilisé » et « Options de rendu » retirés.';
+window.AL_VERSION_TIME = '14:01';
+window.AL_VERSION_NOTE = 'Favicon AL.GOMES sur toutes les pages + Autocontrôle/Étape 4 : aperçu PDF auto à l\'ouverture et à chaque déplacement de signature.';

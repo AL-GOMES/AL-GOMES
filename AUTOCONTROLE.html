@@ -147,6 +147,16 @@ main{padding:24px;max-width:1400px;margin:0 auto}
 @media(max-width:900px){.grid.cols-2,.grid.cols-3,.grid.cols-4{grid-template-columns:1fr}}
 
 .field{display:flex;flex-direction:column;gap:5px}
+
+/* ==================== OFFICIEL : split 2 colonnes (controls | preview) ==================== */
+.officiel-split{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}
+.officiel-left{flex:1 1 460px;min-width:0;display:flex;flex-direction:column;gap:14px}
+.officiel-left .panel{margin:0}
+.officiel-right{flex:1 1 520px;min-width:0;position:sticky;top:8px}
+.officiel-right .panel{margin:0}
+@media(max-width:1100px){
+  .officiel-right{position:static}
+}
 .field label{
   font-size:11px;font-weight:600;letter-spacing:.5px;
   text-transform:uppercase;color:var(--txt-3);
@@ -703,6 +713,9 @@ main{padding:24px;max-width:1400px;margin:0 auto}
     <strong>📑 Document officiel SéQuélec — annexe GP10 / GP11.</strong> L'aperçu ci-dessous est régénéré automatiquement à chaque ouverture de cet onglet ou changement de modèle. Pour chaque (bâtiment, escalier), un jeu complet de fiches A1, A2, A3, B1, C1 est ajouté au PDF.
   </div>
 
+  <div class="officiel-split">
+   <div class="officiel-left">
+
   <div class="panel">
     <div class="panel-title">
       Modèle utilisé
@@ -788,6 +801,9 @@ main{padding:24px;max-width:1400px;margin:0 auto}
     </div>
   </div>
 
+   </div><!-- /officiel-left -->
+   <div class="officiel-right">
+
   <div class="panel">
     <div class="panel-title">
       Aperçu du PDF officiel rempli
@@ -802,6 +818,9 @@ main{padding:24px;max-width:1400px;margin:0 auto}
       Cliquez sur « 👁️ Afficher l'aperçu » pour ouvrir le PDF dans un nouvel onglet, ou sur « 📥 Télécharger… » pour récupérer le fichier.
     </div>
   </div>
+
+   </div><!-- /officiel-right -->
+  </div><!-- /officiel-split -->
 </section>
 
 </main>

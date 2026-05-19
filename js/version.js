@@ -6,7 +6,7 @@
 //   - AL_VERSION_TIME  : HH:MM      (heure de la MAJ — local Paris)
 //   - AL_VERSION_NOTE  : 1 phrase courte qui décrit le motif de la MAJ
 // =====================================================================
-window.AL_VERSION      = 'v1.2';
+window.AL_VERSION      = 'v1.3';
 window.AL_VERSION_DATE = '2026-05-19';
-window.AL_VERSION_TIME = '08:05';
-window.AL_VERSION_NOTE = 'Calcul câble : cos φ et K₁/K₂/K₃ en menus déroulants.';
+window.AL_VERSION_TIME = '08:25';
+window.AL_VERSION_NOTE = 'Autocontrôle / PDF Officiel : split 2 colonnes — réglages à gauche, aperçu à droite.';

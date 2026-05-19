@@ -6,7 +6,7 @@
 //   - AL_VERSION_TIME  : HH:MM      (heure de la MAJ — local Paris)
 //   - AL_VERSION_NOTE  : 1 phrase courte qui décrit le motif de la MAJ
 // =====================================================================
-window.AL_VERSION      = 'v1.12';
+window.AL_VERSION      = 'v1.13';
 window.AL_VERSION_DATE = '2026-05-19';
-window.AL_VERSION_TIME = '23:02';
-window.AL_VERSION_NOTE = 'Accueil : nouveau PNG du wordmark avec lettres remplies (intérieur clair) — fini les lettres « creuses » qui laissaient passer le fond sombre.';
+window.AL_VERSION_TIME = '23:09';
+window.AL_VERSION_NOTE = 'Accueil : nouvelle itération du PNG du wordmark (v3) — encore meilleure netteté.';

@@ -6,7 +6,7 @@
 //   - AL_VERSION_TIME  : HH:MM      (heure de la MAJ — local Paris)
 //   - AL_VERSION_NOTE  : 1 phrase courte qui décrit le motif de la MAJ
 // =====================================================================
-window.AL_VERSION      = 'v1.4';
+window.AL_VERSION      = 'v1.5';
 window.AL_VERSION_DATE = '2026-05-19';
-window.AL_VERSION_TIME = '08:35';
-window.AL_VERSION_NOTE = 'Autocontrôle : préfixes « Étape 1/2/3/4 » sur les sous-onglets.';
+window.AL_VERSION_TIME = '08:50';
+window.AL_VERSION_NOTE = 'Autocontrôle/Étape 4 : panels « Modèle utilisé » et « Options de rendu » retirés.';

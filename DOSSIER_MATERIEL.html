@@ -764,7 +764,12 @@ function exitCoverToFiche(){
 // IndexedDB sont chargés et leur nombre de pages est compté via pdf-lib.
 async function _computeSommaireFichePages(){
   const map = new Map();
-  let cursor = 3; // cover=1, sommaire=2, fiches à partir de 3
+  // Estimation conservatrice : 25 fiches par page de sommaire. Suffisant tant
+  // que les cellules ne sont pas saturées (la pagination réelle dans le PDF
+  // peut différer légèrement mais reste proche).
+  const sommairePageCount = Math.max(1, Math.ceil(fiches.length / 25));
+  let cursor = 1 + sommairePageCount + 1; // cover + N sommaire ; +1 pour passer à la 1re fiche
+  cursor = 2 + sommairePageCount;          // équivalent, plus lisible
   for (const f of fiches) {
     map.set(f.id, cursor);
     let attachPages = 0;
@@ -804,20 +809,18 @@ async function renderSommaireSheet(){
 
   let html = '<table class="smr-table">';
   html += '<colgroup>' +
-    '<col style="width:11%">' +
     '<col style="width:14%">' +
     '<col style="width:16%">' +
-    '<col style="width:17%">' +
-    '<col style="width:16%">' +
-    '<col style="width:17%">' +
-    '<col style="width:9%">' +
+    '<col style="width:18%">' +
+    '<col style="width:22%">' +
+    '<col style="width:20%">' +
+    '<col style="width:10%">' +
   '</colgroup>';
   html += '<thead><tr>' +
     '<th class="center">FICHE N°</th>' +
     '<th>FOURNISSEUR</th>' +
     '<th>MATÉRIELS</th>' +
     '<th>CARACTÉRISTIQUES</th>' +
-    '<th>AUTRES CARACT.</th>' +
     '<th>LOCALISATION</th>' +
     '<th class="center">PAGE</th>' +
   '</tr></thead><tbody>';
@@ -827,14 +830,12 @@ async function renderSommaireSheet(){
     if (f.m_couleur)  caractBits.push('Couleur : ' + f.m_couleur);
     if (f.m_finition) caractBits.push('Finition : ' + f.m_finition);
     const caract = caractBits.join(' · ') || '—';
-    const autres = (f.m_autres || '—').replace(/\n/g, ' · ');
     const pageNum = pageMap.get(f.id) || '?';
     html += '<tr>' +
       '<td class="num"><button type="button" class="smr-btn" data-fiche-id="' + _escHtmlSm(f.id) + '">Fiche ' + _escHtmlSm(f.f_num || '?') + '</button></td>' +
       '<td>' + _escHtmlSm(f.m_fournisseur || '—') + '</td>' +
       '<td>' + _escHtmlSm(f.m_materiel || '—') + '</td>' +
       '<td>' + _escHtmlSm(caract) + '</td>' +
-      '<td>' + _escHtmlSm(autres) + '</td>' +
       '<td>' + _escHtmlSm(f.m_loc || '—') + '</td>' +
       '<td class="page">' + _escHtmlSm(pageNum) + '</td>' +
     '</tr>';
@@ -1325,14 +1326,12 @@ function openPdfFullscreen(){
 // linkAreas = [{ ficheId, rect:[x1,y1,x2,y2] }] indique les rectangles à
 // transformer en liens cliquables vers la page de chaque fiche (les link
 // annotations sont ajoutées une fois toutes les pages du PDF présentes).
-async function drawSommairePage(out, fiches, fichePageMap, logoBytes, A4W, A4H){
+async function drawSommairePages(out, fiches, attachCounts, logoBytes, A4W, A4H){
   const { rgb, StandardFonts } = PDFLib;
-  const page = out.addPage([A4W, A4H]);
   const fontReg  = await out.embedFont(StandardFonts.Helvetica);
   const fontBold = await out.embedFont(StandardFonts.HelveticaBold);
 
   // Découpe `text` en lignes qui tiennent dans `maxWidth` (à `fontSize` pts).
-  // S'il faut plus de `maxLines`, la dernière ligne se termine par "…".
   function wrap(text, font, fontSize, maxWidth, maxLines){
     const t = String(text == null ? '' : text).replace(/\s+/g, ' ').trim();
     if (!t) return [];
@@ -1345,7 +1344,6 @@ async function drawSommairePage(out, fiches, fichePageMap, logoBytes, A4W, A4H){
         cur = cand;
       } else if (cur){
         if (lines.length >= maxLines - 1){
-          // Plus de place : tronque cur avec "…"
           let tr = cur;
           while (tr && font.widthOfTextAtSize(tr + '…', fontSize) > maxWidth){
             tr = tr.slice(0, -1);
@@ -1356,7 +1354,6 @@ async function drawSommairePage(out, fiches, fichePageMap, logoBytes, A4W, A4H){
         lines.push(cur);
         cur = w;
       } else {
-        // mot seul plus large que maxWidth → tronque
         let tr = w;
         while (tr && font.widthOfTextAtSize(tr + '…', fontSize) > maxWidth){
           tr = tr.slice(0, -1);
@@ -1369,75 +1366,27 @@ async function drawSommairePage(out, fiches, fichePageMap, logoBytes, A4W, A4H){
     return lines;
   }
 
-  // Palette sobre : tons d'anthracite / gris. Le bleu pâle slate (#E2E8F0)
-  // utilisé pour le bandeau du tableau reprend exactement les en-têtes des
-  // cellules de la fiche produit (cohérence visuelle dossier ↔ sommaire).
+  // Palette
   const slateHeader = rgb(0.886, 0.910, 0.941);  // #E2E8F0 — bleu pâle des fiches
-  const accentDk  = rgb(0.28, 0.30, 0.34);       // gris foncé (boutons Fiche N°)
+  const accentDk  = rgb(0.28, 0.30, 0.34);
   const rowAlt    = rgb(0.965, 0.965, 0.970);
   const border    = rgb(0.78, 0.80, 0.85);
   const black     = rgb(0.10, 0.10, 0.13);
   const subtle    = rgb(0.42, 0.42, 0.52);
   const white     = rgb(1, 1, 1);
 
-  // === En-tête (sans bandeau coloré — logo + titre sur fond blanc) ===
-  // Logo à gauche
-  let titleX = 35;
-  if (logoBytes){
-    try {
-      const logoImg = await out.embedPng(logoBytes);
-      const boxH = 56;
-      const ratio = logoImg.width / logoImg.height;
-      const drawW = boxH * ratio;
-      page.drawImage(logoImg, { x: 30, y: A4H - 72, width: drawW, height: boxH });
-      titleX = 30 + drawW + 22;
-    } catch (e) { console.warn('Logo embed échoué', e); }
-  }
-
-  // Titre SOMMAIRE — sobre, noir sur blanc (pas de tagline en dessous)
-  page.drawText('SOMMAIRE', {
-    x: titleX, y: A4H - 50, size: 30, font: fontBold, color: black
-  });
-  // Trait fin de séparation sous l'en-tête
-  page.drawLine({
-    start: { x: 30, y: A4H - 90 },
-    end:   { x: A4W - 30, y: A4H - 90 },
-    thickness: 0.6, color: border
-  });
-
-  // === Info projet ===
-  const first = fiches[0] || {};
-  const proj = first.f_project || '';
-  const lot  = first.f_lot || '';
-  let metaY = A4H - 110;
-  if (proj){
-    page.drawText('Projet : ', { x: 30, y: metaY, size: 11, font: fontBold, color: black });
-    const px = 30 + fontBold.widthOfTextAtSize('Projet : ', 11);
-    page.drawText(proj, { x: px, y: metaY, size: 11, font: fontReg, color: black });
-    metaY -= 16;
-  }
-  if (lot){
-    page.drawText('Lot : ', { x: 30, y: metaY, size: 10, font: fontBold, color: subtle });
-    const lx = 30 + fontBold.widthOfTextAtSize('Lot : ', 10);
-    page.drawText(lot, { x: lx, y: metaY, size: 10, font: fontReg, color: subtle });
-    metaY -= 16;
-  }
-
-  // === Tableau ===
-  const tableTop  = metaY - 8;
+  // Mise en page
   const tableLeft = 25;
   const tableW    = A4W - 50;
-
-  // Colonnes (poids relatifs, somme libre — on normalise).
-  // num élargie à 14 pour que "Fiche 1QUATER" / "Fiche 1QUINQUIES" tiennent.
+  // 6 colonnes : on a retiré AUTRES CARACT. (qui faisait perdre de la place).
+  // Les poids ont été rééquilibrés.
   const cols = [
     { key: 'num',    label: 'FICHE N°',          w: 14 },
-    { key: 'fourn',  label: 'FOURNISSEUR',       w: 14 },
-    { key: 'mat',    label: 'MATÉRIELS',         w: 15 },
-    { key: 'caract', label: 'CARACTÉRISTIQUES',  w: 16 },
-    { key: 'autres', label: 'AUTRES CARACT.',    w: 15 },
-    { key: 'loc',    label: 'LOCALISATION',      w: 17 },
-    { key: 'page',   label: 'PAGE',              w: 9  }
+    { key: 'fourn',  label: 'FOURNISSEUR',       w: 16 },
+    { key: 'mat',    label: 'MATÉRIELS',         w: 18 },
+    { key: 'caract', label: 'CARACTÉRISTIQUES',  w: 22 },
+    { key: 'loc',    label: 'LOCALISATION',      w: 20 },
+    { key: 'page',   label: 'PAGE',              w: 10 }
   ];
   const totalW = cols.reduce((s, c) => s + c.w, 0);
   let xc = tableLeft;
@@ -1447,30 +1396,15 @@ async function drawSommairePage(out, fiches, fichePageMap, logoBytes, A4W, A4H){
     xc  += c.px;
   }
 
-  // Header row — bleu pâle slate identique aux fiches (#E2E8F0), texte noir
-  const hdrH = 22;
-  page.drawRectangle({ x: tableLeft, y: tableTop - hdrH, width: tableW, height: hdrH, color: slateHeader });
-  for (const c of cols){
-    // Centrage horizontal des labels FICHE N° et PAGE, gauche pour les autres
-    const labelW = fontBold.widthOfTextAtSize(c.label, 7);
-    const isCenter = (c.key === 'num' || c.key === 'page');
-    const labelX = isCenter ? c.x + (c.px - labelW) / 2 : c.x + 5;
-    page.drawText(c.label, { x: labelX, y: tableTop - hdrH + 7, size: 7, font: fontBold, color: black });
-  }
-
-  // Lignes de données — compactes pour tenir un max de fiches sur la page
-  const linkAreas = [];
   const padding = 3;
-  const lineH   = 8;     // interligne pour le texte 7pt
-  const cellFs  = 7;     // taille de police des cellules
+  const lineH   = 8;
+  const cellFs  = 7;
   const minRowH = 16;
   const maxRowH = 32;
-  let y = tableTop - hdrH;
-  let truncated = false;
-  let rowIdx = 0;
+  const hdrH    = 22;
 
-  for (const f of fiches){
-    const pageNum = fichePageMap.get(f.id) || '?';
+  // === Pré-calcul : données + hauteur de ligne pour chaque fiche ===========
+  const rows = fiches.map(f => {
     const num   = f.f_num || '—';
     const fourn = f.m_fournisseur || '—';
     const mat   = f.m_materiel || '—';
@@ -1479,116 +1413,217 @@ async function drawSommairePage(out, fiches, fichePageMap, logoBytes, A4W, A4H){
     if (f.m_couleur)  caractBits.push('Couleur : ' + f.m_couleur);
     if (f.m_finition) caractBits.push('Finition : ' + f.m_finition);
     const caract = caractBits.join(' · ') || '—';
-    const autres = (f.m_autres || '—').replace(/\n/g, ' · ');
     const loc    = f.m_loc || '—';
-
-    // Max 2 lignes par cellule — au-delà on tronque avec "…"
     const fournLines  = wrap(fourn,  fontReg, cellFs, cols[1].px - 2*padding, 2);
     const matLines    = wrap(mat,    fontReg, cellFs, cols[2].px - 2*padding, 2);
     const caractLines = wrap(caract, fontReg, cellFs, cols[3].px - 2*padding, 2);
-    const autresLines = wrap(autres, fontReg, cellFs, cols[4].px - 2*padding, 2);
-    const locLines    = wrap(loc,    fontReg, cellFs, cols[5].px - 2*padding, 2);
-    const maxLines    = Math.max(1, fournLines.length, matLines.length, caractLines.length, autresLines.length, locLines.length);
-    const rowH        = Math.min(maxRowH, Math.max(minRowH, maxLines * lineH + 2 * padding + 2));
+    const locLines    = wrap(loc,    fontReg, cellFs, cols[4].px - 2*padding, 2);
+    const maxLines = Math.max(1, fournLines.length, matLines.length, caractLines.length, locLines.length);
+    const rowH = Math.min(maxRowH, Math.max(minRowH, maxLines * lineH + 2 * padding + 2));
+    return { f, num, fournLines, matLines, caractLines, locLines, rowH };
+  });
 
-    // Pas assez de place → tronque avec mention "… autres fiches"
-    if (y - rowH < 50){
-      truncated = true;
-      break;
-    }
+  // === Paginate : assemble les fiches en groupes qui tiennent sur une page =
+  // 1re page : en-tête riche (logo + titre + projet/lot) → place dispo réduite
+  // Pages suivantes : en-tête compact → plus de place pour les fiches
+  const first = fiches[0] || {};
+  const firstHasProj = !!first.f_project;
+  const firstHasLot  = !!first.f_lot;
+  const firstHeaderH = 90 + (firstHasProj ? 16 : 0) + (firstHasLot ? 16 : 0) + 18;
+  const contHeaderH  = 50;
+  const footerH      = 50;
 
-    // Fond alterné
-    if (rowIdx % 2 === 1){
-      page.drawRectangle({ x: tableLeft, y: y - rowH, width: tableW, height: rowH, color: rowAlt });
+  const pageGroups = []; // [{ rows, isFirst }]
+  let curGroup = { rows: [], isFirst: true };
+  let availH = (A4H - firstHeaderH - hdrH - footerH);
+  for (const r of rows){
+    if (curGroup.rows.length > 0 && availH < r.rowH){
+      pageGroups.push(curGroup);
+      curGroup = { rows: [], isFirst: false };
+      availH = (A4H - contHeaderH - hdrH - footerH);
     }
-    // Bordure basse
-    page.drawLine({
-      start: { x: tableLeft, y: y - rowH },
-      end:   { x: tableLeft + tableW, y: y - rowH },
-      thickness: 0.4, color: border
-    });
+    curGroup.rows.push(r);
+    availH -= r.rowH;
+  }
+  if (curGroup.rows.length) pageGroups.push(curGroup);
+  if (!pageGroups.length) pageGroups.push({ rows: [], isFirst: true });
+  const sommairePageCount = pageGroups.length;
 
-    // Bouton FICHE N° (rectangle accent + texte blanc) — borné à la largeur
-    // de la colonne pour ne jamais déborder (ex. "Fiche 1QUINQUIES").
-    // On essaie 8.5 puis 7.5 pt avant de tronquer le label.
-    let btnFs = 8.5;
-    let btnLbl = 'Fiche ' + num;
-    const colInnerW = cols[0].px - 4; // 2pt de marge de chaque côté
-    let btnLblW = fontBold.widthOfTextAtSize(btnLbl, btnFs);
-    if (btnLblW + 10 > colInnerW){
-      btnFs = 7.5;
-      btnLblW = fontBold.widthOfTextAtSize(btnLbl, btnFs);
-    }
-    // Si toujours trop large : tronque avec "…"
-    while (btnLblW + 8 > colInnerW && btnLbl.length > 1){
-      btnLbl = btnLbl.slice(0, -2) + '…';
-      btnLblW = fontBold.widthOfTextAtSize(btnLbl, btnFs);
-    }
-    const btnH = Math.min(13, rowH - 4);
-    const btnW = Math.min(btnLblW + 10, colInnerW);
-    const btnX = cols[0].x + (cols[0].px - btnW) / 2;
-    const btnY = y - rowH/2 - btnH/2;
-    page.drawRectangle({ x: btnX, y: btnY, width: btnW, height: btnH, color: accentDk });
-    page.drawText(btnLbl, {
-      x: btnX + (btnW - btnLblW) / 2,
-      y: btnY + (btnH - btnFs) / 2 + 0.5,
-      size: btnFs, font: fontBold, color: white
-    });
-    linkAreas.push({ ficheId: f.id, rect: [btnX, btnY, btnX + btnW, btnY + btnH] });
+  // === fichePageMap : la 1re fiche démarre après cover + sommaire(s) ========
+  const fichePageMap = new Map();
+  let cursor = 1 + sommairePageCount + 1; // après cover + N pages sommaire + on est sur la 1re fiche
+  cursor = 2 + sommairePageCount; // équivalent, plus lisible
+  for (const f of fiches){
+    fichePageMap.set(f.id, cursor);
+    cursor += 1 + (attachCounts.get(f.id) || 0);
+  }
 
-    // Helper : dessine plusieurs lignes alignées dans la cellule
-    const drawCell = (lines, colIdx) => {
-      const cellX = cols[colIdx].x + padding;
-      const startY = y - padding - cellFs;
-      for (let li = 0; li < lines.length; li++){
-        page.drawText(lines[li], {
-          x: cellX, y: startY - li * lineH,
-          size: cellFs, font: fontReg, color: black
+  // === Dessine chaque page du sommaire ======================================
+  const pages = [];
+  const linkAreas = []; // [{ ficheId, pageIdx, rect }]
+
+  for (let pi = 0; pi < pageGroups.length; pi++){
+    const group = pageGroups[pi];
+    const page = out.addPage([A4W, A4H]);
+    pages.push(page);
+    const pageNum = 2 + pi; // les pages sommaire occupent 2, 3, …
+
+    let tableTop;
+    if (group.isFirst){
+      // En-tête riche : logo + titre + projet/lot
+      let titleX = 35;
+      if (logoBytes){
+        try {
+          const logoImg = await out.embedPng(logoBytes);
+          const boxH = 56;
+          const ratio = logoImg.width / logoImg.height;
+          const drawW = boxH * ratio;
+          page.drawImage(logoImg, { x: 30, y: A4H - 72, width: drawW, height: boxH });
+          titleX = 30 + drawW + 22;
+        } catch (e) { console.warn('Logo embed échoué', e); }
+      }
+      page.drawText('SOMMAIRE', {
+        x: titleX, y: A4H - 50, size: 30, font: fontBold, color: black
+      });
+      // Indicateur "1 / N" si plusieurs pages sommaire
+      if (sommairePageCount > 1){
+        page.drawText('(' + (pi + 1) + ' / ' + sommairePageCount + ')', {
+          x: titleX + fontBold.widthOfTextAtSize('SOMMAIRE', 30) + 10,
+          y: A4H - 50, size: 11, font: fontReg, color: subtle
         });
       }
-    };
-    drawCell(fournLines,  1);
-    drawCell(matLines,    2);
-    drawCell(caractLines, 3);
-    drawCell(autresLines, 4);
-    drawCell(locLines,    5);
+      page.drawLine({
+        start: { x: 30, y: A4H - 90 },
+        end:   { x: A4W - 30, y: A4H - 90 },
+        thickness: 0.6, color: border
+      });
+      let metaY = A4H - 110;
+      if (first.f_project){
+        page.drawText('Projet : ', { x: 30, y: metaY, size: 11, font: fontBold, color: black });
+        const px = 30 + fontBold.widthOfTextAtSize('Projet : ', 11);
+        page.drawText(first.f_project, { x: px, y: metaY, size: 11, font: fontReg, color: black });
+        metaY -= 16;
+      }
+      if (first.f_lot){
+        page.drawText('Lot : ', { x: 30, y: metaY, size: 10, font: fontBold, color: subtle });
+        const lx = 30 + fontBold.widthOfTextAtSize('Lot : ', 10);
+        page.drawText(first.f_lot, { x: lx, y: metaY, size: 10, font: fontReg, color: subtle });
+        metaY -= 16;
+      }
+      tableTop = metaY - 8;
+    } else {
+      // En-tête compact "SOMMAIRE (suite)"
+      page.drawText('SOMMAIRE (suite ' + (pi + 1) + ' / ' + sommairePageCount + ')', {
+        x: 30, y: A4H - 32, size: 12, font: fontBold, color: black
+      });
+      page.drawLine({
+        start: { x: 30, y: A4H - 42 },
+        end:   { x: A4W - 30, y: A4H - 42 },
+        thickness: 0.6, color: border
+      });
+      tableTop = A4H - 60;
+    }
 
-    // PAGE — chiffre centré dans sa cellule, gris foncé
-    const pageStr = String(pageNum);
-    const pageFs = 10;
-    const pageW = fontBold.widthOfTextAtSize(pageStr, pageFs);
-    page.drawText(pageStr, {
-      x: cols[6].x + (cols[6].px - pageW) / 2,
-      y: y - rowH/2 - pageFs/2 + 1,
-      size: pageFs, font: fontBold, color: accentDk
+    // En-tête de tableau
+    page.drawRectangle({ x: tableLeft, y: tableTop - hdrH, width: tableW, height: hdrH, color: slateHeader });
+    for (const c of cols){
+      const labelW = fontBold.widthOfTextAtSize(c.label, 7);
+      const isCenter = (c.key === 'num' || c.key === 'page');
+      const labelX = isCenter ? c.x + (c.px - labelW) / 2 : c.x + 5;
+      page.drawText(c.label, { x: labelX, y: tableTop - hdrH + 7, size: 7, font: fontBold, color: black });
+    }
+    page.drawLine({
+      start: { x: tableLeft, y: tableTop },
+      end:   { x: tableLeft + tableW, y: tableTop },
+      thickness: 0.6, color: border
     });
 
-    y -= rowH;
-    rowIdx++;
+    // Dessine les lignes de cette page
+    let y = tableTop - hdrH;
+    for (let ri = 0; ri < group.rows.length; ri++){
+      const r = group.rows[ri];
+      const pageNumOfFiche = fichePageMap.get(r.f.id) || '?';
+
+      // Fond alterné (pair = blanc, impair = gris très clair)
+      if (ri % 2 === 1){
+        page.drawRectangle({ x: tableLeft, y: y - r.rowH, width: tableW, height: r.rowH, color: rowAlt });
+      }
+      // Bordure basse
+      page.drawLine({
+        start: { x: tableLeft, y: y - r.rowH },
+        end:   { x: tableLeft + tableW, y: y - r.rowH },
+        thickness: 0.4, color: border
+      });
+
+      // Bouton FICHE N° — borné à la largeur de la colonne, police dégressive
+      let btnFs = 8.5;
+      let btnLbl = 'Fiche ' + r.num;
+      const colInnerW = cols[0].px - 4;
+      let btnLblW = fontBold.widthOfTextAtSize(btnLbl, btnFs);
+      if (btnLblW + 10 > colInnerW){
+        btnFs = 7.5;
+        btnLblW = fontBold.widthOfTextAtSize(btnLbl, btnFs);
+      }
+      while (btnLblW + 8 > colInnerW && btnLbl.length > 1){
+        btnLbl = btnLbl.slice(0, -2) + '…';
+        btnLblW = fontBold.widthOfTextAtSize(btnLbl, btnFs);
+      }
+      const btnH = Math.min(13, r.rowH - 4);
+      const btnW = Math.min(btnLblW + 10, colInnerW);
+      const btnX = cols[0].x + (cols[0].px - btnW) / 2;
+      const btnY = y - r.rowH/2 - btnH/2;
+      page.drawRectangle({ x: btnX, y: btnY, width: btnW, height: btnH, color: accentDk });
+      page.drawText(btnLbl, {
+        x: btnX + (btnW - btnLblW) / 2,
+        y: btnY + (btnH - btnFs) / 2 + 0.5,
+        size: btnFs, font: fontBold, color: white
+      });
+      linkAreas.push({ ficheId: r.f.id, pageIdx: pi, rect: [btnX, btnY, btnX + btnW, btnY + btnH] });
+
+      const drawCell = (lines, colIdx) => {
+        const cellX = cols[colIdx].x + padding;
+        const startY = y - padding - cellFs;
+        for (let li = 0; li < lines.length; li++){
+          page.drawText(lines[li], {
+            x: cellX, y: startY - li * lineH,
+            size: cellFs, font: fontReg, color: black
+          });
+        }
+      };
+      drawCell(r.fournLines,  1);
+      drawCell(r.matLines,    2);
+      drawCell(r.caractLines, 3);
+      drawCell(r.locLines,    4);
+
+      // PAGE — chiffre centré
+      const pageStr = String(pageNumOfFiche);
+      const pageFs = 10;
+      const pageW = fontBold.widthOfTextAtSize(pageStr, pageFs);
+      page.drawText(pageStr, {
+        x: cols[5].x + (cols[5].px - pageW) / 2,
+        y: y - r.rowH/2 - pageFs/2 + 1,
+        size: pageFs, font: fontBold, color: accentDk
+      });
+
+      y -= r.rowH;
+    }
+
+    // Footer
+    if (pi < pageGroups.length - 1){
+      page.drawText('Suite page suivante →', {
+        x: 30, y: 35, size: 9, font: fontBold, color: accentDk
+      });
+    } else {
+      page.drawText('Cliquez sur un numéro de fiche pour y accéder directement dans le PDF.', {
+        x: 30, y: 35, size: 9, font: fontReg, color: subtle
+      });
+    }
+    page.drawText('Page ' + pageNum, {
+      x: A4W - 60, y: 35, size: 9, font: fontReg, color: subtle
+    });
   }
 
-  // Bordure haute du tableau (au-dessus du header) — gris discret
-  page.drawLine({
-    start: { x: tableLeft, y: tableTop },
-    end:   { x: tableLeft + tableW, y: tableTop },
-    thickness: 0.6, color: border
-  });
-
-  // === Footer ===
-  if (truncated){
-    page.drawText('… ' + (fiches.length - rowIdx) + ' fiche(s) supplémentaire(s) — voir les pages suivantes.', {
-      x: 30, y: 35, size: 9, font: fontBold, color: accentDk
-    });
-  } else {
-    page.drawText('Cliquez sur un numéro de fiche pour y accéder directement dans le PDF.', {
-      x: 30, y: 35, size: 9, font: fontReg, color: subtle
-    });
-  }
-  page.drawText('Page 2', {
-    x: A4W - 60, y: 35, size: 9, font: fontReg, color: subtle
-  });
-
-  return { page, linkAreas };
+  return { pages, linkAreas, fichePageMap, sommairePageCount };
 }
 
 // Récupère les bytes du logo AL GOMES pour incrustation pdf-lib.
@@ -1762,6 +1797,7 @@ async function exportDossierPdf(){
     // l'afficher dans la colonne PAGE et créer les liens cliquables.
     let sommaireResult = null;
     let fichePageMap = null;
+    let sommairePageCount = 0;
     if (fiches.length > 0) {
       setStatus('Génération du PDF · sommaire…', 'dirty');
       const attachCounts = new Map();
@@ -1773,14 +1809,12 @@ async function exportDossierPdf(){
         } catch (e) {}
         attachCounts.set(f.id, n);
       }
-      fichePageMap = new Map();
-      let cursor = 3; // cover=1, sommaire=2, fiches à partir de 3
-      for (const f of fiches) {
-        fichePageMap.set(f.id, cursor);
-        cursor += 1 + (attachCounts.get(f.id) || 0);
-      }
       const logoBytes = await loadAlgomesLogoBytes();
-      sommaireResult = await drawSommairePage(out, fiches, fichePageMap, logoBytes, A4W, A4H);
+      // drawSommairePages calcule lui-même fichePageMap en fonction du nombre
+      // de pages sommaire effectivement générées (paginate si > 1 page).
+      sommaireResult = await drawSommairePages(out, fiches, attachCounts, logoBytes, A4W, A4H);
+      fichePageMap = sommaireResult.fichePageMap;
+      sommairePageCount = sommaireResult.sommairePageCount;
     }
 
     for (const fiche of fiches) {
@@ -1885,7 +1919,9 @@ async function exportDossierPdf(){
     if (sommaireResult && fichePageMap) {
       try {
         const { PDFName } = PDFLib;
-        const annotRefs = [];
+        // Regroupe les liens par page sommaire (pageIdx) — chaque page reçoit
+        // son propre tableau /Annots.
+        const annotRefsByPage = new Map();
         for (const link of sommaireResult.linkAreas) {
           const targetPageNum = fichePageMap.get(link.ficheId);
           if (!targetPageNum) continue;
@@ -1899,10 +1935,15 @@ async function exportDossierPdf(){
             A: { Type: 'Action', S: 'GoTo', D: [targetPage.ref, 'Fit'] }
           });
           const linkRef = out.context.register(linkDict);
-          annotRefs.push(linkRef);
+          const pi = link.pageIdx || 0;
+          if (!annotRefsByPage.has(pi)) annotRefsByPage.set(pi, []);
+          annotRefsByPage.get(pi).push(linkRef);
         }
-        if (annotRefs.length) {
-          sommaireResult.page.node.set(PDFName.of('Annots'), out.context.obj(annotRefs));
+        for (const [pi, refs] of annotRefsByPage){
+          const sommairePage = sommaireResult.pages[pi];
+          if (sommairePage && refs.length){
+            sommairePage.node.set(PDFName.of('Annots'), out.context.obj(refs));
+          }
         }
       } catch (e) {
         console.warn('Création des liens du sommaire échouée', e);
@@ -1935,7 +1976,7 @@ async function exportDossierPdf(){
     let bytes = await out.save();
     // Injecter les données du dossier (fiches + PDFs techniques) en fin de
     // fichier sous forme de commentaire PDF pour permettre la réimportation.
-    bytes = await injectDossierSidecar(bytes);
+    bytes = await injectDossierSidecar(bytes, sommairePageCount);
     const projName = (getActive() && getActive().f_project) || 'dossier-materiel';
     const safeName = String(projName).replace(/[^a-zA-Z0-9_-]+/g, '_').slice(0, 60);
     const defaultName = safeName + '_' + new Date().toISOString().slice(0,10) + '.pdf';
@@ -2060,16 +2101,17 @@ function _base64ToU8(b64){
   return out;
 }
 
-async function injectDossierSidecar(pdfBytes){
+async function injectDossierSidecar(pdfBytes, sommairePageCount){
   // Construit le payload : fiches + attachements + page de garde
   syncCoverFromUI();
   const payload = {
-    _v: 2,
+    _v: 3,
     _kind: 'algomes-dossier-materiel',
     exportedAt: new Date().toISOString(),
-    // Depuis v2 : le PDF contient une page sommaire en page 2 → les fiches
-    // démarrent en page 3 (et non plus en page 2 comme en v1).
-    hasSommairePage: fiches.length > 0,
+    // v3 : le PDF peut contenir plusieurs pages de sommaire (paginé si > 1
+    // page de fiches). hasSommairePage est conservé pour compat v2.
+    hasSommairePage: (sommairePageCount || 0) > 0,
+    sommairePageCount: sommairePageCount || (fiches.length > 0 ? 1 : 0),
     cover: Object.assign({}, cover || defaultCover()),
     fiches: fiches.map(f => Object.assign({}, f)), // copie défensive
     attachments: {}

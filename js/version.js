@@ -6,7 +6,7 @@
 //   - AL_VERSION_TIME  : HH:MM      (heure de la MAJ — local Paris)
 //   - AL_VERSION_NOTE  : 1 phrase courte qui décrit le motif de la MAJ
 // =====================================================================
-window.AL_VERSION      = 'v1.15';
-window.AL_VERSION_DATE = '2026-05-19';
-window.AL_VERSION_TIME = '23:41';
-window.AL_VERSION_NOTE = 'Accueil : nouvelle itération du PNG du wordmark (1983×963).';
+window.AL_VERSION      = 'v1.30';
+window.AL_VERSION_DATE = '2026-05-20';
+window.AL_VERSION_TIME = '14:20';
+window.AL_VERSION_NOTE = 'Liseuse PDF : le bouton Sauvegarder persiste réellement les annotations.';

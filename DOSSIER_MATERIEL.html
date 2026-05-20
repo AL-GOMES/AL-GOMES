@@ -1331,6 +1331,45 @@ async function drawSommairePages(out, fiches, attachCounts, logoBytes, A4W, A4H)
   const fontReg  = await out.embedFont(StandardFonts.Helvetica);
   const fontBold = await out.embedFont(StandardFonts.HelveticaBold);
 
+  // Helvetica utilise WinAnsi (CP1252) qui ne contient pas la plupart des
+  // caractères Unicode au-delà de 0xFF (flèches, emoji, symboles techniques).
+  // Cette fonction remplace les caractères problématiques par des équivalents
+  // WinAnsi-safe pour éviter "WinAnsi cannot encode …" lors du drawText.
+  // Liste autorisée : ASCII 0x20-0x7E + Latin-1 0xA0-0xFF + sous-ensemble
+  // d'extensions Unicode mappées par WinAnsi (CP1252 : œ, Š, –, —, ', ", …, €, etc.).
+  const WIN_ANSI_EXTRA = new Set([
+    0x0152, 0x0153, 0x0160, 0x0161, 0x0178, 0x017D, 0x017E,
+    0x0192, 0x02C6, 0x02DC,
+    0x2013, 0x2014, 0x2018, 0x2019, 0x201A, 0x201C, 0x201D, 0x201E,
+    0x2020, 0x2021, 0x2022, 0x2026, 0x2030,
+    0x2039, 0x203A, 0x20AC, 0x2122
+  ]);
+  function safeText(s){
+    if (s == null) return '';
+    let out = '';
+    const str = String(s);
+    for (let i = 0; i < str.length; i++){
+      const cp = str.codePointAt(i);
+      // Surrogate pair → on saute le low-surrogate suivant
+      if (cp > 0xFFFF) i++;
+      if (cp >= 0x20 && cp <= 0x7E) { out += String.fromCodePoint(cp); continue; }
+      if (cp >= 0xA0 && cp <= 0xFF) { out += String.fromCodePoint(cp); continue; }
+      if (WIN_ANSI_EXTRA.has(cp))   { out += String.fromCodePoint(cp); continue; }
+      // Substitutions utiles
+      if (cp === 0x2192 || cp === 0x21D2) { out += '»'; continue; }
+      if (cp === 0x2190 || cp === 0x21D0) { out += '«'; continue; }
+      if (cp === 0x2713 || cp === 0x2714) { out += 'V'; continue; }
+      if (cp === 0x2717 || cp === 0x2718) { out += 'X'; continue; }
+      if (cp === 0x00A0 || cp === 0x2007 || cp === 0x202F) { out += ' '; continue; }
+      // Caractères tab/cr/lf déjà filtrés via trim/replace en amont, on les
+      // laisse passer ici uniquement s'ils sont \t \r \n
+      if (cp === 9 || cp === 10 || cp === 13) { out += String.fromCodePoint(cp); continue; }
+      // Tout le reste : on remplace par un point d'interrogation discret
+      out += '?';
+    }
+    return out;
+  }
+
   // Découpe `text` en lignes qui tiennent dans `maxWidth` (à `fontSize` pts).
   function wrap(text, font, fontSize, maxWidth, maxLines){
     const t = String(text == null ? '' : text).replace(/\s+/g, ' ').trim();
@@ -1405,15 +1444,15 @@ async function drawSommairePages(out, fiches, attachCounts, logoBytes, A4W, A4H)
 
   // === Pré-calcul : données + hauteur de ligne pour chaque fiche ===========
   const rows = fiches.map(f => {
-    const num   = f.f_num || '—';
-    const fourn = f.m_fournisseur || '—';
-    const mat   = f.m_materiel || '—';
+    const num   = safeText(f.f_num || '—');
+    const fourn = safeText(f.m_fournisseur || '—');
+    const mat   = safeText(f.m_materiel || '—');
     const caractBits = [];
-    if (f.m_caract)   caractBits.push(f.m_caract);
-    if (f.m_couleur)  caractBits.push('Couleur : ' + f.m_couleur);
-    if (f.m_finition) caractBits.push('Finition : ' + f.m_finition);
+    if (f.m_caract)   caractBits.push(safeText(f.m_caract));
+    if (f.m_couleur)  caractBits.push('Couleur : ' + safeText(f.m_couleur));
+    if (f.m_finition) caractBits.push('Finition : ' + safeText(f.m_finition));
     const caract = caractBits.join(' · ') || '—';
-    const loc    = f.m_loc || '—';
+    const loc    = safeText(f.m_loc || '—');
     const fournLines  = wrap(fourn,  fontReg, cellFs, cols[1].px - 2*padding, 2);
     const matLines    = wrap(mat,    fontReg, cellFs, cols[2].px - 2*padding, 2);
     const caractLines = wrap(caract, fontReg, cellFs, cols[3].px - 2*padding, 2);
@@ -1501,13 +1540,13 @@ async function drawSommairePages(out, fiches, attachCounts, logoBytes, A4W, A4H)
       if (first.f_project){
         page.drawText('Projet : ', { x: 30, y: metaY, size: 11, font: fontBold, color: black });
         const px = 30 + fontBold.widthOfTextAtSize('Projet : ', 11);
-        page.drawText(first.f_project, { x: px, y: metaY, size: 11, font: fontReg, color: black });
+        page.drawText(safeText(first.f_project), { x: px, y: metaY, size: 11, font: fontReg, color: black });
         metaY -= 16;
       }
       if (first.f_lot){
         page.drawText('Lot : ', { x: 30, y: metaY, size: 10, font: fontBold, color: subtle });
         const lx = 30 + fontBold.widthOfTextAtSize('Lot : ', 10);
-        page.drawText(first.f_lot, { x: lx, y: metaY, size: 10, font: fontReg, color: subtle });
+        page.drawText(safeText(first.f_lot), { x: lx, y: metaY, size: 10, font: fontReg, color: subtle });
         metaY -= 16;
       }
       tableTop = metaY - 8;
@@ -1608,9 +1647,9 @@ async function drawSommairePages(out, fiches, attachCounts, logoBytes, A4W, A4H)
       y -= r.rowH;
     }
 
-    // Footer
+    // Footer (sans flèche Unicode : Helvetica WinAnsi ne l'encode pas)
     if (pi < pageGroups.length - 1){
-      page.drawText('Suite page suivante →', {
+      page.drawText('Suite page suivante »', {
         x: 30, y: 35, size: 9, font: fontBold, color: accentDk
       });
     } else {

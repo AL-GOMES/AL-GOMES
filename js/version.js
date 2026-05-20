@@ -6,7 +6,7 @@
 //   - AL_VERSION_TIME  : HH:MM      (heure de la MAJ — local Paris)
 //   - AL_VERSION_NOTE  : 1 phrase courte qui décrit le motif de la MAJ
 // =====================================================================
-window.AL_VERSION      = 'v1.32';
+window.AL_VERSION      = 'v1.33';
 window.AL_VERSION_DATE = '2026-05-20';
-window.AL_VERSION_TIME = '14:55';
-window.AL_VERSION_NOTE = 'Tableau Abonné : tabs collées au card, en-tête de tableau sticky au scroll.';
+window.AL_VERSION_TIME = '15:10';
+window.AL_VERSION_NOTE = 'Tableau Abonné : revert des changements de mise en page (en-tête sticky cassait l\'ordre des lignes).';

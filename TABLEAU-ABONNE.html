@@ -1331,6 +1331,22 @@ async function exportPDF(){
         bD.push({ cir: dc });
       });
       allC.forEach(c => delete c._u);
+      // Injecter TELE / SON comme sub-circuits (1 module chacun) sur les ECL —
+      // doit rester cohérent avec la même injection côté SVG schéma plus bas.
+      (function(){
+        const eY = [];
+        bD.forEach(d => d.cir.forEach(c => { if (c.k === 'ecl') eY.push({d, c}); }));
+        function ins(p, n, k){
+          const idx = p.d.cir.indexOf(p.c);
+          if (idx < 0) return;
+          for (let i = 0; i < n; i++) {
+            p.d.cir.splice(idx + 1 + i, 0, { k, mod: 1, isSub: true });
+          }
+        }
+        if (eY.length > 0 && ref.tele > 0) ins(eY[0], ref.tele, 'tele');
+        if (eY.length > 1 && ref.sonn > 0) ins(eY[1], ref.sonn, 'sonn');
+        else if (eY.length === 1 && ref.sonn > 0) ins(eY[0], ref.sonn, 'sonn');
+      })();
       let tM = 0;
       bD.forEach(d => { d.mc = 2 + d.cir.reduce((s, c) => s + c.mod, 0); tM += d.mc; });
       const rg = Math.ceil(tM * 1.2 / 13);
@@ -1422,19 +1438,41 @@ async function exportPDF(){
         bD.push({cir:dc,type:dt,cal:calcIDCal(dc, dt)});
       });
       allC.forEach(c=>delete c._u);
+
+      // Injecter TELE / SON comme sous-circuits inline rattachés à l'ECL :
+      // ils apparaissent comme des colonnes adjacentes au disjoncteur ECL
+      // dans le schéma (et plus comme des badges sous-jacents), tout en
+      // restant protégés par le même disjoncteur 10A (pas de calibre propre).
+      // Distribution : TELE → 1er ECL trouvé, SON → 2e ECL (ou 1er si unique).
+      (function injectSubs(){
+        const eY = [];
+        bD.forEach(d => d.cir.forEach(c => { if (c.k === 'ecl') eY.push({d, c}); }));
+        function ins(p, n, k, name, color){
+          const idx = p.d.cir.indexOf(p.c);
+          if (idx < 0) return;
+          for (let i = 0; i < n; i++) {
+            p.d.cir.splice(idx + 1 + i, 0, {
+              k, n: name, a: '', mod: 1, isSub: true, _parentEcl: p.c, _subColor: color
+            });
+          }
+        }
+        if (eY.length > 0 && ref.tele > 0) ins(eY[0], ref.tele, 'tele', 'TELE.', '#F1C40F');
+        if (eY.length > 1 && ref.sonn > 0) ins(eY[1], ref.sonn, 'sonn', 'SON.', '#1ABC9C');
+        else if (eY.length === 1 && ref.sonn > 0) ins(eY[0], ref.sonn, 'sonn', 'SON.', '#1ABC9C');
+      })();
+
+      // (Re)calcule des modules en tenant compte des sub-circuits inline
       let tM=0;bD.forEach(d=>{d.mc=2+d.cir.reduce((s,c)=>s+c.mod,0);tM+=d.mc});
       const rg=Math.ceil(tM*1.2/13);
-      const eY=[];bD.forEach(d=>d.cir.forEach(c=>{if(c.k==='ecl'){c._s=[];eY.push(c)}}));
-      if(eY.length>0&&ref.tele>0)eY[0]._s.push('TELE.');
-      if(eY.length>1&&ref.sonn>0)eY[1]._s.push('SON.');
-      else if(eY.length===1&&ref.sonn>0)eY[0]._s.push('SON.');
 
       // Récapitulatif quantitatif des calibres : on agrège tous les
       // disjoncteurs divisionnaires par calibre (10A, 16A, 20A, 32A...) et
       // on garde la ventilation par type de circuit (ECL, PC...) pour
       // l'afficher en sous-titre dans chaque chip.
+      // Les sous-circuits TELE/SON ne sont PAS comptés (pas de calibre propre).
       const _calCount={};let _totDisj=0;
       bD.forEach(d=>d.cir.forEach(c=>{
+        if (c.isSub) return;
         _totDisj++;
         const key=c.a;
         if(!_calCount[key])_calCount[key]={cnt:0,names:{},amp:_ampOf(c.a)};
@@ -1528,8 +1566,31 @@ async function exportPDF(){
         // Disjoncteurs — code couleur par calibre appliqué UNIQUEMENT sur
         // les textes (calibre + nom de circuit). Le symbole (box, traits)
         // garde la couleur du différentiel parent.
+        // Cas spécial isSub (TELE / SON) : pas de disjoncteur propre, on
+        // dessine un contacteur/télérupteur dérivé du disjoncteur ECL parent
+        // via une ligne pointillée horizontale au sommet de la box.
         dep.cir.forEach((c,ci)=>{
           const ccx=cS+ci*32+16;
+          if(c.isSub){
+            // Sous-circuit (TELE / SON) — reprise physique depuis le départ ECL parent
+            const subC=c._subColor||'#F1C40F';
+            const parentIdx=dep.cir.indexOf(c._parentEcl);
+            const parentX=parentIdx>=0?cS+parentIdx*32+16:ccx;
+            // Tick partant de la sous-barre (couleur diff.)
+            svg+=`<line x1="${ccx}" y1="${dy}" x2="${ccx}" y2="${dy+8}" stroke="${col}" stroke-width="1"/>`;
+            // Liaison pointillée entre l'ECL parent et le sous-circuit (juste sous la sous-barre)
+            svg+=`<line x1="${parentX}" y1="${dy+5}" x2="${ccx}" y2="${dy+5}" stroke="${subC}" stroke-width="1.2" stroke-dasharray="3,2"/>`;
+            // Box télérupteur/contacteur (bordure pointillée pour distinguer du disj.)
+            const bw=20;
+            svg+=`<rect x="${ccx-bw/2}" y="${dy+8}" width="${bw}" height="36" rx="3" fill="#FFF" stroke="${subC}" stroke-width="1.5" stroke-dasharray="3,2"/>`;
+            // Symbole télérupteur : triangle pointant vers le haut + bobine
+            svg+=`<polygon points="${ccx-5},${dy+30} ${ccx+5},${dy+30} ${ccx},${dy+18}" fill="none" stroke="${subC}" stroke-width="1.3"/>`;
+            svg+=`<line x1="${ccx-5}" y1="${dy+35}" x2="${ccx+5}" y2="${dy+35}" stroke="${subC}" stroke-width="1.2"/>`;
+            // Libellés
+            svg+=`<text x="${ccx}" y="${dy+56}" font-size="9" font-weight="bold" fill="${subC}" text-anchor="middle">${c.n}</text>`;
+            svg+=`<text x="${ccx}" y="${dy+68}" font-size="7" fill="${subC}" text-anchor="middle" opacity="0.85">sur ECL</text>`;
+            return; // Pas de symbole disjoncteur ni de label calibre pour TELE/SON
+          }
           const cc=colByCalibre(c.a); // couleur appliquée aux textes seuls
           // Tick
           svg+=`<line x1="${ccx}" y1="${dy}" x2="${ccx}" y2="${dy+8}" stroke="${col}" stroke-width="1"/>`;
@@ -1542,14 +1603,6 @@ async function exportPDF(){
           // Labels — code couleur par calibre uniquement sur les textes
           svg+=`<text x="${ccx}" y="${dy+56}" font-size="10" font-weight="bold" fill="${cc.color}" text-anchor="middle">${c.a}</text>`;
           svg+=`<text x="${ccx}" y="${dy+68}" font-size="8" fill="${cc.color}" text-anchor="middle" opacity="0.85">${c.n}</text>`;
-          // TELE/SON
-          if(c._s&&c._s.length){
-            c._s.forEach((s,si)=>{
-              const isTl=s.includes('TELE');const sc=isTl?'#F1C40F':'#1ABC9C';
-              svg+=`<rect x="${ccx-14}" y="${dy+72+si*16}" width="28" height="14" rx="3" fill="none" stroke="${sc}" stroke-dasharray="3,2"/>`;
-              svg+=`<text x="${ccx}" y="${dy+82+si*16}" font-size="8" font-weight="bold" fill="${sc}" text-anchor="middle">${s}</text>`;
-            });
-          }
           // RT2012 gestionnaire box
           if(c.k==='rt'){
             const rx=ccx+20,ry=dy+12;
@@ -1572,7 +1625,7 @@ async function exportPDF(){
       bD.forEach((dep,di)=>{
         const col2=svgColByType(dep.type);
         let f2=0,h2=0;const fI=[],hI=[];
-        dep.cir.forEach(c=>{const am=CIR_AMP[c.k]||0;if(NON_DIV.includes(c.k)){f2+=am;fI.push(c.n+' '+am+'A')}else{h2+=am;hI.push(c.n+' '+(am/2)+'A')}});
+        dep.cir.forEach(c=>{if(c.isSub)return;const am=CIR_AMP[c.k]||0;if(NON_DIV.includes(c.k)){f2+=am;fI.push(c.n+' '+am+'A')}else{h2+=am;hI.push(c.n+' '+(am/2)+'A')}});
         svg+=`<text x="28" y="${cy+10}" font-size="8" font-weight="bold" fill="${col2}" font-family="Segoe UI">DÉP.${di+1} ${dep.type}:</text>`;
         svg+=`<text x="80" y="${cy+10}" font-size="8" fill="${col2}" font-family="Segoe UI">${fI.length?fI.join(' + ')+' (100%)':'0A'} + ${hI.length?hI.join(' + ')+' (÷2)':'0A'} = ${Math.round((f2+h2/2)*10)/10}A → ID ${dep.cal}A</text>`;
         cy+=14;

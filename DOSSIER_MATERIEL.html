@@ -1159,52 +1159,47 @@ async function drawSommairePage(out, fiches, fichePageMap, logoBytes, A4W, A4H){
     return lines;
   }
 
-  // Palette sobre : tons d'anthracite / gris / blanc cassé. Pas d'accent
-  // saturé — l'identité AL GOMES vient du logo et de la typo, pas de la couleur.
-  const headerBg  = rgb(0.18, 0.20, 0.24);  // anthracite
-  const accent    = rgb(0.40, 0.42, 0.46);  // gris moyen
-  const accentLt  = rgb(0.70, 0.72, 0.76);
-  const accentDk  = rgb(0.28, 0.30, 0.34);  // gris foncé (boutons)
+  // Palette sobre : tons d'anthracite / gris. Le bleu pâle slate (#E2E8F0)
+  // utilisé pour le bandeau du tableau reprend exactement les en-têtes des
+  // cellules de la fiche produit (cohérence visuelle dossier ↔ sommaire).
+  const slateHeader = rgb(0.886, 0.910, 0.941);  // #E2E8F0 — bleu pâle des fiches
+  const accentDk  = rgb(0.28, 0.30, 0.34);       // gris foncé (boutons Fiche N°)
   const rowAlt    = rgb(0.965, 0.965, 0.970);
-  const border    = rgb(0.82, 0.82, 0.85);
+  const border    = rgb(0.78, 0.80, 0.85);
   const black     = rgb(0.10, 0.10, 0.13);
   const subtle    = rgb(0.42, 0.42, 0.52);
   const white     = rgb(1, 1, 1);
 
-  // === Bandeau d'en-tête ===
-  const headerH = 95;
-  page.drawRectangle({ x: 0, y: A4H - headerH, width: A4W, height: headerH, color: headerBg });
-  page.drawRectangle({ x: 0, y: A4H - headerH - 3, width: A4W, height: 3, color: accent });
-
-  // Logo (rectangle blanc + image PNG centrée dedans)
+  // === En-tête (sans bandeau coloré — logo + titre sur fond blanc) ===
+  // Logo à gauche
   let titleX = 35;
   if (logoBytes){
     try {
       const logoImg = await out.embedPng(logoBytes);
-      const boxH = 62;
+      const boxH = 56;
       const ratio = logoImg.width / logoImg.height;
-      const boxW = Math.min(boxH * ratio, 140);
-      const drawH = boxH;
-      const drawW = drawH * ratio;
-      page.drawRectangle({ x: 30, y: A4H - 80, width: boxW + 8, height: boxH + 6, color: white });
-      page.drawImage(logoImg, { x: 30 + (boxW + 8 - drawW) / 2, y: A4H - 80 + (boxH + 6 - drawH) / 2, width: drawW, height: drawH });
-      titleX = 30 + boxW + 22;
+      const drawW = boxH * ratio;
+      page.drawImage(logoImg, { x: 30, y: A4H - 72, width: drawW, height: boxH });
+      titleX = 30 + drawW + 22;
     } catch (e) { console.warn('Logo embed échoué', e); }
   }
 
-  // Titre + tagline
+  // Titre SOMMAIRE — sobre, noir sur blanc (pas de tagline en dessous)
   page.drawText('SOMMAIRE', {
-    x: titleX, y: A4H - 48, size: 28, font: fontBold, color: white
+    x: titleX, y: A4H - 50, size: 30, font: fontBold, color: black
   });
-  page.drawText('A.L. GOMES  -  Bureau d\'études techniques  -  Dossier matériel', {
-    x: titleX, y: A4H - 70, size: 9, font: fontReg, color: accentLt
+  // Trait fin de séparation sous l'en-tête
+  page.drawLine({
+    start: { x: 30, y: A4H - 90 },
+    end:   { x: A4W - 30, y: A4H - 90 },
+    thickness: 0.6, color: border
   });
 
   // === Info projet ===
   const first = fiches[0] || {};
   const proj = first.f_project || '';
   const lot  = first.f_lot || '';
-  let metaY = A4H - headerH - 22;
+  let metaY = A4H - 110;
   if (proj){
     page.drawText('Projet : ', { x: 30, y: metaY, size: 11, font: fontBold, color: black });
     const px = 30 + fontBold.widthOfTextAtSize('Projet : ', 11);
@@ -1219,7 +1214,7 @@ async function drawSommairePage(out, fiches, fichePageMap, logoBytes, A4W, A4H){
   }
 
   // === Tableau ===
-  const tableTop  = Math.min(metaY - 8, A4H - headerH - 50);
+  const tableTop  = metaY - 8;
   const tableLeft = 25;
   const tableW    = A4W - 50;
 
@@ -1241,15 +1236,15 @@ async function drawSommairePage(out, fiches, fichePageMap, logoBytes, A4W, A4H){
     xc  += c.px;
   }
 
-  // Header row
+  // Header row — bleu pâle slate identique aux fiches (#E2E8F0), texte noir
   const hdrH = 22;
-  page.drawRectangle({ x: tableLeft, y: tableTop - hdrH, width: tableW, height: hdrH, color: accentDk });
+  page.drawRectangle({ x: tableLeft, y: tableTop - hdrH, width: tableW, height: hdrH, color: slateHeader });
   for (const c of cols){
     // Centrage horizontal des labels FICHE N° et PAGE, gauche pour les autres
     const labelW = fontBold.widthOfTextAtSize(c.label, 7);
     const isCenter = (c.key === 'num' || c.key === 'page');
     const labelX = isCenter ? c.x + (c.px - labelW) / 2 : c.x + 5;
-    page.drawText(c.label, { x: labelX, y: tableTop - hdrH + 7, size: 7, font: fontBold, color: white });
+    page.drawText(c.label, { x: labelX, y: tableTop - hdrH + 7, size: 7, font: fontBold, color: black });
   }
 
   // Lignes de données
@@ -1345,11 +1340,11 @@ async function drawSommairePage(out, fiches, fichePageMap, logoBytes, A4W, A4H){
     rowIdx++;
   }
 
-  // Bordure haute du tableau (au-dessus du header)
+  // Bordure haute du tableau (au-dessus du header) — gris discret
   page.drawLine({
     start: { x: tableLeft, y: tableTop },
     end:   { x: tableLeft + tableW, y: tableTop },
-    thickness: 1, color: accentDk
+    thickness: 0.6, color: border
   });
 
   // === Footer ===

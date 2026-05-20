@@ -1428,13 +1428,14 @@ async function drawSommairePage(out, fiches, fichePageMap, logoBytes, A4W, A4H){
   const tableLeft = 25;
   const tableW    = A4W - 50;
 
-  // Colonnes (poids relatifs, somme libre — on normalise)
+  // Colonnes (poids relatifs, somme libre — on normalise).
+  // num élargie à 14 pour que "Fiche 1QUATER" / "Fiche 1QUINQUIES" tiennent.
   const cols = [
-    { key: 'num',    label: 'FICHE N°',          w: 11 },
+    { key: 'num',    label: 'FICHE N°',          w: 14 },
     { key: 'fourn',  label: 'FOURNISSEUR',       w: 14 },
-    { key: 'mat',    label: 'MATÉRIELS',         w: 16 },
-    { key: 'caract', label: 'CARACTÉRISTIQUES',  w: 17 },
-    { key: 'autres', label: 'AUTRES CARACT.',    w: 16 },
+    { key: 'mat',    label: 'MATÉRIELS',         w: 15 },
+    { key: 'caract', label: 'CARACTÉRISTIQUES',  w: 16 },
+    { key: 'autres', label: 'AUTRES CARACT.',    w: 15 },
     { key: 'loc',    label: 'LOCALISATION',      w: 17 },
     { key: 'page',   label: 'PAGE',              w: 9  }
   ];
@@ -1457,12 +1458,13 @@ async function drawSommairePage(out, fiches, fichePageMap, logoBytes, A4W, A4H){
     page.drawText(c.label, { x: labelX, y: tableTop - hdrH + 7, size: 7, font: fontBold, color: black });
   }
 
-  // Lignes de données
+  // Lignes de données — compactes pour tenir un max de fiches sur la page
   const linkAreas = [];
-  const padding = 5;
-  const lineH   = 10;
-  const minRowH = 30;
-  const maxRowH = 80;
+  const padding = 3;
+  const lineH   = 8;     // interligne pour le texte 7pt
+  const cellFs  = 7;     // taille de police des cellules
+  const minRowH = 16;
+  const maxRowH = 32;
   let y = tableTop - hdrH;
   let truncated = false;
   let rowIdx = 0;
@@ -1480,13 +1482,14 @@ async function drawSommairePage(out, fiches, fichePageMap, logoBytes, A4W, A4H){
     const autres = (f.m_autres || '—').replace(/\n/g, ' · ');
     const loc    = f.m_loc || '—';
 
-    const fournLines  = wrap(fourn,  fontReg, 8, cols[1].px - 2*padding, 3);
-    const matLines    = wrap(mat,    fontReg, 8, cols[2].px - 2*padding, 3);
-    const caractLines = wrap(caract, fontReg, 8, cols[3].px - 2*padding, 4);
-    const autresLines = wrap(autres, fontReg, 8, cols[4].px - 2*padding, 4);
-    const locLines    = wrap(loc,    fontReg, 8, cols[5].px - 2*padding, 3);
-    const maxLines    = Math.max(2, fournLines.length, matLines.length, caractLines.length, autresLines.length, locLines.length);
-    const rowH        = Math.min(maxRowH, Math.max(minRowH, maxLines * lineH + 2 * padding + 6));
+    // Max 2 lignes par cellule — au-delà on tronque avec "…"
+    const fournLines  = wrap(fourn,  fontReg, cellFs, cols[1].px - 2*padding, 2);
+    const matLines    = wrap(mat,    fontReg, cellFs, cols[2].px - 2*padding, 2);
+    const caractLines = wrap(caract, fontReg, cellFs, cols[3].px - 2*padding, 2);
+    const autresLines = wrap(autres, fontReg, cellFs, cols[4].px - 2*padding, 2);
+    const locLines    = wrap(loc,    fontReg, cellFs, cols[5].px - 2*padding, 2);
+    const maxLines    = Math.max(1, fournLines.length, matLines.length, caractLines.length, autresLines.length, locLines.length);
+    const rowH        = Math.min(maxRowH, Math.max(minRowH, maxLines * lineH + 2 * padding + 2));
 
     // Pas assez de place → tronque avec mention "… autres fiches"
     if (y - rowH < 50){
@@ -1502,32 +1505,45 @@ async function drawSommairePage(out, fiches, fichePageMap, logoBytes, A4W, A4H){
     page.drawLine({
       start: { x: tableLeft, y: y - rowH },
       end:   { x: tableLeft + tableW, y: y - rowH },
-      thickness: 0.5, color: border
+      thickness: 0.4, color: border
     });
 
-    // Bouton FICHE N° (rectangle accent + texte blanc) — sert d'aimant cliquable
-    const btnLbl = 'Fiche ' + num;
-    const btnLblW = fontBold.widthOfTextAtSize(btnLbl, 9);
-    const btnH = 18;
-    const btnW = Math.max(btnLblW + 14, 50);
+    // Bouton FICHE N° (rectangle accent + texte blanc) — borné à la largeur
+    // de la colonne pour ne jamais déborder (ex. "Fiche 1QUINQUIES").
+    // On essaie 8.5 puis 7.5 pt avant de tronquer le label.
+    let btnFs = 8.5;
+    let btnLbl = 'Fiche ' + num;
+    const colInnerW = cols[0].px - 4; // 2pt de marge de chaque côté
+    let btnLblW = fontBold.widthOfTextAtSize(btnLbl, btnFs);
+    if (btnLblW + 10 > colInnerW){
+      btnFs = 7.5;
+      btnLblW = fontBold.widthOfTextAtSize(btnLbl, btnFs);
+    }
+    // Si toujours trop large : tronque avec "…"
+    while (btnLblW + 8 > colInnerW && btnLbl.length > 1){
+      btnLbl = btnLbl.slice(0, -2) + '…';
+      btnLblW = fontBold.widthOfTextAtSize(btnLbl, btnFs);
+    }
+    const btnH = Math.min(13, rowH - 4);
+    const btnW = Math.min(btnLblW + 10, colInnerW);
     const btnX = cols[0].x + (cols[0].px - btnW) / 2;
     const btnY = y - rowH/2 - btnH/2;
     page.drawRectangle({ x: btnX, y: btnY, width: btnW, height: btnH, color: accentDk });
     page.drawText(btnLbl, {
       x: btnX + (btnW - btnLblW) / 2,
-      y: btnY + 5,
-      size: 9, font: fontBold, color: white
+      y: btnY + (btnH - btnFs) / 2 + 0.5,
+      size: btnFs, font: fontBold, color: white
     });
     linkAreas.push({ ficheId: f.id, rect: [btnX, btnY, btnX + btnW, btnY + btnH] });
 
     // Helper : dessine plusieurs lignes alignées dans la cellule
     const drawCell = (lines, colIdx) => {
       const cellX = cols[colIdx].x + padding;
-      const startY = y - padding - 9;
+      const startY = y - padding - cellFs;
       for (let li = 0; li < lines.length; li++){
         page.drawText(lines[li], {
           x: cellX, y: startY - li * lineH,
-          size: 8, font: fontReg, color: black
+          size: cellFs, font: fontReg, color: black
         });
       }
     };
@@ -1537,13 +1553,14 @@ async function drawSommairePage(out, fiches, fichePageMap, logoBytes, A4W, A4H){
     drawCell(autresLines, 4);
     drawCell(locLines,    5);
 
-    // PAGE — gros chiffre centré dans sa cellule, couleur accent
+    // PAGE — chiffre centré dans sa cellule, gris foncé
     const pageStr = String(pageNum);
-    const pageW = fontBold.widthOfTextAtSize(pageStr, 13);
+    const pageFs = 10;
+    const pageW = fontBold.widthOfTextAtSize(pageStr, pageFs);
     page.drawText(pageStr, {
       x: cols[6].x + (cols[6].px - pageW) / 2,
-      y: y - rowH/2 - 5,
-      size: 13, font: fontBold, color: accentDk
+      y: y - rowH/2 - pageFs/2 + 1,
+      size: pageFs, font: fontBold, color: accentDk
     });
 
     y -= rowH;

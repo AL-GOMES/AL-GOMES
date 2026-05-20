@@ -2648,15 +2648,20 @@ class PDFViewer {
     if (dossier && Array.isArray(dossier.fiches) && dossier.fiches.length) {
       try {
         const pageMap = await computeDossierFichePages(dossier);
+        // sommairePageCount : v3+ contient la valeur exacte. v2 = 1 page.
+        // v1 (legacy) = 0 page sommaire physique.
+        const sommairePageCount = dossier.sommairePageCount != null
+          ? Math.max(0, dossier.sommairePageCount | 0)
+          : (dossier.hasSommairePage ? 1 : 0);
         this.dossierData = {
           cover: dossier.cover || null,
           fiches: dossier.fiches,
           fichePages: pageMap,
           firstFichePage: pageMap.size ? Math.min(...pageMap.values()) : 2,
-          // hasSommairePage : v2+ => page 2 du PDF est la table des matières.
-          // Le bouton SOMMAIRE du topbar peut alors juste y naviguer.
-          hasSommairePage: !!dossier.hasSommairePage,
-          sommairePageNum: dossier.hasSommairePage ? 2 : null
+          hasSommairePage: sommairePageCount > 0,
+          sommairePageCount: sommairePageCount,
+          // 1re page du sommaire (toujours = 2 si présent : juste après cover)
+          sommairePageNum: sommairePageCount > 0 ? 2 : null
         };
       } catch (e) {
         console.warn('Sommaire dossier matériel : calcul des pages échoué', e);
@@ -3110,26 +3115,34 @@ class PDFViewer {
     body.appendChild(list);
 
     // Vignette virtuelle SOMMAIRE — utile uniquement pour les dossiers v1
-    // (legacy : pas de page sommaire physique dans le PDF). Pour les v2+, la
-    // page 2 du PDF EST le sommaire et son thumbnail s'affiche automatiquement.
+    // (legacy : pas de page sommaire physique dans le PDF). Pour les v2+, les
+    // pages sommaire du PDF affichent leur propre vignette avec label SOMMAIRE.
     const dd = this.dossierData;
     const needsVirtualSommaire = !!(dd && dd.firstFichePage > 1 && !dd.hasSommairePage);
     const sommaireAfter = needsVirtualSommaire ? 1 : -1;
-    // Numéro de la page sommaire physique (pour bordure spéciale sur sa vignette)
-    const sommairePhysicalPage = (dd && dd.hasSommairePage) ? dd.sommairePageNum : null;
+    // Page(s) du sommaire physique : de page 2 à page (1 + sommairePageCount)
+    const sommairePageCount = (dd && dd.sommairePageCount) || 0;
+    const isSommairePhysicalPage = (p) =>
+      sommairePageCount > 0 && p >= 2 && p <= 1 + sommairePageCount;
 
     for (let p = 1; p <= this.totalPages; p++) {
       const thumb = document.createElement('div');
       thumb.className = 'thumb';
-      if (p === sommairePhysicalPage) thumb.classList.add('thumb-sommaire-page');
+      if (isSommairePhysicalPage(p)) thumb.classList.add('thumb-sommaire-page');
       thumb.dataset.page = p;
       thumb.dataset.pane = this.paneId;
       if (p === this.currentPageNum) thumb.classList.add('active');
       const cv = document.createElement('canvas');
       const label = document.createElement('div');
       label.className = 'label';
-      // Étiquette spéciale pour la page sommaire physique
-      label.textContent = (p === sommairePhysicalPage) ? 'SOMMAIRE' : ('Page ' + p);
+      // Étiquette spéciale pour les pages sommaire physiques
+      if (isSommairePhysicalPage(p)) {
+        label.textContent = sommairePageCount > 1
+          ? ('SOMMAIRE ' + (p - 1) + '/' + sommairePageCount)
+          : 'SOMMAIRE';
+      } else {
+        label.textContent = 'Page ' + p;
+      }
       thumb.appendChild(cv);
       thumb.appendChild(label);
       list.appendChild(thumb);
@@ -5321,10 +5334,14 @@ async function computeDossierFichePages(dossierData) {
   if (!dossierData || !Array.isArray(dossierData.fiches)) return new Map();
   const map = new Map();
   // Structure du PDF :
-  //   v1 (legacy) : page 1 = cover, fiches à partir de page 2
-  //   v2 (avec sommaire) : page 1 = cover, page 2 = sommaire, fiches à partir de 3
-  const hasSommaire = !!dossierData.hasSommairePage;
-  let cursor = hasSommaire ? 3 : 2;
+  //   v1 (legacy) : cover en page 1, fiches à partir de page 2
+  //   v2          : cover + 1 page sommaire, fiches à partir de page 3
+  //   v3+         : cover + N pages sommaire (paginé), fiches à partir de 2+N
+  const sommairePageCount = dossierData.sommairePageCount != null
+    ? Math.max(0, dossierData.sommairePageCount | 0)
+    : (dossierData.hasSommairePage ? 1 : 0);
+  let cursor = 1 + sommairePageCount + 1; // après cover + N sommaire
+  cursor = 2 + sommairePageCount;          // équivalent, plus lisible
   for (const f of dossierData.fiches) {
     map.set(f.id, cursor);
     let attachPages = 0;

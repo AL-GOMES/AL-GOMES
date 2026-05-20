@@ -175,6 +175,32 @@ const TYPE_COLORS=[
 ];
 function typeBadge(t){const i=t.charCodeAt(0)-65;const c=TYPE_COLORS[i%TYPE_COLORS.length];return '<span style="display:inline-block;padding:2px 10px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:1px;background:'+c.bg+';color:'+c.color+';border:1px solid '+c.border+'">'+t+'</span>'}
 
+// Code couleur par calibre de disjoncteur — utilisé dans le PDF des
+// schémas pour distinguer visuellement les 10A, 16A, 20A, 32A... et
+// dans l'encadré récapitulatif quantitatif.
+const CALIBRE_COLORS={
+  2:  {bg:'#F3E5F5', color:'#6A1B9A', border:'#9C27B0'}, // violet — TH, RT2012
+  10: {bg:'#FFF9C4', color:'#F57F17', border:'#FBC02D'}, // jaune  — ECL, CHAUD, VR
+  16: {bg:'#E3F2FD', color:'#0D47A1', border:'#1E88E5'}, // bleu   — PC, PCGTL, CLIM, PISC, VARM
+  20: {bg:'#E8F5E9', color:'#1B5E20', border:'#43A047'}, // vert   — LL, FOUR, LV, SL, SS, BEC, CHAUF, MO, PAC
+  32: {bg:'#FFE0B2', color:'#E65100', border:'#FB8C00'}, // orange — PLAQUE, IRVE AC
+  40: {bg:'#FFCCBC', color:'#BF360C', border:'#FF5722'}, // orange foncé — borne haute
+  63: {bg:'#FFCDD2', color:'#B71C1C', border:'#E53935'}  // rouge  — gros calibre
+};
+function _ampOf(a){const n=parseInt(String(a).replace(/[^0-9]/g,''));return isNaN(n)?10:n}
+function colByCalibre(a){
+  const n=_ampOf(a);
+  if(CALIBRE_COLORS[n]) return CALIBRE_COLORS[n];
+  // Fallback : on prend la borne supérieure normalisée la plus proche.
+  if(n<=2) return CALIBRE_COLORS[2];
+  if(n<=10) return CALIBRE_COLORS[10];
+  if(n<=16) return CALIBRE_COLORS[16];
+  if(n<=20) return CALIBRE_COLORS[20];
+  if(n<=32) return CALIBRE_COLORS[32];
+  if(n<=40) return CALIBRE_COLORS[40];
+  return CALIBRE_COLORS[63];
+}
+
 let B=[],curTab=null;
 
 // ═══ CLOCK ═══
@@ -1382,11 +1408,28 @@ async function exportPDF(){
       if(eY.length>1&&ref.sonn>0)eY[1]._s.push('SON.');
       else if(eY.length===1&&ref.sonn>0)eY[0]._s.push('SON.');
 
-      // SVG schema (svgH inclut maintenant la place pour la box "CALCUL RANGÉES"
-      // en bas, en plus de "CALCUL CALIBRES ID")
+      // Récapitulatif quantitatif des calibres : on agrège tous les
+      // disjoncteurs divisionnaires par calibre (10A, 16A, 20A, 32A...) et
+      // on garde la ventilation par type de circuit (ECL, PC...) pour
+      // l'afficher en sous-titre dans chaque chip.
+      const _calCount={};let _totDisj=0;
+      bD.forEach(d=>d.cir.forEach(c=>{
+        _totDisj++;
+        const key=c.a;
+        if(!_calCount[key])_calCount[key]={cnt:0,names:{},amp:_ampOf(c.a)};
+        _calCount[key].cnt++;
+        _calCount[key].names[c.n]=(_calCount[key].names[c.n]||0)+1;
+      }));
+      const _calEntries=Object.entries(_calCount).sort((x,y)=>y[1].amp-x[1].amp);
+      const _chipsPerRow=Math.min(Math.max(_calEntries.length,1),5);
+      const _chipRows=Math.ceil(_calEntries.length/_chipsPerRow)||1;
+      const _rcBoxH=12+22+_chipRows*42+10; // titre + lignes de chips + padding
+
+      // SVG schema (svgH inclut maintenant la place pour les 3 boxes du bas :
+      // CALCUL CALIBRES ID, CALCUL RANGÉES et RÉCAP. CALIBRES)
       const nD=bD.length;const depW=260;const svgW=Math.max(nD*depW+100,1200);
       const _rgBoxH = 12 + (nD + 2) * 14 + 12; // titre + nD lignes par départ + total + formule
-      const svgH=560+nD*25 + _rgBoxH + 14; // +14 = gap entre les 2 boxes
+      const svgH=560+nD*25 + _rgBoxH + 14 + _rcBoxH + 14; // +14 = gap entre boxes
       const ox=(svgW-nD*depW)/2;const cxA=svgW/2;
       const purp='#BB6BD9',bluC='#3498DB',orgC='#ED7D31',yelC='#F1C40F',redC='#E74C3C',drk='#F5F5FA';
       // Helper couleur par type de différentiel pour l'export SVG
@@ -1457,20 +1500,23 @@ async function exportPDF(){
         const nC=dep.cir.length;const cW=nC*32;const cS=dCx-cW/2;
         svg+=`<line x1="${cS+16}" y1="${dy}" x2="${cS+cW-16}" y2="${dy}" stroke="${col}" stroke-width="1.5"/>`;
 
-        // Disjoncteurs
+        // Disjoncteurs — code couleur par calibre appliqué UNIQUEMENT sur
+        // les textes (calibre + nom de circuit). Le symbole (box, traits)
+        // garde la couleur du différentiel parent.
         dep.cir.forEach((c,ci)=>{
           const ccx=cS+ci*32+16;
+          const cc=colByCalibre(c.a); // couleur appliquée aux textes seuls
           // Tick
           svg+=`<line x1="${ccx}" y1="${dy}" x2="${ccx}" y2="${dy+8}" stroke="${col}" stroke-width="1"/>`;
-          // Box
+          // Box du disjoncteur (couleur du différentiel)
           const bw=c.k==='rt'?20:c.mod===2?28:20;
           svg+=`<rect x="${ccx-bw/2}" y="${dy+8}" width="${bw}" height="36" rx="3" fill="${drk}" stroke="${col}" stroke-width="1.5"/>`;
-          // Symbol
+          // Symbol (couleur du différentiel)
           svg+=`<line x1="${ccx-6}" y1="${dy+18}" x2="${ccx+6}" y2="${dy+18}" stroke="${col}" stroke-width="1.5"/>`;
           svg+=`<rect x="${ccx-5}" y="${dy+22}" width="10" height="10" rx="2" fill="none" stroke="${col}" stroke-width="1" opacity="0.7"/>`;
-          // Labels
-          svg+=`<text x="${ccx}" y="${dy+56}" font-size="10" font-weight="bold" fill="${col}" text-anchor="middle">${c.a}</text>`;
-          svg+=`<text x="${ccx}" y="${dy+68}" font-size="8" fill="${col}" text-anchor="middle" opacity="0.6">${c.n}</text>`;
+          // Labels — code couleur par calibre uniquement sur les textes
+          svg+=`<text x="${ccx}" y="${dy+56}" font-size="10" font-weight="bold" fill="${cc.color}" text-anchor="middle">${c.a}</text>`;
+          svg+=`<text x="${ccx}" y="${dy+68}" font-size="8" fill="${cc.color}" text-anchor="middle" opacity="0.85">${c.n}</text>`;
           // TELE/SON
           if(c._s&&c._s.length){
             c._s.forEach((s,si)=>{
@@ -1492,10 +1538,10 @@ async function exportPDF(){
       });
 
       // Calcul calibres
-      // On positionne désormais les 2 boxes (CALIBRES puis RANGÉES) en bas
-      // du SVG, l'une au-dessus de l'autre, avec 14 px d'écart.
+      // On positionne désormais les 3 boxes en bas du SVG, l'une au-dessus
+      // de l'autre, avec 14 px d'écart : CALIBRES ID → RANGÉES → RÉCAP. CALIBRES.
       const _calBoxH = 10 + bD.length * 18 + 12;
-      let cy = svgH - _rgBoxH - 14 - _calBoxH + 4; // +4 pour compenser le rect y=cy-4
+      let cy = svgH - _rcBoxH - 14 - _rgBoxH - 14 - _calBoxH + 4; // +4 pour compenser le rect y=cy-4
       svg+=`<rect x="16" y="${cy-4}" width="${svgW-32}" height="${_calBoxH}" rx="4" fill="#F8F8FA" stroke="#DDD"/>`;
       svg+=`<text x="28" y="${cy+10}" font-size="10" font-weight="bold" fill="#1F3864" font-family="Segoe UI">CALCUL CALIBRES ID</text>`;
       cy+=18;
@@ -1514,7 +1560,7 @@ async function exportPDF(){
       //   - + modules des circuits (1 par disjoncteur, sauf plaque=2, RT=6)
       //   - × 1.2 = marge de réserve 20 %
       //   - / 13 = modules max par rangée standard
-      const _ryTop = svgH - _rgBoxH;
+      const _ryTop = svgH - _rcBoxH - 14 - _rgBoxH;
       svg+=`<rect x="16" y="${_ryTop}" width="${svgW-32}" height="${_rgBoxH}" rx="4" fill="#FAF5FF" stroke="#BB6BD9" stroke-width="0.8"/>`;
       svg+=`<text x="28" y="${_ryTop+14}" font-size="10" font-weight="bold" fill="#BB6BD9" font-family="Segoe UI">CALCUL RANGÉES</text>`;
       let _ry = _ryTop + 26;
@@ -1531,6 +1577,37 @@ async function exportPDF(){
       _ry += 14;
       svg+=`<text x="28" y="${_ry+10}" font-size="8" font-weight="bold" fill="#BB6BD9" font-family="Segoe UI">FORMULE:</text>`;
       svg+=`<text x="80" y="${_ry+10}" font-size="8" fill="#BB6BD9" font-family="Segoe UI">⌈ ${tM} × 1.2 / 13 ⌉ = ⌈ ${(tM*1.2/13).toFixed(2)} ⌉ = ${rg} rangée${rg>1?'s':''}</text>`;
+
+      // RÉCAP. CALIBRES : encadré quantitatif des disjoncteurs par calibre,
+      // avec une chip colorée (code couleur calibre) par valeur d'ampérage.
+      // Sous-titre = ventilation par type de circuit (ECL ×3, CHAUD ×1…).
+      const _rcTop = svgH - _rcBoxH;
+      svg+=`<rect x="16" y="${_rcTop}" width="${svgW-32}" height="${_rcBoxH}" rx="4" fill="#FAFAFA" stroke="#999" stroke-width="0.8"/>`;
+      svg+=`<text x="28" y="${_rcTop+14}" font-size="10" font-weight="bold" fill="#1F3864" font-family="Segoe UI">RÉCAP. CALIBRES — ${_totDisj} disjoncteurs divisionnaires</text>`;
+      const _chipAreaX=28;
+      const _chipAreaW=svgW-32-2*(28-16);
+      const _chipW=Math.floor(_chipAreaW/_chipsPerRow);
+      const _chipInnerW=_chipW-8;
+      _calEntries.forEach((entry,idx)=>{
+        const [cal,data]=entry;
+        const cc=colByCalibre(cal);
+        const row=Math.floor(idx/_chipsPerRow);
+        const colN=idx%_chipsPerRow;
+        const xC=_chipAreaX+colN*_chipW;
+        const yC=_rcTop+26+row*42;
+        // Chip colorée
+        svg+=`<rect x="${xC}" y="${yC}" width="${_chipInnerW}" height="36" rx="6" fill="${cc.bg}" stroke="${cc.border}" stroke-width="1.2"/>`;
+        // Calibre en gros
+        svg+=`<text x="${xC+10}" y="${yC+16}" font-size="13" font-weight="bold" fill="${cc.color}" font-family="Segoe UI">${cal}</text>`;
+        // Quantité (× N)
+        svg+=`<text x="${xC+10}" y="${yC+30}" font-size="11" font-weight="bold" fill="${cc.color}" font-family="Segoe UI">× ${data.cnt}</text>`;
+        // Détail par type de circuit (sur 2 lignes max si nécessaire)
+        const _names=Object.entries(data.names).sort((a,b)=>b[1]-a[1])
+          .map(([n,c])=>c>1?`${n}×${c}`:n).join(', ');
+        const _maxChars=Math.max(8,Math.floor((_chipInnerW-55)/4.2));
+        const _disp=_names.length>_maxChars?_names.slice(0,_maxChars-1)+'…':_names;
+        svg+=`<text x="${xC+50}" y="${yC+22}" font-size="8" fill="${cc.color}" font-family="Segoe UI" opacity="0.9">${_disp}</text>`;
+      });
 
       svg+=`</svg>`;
 

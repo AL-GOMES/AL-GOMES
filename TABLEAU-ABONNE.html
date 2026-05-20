@@ -1425,11 +1425,13 @@ async function exportPDF(){
       const _chipRows=Math.ceil(_calEntries.length/_chipsPerRow)||1;
       const _rcBoxH=12+22+_chipRows*42+10; // titre + lignes de chips + padding
 
-      // SVG schema (svgH inclut maintenant la place pour les 3 boxes du bas :
-      // CALCUL CALIBRES ID, CALCUL RANGÉES et RÉCAP. CALIBRES)
+      // SVG schema (svgH inchangé par rapport à la version sans RÉCAP : le
+      // RÉCAP. CALIBRES est positionné à l'intérieur de l'espace vide
+      // existant, juste au-dessus de la box CALCUL CALIBRES ID, pour que
+      // tout le schéma tienne sur une seule page A4 paysage.)
       const nD=bD.length;const depW=260;const svgW=Math.max(nD*depW+100,1200);
       const _rgBoxH = 12 + (nD + 2) * 14 + 12; // titre + nD lignes par départ + total + formule
-      const svgH=560+nD*25 + _rgBoxH + 14 + _rcBoxH + 14; // +14 = gap entre boxes
+      const svgH=560+nD*25 + _rgBoxH + 14; // +14 = gap entre CALIBRES ID et RANGÉES
       const ox=(svgW-nD*depW)/2;const cxA=svgW/2;
       const purp='#BB6BD9',bluC='#3498DB',orgC='#ED7D31',yelC='#F1C40F',redC='#E74C3C',drk='#F5F5FA';
       // Helper couleur par type de différentiel pour l'export SVG
@@ -1537,11 +1539,11 @@ async function exportPDF(){
         });
       });
 
-      // Calcul calibres
-      // On positionne désormais les 3 boxes en bas du SVG, l'une au-dessus
-      // de l'autre, avec 14 px d'écart : CALIBRES ID → RANGÉES → RÉCAP. CALIBRES.
+      // En bas du SVG : RÉCAP CALIBRES, puis CALIBRES ID, puis RANGÉES,
+      // séparées par 14 px. RÉCAP est placé dans l'espace vide existant
+      // entre les disjoncteurs et CALIBRES ID, sans grandir svgH.
       const _calBoxH = 10 + bD.length * 18 + 12;
-      let cy = svgH - _rcBoxH - 14 - _rgBoxH - 14 - _calBoxH + 4; // +4 pour compenser le rect y=cy-4
+      let cy = svgH - _rgBoxH - 14 - _calBoxH + 4; // +4 pour compenser le rect y=cy-4
       svg+=`<rect x="16" y="${cy-4}" width="${svgW-32}" height="${_calBoxH}" rx="4" fill="#F8F8FA" stroke="#DDD"/>`;
       svg+=`<text x="28" y="${cy+10}" font-size="10" font-weight="bold" fill="#1F3864" font-family="Segoe UI">CALCUL CALIBRES ID</text>`;
       cy+=18;
@@ -1560,7 +1562,7 @@ async function exportPDF(){
       //   - + modules des circuits (1 par disjoncteur, sauf plaque=2, RT=6)
       //   - × 1.2 = marge de réserve 20 %
       //   - / 13 = modules max par rangée standard
-      const _ryTop = svgH - _rcBoxH - 14 - _rgBoxH;
+      const _ryTop = svgH - _rgBoxH;
       svg+=`<rect x="16" y="${_ryTop}" width="${svgW-32}" height="${_rgBoxH}" rx="4" fill="#FAF5FF" stroke="#BB6BD9" stroke-width="0.8"/>`;
       svg+=`<text x="28" y="${_ryTop+14}" font-size="10" font-weight="bold" fill="#BB6BD9" font-family="Segoe UI">CALCUL RANGÉES</text>`;
       let _ry = _ryTop + 26;
@@ -1581,7 +1583,9 @@ async function exportPDF(){
       // RÉCAP. CALIBRES : encadré quantitatif des disjoncteurs par calibre,
       // avec une chip colorée (code couleur calibre) par valeur d'ampérage.
       // Sous-titre = ventilation par type de circuit (ECL ×3, CHAUD ×1…).
-      const _rcTop = svgH - _rcBoxH;
+      // Placé dans l'espace vide existant entre les disjoncteurs et la box
+      // CALCUL CALIBRES ID, pour ne pas dépasser la hauteur d'une page A4.
+      const _rcTop = svgH - _rgBoxH - 14 - _calBoxH - 14 - _rcBoxH;
       svg+=`<rect x="16" y="${_rcTop}" width="${svgW-32}" height="${_rcBoxH}" rx="4" fill="#FAFAFA" stroke="#999" stroke-width="0.8"/>`;
       svg+=`<text x="28" y="${_rcTop+14}" font-size="10" font-weight="bold" fill="#1F3864" font-family="Segoe UI">RÉCAP. CALIBRES — ${_totDisj} disjoncteurs divisionnaires</text>`;
       const _chipAreaX=28;

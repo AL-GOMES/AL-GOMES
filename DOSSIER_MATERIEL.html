@@ -335,6 +335,57 @@ table.fp th {
 .fp-loc td.lbl { background: #E2E8F0; font-weight: 700; text-align: center; min-width: 220px; }
 .fp-loc input { width: 100%; border: 0; font: inherit; background: transparent; padding: 2px 0; }
 
+/* ─── Sommaire (aperçu dans l'éditeur, identique à la page PDF) ─── */
+.sheet.sommaire {
+  font-family: 'Calibri', 'Segoe UI', Arial, sans-serif;
+  color: #111;
+}
+.sheet.sommaire .smr-header {
+  display: flex; align-items: center; gap: 16px;
+  padding-bottom: 12px; border-bottom: 1px solid #c8ccd2;
+}
+.sheet.sommaire .smr-header img.smr-logo { width: 90px; height: auto; object-fit: contain; }
+.sheet.sommaire .smr-header h1 {
+  margin: 0; font-size: 28pt; letter-spacing: 4px; font-weight: 700; color: #111;
+}
+.sheet.sommaire .smr-meta { padding: 10px 0 14px; font-size: 11pt; }
+.sheet.sommaire .smr-meta .row { padding: 2px 0; }
+.sheet.sommaire .smr-meta b { font-weight: 700; }
+.sheet.sommaire table.smr-table {
+  width: 100%; border-collapse: collapse; font-size: 9pt; table-layout: fixed;
+}
+.sheet.sommaire table.smr-table th {
+  background: #E2E8F0; color: #111; font-weight: 700;
+  font-size: 8pt; letter-spacing: 0.5px;
+  padding: 7px 6px; text-align: left;
+  border-bottom: 1px solid #b8bcc4;
+}
+.sheet.sommaire table.smr-table th.center { text-align: center; }
+.sheet.sommaire table.smr-table td {
+  padding: 8px 6px; border-bottom: 1px solid #e2e4ea;
+  vertical-align: top; word-break: break-word; line-height: 1.3;
+}
+.sheet.sommaire table.smr-table tr:nth-child(even) td { background: #f7f8fa; }
+.sheet.sommaire table.smr-table td.num { text-align: center; }
+.sheet.sommaire table.smr-table td.page { text-align: center; font-weight: 700; color: #48505d; font-size: 11pt; }
+.sheet.sommaire .smr-btn {
+  display: inline-block;
+  background: #48505d; color: #fff;
+  padding: 5px 10px; border-radius: 3px;
+  font-weight: 700; font-size: 8.5pt; letter-spacing: 0.3px;
+  text-decoration: none;
+  cursor: pointer; border: 0;
+  font-family: inherit;
+}
+.sheet.sommaire .smr-btn:hover { background: #2f343d; }
+.sheet.sommaire .smr-empty {
+  padding: 40px 20px; text-align: center; color: #888; font-style: italic;
+}
+.sheet.sommaire .smr-footer {
+  margin-top: 14px; padding-top: 8px; border-top: 1px solid #e2e4ea;
+  font-size: 9pt; color: #666; display: flex; justify-content: space-between;
+}
+
 /* Approbations */
 .fp-approval { margin-top: 10px; }
 .fp-approval th { padding: 5px 8px; font-size: 10pt; }
@@ -450,6 +501,21 @@ input.proj { font-size: 28pt; font-weight: 700; text-align: center; letter-spaci
       <span>le</span>
       <input class="datetext" id="c_datetext" autocomplete="off">
     </div>
+  </div>
+</section>
+
+<!-- Sommaire — aperçu de la page sommaire générée dans le PDF.
+     Masqué par défaut ; affiché quand l'onglet "Sommaire" est actif. -->
+<section class="sheet sommaire" id="sommaireSheet" style="display:none">
+  <div class="smr-header">
+    <img class="smr-logo" src="logo-algomes.png" alt="A.L. GOMES">
+    <h1>SOMMAIRE</h1>
+  </div>
+  <div class="smr-meta" id="sommaireMeta"></div>
+  <div id="sommaireTableWrap"></div>
+  <div class="smr-footer">
+    <span>Cliquez sur un numéro de fiche pour y accéder.</span>
+    <span>Aperçu — la page 2 du PDF reprend cette mise en page.</span>
   </div>
 </section>
 
@@ -669,9 +735,10 @@ function syncCoverFromUI(){
 }
 function switchToCover(){
   if (viewMode === 'cover') return;
-  syncFormToActive();
+  if (viewMode === 'fiche') syncFormToActive();
   viewMode = 'cover';
   document.getElementById('ficheForm').style.display = 'none';
+  document.getElementById('sommaireSheet').style.display = 'none';
   document.getElementById('coverSheet').style.display = '';
   // Cache aussi le panel PDF technique (n'a aucun sens sur la cover)
   const pp = document.getElementById('pdfPanel');
@@ -687,6 +754,134 @@ function exitCoverToFiche(){
   viewMode = 'fiche';
   document.getElementById('ficheForm').style.display = '';
   document.getElementById('coverSheet').style.display = 'none';
+  const pp = document.getElementById('pdfPanel');
+  if (pp) pp.style.display = '';
+}
+
+// ─── Sommaire (onglet "Sommaire" dans l'éditeur) ─────────────────────────────
+// Calcule la page de chaque fiche dans le futur PDF (cover=1, sommaire=2,
+// fiche i+1 = fiche i + 1 + attach_i). Les attachements en attente dans
+// IndexedDB sont chargés et leur nombre de pages est compté via pdf-lib.
+async function _computeSommaireFichePages(){
+  const map = new Map();
+  let cursor = 3; // cover=1, sommaire=2, fiches à partir de 3
+  for (const f of fiches) {
+    map.set(f.id, cursor);
+    let attachPages = 0;
+    try {
+      const rec = await PdfDB.get(f.id);
+      if (rec && rec.blob && typeof PDFLib !== 'undefined') {
+        const buf = await rec.blob.arrayBuffer();
+        const doc = await PDFLib.PDFDocument.load(buf, { ignoreEncryption: true });
+        attachPages = doc.getPageCount();
+      }
+    } catch (e) { /* attachement absent ou illisible : 0 page */ }
+    cursor += 1 + attachPages;
+  }
+  return map;
+}
+
+// (Re)dessine le contenu de l'onglet Sommaire — utilise les mêmes colonnes
+// que la page PDF + le même bleu pâle #E2E8F0 sur le bandeau.
+async function renderSommaireSheet(){
+  const meta = document.getElementById('sommaireMeta');
+  const wrap = document.getElementById('sommaireTableWrap');
+  if (!meta || !wrap) return;
+  // Méta : projet + lot tirés de la 1ère fiche
+  const first = fiches[0] || {};
+  const parts = [];
+  if (first.f_project) parts.push('<div class="row"><b>Projet :</b> ' + _escHtmlSm(first.f_project) + '</div>');
+  if (first.f_lot)     parts.push('<div class="row"><b>Lot :</b> ' + _escHtmlSm(first.f_lot) + '</div>');
+  parts.push('<div class="row">' + fiches.length + ' fiche' + (fiches.length > 1 ? 's' : '') + ' dans ce dossier</div>');
+  meta.innerHTML = parts.join('');
+
+  if (!fiches.length) {
+    wrap.innerHTML = '<div class="smr-empty">Aucune fiche dans ce dossier. Cliquez sur <b>+ Fiche</b> pour en ajouter.</div>';
+    return;
+  }
+
+  const pageMap = await _computeSommaireFichePages();
+
+  let html = '<table class="smr-table">';
+  html += '<colgroup>' +
+    '<col style="width:11%">' +
+    '<col style="width:14%">' +
+    '<col style="width:16%">' +
+    '<col style="width:17%">' +
+    '<col style="width:16%">' +
+    '<col style="width:17%">' +
+    '<col style="width:9%">' +
+  '</colgroup>';
+  html += '<thead><tr>' +
+    '<th class="center">FICHE N°</th>' +
+    '<th>FOURNISSEUR</th>' +
+    '<th>MATÉRIELS</th>' +
+    '<th>CARACTÉRISTIQUES</th>' +
+    '<th>AUTRES CARACT.</th>' +
+    '<th>LOCALISATION</th>' +
+    '<th class="center">PAGE</th>' +
+  '</tr></thead><tbody>';
+  for (const f of fiches){
+    const caractBits = [];
+    if (f.m_caract)   caractBits.push(f.m_caract);
+    if (f.m_couleur)  caractBits.push('Couleur : ' + f.m_couleur);
+    if (f.m_finition) caractBits.push('Finition : ' + f.m_finition);
+    const caract = caractBits.join(' · ') || '—';
+    const autres = (f.m_autres || '—').replace(/\n/g, ' · ');
+    const pageNum = pageMap.get(f.id) || '?';
+    html += '<tr>' +
+      '<td class="num"><button type="button" class="smr-btn" data-fiche-id="' + _escHtmlSm(f.id) + '">Fiche ' + _escHtmlSm(f.f_num || '?') + '</button></td>' +
+      '<td>' + _escHtmlSm(f.m_fournisseur || '—') + '</td>' +
+      '<td>' + _escHtmlSm(f.m_materiel || '—') + '</td>' +
+      '<td>' + _escHtmlSm(caract) + '</td>' +
+      '<td>' + _escHtmlSm(autres) + '</td>' +
+      '<td>' + _escHtmlSm(f.m_loc || '—') + '</td>' +
+      '<td class="page">' + _escHtmlSm(pageNum) + '</td>' +
+    '</tr>';
+  }
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+  // Binding : clic sur Fiche N° → on bascule sur l'onglet de la fiche
+  wrap.querySelectorAll('.smr-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.ficheId;
+      if (id) switchTo(id);
+    });
+  });
+}
+
+// Helper d'échappement HTML (local au sommaire pour ne pas dépendre de l'ordre
+// de chargement des scripts).
+function _escHtmlSm(s){
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function switchToSommaire(){
+  if (viewMode === 'sommaire') return;
+  if (viewMode === 'fiche') syncFormToActive();
+  if (viewMode === 'cover') syncCoverFromUI();
+  viewMode = 'sommaire';
+  document.getElementById('ficheForm').style.display = 'none';
+  document.getElementById('coverSheet').style.display = 'none';
+  document.getElementById('sommaireSheet').style.display = '';
+  // Cache aussi le panel PDF technique (n'a aucun sens sur le sommaire)
+  const pp = document.getElementById('pdfPanel');
+  if (pp) pp.style.display = 'none';
+  renderTabs();
+  renderSommaireSheet();
+  setStatus('Aperçu du sommaire', '');
+}
+
+function exitSommaireToFiche(){
+  if (viewMode !== 'sommaire') return;
+  viewMode = 'fiche';
+  document.getElementById('sommaireSheet').style.display = 'none';
+  document.getElementById('ficheForm').style.display = '';
   const pp = document.getElementById('pdfPanel');
   if (pp) pp.style.display = '';
 }
@@ -833,6 +1028,9 @@ function deleteCurrentFiche(){
   setStatus('Fiche supprimée · modifications non sauvegardées', 'dirty');
 }
 function switchTo(id){
+  // Si on était sur la page de garde ou le sommaire, on revient à l'édition fiche
+  if (viewMode === 'cover') exitCoverToFiche();
+  if (viewMode === 'sommaire') exitSommaireToFiche();
   syncFormToActive();
   currentFicheId = id;
   writeForm(getActive());
@@ -910,6 +1108,17 @@ function renderTabs(){
   pgTab.innerHTML = '<span>📋 Page de garde</span>';
   pgTab.onclick = () => switchToCover();
   bar.appendChild(pgTab);
+  // Onglet SOMMAIRE — entre la page de garde et la 1re fiche
+  if (fiches.length) {
+    const smTab = document.createElement('div');
+    smTab.className = 'tab' + (viewMode === 'sommaire' ? ' active' : '');
+    smTab.title = 'Sommaire du dossier (aperçu)';
+    smTab.style.background = (viewMode === 'sommaire') ? '#48505d' : '#1a1e2a';
+    smTab.style.borderColor = (viewMode === 'sommaire') ? '#48505d' : '#2a2f42';
+    smTab.innerHTML = '<span>≡ Sommaire</span>';
+    smTab.onclick = () => switchToSommaire();
+    bar.appendChild(smTab);
+  }
   if (!fiches.length) {
     const empty = document.createElement('span');
     empty.className = 'tab-empty';
@@ -944,6 +1153,7 @@ function renderTabs(){
     }
     tab.onclick = () => {
       if (viewMode === 'cover') exitCoverToFiche();
+      if (viewMode === 'sommaire') exitSommaireToFiche();
       if (f.id !== currentFicheId) switchTo(f.id);
       else { writeForm(getActive()); renderTabs(); renderPdfPanel(); }
     };
@@ -1431,8 +1641,10 @@ async function exportDossierPdf(){
     {
       const ficheFormEl = document.getElementById('ficheForm');
       const coverEl = document.getElementById('coverSheet');
+      const sommaireEl = document.getElementById('sommaireSheet');
       ficheFormEl.style.display = 'none';
       coverEl.style.display = '';
+      if (sommaireEl) sommaireEl.style.display = 'none';
       writeCover(cover || defaultCover());
       // ⚠ Tous les enfants de la cover sont position:absolute → scrollWidth/
       // Height peuvent renvoyer 0 et html2canvas produit un canvas vide
@@ -1690,6 +1902,15 @@ async function exportDossierPdf(){
       writeCover(cover || defaultCover());
       const pp = document.getElementById('pdfPanel');
       if (pp) pp.style.display = 'none';
+    } else if (originalView === 'sommaire') {
+      // On rebascule sur l'onglet Sommaire et on re-rend (les pages des
+      // fiches peuvent avoir changé si on a ajouté un attachement entre temps)
+      document.getElementById('ficheForm').style.display = 'none';
+      document.getElementById('sommaireSheet').style.display = '';
+      const pp = document.getElementById('pdfPanel');
+      if (pp) pp.style.display = 'none';
+      viewMode = 'sommaire';
+      renderSommaireSheet();
     }
     renderTabs();
     renderPdfPanel();
@@ -1949,9 +2170,21 @@ switchTo = function(id){
   renderPdfPanel();
 };
 const _origAddNew = addNewFiche;
-addNewFiche = function(){ _origAddNew(); renderPdfPanel(); };
+addNewFiche = function(){
+  // Si on était sur la cover ou le sommaire, basculer en édition fiche
+  // pour voir directement la nouvelle fiche créée.
+  if (viewMode === 'cover') exitCoverToFiche();
+  if (viewMode === 'sommaire') exitSommaireToFiche();
+  _origAddNew();
+  renderPdfPanel();
+};
 const _origAddVar = addVariante;
-addVariante = function(){ _origAddVar(); renderPdfPanel(); };
+addVariante = function(){
+  if (viewMode === 'cover') exitCoverToFiche();
+  if (viewMode === 'sommaire') exitSommaireToFiche();
+  _origAddVar();
+  renderPdfPanel();
+};
 const _origDelete = deleteCurrentFiche;
 deleteCurrentFiche = async function(){
   const cur = getActive();

@@ -6,7 +6,7 @@
 //   - AL_VERSION_TIME  : HH:MM      (heure de la MAJ — local Paris)
 //   - AL_VERSION_NOTE  : 1 phrase courte qui décrit le motif de la MAJ
 // =====================================================================
-window.AL_VERSION      = 'v1.35';
+window.AL_VERSION      = 'v1.36';
 window.AL_VERSION_DATE = '2026-05-20';
-window.AL_VERSION_TIME = '17:30';
-window.AL_VERSION_NOTE = 'Liseuse PDF : sommaire AL GOMES auto-généré entre la page de garde et la fiche 1 pour les dossiers matériel — clic sur Fiche N° → saut direct à la page.';
+window.AL_VERSION_TIME = '20:25';
+window.AL_VERSION_NOTE = 'Dossier matériel : fix export PDF qui plantait avec "format inattendu (data:,)" quand on cliquait Enregistrer depuis la page de garde (ficheForm restait caché → html2canvas vide).';

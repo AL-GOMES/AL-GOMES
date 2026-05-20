@@ -403,19 +403,19 @@ html, body {
 }
 .thumb.active .label { color: var(--accent-2); background: rgba(139,92,246,0.08); }
 
-/* Vignette SOMMAIRE (virtuelle, sans canvas PDF) */
+/* Vignette SOMMAIRE virtuelle (PDFs v1 legacy, sans page physique) — palette sobre */
 .thumb.thumb-sommaire {
-  background: linear-gradient(135deg, rgba(139,92,246,0.18), rgba(167,139,250,0.06));
-  border-color: var(--accent-d);
+  background: linear-gradient(180deg, #2a2f37 0%, #232830 100%);
+  border-color: #4a515c;
 }
 .thumb.thumb-sommaire .summary-card {
   padding: 14px 8px;
   text-align: center;
-  color: var(--text-0);
+  color: #d8dade;
 }
 .thumb.thumb-sommaire .summary-card .ico {
   font-size: 22px;
-  color: var(--accent-2);
+  color: #b8bcc4;
   letter-spacing: 2px;
   margin-bottom: 6px;
 }
@@ -423,26 +423,25 @@ html, body {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.15em;
-  color: var(--text-0);
+  color: #e8e9ec;
 }
 .thumb.thumb-sommaire .summary-card .sub {
   font-size: 9px;
-  color: var(--text-2);
+  color: #98a0ac;
   margin-top: 3px;
   letter-spacing: 0.08em;
 }
-.thumb.thumb-sommaire:hover { border-color: var(--accent); }
+.thumb.thumb-sommaire:hover { border-color: #6a727d; }
 
-/* Vignette de la page sommaire physique (PDF v2+) : bordure accent et label
-   en majuscules pour la distinguer des fiches techniques. */
+/* Vignette de la page sommaire physique (PDF v2+) — bordure et label sobres */
 .thumb.thumb-sommaire-page {
-  border-color: var(--accent-d);
-  box-shadow: 0 0 0 1px rgba(139,92,246,0.25) inset;
+  border-color: #5a626d;
 }
 .thumb.thumb-sommaire-page .label {
-  color: var(--accent-2);
+  color: #d8dade;
   font-weight: 700;
   letter-spacing: 0.1em;
+  background: #2f343d;
 }
 
 /* ============================================================================
@@ -456,11 +455,13 @@ html, body {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background: var(--bg-1);
+  background: #1c2027;
+  border-color: #383d47;
 }
+/* Modale SOMMAIRE — palette sobre : anthracite/gris, sans accent violet */
 .sommaire-header {
-  background: linear-gradient(135deg, #0d0a18 0%, #1a0e2e 60%, #2a1648 100%);
-  border-bottom: 1px solid var(--accent-d);
+  background: linear-gradient(180deg, #232830 0%, #1a1e25 100%);
+  border-bottom: 1px solid #383d47;
   padding: 18px 28px 16px;
   display: flex;
   align-items: center;
@@ -468,20 +469,12 @@ html, body {
   position: relative;
   overflow: hidden;
 }
-.sommaire-header::before {
-  content: "";
-  position: absolute; inset: 0;
-  background:
-    repeating-linear-gradient(45deg, rgba(139,92,246,0.06) 0 2px, transparent 2px 6px),
-    repeating-linear-gradient(-45deg, rgba(255,255,255,0.02) 0 2px, transparent 2px 6px);
-  pointer-events: none;
-}
 .sommaire-logo {
   width: 56px; height: 56px;
-  border-radius: 6px;
+  border-radius: 4px;
   background: #fff;
   padding: 6px;
-  box-shadow: 0 4px 18px rgba(139,92,246,0.25);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.35);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
   position: relative;
@@ -490,44 +483,43 @@ html, body {
 .sommaire-titles { flex: 1; min-width: 0; position: relative; }
 .sommaire-titles .brand {
   font-size: 22px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.18em;
-  color: #fff;
+  color: #e8e9ec;
   margin: 0;
   line-height: 1;
-  text-shadow: 0 2px 12px rgba(139,92,246,0.45);
 }
 .sommaire-titles .tagline {
   margin-top: 4px;
   font-size: 10px;
-  letter-spacing: 0.25em;
-  color: var(--accent-2);
+  letter-spacing: 0.22em;
+  color: #98a0ac;
   text-transform: uppercase;
 }
 .sommaire-titles .meta {
   margin-top: 8px;
   font-size: 11px;
-  color: var(--text-1);
+  color: #b8bcc4;
   letter-spacing: 0.04em;
 }
-.sommaire-titles .meta b { color: var(--text-0); font-weight: 600; }
+.sommaire-titles .meta b { color: #e8e9ec; font-weight: 600; }
 .sommaire-close {
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.12);
-  color: var(--text-0);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.10);
+  color: #c8cbd2;
   width: 32px; height: 32px;
-  border-radius: 6px;
+  border-radius: 4px;
   font-size: 18px; line-height: 1;
   cursor: pointer;
   position: relative;
   transition: all .15s;
 }
-.sommaire-close:hover { background: rgba(255,255,255,0.12); border-color: var(--accent); color: #fff; }
+.sommaire-close:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.18); color: #fff; }
 
 .sommaire-body {
   flex: 1;
   overflow: auto;
-  background: var(--bg-1);
+  background: #1c2027;
 }
 .sommaire-table {
   width: 100%;
@@ -537,28 +529,29 @@ html, body {
 .sommaire-table thead th {
   position: sticky;
   top: 0;
-  background: linear-gradient(180deg, var(--bg-3), var(--bg-2));
-  color: var(--accent-2);
+  background: #2a2f37;
+  color: #b8bcc4;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-align: left;
   padding: 12px 14px;
-  border-bottom: 2px solid var(--accent-d);
+  border-bottom: 1px solid #404652;
   white-space: nowrap;
   z-index: 1;
 }
 .sommaire-table tbody td {
   padding: 12px 14px;
-  border-bottom: 1px solid var(--panel-border);
-  color: var(--text-0);
+  border-bottom: 1px solid #2a2e36;
+  color: #d8dade;
   vertical-align: top;
   line-height: 1.4;
 }
-.sommaire-table tbody tr:hover td { background: rgba(139,92,246,0.05); }
+.sommaire-table tbody tr:nth-child(even) td { background: rgba(255,255,255,0.015); }
+.sommaire-table tbody tr:hover td { background: rgba(255,255,255,0.04); }
 .sommaire-table tbody tr:last-child td { border-bottom: 0; }
 .sommaire-table .col-num { white-space: nowrap; width: 1%; }
-.sommaire-table .col-page { white-space: nowrap; width: 1%; text-align: right; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.sommaire-table .col-page { white-space: nowrap; width: 1%; text-align: right; color: #98a0ac; font-variant-numeric: tabular-nums; }
 .sommaire-table .col-autres { max-width: 220px; }
 .sommaire-table .col-autres .ellipsis,
 .sommaire-table .col-loc .ellipsis,
@@ -571,26 +564,25 @@ html, body {
   white-space: pre-wrap;
 }
 .sommaire-fiche-btn {
-  background: linear-gradient(135deg, var(--accent), var(--accent-d));
-  color: #fff;
-  border: 0;
-  border-radius: 4px;
+  background: #3a414c;
+  color: #e8e9ec;
+  border: 1px solid #4a515c;
+  border-radius: 3px;
   padding: 6px 12px;
   font-family: inherit;
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-weight: 600;
+  letter-spacing: 0.06em;
   cursor: pointer;
   transition: all .15s;
-  box-shadow: 0 2px 8px rgba(139,92,246,0.3);
   white-space: nowrap;
 }
 .sommaire-fiche-btn:hover {
-  background: linear-gradient(135deg, var(--accent-2), var(--accent));
-  box-shadow: 0 4px 12px rgba(139,92,246,0.5);
-  transform: translateY(-1px);
+  background: #4a515c;
+  border-color: #5a626d;
+  color: #fff;
 }
-.sommaire-fiche-btn:active { transform: translateY(0); }
+.sommaire-fiche-btn:active { background: #2f343d; }
 .sommaire-empty {
   padding: 60px 20px;
   text-align: center;
@@ -600,16 +592,16 @@ html, body {
 }
 .sommaire-footer {
   padding: 10px 20px;
-  background: var(--bg-2);
-  border-top: 1px solid var(--panel-border);
+  background: #232830;
+  border-top: 1px solid #383d47;
   font-size: 10px;
-  color: var(--text-2);
+  color: #98a0ac;
   letter-spacing: 0.06em;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
-.sommaire-footer .count strong { color: var(--accent-2); font-size: 12px; }
+.sommaire-footer .count strong { color: #d8dade; font-size: 12px; font-weight: 600; }
 
 /* Search */
 .search-box {

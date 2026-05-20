@@ -676,19 +676,9 @@ function drawPanel(type,ap,bi,isAuto){
       isTypeA:c.k==='plaq'||c.k==='ll',
       diffType:dt,
       mod:c.k==='plaq'?2:c.k==='rt'?6:1,
-      subs:[],uid:c.k+'_'+i
+      uid:c.k+'_'+i
     });
   });
-  
-  // Attach tele/sonn subs
-  const ecls=allCir.filter(c=>c.k==='ecl');
-  // Distribute tele across ECLs (round-robin)
-  for(let i=0;i<(ap.tele||0);i++){if(ecls.length>0)ecls[i%ecls.length].subs.push('TELE.')}
-  // Distribute sonn across ECLs (round-robin, offset after tele)
-  for(let i=0;i<(ap.sonn||0);i++){
-    const idx=(ap.tele||0)+i;
-    if(ecls.length>0)ecls[idx%ecls.length].subs.push('SON.');
-  }
 
   // Build departures from _deps + _depTypes (AC/A/F/B)
   const deps=ap._deps||[];
@@ -726,10 +716,56 @@ function drawPanel(type,ap,bi,isAuto){
     if(aCir.length)builtDeps.push({cir:aCir,type:'A',cal:calcIDCal(aCir),idx:1});
   }
 
+  // Injection inline TELE / SON comme sous-circuits adjacents à l'ECL parent.
+  // Le parent de chaque TELE / SON est choisi via ap._teleParents / ap._sonnParents
+  // (mode manuel) ou par défaut en round-robin (mode auto).
+  // Format ap._teleParents / ap._sonnParents : tableau d'UID d'ECL (ex.
+  // ['ecl_0', 'ecl_2']) — la longueur = ap.tele / ap.sonn.
+  (function injectInlineSubs(){
+    const allEcls=[];
+    builtDeps.forEach((d, di) => d.cir.forEach(c => { if (c.k === 'ecl') allEcls.push({d, c}); }));
+    if (!allEcls.length) return;
+    const pickEcl = (savedUids, defaultIdx, n) => {
+      const saved = (savedUids && savedUids[n]) || null;
+      if (saved) {
+        const found = allEcls.find(e => e.c.uid === saved);
+        if (found) return found;
+      }
+      return allEcls[defaultIdx % allEcls.length];
+    };
+    const insertAfterEcl = (parent, sub) => {
+      // Insère après l'ECL parent, ou après les sous-circuits déjà insérés
+      // sur ce même parent (pour préserver l'ordre TELE puis SON).
+      let idx = parent.d.cir.indexOf(parent.c) + 1;
+      while (parent.d.cir[idx] && parent.d.cir[idx].isSub && parent.d.cir[idx]._parentEcl === parent.c) idx++;
+      parent.d.cir.splice(idx, 0, sub);
+    };
+    const teleN = ap.tele || 0;
+    const sonnN = ap.sonn || 0;
+    for (let i = 0; i < teleN; i++) {
+      const p = pickEcl(ap._teleParents, i, i);
+      if (!p) continue;
+      insertAfterEcl(p, {
+        k: 'tele', n: 'TELE.', a: '', mod: 1, isSub: true,
+        _parentEcl: p.c, _subColor: '#F1C40F', _subKind: 'tele', _subIdx: i,
+        uid: 'tele_'+i
+      });
+    }
+    for (let i = 0; i < sonnN; i++) {
+      const p = pickEcl(ap._sonnParents, teleN + i, i);
+      if (!p) continue;
+      insertAfterEcl(p, {
+        k: 'sonn', n: 'SON.', a: '', mod: 1, isSub: true,
+        _parentEcl: p.c, _subColor: '#1ABC9C', _subKind: 'sonn', _subIdx: i,
+        uid: 'sonn_'+i
+      });
+    }
+  })();
+
   let totalMod=0;
   builtDeps.forEach(d=>{
-    const djMod=d.cir.reduce((s,c)=>s+c.mod,0);
-    const subMod=d.cir.reduce((s,c)=>s+(c.subs?c.subs.length:0),0);// tele + sonn = 1 mod each
+    const djMod=d.cir.filter(c=>!c.isSub).reduce((s,c)=>s+c.mod,0);
+    const subMod=d.cir.filter(c=>c.isSub).reduce((s,c)=>s+c.mod,0);
     d.djMod=djMod;d.subMod=subMod;
     d.modCount=2+djMod+subMod;// ID(2) + disj + tele/sonn
     totalMod+=d.modCount;
@@ -831,11 +867,40 @@ function drawPanel(type,ap,bi,isAuto){
     h+=`<div style="width:2px;height:16px;background:${col};opacity:0.2"></div>`;
     h+=`<div style="width:${Math.max(dep.cir.length*36,70)}px;height:2px;background:${col};opacity:0.2"></div>`;
 
-    // Disjoncteurs
+    // Disjoncteurs (et sous-circuits TELE / SON inline)
     h+=`<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">`;
+    // Liste de tous les ECL du panel (pour le sélecteur parent en mode manuel)
+    const _allEclList = [];
+    builtDeps.forEach((dd, ddi) => dd.cir.forEach((cc, cci) => {
+      if (cc.k === 'ecl') _allEclList.push({ uid: cc.uid, label: 'D'+(ddi+1)+' · ECL #'+(_allEclList.filter(e=>e.dep===ddi).length+1), dep: ddi });
+    }));
     dep.cir.forEach((c,ci)=>{
+      if(c.isSub){
+        // Colonne TELE / SON inline rattachée à l'ECL parent
+        const subC=c._subColor||'#F1C40F';
+        const subBg=c._subKind==='tele'?'rgba(241,196,15,0.10)':'rgba(26,188,156,0.10)';
+        h+=`<div style="display:flex;flex-direction:column;align-items:center;width:34px">
+          <div style="width:1.5px;height:10px;background:transparent"></div>
+          <div style="width:26px;height:46px;border:1.5px dashed ${subC};border-radius:3px;background:${subBg};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px">
+            <div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:8px solid ${subC};opacity:0.85"></div>
+            <div style="width:12px;height:2px;background:${subC};opacity:0.85"></div>
+          </div>
+          <div style="font-size:10px;font-weight:700;color:${subC};margin-top:3px;white-space:nowrap">${c.n}</div>
+          <div style="font-size:8px;color:${subC};opacity:0.7;white-space:nowrap">sur ECL</div>`;
+        // En mode manuel : sélecteur pour changer l'ECL parent
+        if(!isAuto && _allEclList.length > 1){
+          const curUid = c._parentEcl ? c._parentEcl.uid : '';
+          const opts = _allEclList.map(e =>
+            `<option value="${e.uid}"${e.uid===curUid?' selected':''}>${e.label}</option>`
+          ).join('');
+          h+=`<select onchange="setSubParent('${apRef}','${c._subKind}',${c._subIdx},this.value)"
+                style="margin-top:4px;font-size:9px;padding:2px;background:rgba(22,18,32,0.6);color:${subC};border:1px solid ${subC}55;border-radius:3px;cursor:pointer"
+                title="Choisir le départ ECL parent">${opts}</select>`;
+        }
+        h+=`</div>`;
+        return;
+      }
       const w=c.k==='rt'?26:c.mod===2?48:26;
-      const hasSubs=c.subs&&c.subs.length>0;
       h+=`<div style="display:flex;flex-direction:column;align-items:center;width:${w+8}px;${!isAuto?'cursor:grab;':''}${!isAuto?'opacity:0.9;':''}transition:transform 0.15s"
         ${!isAuto?'draggable="true" ondragstart="dragCir(event,\''+apRef+'\','+di+',\''+c.k+'\')" onmouseenter="this.style.transform=\'scale(1.1)\'" onmouseleave="this.style.transform=\'scale(1)\'"':''}
       >
@@ -846,18 +911,6 @@ function drawPanel(type,ap,bi,isAuto){
         </div>
         <div style="font-size:11px;font-weight:700;color:${col};margin-top:3px">${c.a}</div>
         <div style="font-size:10px;color:${col};opacity:0.55;white-space:nowrap">${c.n}</div>`;
-      if(hasSubs){
-        c.subs.forEach(s=>{
-          const isTele=s.includes('TELE');
-          const subCol=isTele?'#F1C40F':'#1ABC9C';
-          const subBg=isTele?'rgba(241,196,15,0.10)':'rgba(26,188,156,0.10)';
-          h+=`<div style="width:1.5px;height:8px;background:${subCol};opacity:0.3"></div>
-          <div style="width:26px;height:30px;border:1.5px solid ${subCol};border-radius:3px;background:${subBg};display:flex;flex-direction:column;align-items:center;justify-content:center">
-            <div style="width:10px;height:10px;border:1.5px solid ${subCol};border-radius:50%;opacity:0.7"></div>
-          </div>
-          <div style="font-size:9px;font-weight:700;color:${subCol};margin-top:2px;white-space:nowrap">${s}</div>`;
-        });
-      }
       // RT2012 gestionnaire box
       if(c.k==='rt'){
         h+=`<div style="width:1.5px;height:8px;background:#E74C3C;opacity:0.3"></div>
@@ -942,17 +995,17 @@ function dropCir(ev,apRef,targetDepIdx){
   const{depIdx:srcDep,cirKey}=_dragData;
   if(srcDep===targetDepIdx)return;
   _dragData=null;
-  
+
   // Find the apartment
   const[bi,type]=apRef.split('_');
   const b=B[parseInt(bi)];
   const types={};let tIdx=0;
   b.a.forEach(x=>{x.p=pw(x.u);x.c=cl(x.p);const rc=getRecap(x);if(!types[rc])types[rc]=String.fromCharCode(65+tIdx++);x.type=types[rc]});
-  
+
   // Find all apartments of this type
   const aps=b.a.filter(x=>x.type===type);
   if(!aps.length)return;
-  
+
   // Move circuit by key in _deps
   aps.forEach(ap=>{
     if(!ap._deps)return;
@@ -962,7 +1015,28 @@ function dropCir(ev,apRef,targetDepIdx){
     ap._deps[srcDep].splice(idx,1);
     ap._deps[targetDepIdx].push(cirKey);
   });
-  
+
+  R();
+}
+
+// Mode manuel : assigner un sous-circuit TELE / SON à un ECL parent.
+// On stocke l'UID de l'ECL choisi dans ap._teleParents[idx] / ap._sonnParents[idx]
+// pour tous les appartements du même type, pour que le choix soit appliqué
+// sur le schéma et le PDF (auto distribution remplacée par l'override).
+function setSubParent(apRef, subKind, subIdx, newEclUid){
+  const[bi,type]=apRef.split('_');
+  const b=B[parseInt(bi)];if(!b)return;
+  const types={};let tIdx=0;
+  b.a.forEach(x=>{x.p=pw(x.u);x.c=cl(x.p);const rc=getRecap(x);if(!types[rc])types[rc]=String.fromCharCode(65+tIdx++);x.type=types[rc]});
+  const aps=b.a.filter(x=>x.type===type);
+  const key = subKind==='tele' ? '_teleParents' : '_sonnParents';
+  aps.forEach(ap=>{
+    const arr = (ap[key] || []).slice();
+    const total = (subKind==='tele' ? ap.tele : ap.sonn) || 0;
+    while(arr.length < total) arr.push(null);
+    arr[subIdx] = newEclUid;
+    ap[key] = arr;
+  });
   R();
 }
 
@@ -1061,6 +1135,9 @@ async function importTA(input){
           CIR.forEach(ci=>{o[ci.k]=ap[ci.k]!==undefined?ap[ci.k]:defCir(p)[ci.k]});
           if(ap.tb)o.tb=ap.tb;
           if(ap._deps)o._deps=ap._deps;
+          if(ap._depTypes)o._depTypes=ap._depTypes;
+          if(ap._teleParents)o._teleParents=ap._teleParents;
+          if(ap._sonnParents)o._sonnParents=ap._sonnParents;
           return o;
         })
       }));
@@ -1086,7 +1163,7 @@ async function saveTaAlg(){
     P:pName,
     _cir:CIR.filter(c=>c.k.startsWith('_a')),
     B:B.map(b=>({n:b.n,niv:b.niv,fl:b.fl,typeAuto:b.typeAuto,
-      a:b.a.map(x=>{const o={f:x.f,r:x.r,e:x.e,u:x.u};CIR.forEach(c=>{o[c.k]=x[c.k]});if(x.tb)o.tb=x.tb;if(x._deps)o._deps=x._deps;return o})}))
+      a:b.a.map(x=>{const o={f:x.f,r:x.r,e:x.e,u:x.u};CIR.forEach(c=>{o[c.k]=x[c.k]});if(x.tb)o.tb=x.tb;if(x._deps)o._deps=x._deps;if(x._depTypes)o._depTypes=x._depTypes;if(x._teleParents)o._teleParents=x._teleParents;if(x._sonnParents)o._sonnParents=x._sonnParents;return o})}))
   };
   const json=JSON.stringify(payload,null,2);
   const blob=new Blob([json],{type:'application/octet-stream'});
@@ -1221,7 +1298,7 @@ async function exportXLS(){
   // Hidden data sheet for re-import
   const ds=wb.addWorksheet('_DATA',{state:'veryHidden'});
   ds.getCell('A1').value=JSON.stringify({P:pName,_cir:CIR.filter(c=>c.k.startsWith('_a')),B:B.map(b=>({n:b.n,niv:b.niv,fl:b.fl,typeAuto:b.typeAuto,
-    a:b.a.map(x=>{const o={f:x.f,r:x.r,e:x.e,u:x.u};CIR.forEach(c=>{o[c.k]=x[c.k]});if(x.tb)o.tb=x.tb;if(x._deps)o._deps=x._deps;return o})}))});
+    a:b.a.map(x=>{const o={f:x.f,r:x.r,e:x.e,u:x.u};CIR.forEach(c=>{o[c.k]=x[c.k]});if(x.tb)o.tb=x.tb;if(x._deps)o._deps=x._deps;if(x._depTypes)o._depTypes=x._depTypes;if(x._teleParents)o._teleParents=x._teleParents;if(x._sonnParents)o._sonnParents=x._sonnParents;return o})}))});
 
   const buf=await wb.xlsx.writeBuffer();
   const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
@@ -1318,7 +1395,7 @@ async function exportPDF(){
         if (c.k === 'tele' || c.k === 'sonn') return;
         const q = ref[c.k] || 0;
         for (let i = 0; i < q; i++) {
-          allC.push({ k: c.k, mod: c.k === 'plaq' ? 2 : c.k === 'rt' ? 6 : 1 });
+          allC.push({ k: c.k, mod: c.k === 'plaq' ? 2 : c.k === 'rt' ? 6 : 1, uid: c.k+'_'+i });
         }
       });
       const bD = [];
@@ -1331,21 +1408,26 @@ async function exportPDF(){
         bD.push({ cir: dc });
       });
       allC.forEach(c => delete c._u);
-      // Injecter TELE / SON comme sub-circuits (1 module chacun) sur les ECL —
-      // doit rester cohérent avec la même injection côté SVG schéma plus bas.
+      // Injecter TELE / SON comme sub-circuits (1 module chacun), rattachés
+      // au parent ECL choisi par l'utilisateur (ref._teleParents / ref._sonnParents)
+      // ou par défaut en round-robin sur les ECL du type.
       (function(){
         const eY = [];
         bD.forEach(d => d.cir.forEach(c => { if (c.k === 'ecl') eY.push({d, c}); }));
-        function ins(p, n, k){
-          const idx = p.d.cir.indexOf(p.c);
-          if (idx < 0) return;
-          for (let i = 0; i < n; i++) {
-            p.d.cir.splice(idx + 1 + i, 0, { k, mod: 1, isSub: true });
-          }
+        if (!eY.length) return;
+        function pick(savedUids, defaultIdx, n){
+          const saved = savedUids && savedUids[n];
+          if (saved){ const f = eY.find(e => e.c.uid === saved); if (f) return f; }
+          return eY[defaultIdx % eY.length];
         }
-        if (eY.length > 0 && ref.tele > 0) ins(eY[0], ref.tele, 'tele');
-        if (eY.length > 1 && ref.sonn > 0) ins(eY[1], ref.sonn, 'sonn');
-        else if (eY.length === 1 && ref.sonn > 0) ins(eY[0], ref.sonn, 'sonn');
+        function insertSub(p, k){
+          let idx = p.d.cir.indexOf(p.c) + 1;
+          while(p.d.cir[idx] && p.d.cir[idx].isSub && p.d.cir[idx]._parentEcl === p.c) idx++;
+          p.d.cir.splice(idx, 0, { k, mod: 1, isSub: true, _parentEcl: p.c });
+        }
+        const teleN = ref.tele || 0, sonnN = ref.sonn || 0;
+        for (let i = 0; i < teleN; i++) insertSub(pick(ref._teleParents, i, i), 'tele');
+        for (let i = 0; i < sonnN; i++) insertSub(pick(ref._sonnParents, teleN + i, i), 'sonn');
       })();
       let tM = 0;
       bD.forEach(d => { d.mc = 2 + d.cir.reduce((s, c) => s + c.mod, 0); tM += d.mc; });
@@ -1428,7 +1510,7 @@ async function exportPDF(){
       const deps=ref._deps||[];
       const depTypes=ref._depTypes||[];
       const allC=[];
-      CIR.forEach(c=>{if(c.k==='tele'||c.k==='sonn')return;const q=ref[c.k]||0;for(let i=0;i<q;i++)allC.push({k:c.k,n:c.n,a:c.a,mod:c.k==='plaq'?2:c.k==='rt'?6:1})});
+      CIR.forEach(c=>{if(c.k==='tele'||c.k==='sonn')return;const q=ref[c.k]||0;for(let i=0;i<q;i++)allC.push({k:c.k,n:c.n,a:c.a,mod:c.k==='plaq'?2:c.k==='rt'?6:1,uid:c.k+'_'+i})});
       const bD=[];
       deps.forEach((dk,di)=>{
         const dc=[];dk.forEach(k=>{const c=allC.find(cc=>cc.k===k&&!cc._u);if(c){c._u=true;dc.push(c)}});
@@ -1443,22 +1525,27 @@ async function exportPDF(){
       // ils apparaissent comme des colonnes adjacentes au disjoncteur ECL
       // dans le schéma (et plus comme des badges sous-jacents), tout en
       // restant protégés par le même disjoncteur 10A (pas de calibre propre).
-      // Distribution : TELE → 1er ECL trouvé, SON → 2e ECL (ou 1er si unique).
+      // Le choix du parent ECL provient de ref._teleParents / ref._sonnParents
+      // (mode manuel) ou par défaut en round-robin sur les ECL disponibles.
       (function injectSubs(){
         const eY = [];
         bD.forEach(d => d.cir.forEach(c => { if (c.k === 'ecl') eY.push({d, c}); }));
-        function ins(p, n, k, name, color){
-          const idx = p.d.cir.indexOf(p.c);
-          if (idx < 0) return;
-          for (let i = 0; i < n; i++) {
-            p.d.cir.splice(idx + 1 + i, 0, {
-              k, n: name, a: '', mod: 1, isSub: true, _parentEcl: p.c, _subColor: color
-            });
-          }
+        if (!eY.length) return;
+        function pick(savedUids, defaultIdx, n){
+          const saved = savedUids && savedUids[n];
+          if (saved){ const f = eY.find(e => e.c.uid === saved); if (f) return f; }
+          return eY[defaultIdx % eY.length];
         }
-        if (eY.length > 0 && ref.tele > 0) ins(eY[0], ref.tele, 'tele', 'TELE.', '#F1C40F');
-        if (eY.length > 1 && ref.sonn > 0) ins(eY[1], ref.sonn, 'sonn', 'SON.', '#1ABC9C');
-        else if (eY.length === 1 && ref.sonn > 0) ins(eY[0], ref.sonn, 'sonn', 'SON.', '#1ABC9C');
+        function insertSub(p, k, name, color){
+          let idx = p.d.cir.indexOf(p.c) + 1;
+          while(p.d.cir[idx] && p.d.cir[idx].isSub && p.d.cir[idx]._parentEcl === p.c) idx++;
+          p.d.cir.splice(idx, 0, {
+            k, n: name, a: '', mod: 1, isSub: true, _parentEcl: p.c, _subColor: color
+          });
+        }
+        const teleN = ref.tele || 0, sonnN = ref.sonn || 0;
+        for (let i = 0; i < teleN; i++) insertSub(pick(ref._teleParents, i, i), 'tele', 'TELE.', '#F1C40F');
+        for (let i = 0; i < sonnN; i++) insertSub(pick(ref._sonnParents, teleN + i, i), 'sonn', 'SON.', '#1ABC9C');
       })();
 
       // (Re)calcule des modules en tenant compte des sub-circuits inline

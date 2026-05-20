@@ -1352,15 +1352,15 @@ async function exportPDF(){
     CIR.forEach(c=>{HTML += (`<td>${a.reduce((s,x)=>s+(x[c.k]||0),0)}</td>`)});
     HTML += (`</tr></tbody></table></div>`);
 
-    // Carte dédiée "Récapitulatif des rangées" — bien visible, indépendante
-    // de la table Synthèse (où les colonnes MOD./RG. peuvent être cut par
-    // la largeur de page sur les bâtiments à beaucoup de circuits).
+    // Carte dédiée "Récapitulatif des rangées" — affiche également le détail
+    // du calcul (formule NF C 15-100) qui ne figure plus dans le SVG schéma.
     HTML += (`<div class="card" style="border-color:rgba(187,107,217,0.35);background:linear-gradient(135deg,rgba(187,107,217,0.04),rgba(45,27,78,0.02))">`);
-    HTML += (`<div class="card-t">📐 Récapitulatif des rangées</div>`);
-    HTML += (`<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px">`);
+    HTML += (`<div class="card-t">📐 Récapitulatif des rangées · calcul NF C 15-100</div>`);
+    HTML += (`<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:8px">`);
     sT.forEach(([t,cnt])=>{
       const tc = TYPE_COLORS[(t.charCodeAt(0)-65)%TYPE_COLORS.length];
       const mr = typeModRg[t] || { mod: 0, rg: 0 };
+      const _calc = `⌈ ${mr.mod} × 1.2 / 13 ⌉ = ⌈ ${(mr.mod*1.2/13).toFixed(2)} ⌉ = ${mr.rg}`;
       HTML += (
         `<div style="flex:0 0 auto;padding:10px 16px;border:1.5px solid ${tc.border};border-radius:10px;background:#fff;display:flex;align-items:center;gap:12px">` +
         `<span class="badge" style="background:${tc.bg};border:1px solid ${tc.border};color:${tc.color};font-size:11px">${t}</span>` +
@@ -1368,10 +1368,12 @@ async function exportPDF(){
         `<div style="font-weight:700;color:#1F3864">${cnt} lgt${cnt>1?'s':''}</div>` +
         `<div><span style="color:#BB6BD9;font-weight:700;font-size:13px">${mr.mod}</span> modules / lgt</div>` +
         `<div><span style="color:#BB6BD9;font-weight:700;font-size:13px">${mr.rg}</span> rangée${mr.rg>1?'s':''} / lgt</div>` +
+        `<div style="font-size:8.5px;color:#888;font-style:italic;margin-top:3px">${_calc}</div>` +
         `</div></div>`
       );
     });
     HTML += (`</div>`);
+    HTML += (`<div style="font-size:9px;color:#666;font-style:italic;border-top:1px dashed rgba(187,107,217,0.30);padding-top:6px">Formule : <strong>⌈ Modules × 1.2 / 13 ⌉</strong> — réserve de 20 % (×1.2), 13 modules max par rangée standard (NF C 15-100).</div>`);
     HTML += (`</div>`);
     // Fin de la PAGE 1 du bâtiment (Synthèse + Récap)
     HTML += (`${_pgFt}</div>`);
@@ -1444,13 +1446,12 @@ async function exportPDF(){
       const _chipRows=Math.ceil(_calEntries.length/_chipsPerRow)||1;
       const _rcBoxH=12+22+_chipRows*42+10; // titre + lignes de chips + padding
 
-      // SVG schema (svgH inchangé par rapport à la version sans RÉCAP : le
-      // RÉCAP. CALIBRES est positionné à l'intérieur de l'espace vide
-      // existant, juste au-dessus de la box CALCUL CALIBRES ID, pour que
-      // tout le schéma tienne sur une seule page A4 paysage.)
+      // SVG schema : la box CALCUL RANGÉES a été supprimée du schéma (le
+      // calcul est reporté côté Synthèse / Récap des rangées sur la page 1).
+      // svgH ne contient plus que la zone schéma + la place pour CALIBRES ID
+      // et RÉCAP. CALIBRES qui se superposent au bas de la zone schéma.
       const nD=bD.length;const depW=260;const svgW=Math.max(nD*depW+100,1200);
-      const _rgBoxH = 12 + (nD + 2) * 14 + 12; // titre + nD lignes par départ + total + formule
-      const svgH=560+nD*25 + _rgBoxH + 14; // +14 = gap entre CALIBRES ID et RANGÉES
+      const svgH=560+nD*25;
       const ox=(svgW-nD*depW)/2;const cxA=svgW/2;
       const purp='#BB6BD9',bluC='#3498DB',orgC='#ED7D31',yelC='#F1C40F',redC='#E74C3C',drk='#F5F5FA';
       // Helper couleur par type de différentiel pour l'export SVG
@@ -1462,17 +1463,20 @@ async function exportPDF(){
 
       // Title
       svg+=`<text x="20" y="30" font-size="16" font-weight="bold" fill="#1F3864" font-family="Segoe UI,Calibri">TYPE ${t} — ${cnt} lgts</text>`;
-      svg+=`<rect x="${svgW-200}" y="12" width="180" height="26" rx="6" fill="none" stroke="${purp}" stroke-width="1.5"/>`;
-      svg+=`<text x="${svgW-110}" y="30" font-size="12" font-weight="bold" fill="${purp}" text-anchor="middle" font-family="Segoe UI">${tM} mod — ${rg} rangée${rg>1?'s':''}</text>`;
+      // Badge top-right : modules + rangées + mention "avec réserve de 20%"
+      svg+=`<rect x="${svgW-200}" y="12" width="180" height="38" rx="6" fill="none" stroke="${purp}" stroke-width="1.5"/>`;
+      svg+=`<text x="${svgW-110}" y="28" font-size="12" font-weight="bold" fill="${purp}" text-anchor="middle" font-family="Segoe UI">${tM} mod — ${rg} rangée${rg>1?'s':''}</text>`;
+      svg+=`<text x="${svgW-110}" y="42" font-size="9" fill="${purp}" text-anchor="middle" font-family="Segoe UI" opacity="0.85">avec réserve de 20%</text>`;
 
-      // Disj Abonné
-      let sy=65;
+      // Disj Abonné — libellé AU-DESSUS du symbole (sy décalé de 20 px pour
+      // laisser place au texte au-dessus de la box).
+      let sy=85;
+      svg+=`<text x="${cxA}" y="${sy-7}" font-size="13" font-weight="bold" fill="${purp}" text-anchor="middle" font-family="Segoe UI">DISJ. ABONNÉ ${ref.c}A</text>`;
       svg+=`<rect x="${cxA-45}" y="${sy}" width="90" height="55" rx="6" fill="#2D1B4E" stroke="${purp}" stroke-width="2.5"/>`;
       // Symbol inside
       svg+=`<line x1="${cxA-15}" y1="${sy+18}" x2="${cxA+15}" y2="${sy+18}" stroke="${purp}" stroke-width="2.5"/>`;
       svg+=`<line x1="${cxA}" y1="${sy+18}" x2="${cxA}" y2="${sy+26}" stroke="${purp}" stroke-width="1.5" opacity="0.5"/>`;
       svg+=`<rect x="${cxA-10}" y="${sy+26}" width="20" height="16" rx="3" fill="none" stroke="${purp}" stroke-width="2"/>`;
-      svg+=`<text x="${cxA}" y="${sy+55+16}" font-size="13" font-weight="bold" fill="${purp}" text-anchor="middle" font-family="Segoe UI">DISJ. ABONNÉ ${ref.c}A</text>`;
       sy+=55;
 
       // Vertical from abonné
@@ -1558,11 +1562,10 @@ async function exportPDF(){
         });
       });
 
-      // En bas du SVG : RÉCAP CALIBRES, puis CALIBRES ID, puis RANGÉES,
-      // séparées par 14 px. RÉCAP est placé dans l'espace vide existant
-      // entre les disjoncteurs et CALIBRES ID, sans grandir svgH.
+      // En bas du SVG : RÉCAP CALIBRES puis CALIBRES ID, séparées de 14 px.
+      // Les deux boxes se superposent au bas de la zone schéma (svgH).
       const _calBoxH = 10 + bD.length * 18 + 12;
-      let cy = svgH - _rgBoxH - 14 - _calBoxH + 4; // +4 pour compenser le rect y=cy-4
+      let cy = svgH - _calBoxH + 4; // +4 pour compenser le rect y=cy-4
       svg+=`<rect x="16" y="${cy-4}" width="${svgW-32}" height="${_calBoxH}" rx="4" fill="#F8F8FA" stroke="#DDD"/>`;
       svg+=`<text x="28" y="${cy+10}" font-size="10" font-weight="bold" fill="#1F3864" font-family="Segoe UI">CALCUL CALIBRES ID</text>`;
       cy+=18;
@@ -1575,36 +1578,14 @@ async function exportPDF(){
         cy+=14;
       });
 
-      // CALCUL RANGÉES : détail du calcul du nombre de rangées du tableau
-      // Formule NF C 15-100 : ⌈ (somme modules × 1.2) / 13 ⌉
-      //   - 2 modules par départ pour l'ID
-      //   - + modules des circuits (1 par disjoncteur, sauf plaque=2, RT=6)
-      //   - × 1.2 = marge de réserve 20 %
-      //   - / 13 = modules max par rangée standard
-      const _ryTop = svgH - _rgBoxH;
-      svg+=`<rect x="16" y="${_ryTop}" width="${svgW-32}" height="${_rgBoxH}" rx="4" fill="#FAF5FF" stroke="#BB6BD9" stroke-width="0.8"/>`;
-      svg+=`<text x="28" y="${_ryTop+14}" font-size="10" font-weight="bold" fill="#BB6BD9" font-family="Segoe UI">CALCUL RANGÉES</text>`;
-      let _ry = _ryTop + 26;
-      bD.forEach((dep, di) => {
-        const _col = svgColByType(dep.type);
-        const _cirMod = dep.cir.reduce((s, c) => s + c.mod, 0);
-        svg+=`<text x="28" y="${_ry+10}" font-size="8" font-weight="bold" fill="${_col}" font-family="Segoe UI">DÉP.${di+1}:</text>`;
-        svg+=`<text x="80" y="${_ry+10}" font-size="8" fill="#1F3864" font-family="Segoe UI">2 (ID) + ${_cirMod} (circuits) = ${dep.mc} modules</text>`;
-        _ry += 14;
-      });
-      const _modParts = bD.map(d => d.mc).join(' + ');
-      svg+=`<text x="28" y="${_ry+10}" font-size="8" font-weight="bold" fill="#1F3864" font-family="Segoe UI">TOTAL:</text>`;
-      svg+=`<text x="80" y="${_ry+10}" font-size="8" fill="#1F3864" font-family="Segoe UI">${_modParts} = ${tM} modules</text>`;
-      _ry += 14;
-      svg+=`<text x="28" y="${_ry+10}" font-size="8" font-weight="bold" fill="#BB6BD9" font-family="Segoe UI">FORMULE:</text>`;
-      svg+=`<text x="80" y="${_ry+10}" font-size="8" fill="#BB6BD9" font-family="Segoe UI">⌈ ${tM} × 1.2 / 13 ⌉ = ⌈ ${(tM*1.2/13).toFixed(2)} ⌉ = ${rg} rangée${rg>1?'s':''}</text>`;
+      // (La box "CALCUL RANGÉES" a été retirée du schéma — le détail
+      // mod / rg + formule NF C 15-100 ⌈ mod×1.2/13 ⌉ est désormais affiché
+      // sur la page Synthèse des types / Récap des rangées.)
 
       // RÉCAP. CALIBRES : encadré quantitatif des disjoncteurs par calibre,
       // avec une chip colorée (code couleur calibre) par valeur d'ampérage.
       // Sous-titre = ventilation par type de circuit (ECL ×3, CHAUD ×1…).
-      // Placé dans l'espace vide existant entre les disjoncteurs et la box
-      // CALCUL CALIBRES ID, pour ne pas dépasser la hauteur d'une page A4.
-      const _rcTop = svgH - _rgBoxH - 14 - _calBoxH - 14 - _rcBoxH;
+      const _rcTop = svgH - _calBoxH - 14 - _rcBoxH;
       svg+=`<rect x="16" y="${_rcTop}" width="${svgW-32}" height="${_rcBoxH}" rx="4" fill="#FAFAFA" stroke="#999" stroke-width="0.8"/>`;
       svg+=`<text x="28" y="${_rcTop+14}" font-size="10" font-weight="bold" fill="#1F3864" font-family="Segoe UI">RÉCAP. CALIBRES — ${_totDisj} disjoncteurs divisionnaires</text>`;
       const _chipAreaX=28;

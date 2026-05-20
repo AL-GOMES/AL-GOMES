@@ -324,6 +324,22 @@ function rB(bi){
   });
   h+=`</table></div></div></div>`;
 
+  // ── SCHÉMAS UNIFILAIRES ── (placés juste après le Tableau pour que
+  // les synthèses, listings et la légende viennent après les schémas.)
+  if(!b.typeAuto)b.typeAuto={};
+  h+=`<div class="card"><div class="card-h">⚡ Schémas Unifilaires — NF C 15-100</div><div class="card-b">
+  <div style="display:flex;flex-direction:column;gap:32px">`;
+  // Compute auto deps for types in auto mode
+  sortedTypes.forEach(([t,cnt])=>{
+    if(b.typeAuto[t]!==false) computeAutoDepsType(bi,t,typeRef[t]);
+  });
+  sortedTypes.forEach(([t,cnt])=>{
+    const ref=typeRef[t];
+    const isAuto=b.typeAuto[t]!==false;
+    h+=drawPanel(t,ref,bi,isAuto);
+  });
+  h+=`</div></div></div>`;
+
   // ── SYNTHESE TYPES ──
   // Group apartments by type
   const byType={};a.forEach(x=>{if(!byType[x.type])byType[x.type]=[];byType[x.type].push(x)});
@@ -490,22 +506,6 @@ function rB(bi){
 
     </div>
   </div></div>`;
-
-  // ── SCHÉMAS UNIFILAIRES ──
-  if(!b.typeAuto)b.typeAuto={};
-  h+=`<div class="card"><div class="card-h">⚡ Schémas Unifilaires — NF C 15-100</div><div class="card-b">
-  <div style="display:flex;flex-direction:column;gap:32px">`;
-
-  // Compute auto deps for types in auto mode
-  sortedTypes.forEach(([t,cnt])=>{
-    if(b.typeAuto[t]!==false) computeAutoDepsType(bi,t,typeRef[t]);
-  });
-  sortedTypes.forEach(([t,cnt])=>{
-    const ref=typeRef[t];
-    const isAuto=b.typeAuto[t]!==false;
-    h+=drawPanel(t,ref,bi,isAuto);
-  });
-  h+=`</div></div></div>`;
 
   return h;
 }

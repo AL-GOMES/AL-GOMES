@@ -228,11 +228,86 @@ function R(){
   document.getElementById('bL').textContent=total+' lgts';
   let th='';B.forEach((b,i)=>{th+=`<div class="tab${curTab==='b'+i?' on':''}" onclick="S('b${i}')">${b.n}</div>`});
   document.getElementById('tabs').innerHTML=th;
-  if(!B.length){document.getElementById('sh').innerHTML=`<div class="empty"><div class="ic-big">📋</div><div class="msg">Aucun bâtiment chargé<br><br>Importez un fichier Excel provenant de<br><strong>Dérivations & TGBT</strong> pour commencer</div></div>`;return}
+  if(!B.length){document.getElementById('sh').innerHTML=`<div class="empty"><div class="ic-big">📋</div><div class="msg">Aucun bâtiment chargé<br><br>Importez un fichier Excel provenant de<br><strong>Dérivations & TGBT</strong> pour commencer</div></div>`;setupStickyHeader();return}
   if(curTab===null)curTab='b0';
   const bi=parseInt(curTab.replace('b',''));
   if(bi>=B.length){curTab='b0';return R()}
   document.getElementById('sh').innerHTML=rB(bi);
+  setupStickyHeader();
+}
+
+// ═══ STICKY HEADER (clone JS) ═══
+// position:sticky CSS ne marche pas ici : .card a overflow:hidden et le
+// wrapper <div style="overflow-x:auto"> autour du <table> créent tous
+// deux un containing block sticky qui empêche l'élément de se coller
+// au viewport. On clone donc la 1ère ligne du tableau dans un conteneur
+// position:fixed top:84px (= 48 topbar + 36 tabs), affiché uniquement
+// quand l'en-tête original a scrollé au-dessus de ce seuil.
+let _stickyState=null;
+function setupStickyHeader(){
+  if(_stickyState){
+    _stickyState.wrap.remove();
+    window.removeEventListener('scroll',_stickyState.fn);
+    window.removeEventListener('resize',_stickyState.fn);
+    if(_stickyState.hScroll) _stickyState.hScroll.removeEventListener('scroll',_stickyState.fn);
+    _stickyState=null;
+  }
+  const sh=document.getElementById('sh');if(!sh)return;
+  const tbl=sh.querySelector('table');if(!tbl)return;
+  const hdr=tbl.querySelector('tr');if(!hdr)return;
+  // Wrapper horizontal scrollable autour du tableau (s'il existe)
+  let hScroll=tbl.parentElement;
+  while(hScroll&&hScroll!==document.body){
+    const ox=getComputedStyle(hScroll).overflowX;
+    if(ox==='auto'||ox==='scroll')break;
+    hScroll=hScroll.parentElement;
+  }
+  if(!hScroll||hScroll===document.body)hScroll=null;
+  // Construction du clone
+  const wrap=document.createElement('div');
+  wrap.id='sticky-hdr-wrap';
+  wrap.style.cssText='position:fixed;top:84px;z-index:50;background:#0e0e10;display:none;overflow:hidden;border-bottom:1px solid rgba(123,95,172,0.20)';
+  const tblClone=document.createElement('table');
+  tblClone.style.cssText='border-collapse:collapse;white-space:nowrap;table-layout:fixed;margin:0';
+  const hdrClone=hdr.cloneNode(true);
+  tblClone.appendChild(hdrClone);
+  wrap.appendChild(tblClone);
+  document.body.appendChild(wrap);
+  const fn=()=>{
+    const tRect=tbl.getBoundingClientRect();
+    const hRect=hdr.getBoundingClientRect();
+    // Affiche le clone si l'en-tête original a scrollé au-dessus de
+    // top:84 ET que le bas du tableau est encore visible sous le seuil.
+    if(hRect.top<84&&tRect.bottom>84){
+      wrap.style.display='block';
+      // Le clone occupe la zone VISIBLE du wrapper (pas la largeur
+      // totale du tableau qui peut être scrollé horizontalement).
+      const wRect=(hScroll||tbl).getBoundingClientRect();
+      wrap.style.left=wRect.left+'px';
+      wrap.style.width=wRect.width+'px';
+      // Le <table> clone fait la même largeur que l'original, translaté
+      // de -scrollLeft pour suivre le scroll horizontal du wrapper.
+      tblClone.style.width=tRect.width+'px';
+      const sl=hScroll?hScroll.scrollLeft:0;
+      tblClone.style.transform=`translateX(${-sl}px)`;
+      // Aligne la largeur de chaque cellule clone sur l'originale
+      const oC=hdr.querySelectorAll('th'),cC=hdrClone.querySelectorAll('th');
+      oC.forEach((c,i)=>{
+        if(!cC[i])return;
+        const r=c.getBoundingClientRect();
+        cC[i].style.width=r.width+'px';
+        cC[i].style.minWidth=r.width+'px';
+        cC[i].style.maxWidth=r.width+'px';
+      });
+    }else{
+      wrap.style.display='none';
+    }
+  };
+  window.addEventListener('scroll',fn,{passive:true});
+  window.addEventListener('resize',fn,{passive:true});
+  if(hScroll)hScroll.addEventListener('scroll',fn,{passive:true});
+  _stickyState={wrap,fn,hScroll};
+  requestAnimationFrame(fn);
 }
 function S(t){curTab=t;R()}
 

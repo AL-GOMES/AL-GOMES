@@ -46,7 +46,11 @@ html, body { background: #2a2a35; font-family: 'Calibri', 'Segoe UI', Arial, san
 }
 .topbar-title { font-size: 16px; font-weight: 600; letter-spacing: 1.5px; }
 .topbar-title .accent { color: #F59E0B; }
-.topbar-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.topbar-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.topbar-template { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 4px; border: 1px solid #2a2f42; background: #1a1e2a; }
+.topbar-template .lbl { font-size: 10px; letter-spacing: 0.06em; color: #8b90a5; text-transform: uppercase; }
+.topbar-template select { background: #0c0e14; color: #e2e4ea; border: 1px solid #2a2f42; border-radius: 3px; padding: 4px 6px; font-family: inherit; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; cursor: pointer; outline: none; }
+.topbar-template select:hover, .topbar-template select:focus { border-color: rgba(245,158,11,0.4); color: #F59E0B; }
 .btn {
   padding: 7px 14px; border-radius: 4px; border: 1px solid #2a2f42; background: #1a1e2a;
   color: #e2e4ea; font-family: inherit; font-size: 12px; font-weight: 600; letter-spacing: 0.5px;
@@ -335,6 +339,46 @@ table.fp th {
 .fp-loc td.lbl { background: #E2E8F0; font-weight: 700; text-align: center; min-width: 220px; }
 .fp-loc input { width: 100%; border: 0; font: inherit; background: transparent; padding: 2px 0; }
 
+/* ─── FICHE EIFFAGE (modèle "Fiche d'acceptation produits") ───────────────── */
+.sheet.eiffage { font-family: 'Arial', 'Segoe UI', sans-serif; color: #000; font-size: 9pt; }
+.sheet.eiffage table { border-collapse: collapse; width: 100%; }
+.sheet.eiffage table.ef-head { border: 1.5px solid #000; }
+.sheet.eiffage table.ef-head td { border: 1px solid #000; padding: 4px 6px; vertical-align: middle; }
+.sheet.eiffage .ef-logo { width: 110px; height: auto; display: block; }
+.sheet.eiffage .ef-title { text-align: center; font-weight: 700; font-size: 14pt; letter-spacing: 0.5px; }
+.sheet.eiffage .ef-num { text-align: center; font-weight: 700; }
+.sheet.eiffage .ef-num input { width: 70px; border: 0; border-bottom: 1px dotted #666; font: inherit; text-align: center; }
+.sheet.eiffage .ef-band { background: #E2E8F0; font-weight: 700; text-align: center; }
+.sheet.eiffage .ef-band input { background: transparent; border: 0; border-bottom: 1px dotted #666; font: inherit; font-weight: 700; text-align: center; width: 100%; padding: 2px 4px; }
+.sheet.eiffage .ef-section { background: #2a2f42; color: #fff; font-weight: 700; text-align: center; padding: 6px 8px; letter-spacing: 0.5px; font-size: 11pt; margin: 12px 0 0; border: 1.5px solid #000; }
+.sheet.eiffage table.ef-desc td { border: 1px solid #000; padding: 5px 8px; }
+.sheet.eiffage table.ef-desc td.lbl { background: #f3f4f6; font-weight: 700; width: 130px; }
+.sheet.eiffage table.ef-desc td.val input { width: 100%; border: 0; font: inherit; padding: 2px 0; background: transparent; }
+.sheet.eiffage table.ef-desc td.val textarea { width: 100%; border: 0; font: inherit; padding: 2px 0; background: transparent; resize: vertical; min-height: 1.4em; }
+.sheet.eiffage .ef-marche-bar { display: flex; gap: 24px; padding: 6px 8px; border: 1px solid #000; border-top: 0; }
+.sheet.eiffage .ef-marche-bar label { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; }
+.sheet.eiffage .ef-pj { columns: 2; column-gap: 20px; padding: 8px 10px; border: 1px solid #000; border-top: 0; }
+.sheet.eiffage .ef-pj label { display: flex; align-items: center; gap: 6px; padding: 3px 0; break-inside: avoid; }
+.sheet.eiffage .ef-pj input[type="text"] { border: 0; border-bottom: 1px dotted #666; font: inherit; padding: 0 4px; flex: 1; min-width: 60px; background: transparent; }
+.sheet.eiffage .ef-pj sup { font-size: 8pt; font-weight: 700; }
+.sheet.eiffage .ef-dates { display: flex; gap: 24px; padding: 6px 10px; border: 1px solid #000; border-top: 0; }
+.sheet.eiffage .ef-dates label { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; }
+.sheet.eiffage .ef-dates input[type="date"] { border: 0; border-bottom: 1px dotted #666; font: inherit; background: transparent; }
+.sheet.eiffage table.ef-avis { margin-top: 0; border: 1.5px solid #000; }
+.sheet.eiffage table.ef-avis th { background: #E2E8F0; border: 1px solid #000; padding: 5px 6px; font-weight: 700; text-align: center; font-size: 10pt; }
+.sheet.eiffage table.ef-avis td { border: 1px solid #000; padding: 4px 6px; vertical-align: top; font-size: 8.5pt; }
+.sheet.eiffage table.ef-avis td.row-lbl { background: #f3f4f6; font-weight: 700; text-align: left; padding-left: 8px; }
+.sheet.eiffage table.ef-avis td label { display: flex; align-items: center; gap: 5px; }
+.sheet.eiffage table.ef-avis td.date-vis input { width: 100%; border: 0; border-bottom: 1px dotted #666; font: inherit; padding: 1px 0; background: transparent; font-size: 8.5pt; }
+.sheet.eiffage .ef-comments { border: 1px solid #000; border-top: 0; padding: 6px 10px; }
+.sheet.eiffage .ef-comments label { font-weight: 700; display: block; margin-bottom: 4px; }
+.sheet.eiffage .ef-comments textarea { width: 100%; border: 0; font: inherit; min-height: 50px; resize: vertical; background: transparent; }
+.sheet.eiffage .ef-footnotes { margin-top: 10px; font-size: 7.5pt; line-height: 1.35; color: #333; }
+.sheet.eiffage .ef-footnotes p { margin: 0 0 2px; }
+.sheet.eiffage .ef-footnotes sup { font-weight: 700; font-size: 7pt; }
+.sheet.eiffage input[type="checkbox"] { width: 13px; height: 13px; accent-color: #000; cursor: pointer; }
+.sheet.eiffage input:focus, .sheet.eiffage textarea:focus { outline: 1px solid #F59E0B; outline-offset: 0; background: rgba(245,158,11,0.05); }
+
 /* ─── Sommaire (aperçu dans l'éditeur, identique à la page PDF) ─── */
 .sheet.sommaire {
   font-family: 'Calibri', 'Segoe UI', Arial, sans-serif;
@@ -432,6 +476,13 @@ input.proj { font-size: 28pt; font-weight: 700; text-align: center; letter-spaci
   <div class="topbar-title">⚡ A.L.GOMES <span class="accent">— Dossier matériel</span></div>
   <div class="topbar-actions">
     <span id="saveStatus">Brouillon</span>
+    <label class="topbar-template" title="Choisir le modèle de fiche utilisé pour tout le dossier">
+      <span class="lbl">Modèle</span>
+      <select id="dossierTemplateSel">
+        <option value="algomes">FICHE AL GOMES</option>
+        <option value="eiffage">FICHE EIFFAGE</option>
+      </select>
+    </label>
     <button class="btn" onclick="newDossier()" title="Repartir d'un dossier vierge (le brouillon actuel sera perdu)">🆕 Nouveau</button>
     <button class="btn" onclick="addNewFiche()" title="Ajouter une nouvelle fiche numérotée">＋ Fiche</button>
     <button class="btn" onclick="addVariante()" title="Ajouter une variante BIS/TER/QUATER de la fiche courante">＋ Variante</button>
@@ -647,6 +698,140 @@ input.proj { font-size: 28pt; font-weight: 700; text-align: center; letter-spaci
 
 </form>
 
+<!-- ────────────────────────────────────────────────────────────────────────────
+     FICHE EIFFAGE — modèle "Fiche d'acceptation produits".
+     Masquée par défaut ; affichée quand dossierTemplate === 'eiffage' et qu'on
+     est sur l'onglet d'une fiche. La structure reprend le XLSX fourni (logo
+     EIFFAGE en en-tête, descriptif produit, pièces jointes, avis MO/MOE/BET/
+     BC/AMO HQE).
+     ──────────────────────────────────────────────────────────────────────── -->
+<form class="sheet eiffage" id="ficheEiffageForm" style="display:none" onsubmit="event.preventDefault();saveFiche();">
+  <!-- En-tête : logo + titre + n° -->
+  <table class="ef-head">
+    <colgroup><col style="width:25%"><col style="width:55%"><col style="width:20%"></colgroup>
+    <tr style="height:60px">
+      <td><img src="assets/img/eiffage-logo.png" alt="EIFFAGE" class="ef-logo"></td>
+      <td class="ef-title">FICHE D'ACCEPTATION PRODUITS</td>
+      <td class="ef-num">N° : <input type="text" id="ef_num" placeholder="lot/fiche"></td>
+    </tr>
+    <tr>
+      <td class="ef-band">STE : <input type="text" id="ef_ste" value="A.L.GOMES"></td>
+      <td class="ef-band"><input type="text" id="ef_lot" placeholder="LOT (n°…) : Electricité Cfo / Cfa"></td>
+      <td class="ef-band"><input type="text" id="ef_bat" placeholder="BAT …"></td>
+    </tr>
+  </table>
+
+  <!-- DESCRIPTIF DU PRODUIT -->
+  <div class="ef-section">DESCRIPTIF DU PRODUIT</div>
+  <div class="ef-marche-bar">
+    <label><input type="checkbox" id="ef_marche"> Marché</label>
+    <label><input type="checkbox" id="ef_variante"> Variante</label>
+  </div>
+  <table class="ef-desc">
+    <colgroup><col style="width:25%"><col style="width:75%"></colgroup>
+    <tr><td class="lbl">Désignation :</td><td class="val"><input type="text" id="ef_designation" placeholder="Appareillage"></td></tr>
+    <tr><td class="lbl">Localisation :</td><td class="val"><input type="text" id="ef_loc" placeholder="Logements"></td></tr>
+    <tr><td class="lbl">Observations :</td><td class="val"><textarea id="ef_observations" rows="2" placeholder="Appareillage encastré"></textarea></td></tr>
+    <tr><td class="lbl">Marque :</td><td class="val"><input type="text" id="ef_marque" placeholder="SCHNEIDER"></td></tr>
+    <tr><td class="lbl">Référence :</td><td class="val"><input type="text" id="ef_reference" placeholder="ODACE"></td></tr>
+    <tr><td class="lbl">Couleur :</td><td class="val"><input type="text" id="ef_couleur" placeholder="Blanc"></td></tr>
+  </table>
+
+  <!-- PIECES JOINTES -->
+  <div class="ef-section">PIECES JOINTES</div>
+  <div class="ef-pj">
+    <label><input type="checkbox" id="ef_pj_fiche"> Fiche technique</label>
+    <label><input type="checkbox" id="ef_pj_echantillon"> Echantillon</label>
+    <label><input type="checkbox" id="ef_pj_pv"> PV</label>
+    <label><input type="checkbox" id="ef_pj_pv_das"> PV DAS</label>
+    <label><input type="checkbox" id="ef_pj_avis"> Avis technique</label>
+    <label><input type="checkbox" id="ef_pj_qse"> Certificats QSE<sup>3</sup></label>
+    <label><input type="checkbox" id="ef_pj_fdes"> FDES<sup>1</sup></label>
+    <label><input type="checkbox" id="ef_pj_acs"> ACS<sup>4</sup></label>
+    <label><input type="checkbox" id="ef_pj_label"> Label<sup>2</sup> : <input type="text" id="ef_pj_label_txt"></label>
+    <label><input type="checkbox" id="ef_pj_fds"> FDS<sup>5</sup></label>
+  </div>
+
+  <!-- Dates -->
+  <div class="ef-dates">
+    <label>Fiche transmise le : <input type="date" id="ef_transmis_le"></label>
+    <label>Accord avant le : <input type="date" id="ef_accord_avant"></label>
+  </div>
+
+  <!-- AVIS -->
+  <table class="ef-avis">
+    <colgroup>
+      <col style="width:18%"><col style="width:16.4%"><col style="width:16.4%"><col style="width:16.4%"><col style="width:16.4%"><col style="width:16.4%">
+    </colgroup>
+    <thead>
+      <tr><th>AVIS</th><th>MO</th><th>MOE</th><th>BET</th><th>BC</th><th>AMO HQE®</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="row-lbl">Sans objet</td>
+        <td><label><input type="checkbox" id="ef_avis_mo_so">&nbsp;</label></td>
+        <td><label><input type="checkbox" id="ef_avis_moe_so">&nbsp;</label></td>
+        <td><label><input type="checkbox" id="ef_avis_bet_so">&nbsp;</label></td>
+        <td><label><input type="checkbox" id="ef_avis_bc_so">&nbsp;</label></td>
+        <td><label><input type="checkbox" id="ef_avis_amo_so">&nbsp;</label></td>
+      </tr>
+      <tr>
+        <td class="row-lbl">Accord</td>
+        <td><label><input type="checkbox" id="ef_avis_mo_acc">&nbsp;</label></td>
+        <td><label><input type="checkbox" id="ef_avis_moe_acc">&nbsp;</label></td>
+        <td><label><input type="checkbox" id="ef_avis_bet_acc">&nbsp;</label></td>
+        <td><label><input type="checkbox" id="ef_avis_bc_acc">&nbsp;</label></td>
+        <td><label><input type="checkbox" id="ef_avis_amo_acc">&nbsp;</label></td>
+      </tr>
+      <tr>
+        <td class="row-lbl">Accord sous réserves</td>
+        <td><label><input type="checkbox" id="ef_avis_mo_res">&nbsp;</label></td>
+        <td><label><input type="checkbox" id="ef_avis_moe_res">&nbsp;</label></td>
+        <td><label><input type="checkbox" id="ef_avis_bet_res">&nbsp;</label></td>
+        <td><label><input type="checkbox" id="ef_avis_bc_res">&nbsp;</label></td>
+        <td><label><input type="checkbox" id="ef_avis_amo_res">&nbsp;</label></td>
+      </tr>
+      <tr>
+        <td class="row-lbl">Refus</td>
+        <td><label><input type="checkbox" id="ef_avis_mo_ref">&nbsp;</label></td>
+        <td><label><input type="checkbox" id="ef_avis_moe_ref">&nbsp;</label></td>
+        <td><label><input type="checkbox" id="ef_avis_bet_ref">&nbsp;</label></td>
+        <td><label><input type="checkbox" id="ef_avis_bc_ref">&nbsp;</label></td>
+        <td><label><input type="checkbox" id="ef_avis_amo_ref">&nbsp;</label></td>
+      </tr>
+      <tr>
+        <td class="row-lbl">Le :</td>
+        <td class="date-vis"><input type="date" id="ef_date_mo"></td>
+        <td class="date-vis"><input type="date" id="ef_date_moe"></td>
+        <td class="date-vis"><input type="date" id="ef_date_bet"></td>
+        <td class="date-vis"><input type="date" id="ef_date_bc"></td>
+        <td class="date-vis"><input type="date" id="ef_date_amo"></td>
+      </tr>
+      <tr>
+        <td class="row-lbl">Visa</td>
+        <td class="date-vis"><input type="text" id="ef_visa_mo"></td>
+        <td class="date-vis"><input type="text" id="ef_visa_moe"></td>
+        <td class="date-vis"><input type="text" id="ef_visa_bet"></td>
+        <td class="date-vis"><input type="text" id="ef_visa_bc"></td>
+        <td class="date-vis"><input type="text" id="ef_visa_amo"></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="ef-comments">
+    <label for="ef_commentaires">Commentaires :</label>
+    <textarea id="ef_commentaires" rows="3"></textarea>
+  </div>
+
+  <div class="ef-footnotes">
+    <p><sup>1</sup> <b>Fiches de Déclaration Environnementales et Sanitaires</b> (norme NF P01-010) pour cloisons, faux-plafonds, couverture, étanchéité, doublage, isolation, façade, menuiserie, revêtements sols-murs-plafonds, structure, maçonnerie, charpente…</p>
+    <p><sup>2</sup> <b>Labels</b> GUT (moquette), NF environnement ou Eco-label ou Ange Bleu (peintures…), FSC ou PEFC (bois issu de forêts durables)…</p>
+    <p><sup>3</sup> <b>Certificats QSE</b> des usines de production : ISO 9001, ISO 14001, EMASE, OHSAS 18001, MASE…</p>
+    <p><sup>4</sup> <b>Attestation de Conformité Sanitaire</b> des matériaux organiques et accessoires des réseaux d'eau (arrêté du 29 mai 1997).</p>
+    <p><sup>5</sup> <b>Fiches de Données de Sécurité</b> pour tous les produits dangereux (arrêté du 20 avril 1994).</p>
+  </div>
+</form>
+
 <!-- Panneau PDF : fiche technique multi-pages associée à la fiche courante -->
 <aside class="pdf-panel no-print" id="pdfPanel">
   <div class="pdf-panel-head">
@@ -677,12 +862,28 @@ const LEGACY_KEY  = 'algomes_dossier_materiel_current'; // ancien format mono-fi
 const SUFFIXES = ['', 'BIS', 'TER', 'QUATER', 'QUINQUIES', 'SEXIES'];
 
 const FIELDS = [
+  // ─── Champs AL GOMES ─────────────────────────────────────────────────────
   'f_project', 'f_lot', 'f_emetteur', 'f_num', 'f_date',
   'o_conforme', 'o_echantillon', 'o_variante', 'o_documentation',
   'o_incidence', 'o_gamme', 'o_autre1', 'o_autre1_txt', 'o_autre2', 'o_autre2_txt',
   'm_fournisseur', 'm_materiel', 'm_caract', 'm_couleur', 'm_finition',
   'm_autres', 'm_observations', 'm_loc',
-  'bet_date', 'arch_date', 'moe_date'
+  'bet_date', 'arch_date', 'moe_date',
+  // ─── Champs EIFFAGE ──────────────────────────────────────────────────────
+  'ef_num', 'ef_ste', 'ef_lot', 'ef_bat',
+  'ef_marche', 'ef_variante',
+  'ef_designation', 'ef_loc', 'ef_observations',
+  'ef_marque', 'ef_reference', 'ef_couleur',
+  'ef_pj_fiche', 'ef_pj_pv', 'ef_pj_avis', 'ef_pj_fdes', 'ef_pj_label', 'ef_pj_label_txt',
+  'ef_pj_echantillon', 'ef_pj_pv_das', 'ef_pj_qse', 'ef_pj_acs', 'ef_pj_fds',
+  'ef_transmis_le', 'ef_accord_avant',
+  'ef_avis_mo_so', 'ef_avis_moe_so', 'ef_avis_bet_so', 'ef_avis_bc_so', 'ef_avis_amo_so',
+  'ef_avis_mo_acc', 'ef_avis_moe_acc', 'ef_avis_bet_acc', 'ef_avis_bc_acc', 'ef_avis_amo_acc',
+  'ef_avis_mo_res', 'ef_avis_moe_res', 'ef_avis_bet_res', 'ef_avis_bc_res', 'ef_avis_amo_res',
+  'ef_avis_mo_ref', 'ef_avis_moe_ref', 'ef_avis_bet_ref', 'ef_avis_bc_ref', 'ef_avis_amo_ref',
+  'ef_date_mo', 'ef_date_moe', 'ef_date_bet', 'ef_date_bc', 'ef_date_amo',
+  'ef_visa_mo', 'ef_visa_moe', 'ef_visa_bet', 'ef_visa_bc', 'ef_visa_amo',
+  'ef_commentaires'
 ];
 const RADIO_GROUPS = ['bet_aor', 'arch_aor', 'moe_aor'];
 
@@ -691,7 +892,10 @@ let fiches = [];
 let currentFicheId = null;
 // Page de garde (1 par dossier) + flag pour savoir quelle vue est active
 let cover = null;        // { title1, title2, address, company1..3, tel, email, place, datetext }
-let viewMode = 'fiche';  // 'fiche' | 'cover'
+let viewMode = 'fiche';  // 'fiche' | 'cover' | 'sommaire'
+// Modèle de fiche utilisé pour TOUT le dossier — 'algomes' (par défaut, fiche
+// AL GOMES historique) ou 'eiffage' (modèle "Fiche d'acceptation produits").
+let dossierTemplate = 'algomes';
 
 const COVER_FIELDS = ['c_title1', 'c_title2', 'c_address', 'c_company1', 'c_company2', 'c_company3', 'c_tel', 'c_email', 'c_place', 'c_datetext'];
 
@@ -738,6 +942,7 @@ function switchToCover(){
   if (viewMode === 'fiche') syncFormToActive();
   viewMode = 'cover';
   document.getElementById('ficheForm').style.display = 'none';
+  document.getElementById('ficheEiffageForm').style.display = 'none';
   document.getElementById('sommaireSheet').style.display = 'none';
   document.getElementById('coverSheet').style.display = '';
   // Cache aussi le panel PDF technique (n'a aucun sens sur la cover)
@@ -752,10 +957,47 @@ function exitCoverToFiche(){
   if (viewMode !== 'cover') return;
   syncCoverFromUI();
   viewMode = 'fiche';
-  document.getElementById('ficheForm').style.display = '';
+  showActiveFicheForm();
   document.getElementById('coverSheet').style.display = 'none';
   const pp = document.getElementById('pdfPanel');
   if (pp) pp.style.display = '';
+}
+
+// Retourne l'élément du formulaire fiche actif selon le template du dossier.
+function getActiveFicheFormEl(){
+  return dossierTemplate === 'eiffage'
+    ? document.getElementById('ficheEiffageForm')
+    : document.getElementById('ficheForm');
+}
+// Affiche le bon formulaire fiche selon dossierTemplate, masque l'autre.
+function showActiveFicheForm(){
+  const algo = document.getElementById('ficheForm');
+  const eif  = document.getElementById('ficheEiffageForm');
+  if (!algo || !eif) return;
+  if (dossierTemplate === 'eiffage'){
+    algo.style.display = 'none';
+    eif.style.display = '';
+  } else {
+    algo.style.display = '';
+    eif.style.display = 'none';
+  }
+}
+// Bascule le template du dossier — visible dans tout l'éditeur.
+function setDossierTemplate(tpl){
+  if (tpl !== 'algomes' && tpl !== 'eiffage') return;
+  if (tpl === dossierTemplate) return;
+  // On sauve les valeurs du formulaire courant avant de basculer
+  if (viewMode === 'fiche') syncFormToActive();
+  dossierTemplate = tpl;
+  // Met à jour le select pour rester synchro même si l'appel ne vient pas
+  // de l'utilisateur (par exemple chargement initial).
+  const sel = document.getElementById('dossierTemplateSel');
+  if (sel) sel.value = tpl;
+  if (viewMode === 'fiche'){
+    showActiveFicheForm();
+    writeForm(getActive());
+  }
+  setStatus('Modèle de fiche : ' + (tpl === 'eiffage' ? 'EIFFAGE' : 'AL GOMES') + ' · modifications non sauvegardées', 'dirty');
 }
 
 // ─── Sommaire (onglet "Sommaire" dans l'éditeur) ─────────────────────────────
@@ -868,6 +1110,7 @@ function switchToSommaire(){
   if (viewMode === 'cover') syncCoverFromUI();
   viewMode = 'sommaire';
   document.getElementById('ficheForm').style.display = 'none';
+  document.getElementById('ficheEiffageForm').style.display = 'none';
   document.getElementById('coverSheet').style.display = 'none';
   document.getElementById('sommaireSheet').style.display = '';
   // Cache aussi le panel PDF technique (n'a aucun sens sur le sommaire)
@@ -882,7 +1125,7 @@ function exitSommaireToFiche(){
   if (viewMode !== 'sommaire') return;
   viewMode = 'fiche';
   document.getElementById('sommaireSheet').style.display = 'none';
-  document.getElementById('ficheForm').style.display = '';
+  showActiveFicheForm();
   const pp = document.getElementById('pdfPanel');
   if (pp) pp.style.display = '';
 }
@@ -1047,6 +1290,7 @@ function saveDossier(showToast){
       fiches,
       currentId: currentFicheId,
       cover: cover || defaultCover(),
+      dossierTemplate: dossierTemplate || 'algomes',
       _savedAt: new Date().toISOString()
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
@@ -1065,6 +1309,7 @@ function loadDossier(){
       fiches = Array.isArray(obj.fiches) ? obj.fiches : [];
       currentFicheId = obj.currentId || (fiches[0] && fiches[0].id);
       cover = obj.cover && typeof obj.cover === 'object' ? Object.assign(defaultCover(), obj.cover) : defaultCover();
+      dossierTemplate = (obj.dossierTemplate === 'eiffage') ? 'eiffage' : 'algomes';
     }
     // 2. Migration depuis l'ancien format mono-fiche
     if (fiches.length === 0) {
@@ -1731,9 +1976,11 @@ async function exportDossierPdf(){
     // capturer, puis on restaurera l'état initial à la fin.
     {
       const ficheFormEl = document.getElementById('ficheForm');
+      const ficheEiffageEl = document.getElementById('ficheEiffageForm');
       const coverEl = document.getElementById('coverSheet');
       const sommaireEl = document.getElementById('sommaireSheet');
       ficheFormEl.style.display = 'none';
+      if (ficheEiffageEl) ficheEiffageEl.style.display = 'none';
       coverEl.style.display = '';
       if (sommaireEl) sommaireEl.style.display = 'none';
       writeCover(cover || defaultCover());
@@ -1820,13 +2067,19 @@ async function exportDossierPdf(){
       const ratio = Math.min(A4W / img.width, A4H / img.height);
       const w = img.width * ratio, h = img.height * ratio;
       page.drawImage(img, { x: (A4W - w) / 2, y: (A4H - h) / 2, width: w, height: h });
-      // Pour la boucle fiches : on FORCE ficheForm visible (peu importe l'état
-      // initial). Sans ça, si l'utilisateur a cliqué "Enregistrer" depuis la
-      // page de garde, prevFicheDisplay vaut 'none' → ficheForm reste caché →
-      // html2canvas renvoie un canvas vide → toDataURL renvoie "data:," et on
-      // throw "format inattendu". L'état final est restauré plus bas selon
+      // Pour la boucle fiches : on FORCE le bon ficheForm visible (selon
+      // dossierTemplate). Sans ça, si l'utilisateur a cliqué "Enregistrer"
+      // depuis la page de garde, le form de fiche reste caché → html2canvas
+      // renvoie un canvas vide → toDataURL renvoie "data:," et on throw
+      // "format inattendu". L'état final est restauré plus bas selon
       // originalView.
-      ficheFormEl.style.display = '';
+      if (dossierTemplate === 'eiffage'){
+        if (ficheEiffageEl) ficheEiffageEl.style.display = '';
+        ficheFormEl.style.display = 'none';
+      } else {
+        ficheFormEl.style.display = '';
+        if (ficheEiffageEl) ficheEiffageEl.style.display = 'none';
+      }
       coverEl.style.display = 'none';
     }
 
@@ -1863,21 +2116,25 @@ async function exportDossierPdf(){
       // viewMode initial 'cover' ou 'sommaire' ou un refactor pourrait
       // l'avoir laissé caché → html2canvas renvoie alors un canvas vide
       // → toDataURL → "data:," → throw "format inattendu").
-      const ficheFormCheck = document.getElementById('ficheForm');
+      const activeFormId = dossierTemplate === 'eiffage' ? 'ficheEiffageForm' : 'ficheForm';
+      const inactiveFormId = dossierTemplate === 'eiffage' ? 'ficheForm' : 'ficheEiffageForm';
+      const ficheFormCheck = document.getElementById(activeFormId);
       if (ficheFormCheck) {
         ficheFormCheck.style.display = '';
-        // S'assure aussi que cover et sommaire sont cachés pendant la capture
+        // S'assure aussi que cover, sommaire et l'autre form sont cachés
         const cv = document.getElementById('coverSheet');
         if (cv) cv.style.display = 'none';
         const sm = document.getElementById('sommaireSheet');
         if (sm) sm.style.display = 'none';
+        const otherForm = document.getElementById(inactiveFormId);
+        if (otherForm) otherForm.style.display = 'none';
       }
       // Attend 2 frames pour que le DOM se mette à jour (inputs et focus)
       await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
       // ⚠ '.sheet' renvoie en premier la cover (id=coverSheet) qui est cachée
-      // → on cible explicitement le ficheForm pour ne pas html2canvas-render
+      // → on cible explicitement le form actif pour ne pas html2canvas-render
       // un élément display:none (qui déclenche une erreur "undefined").
-      const sheet = document.getElementById('ficheForm');
+      const sheet = document.getElementById(activeFormId);
       // Garde supplémentaire : si malgré tout le sheet a une dimension nulle,
       // on force la mise en page (rare mais évite un crash silencieux).
       if (!sheet.scrollWidth || !sheet.scrollHeight) {
@@ -2171,13 +2428,13 @@ async function injectDossierSidecar(pdfBytes, sommairePageCount){
   // Construit le payload : fiches + attachements + page de garde
   syncCoverFromUI();
   const payload = {
-    _v: 3,
+    _v: 4,
     _kind: 'algomes-dossier-materiel',
     exportedAt: new Date().toISOString(),
-    // v3 : le PDF peut contenir plusieurs pages de sommaire (paginé si > 1
-    // page de fiches). hasSommairePage est conservé pour compat v2.
     hasSommairePage: (sommairePageCount || 0) > 0,
     sommairePageCount: sommairePageCount || (fiches.length > 0 ? 1 : 0),
+    // v4 : modèle de fiche utilisé pour ce dossier (AL GOMES ou EIFFAGE).
+    dossierTemplate: dossierTemplate || 'algomes',
     cover: Object.assign({}, cover || defaultCover()),
     fiches: fiches.map(f => Object.assign({}, f)), // copie défensive
     attachments: {}
@@ -2259,6 +2516,10 @@ async function importDossierFromPdf(file){
     } else {
       cover = defaultCover();
     }
+    // Restaure le modèle de fiche si présent (v4+)
+    dossierTemplate = (data.dossierTemplate === 'eiffage') ? 'eiffage' : 'algomes';
+    const _sel = document.getElementById('dossierTemplateSel');
+    if (_sel) _sel.value = dossierTemplate;
     // Restaure les fiches
     fiches = importedFiches;
     currentFicheId = fiches[0] && fiches[0].id;
@@ -2276,6 +2537,7 @@ async function importDossierFromPdf(file){
       }
     }
     saveDossier(false);
+    showActiveFicheForm();
     writeForm(getActive());
     writeCover(cover);
     renderTabs();
@@ -2323,6 +2585,13 @@ deleteCurrentFiche = async function(){
 // ─── Bootstrap ───────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   loadDossier();
+  // Initialise le sélecteur de modèle + applique l'affichage du bon formulaire
+  const tplSel = document.getElementById('dossierTemplateSel');
+  if (tplSel){
+    tplSel.value = dossierTemplate;
+    tplSel.addEventListener('change', (e) => setDossierTemplate(e.target.value));
+  }
+  showActiveFicheForm();
   // Le numéro de fiche est éditable manuellement — re-trie + redraw à chaque
   // modif du champ pour que les onglets restent dans l'ordre.
   document.getElementById('f_num').addEventListener('change', () => {
@@ -2332,6 +2601,12 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('ficheForm').addEventListener('input', markDirty);
   document.getElementById('ficheForm').addEventListener('change', markDirty);
+  // EIFFAGE form : mêmes hooks pour le dirty state
+  const eifForm = document.getElementById('ficheEiffageForm');
+  if (eifForm){
+    eifForm.addEventListener('input', markDirty);
+    eifForm.addEventListener('change', markDirty);
+  }
   // Page de garde : mémorise + marque dirty à chaque modification
   const coverEl = document.getElementById('coverSheet');
   if (coverEl) {

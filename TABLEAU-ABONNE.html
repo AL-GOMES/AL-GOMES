@@ -891,10 +891,20 @@ function drawPanel(type,ap,bi,isAuto){
 
     // Disjoncteurs (et sous-circuits TELE / SON inline)
     h+=`<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">`;
-    // Liste de tous les ECL du panel (pour le sélecteur parent en mode manuel)
+    // Liste de tous les ECL du panel (pour le sélecteur parent en mode manuel).
+    // Label compact "D1·1" (dep · ECL n°) pour que le <select> tienne dans
+    // la largeur étroite de la colonne sans chevaucher la colonne voisine.
     const _allEclList = [];
     builtDeps.forEach((dd, ddi) => dd.cir.forEach((cc, cci) => {
-      if (cc.k === 'ecl') _allEclList.push({ uid: cc.uid, label: 'D'+(ddi+1)+' · ECL #'+(_allEclList.filter(e=>e.dep===ddi).length+1), dep: ddi });
+      if (cc.k === 'ecl') {
+        const nInDep = _allEclList.filter(e=>e.dep===ddi).length+1;
+        _allEclList.push({
+          uid: cc.uid,
+          label: 'D'+(ddi+1)+'·'+nInDep,
+          full:  'Départ '+(ddi+1)+' · ECL #'+nInDep,
+          dep: ddi
+        });
+      }
     }));
     dep.cir.forEach((c,ci)=>{
       if(c.isSub){
@@ -913,10 +923,10 @@ function drawPanel(type,ap,bi,isAuto){
         if(!isAuto && _allEclList.length > 1){
           const curUid = c._parentEcl ? c._parentEcl.uid : '';
           const opts = _allEclList.map(e =>
-            `<option value="${e.uid}"${e.uid===curUid?' selected':''}>${e.label}</option>`
+            `<option value="${e.uid}" title="${e.full}"${e.uid===curUid?' selected':''}>${e.label}</option>`
           ).join('');
           h+=`<select onchange="setSubParent('${apRef}','${c._subKind}',${c._subIdx},this.value)"
-                style="margin-top:4px;font-size:9px;padding:2px;background:rgba(22,18,32,0.6);color:${subC};border:1px solid ${subC}55;border-radius:3px;cursor:pointer"
+                style="margin-top:4px;width:34px;max-width:34px;font-size:8px;padding:1px;background:rgba(22,18,32,0.6);color:${subC};border:1px solid ${subC}55;border-radius:3px;cursor:pointer;box-sizing:border-box"
                 title="Choisir le départ ECL parent">${opts}</select>`;
         }
         h+=`</div>`;

@@ -63,6 +63,8 @@ td{padding:4px 3px;text-align:center;border-bottom:1px solid rgba(123,95,172,0.0
 th.sep-l,td.sep-l{border-left:2px solid rgba(123,95,172,0.20)}
 .fsep td{border-top:2px solid rgba(123,95,172,0.20)}
 table tr:hover td{background:rgba(91,63,140,0.10)}
+table tr.row-hl td{background:rgba(187,107,217,0.18)!important;box-shadow:inset 0 0 0 1px rgba(187,107,217,0.55)}
+table tr.row-hl td:first-child{border-left:3px solid #BB6BD9!important}
 
 input[type="number"]{background:rgba(22,18,32,0.6);border:1px solid rgba(123,95,172,0.10);border-radius:3px;color:rgba(220,210,235,0.90);padding:3px 2px;font-family:inherit;font-size:11px;text-align:center;width:38px;-moz-appearance:textfield}
 input::-webkit-inner-spin-button,input::-webkit-outer-spin-button{-webkit-appearance:none}
@@ -270,7 +272,7 @@ function rB(bi){
     <span style="font-size:10px;font-weight:700;letter-spacing:2px;color:rgba(155,125,197,0.65);text-transform:uppercase;margin-right:4px">Récap types :</span>`;
   sortedTypes.forEach(([t,cnt])=>{
     const rc=typeRecap[t];
-    h+=`<div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:rgba(22,18,32,0.55);border:1px solid rgba(123,95,172,0.15);border-radius:6px" title="Recap: ${rc}">
+    h+=`<div onclick="scrollToTypeSchema(${bi},'${t}')" style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:rgba(22,18,32,0.55);border:1px solid rgba(123,95,172,0.15);border-radius:6px;cursor:pointer;transition:transform 0.15s,border-color 0.15s" onmouseenter="this.style.transform='scale(1.05)';this.style.borderColor='rgba(187,107,217,0.55)'" onmouseleave="this.style.transform='scale(1)';this.style.borderColor='rgba(123,95,172,0.15)'" title="Cliquer pour aller au schéma Type ${t}">
       ${typeBadge(t)}
       <span style="font-weight:700;font-size:13px;color:rgba(220,210,235,0.90)">${cnt}</span>
       <span style="font-size:10px;color:rgba(155,125,197,0.55)">lgt${cnt>1?'s':''}</span>
@@ -308,9 +310,11 @@ function rB(bi){
   a.forEach((x,i)=>{
     const newF=x.f!==prevF;prevF=x.f;
     const changed=hasBefore&&x.tb!==undefined&&x.tb!==x.type;
-    h+=`<tr${newF&&i>0?' class="fsep"':''}${changed?' style="background:rgba(237,125,49,0.06)"':''}>`;
+    const rowCls = (newF&&i>0?'fsep ':'')+'row-lgt';
+    const rowId  = `row-${bi}-${i}`;
+    h+=`<tr id="${rowId}" class="${rowCls.trim()}"${changed?' style="background:rgba(237,125,49,0.06)"':''}>`;
     h+=`<td style="font-weight:${newF?'700':'400'};color:${newF?'rgba(123,95,172,0.90)':'rgba(220,210,235,0.40)'}">${newF?x.f:''}</td>`;
-    h+=`<td style="font-size:11px">${x.r}</td><td style="font-size:11px">${x.e}</td>`;
+    h+=`<td style="font-size:11px;cursor:pointer;text-decoration:underline dotted rgba(155,125,197,0.35)" onclick="toggleRowHl('${rowId}')" title="Cliquer pour mettre en valeur la ligne">${x.r}</td><td style="font-size:11px">${x.e}</td>`;
     h+=`<td>${x.u}</td><td style="font-weight:600;color:rgba(123,95,172,0.80)">${x.p}</td><td>${x.c}A</td>`;
     CIR.forEach((c,ci)=>{
       h+=`<td class="${ci===0?'sep-l':''}"><input type="number" value="${x[c.k]}" min="0" onchange="B[${bi}].a[${i}].${c.k}=parseInt(this.value)||0;R()"></td>`;
@@ -508,6 +512,22 @@ function rB(bi){
   </div></div>`;
 
   return h;
+}
+
+// ═══ NAVIGATION & UI HELPERS ═══
+// Scroll vers le panel schéma correspondant au type donné (cliquer sur un
+// badge "Récap types"). Le panel a un id `schema-{bi}-{type}` et un
+// scroll-margin-top pour éviter d'être masqué par la topbar.
+function scrollToTypeSchema(bi, type){
+  const el = document.getElementById('schema-'+bi+'-'+type);
+  if (el) el.scrollIntoView({behavior:'smooth', block:'start'});
+}
+// Toggle de surlignage visuel d'une ligne du tableau (cliquer sur le N°
+// Archi du logement). Re-cliquer enlève le surlignage. Plusieurs lignes
+// peuvent être surlignées en même temps.
+function toggleRowHl(rowId){
+  const el = document.getElementById(rowId);
+  if (el) el.classList.toggle('row-hl');
 }
 
 // ═══ AUTO/MANUAL TOGGLE (per type) ═══
@@ -816,7 +836,9 @@ function drawPanel(type,ap,bi,isAuto){
   });
 
   const tc=TYPE_COLORS[(type.charCodeAt(0)-65)%TYPE_COLORS.length];
-  let h=`<div style="border:1px solid rgba(123,95,172,0.15);border-radius:12px;padding:30px;background:rgba(10,8,16,0.5)">`;
+  // ID stable du panel pour permettre un scroll direct depuis le badge
+  // "Récap types" (chaque type a son ancre <id="schema-{bi}-{type}">).
+  let h=`<div id="schema-${bi}-${type}" style="border:1px solid rgba(123,95,172,0.15);border-radius:12px;padding:30px;background:rgba(10,8,16,0.5);scroll-margin-top:80px">`;
   h+=`<div style="display:flex;align-items:center;gap:14px;margin-bottom:6px">
     ${typeBadge(type)}
     <span style="font-size:16px;font-weight:700;color:rgba(220,210,235,0.90)">${ap.p} kVA — Calibre ${ap.c}A</span>

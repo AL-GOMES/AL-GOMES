@@ -297,7 +297,7 @@ function rB(bi){
     // ajoutées via "+"). Sert au calcul dep.mc / totalMod / rangées.
     const modVal = modOf(c.k);
     const modInput = `<input type="number" min="1" step="1" value="${modVal}" onchange="setCirMod('${c.k}', this.value)" onclick="event.stopPropagation()" title="Nombre de modules par disjoncteur" style="width:30px;font-size:9px;background:transparent;border:1px solid ${hc}33;color:${hc};text-align:center;border-radius:3px;padding:1px 2px;cursor:text"/>`;
-    h+=`<th class="${ci===0?'sep-l':''}" style="width:40px;background:${hb};color:${hc};border-top:2px solid ${hc}" title="Type ${dt} · ${modVal} module${modVal>1?'s':''}/disj">${c.n}${c.k.startsWith('_a')?`<span onclick="removeAlim('${c.k}')" style="cursor:pointer;color:#E74C3C;font-size:10px;margin-left:2px" title="Supprimer">×</span>`:''}<br>${calInput}<br><span style="display:inline-flex;align-items:center;gap:2px;font-size:8px;opacity:0.7">${modInput}<span>mod</span></span></th>`;
+    h+=`<th class="${ci===0?'sep-l':''}" style="width:40px;background:${hb};color:${hc};border-top:2px solid ${hc}" title="Type ${dt} · ${modVal} module${modVal>1?'s':''}/disj">${c.n}${c.k.startsWith('_a')?`<span onclick="removeAlim('${c.k}')" style="cursor:pointer;color:#E74C3C;font-size:10px;margin-left:2px" title="Supprimer">×</span>`:''}<br>${calInput}<br><span style="display:inline-flex;align-items:center;gap:2px;font-size:8px;opacity:0.7">${modInput}<span>M</span></span></th>`;
   });
   h+=`<th style="width:30px;cursor:pointer;opacity:0.5" onclick="addAlim()" title="Ajouter une alimentation">＋</th>`;
   h+=`<th class="sep-l">TYPE</th>`;

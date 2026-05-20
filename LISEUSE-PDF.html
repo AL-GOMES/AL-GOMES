@@ -403,6 +403,202 @@ html, body {
 }
 .thumb.active .label { color: var(--accent-2); background: rgba(139,92,246,0.08); }
 
+/* Vignette SOMMAIRE (virtuelle, sans canvas PDF) */
+.thumb.thumb-sommaire {
+  background: linear-gradient(135deg, rgba(139,92,246,0.18), rgba(167,139,250,0.06));
+  border-color: var(--accent-d);
+}
+.thumb.thumb-sommaire .summary-card {
+  padding: 14px 8px;
+  text-align: center;
+  color: var(--text-0);
+}
+.thumb.thumb-sommaire .summary-card .ico {
+  font-size: 22px;
+  color: var(--accent-2);
+  letter-spacing: 2px;
+  margin-bottom: 6px;
+}
+.thumb.thumb-sommaire .summary-card .ttl {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: var(--text-0);
+}
+.thumb.thumb-sommaire .summary-card .sub {
+  font-size: 9px;
+  color: var(--text-2);
+  margin-top: 3px;
+  letter-spacing: 0.08em;
+}
+.thumb.thumb-sommaire:hover { border-color: var(--accent); }
+
+/* ============================================================================
+   MODALE SOMMAIRE — table des matières AL GOMES pour dossier matériel
+   ============================================================================ */
+.modal.modal-sommaire {
+  width: 1080px;
+  max-width: 95vw;
+  max-height: 92vh;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-1);
+}
+.sommaire-header {
+  background: linear-gradient(135deg, #0d0a18 0%, #1a0e2e 60%, #2a1648 100%);
+  border-bottom: 1px solid var(--accent-d);
+  padding: 18px 28px 16px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  position: relative;
+  overflow: hidden;
+}
+.sommaire-header::before {
+  content: "";
+  position: absolute; inset: 0;
+  background:
+    repeating-linear-gradient(45deg, rgba(139,92,246,0.06) 0 2px, transparent 2px 6px),
+    repeating-linear-gradient(-45deg, rgba(255,255,255,0.02) 0 2px, transparent 2px 6px);
+  pointer-events: none;
+}
+.sommaire-logo {
+  width: 56px; height: 56px;
+  border-radius: 6px;
+  background: #fff;
+  padding: 6px;
+  box-shadow: 0 4px 18px rgba(139,92,246,0.25);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+}
+.sommaire-logo img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.sommaire-titles { flex: 1; min-width: 0; position: relative; }
+.sommaire-titles .brand {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  color: #fff;
+  margin: 0;
+  line-height: 1;
+  text-shadow: 0 2px 12px rgba(139,92,246,0.45);
+}
+.sommaire-titles .tagline {
+  margin-top: 4px;
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  color: var(--accent-2);
+  text-transform: uppercase;
+}
+.sommaire-titles .meta {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text-1);
+  letter-spacing: 0.04em;
+}
+.sommaire-titles .meta b { color: var(--text-0); font-weight: 600; }
+.sommaire-close {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: var(--text-0);
+  width: 32px; height: 32px;
+  border-radius: 6px;
+  font-size: 18px; line-height: 1;
+  cursor: pointer;
+  position: relative;
+  transition: all .15s;
+}
+.sommaire-close:hover { background: rgba(255,255,255,0.12); border-color: var(--accent); color: #fff; }
+
+.sommaire-body {
+  flex: 1;
+  overflow: auto;
+  background: var(--bg-1);
+}
+.sommaire-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.sommaire-table thead th {
+  position: sticky;
+  top: 0;
+  background: linear-gradient(180deg, var(--bg-3), var(--bg-2));
+  color: var(--accent-2);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-align: left;
+  padding: 12px 14px;
+  border-bottom: 2px solid var(--accent-d);
+  white-space: nowrap;
+  z-index: 1;
+}
+.sommaire-table tbody td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--panel-border);
+  color: var(--text-0);
+  vertical-align: top;
+  line-height: 1.4;
+}
+.sommaire-table tbody tr:hover td { background: rgba(139,92,246,0.05); }
+.sommaire-table tbody tr:last-child td { border-bottom: 0; }
+.sommaire-table .col-num { white-space: nowrap; width: 1%; }
+.sommaire-table .col-page { white-space: nowrap; width: 1%; text-align: right; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.sommaire-table .col-autres { max-width: 220px; }
+.sommaire-table .col-autres .ellipsis,
+.sommaire-table .col-loc .ellipsis,
+.sommaire-table .col-caract .ellipsis {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+.sommaire-fiche-btn {
+  background: linear-gradient(135deg, var(--accent), var(--accent-d));
+  color: #fff;
+  border: 0;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: all .15s;
+  box-shadow: 0 2px 8px rgba(139,92,246,0.3);
+  white-space: nowrap;
+}
+.sommaire-fiche-btn:hover {
+  background: linear-gradient(135deg, var(--accent-2), var(--accent));
+  box-shadow: 0 4px 12px rgba(139,92,246,0.5);
+  transform: translateY(-1px);
+}
+.sommaire-fiche-btn:active { transform: translateY(0); }
+.sommaire-empty {
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--text-2);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+.sommaire-footer {
+  padding: 10px 20px;
+  background: var(--bg-2);
+  border-top: 1px solid var(--panel-border);
+  font-size: 10px;
+  color: var(--text-2);
+  letter-spacing: 0.06em;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.sommaire-footer .count strong { color: var(--accent-2); font-size: 12px; }
+
 /* Search */
 .search-box {
   padding: 8px;
@@ -1436,6 +1632,10 @@ html, body {
       <svg class="icon" viewBox="0 0 24 24"><path d="M8 3h13v18H8M3 8l5-5v18l-5-5M14 8v8M10 12h8"/></svg>
       FUSIONNER
     </button>
+    <button class="btn" id="btn-sommaire" title="Sommaire AL GOMES — table des matières des fiches matériel (visible uniquement pour les dossiers matériel exportés depuis A.L. GOMES)" style="display:none">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M4 5h16M4 10h16M4 15h10M4 20h10"/><circle cx="19" cy="17.5" r="2.5" fill="none"/><path d="M21 19.5l2 2"/></svg>
+      SOMMAIRE
+    </button>
     <button class="btn icon-only" id="btn-help" title="Aide (?)">
       <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/></svg>
     </button>
@@ -1873,6 +2073,30 @@ html, body {
   </div>
 </div>
 
+<!-- ====== Modal SOMMAIRE — table des matières dossier matériel ====== -->
+<div class="modal-backdrop" id="modal-sommaire">
+  <div class="modal modal-sommaire">
+    <div class="sommaire-header">
+      <div class="sommaire-logo">
+        <img src="logo-algomes.png" alt="A.L. GOMES">
+      </div>
+      <div class="sommaire-titles">
+        <h2 class="brand">A.L. GOMES</h2>
+        <div class="tagline">Bureau d'études techniques · Électricité</div>
+        <div class="meta" id="sommaire-meta"></div>
+      </div>
+      <button class="sommaire-close" id="sommaire-close" title="Fermer (Échap)">×</button>
+    </div>
+    <div class="sommaire-body" id="sommaire-body">
+      <!-- table injectée dynamiquement -->
+    </div>
+    <div class="sommaire-footer">
+      <span class="count"><strong id="sommaire-count">0</strong> fiche(s)</span>
+      <span>Cliquez sur un numéro de fiche pour y accéder directement.</span>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -2194,6 +2418,99 @@ function updateSaveButton() {
   if (btn) btn.classList.toggle('dirty', !!anyDirty);
 }
 
+// =============================================================================
+// SOMMAIRE — table des matières AL GOMES affichée entre la page de garde et la
+// fiche 1 pour les PDFs générés par DOSSIER_MATERIEL.html (sidecar DM_DATA).
+// =============================================================================
+
+// Échappe le HTML utilisateur (champs FOURNISSEUR/MATERIEL/...) avant injection.
+function _escHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Affiche ou masque le bouton SOMMAIRE du topbar selon que le viewer
+// principal a chargé un dossier matériel ou non.
+function updateSommaireButton() {
+  const btn = document.getElementById('btn-sommaire');
+  if (!btn) return;
+  const has = !!(typeof app !== 'undefined' && app.primary && app.primary.dossierData);
+  btn.style.display = has ? '' : 'none';
+}
+
+// Construit et ouvre le modal SOMMAIRE pour le viewer principal.
+function openSommaireModal() {
+  const v = (typeof app !== 'undefined') ? app.primary : null;
+  if (!v || !v.dossierData) return;
+  const data = v.dossierData;
+  const body = document.getElementById('sommaire-body');
+  const meta = document.getElementById('sommaire-meta');
+  const count = document.getElementById('sommaire-count');
+  if (!body) return;
+
+  // Méta : projet (récupéré sur la 1ère fiche) + date d'export si dispo
+  const firstFiche = data.fiches[0] || {};
+  const proj = firstFiche.f_project || '';
+  const lot = firstFiche.f_lot || '';
+  const parts = [];
+  if (proj) parts.push('<b>' + _escHtml(proj) + '</b>');
+  if (lot)  parts.push('Lot : ' + _escHtml(lot));
+  parts.push((data.fiches.length) + ' fiche' + (data.fiches.length > 1 ? 's' : ''));
+  meta.innerHTML = parts.join(' &nbsp;·&nbsp; ');
+
+  if (!data.fiches.length) {
+    body.innerHTML = '<div class="sommaire-empty">Aucune fiche dans ce dossier.</div>';
+  } else {
+    let html = '<table class="sommaire-table">';
+    html += '<thead><tr>' +
+      '<th class="col-num">Fiche n°</th>' +
+      '<th>Fournisseur</th>' +
+      '<th>Matériels</th>' +
+      '<th>Caractéristiques</th>' +
+      '<th class="col-autres">Autres caractéristiques</th>' +
+      '<th>Localisation</th>' +
+      '<th class="col-page">Page du PDF</th>' +
+    '</tr></thead><tbody>';
+    for (const f of data.fiches) {
+      const page = data.fichePages.get(f.id) || '?';
+      const num = f.f_num || '—';
+      // Caractéristiques principales + couleur/finition concaténées en ligne
+      const caractParts = [];
+      if (f.m_caract)   caractParts.push(f.m_caract);
+      if (f.m_couleur)  caractParts.push('Couleur : ' + f.m_couleur);
+      if (f.m_finition) caractParts.push('Finition : ' + f.m_finition);
+      const caract = caractParts.join(' · ');
+      html += '<tr>' +
+        '<td class="col-num">' +
+          '<button class="sommaire-fiche-btn" data-page="' + _escHtml(page) + '" title="Aller à la page ' + _escHtml(page) + '">Fiche ' + _escHtml(num) + '</button>' +
+        '</td>' +
+        '<td>' + _escHtml(f.m_fournisseur || '—') + '</td>' +
+        '<td>' + _escHtml(f.m_materiel || '—') + '</td>' +
+        '<td><div class="ellipsis">' + _escHtml(caract || '—') + '</div></td>' +
+        '<td class="col-autres"><div class="ellipsis">' + _escHtml(f.m_autres || '—') + '</div></td>' +
+        '<td class="col-loc"><div class="ellipsis">' + _escHtml(f.m_loc || '—') + '</div></td>' +
+        '<td class="col-page">' + _escHtml(page) + '</td>' +
+      '</tr>';
+    }
+    html += '</tbody></table>';
+    body.innerHTML = html;
+    // Binding : clic sur Fiche N° → ferme le modal et navigue vers la page
+    body.querySelectorAll('.sommaire-fiche-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const p = parseInt(btn.dataset.page, 10);
+        if (!isNaN(p)) v.gotoPage(p);
+        closeModal('modal-sommaire');
+      });
+    });
+  }
+  count.textContent = data.fiches.length;
+  openModal('modal-sommaire');
+}
+
 // Sauvegarde locale désactivée par choix utilisateur — no-op.
 // Cette fonction servait aux initialisations système (calibration auto,
 // restauration LP_DATA) qui n'ont plus besoin d'être persistées.
@@ -2238,6 +2555,9 @@ class PDFViewer {
     this.dragStart = null;
     // Rafraîchit à la fin du resize
     this._renderToken = 0;
+    // Données dossier matériel A.L. GOMES (sidecar DM_DATA) si présent.
+    // Quand non null, contient { cover, fiches:[{...}], firstFichePage, fichePages:{id→page} }.
+    this.dossierData = null;
   }
 
   async open(file) {
@@ -2255,6 +2575,9 @@ class PDFViewer {
     const buf = await file.arrayBuffer();
     // Chercher un payload embarqué par un export LISEUSE PLAN précédent
     const embedded = extractEmbeddedLiseuseData(buf);
+    // Chercher un sidecar DM_DATA injecté par DOSSIER_MATERIEL.html : si
+    // présent, on activera le sommaire entre la page de garde et la fiche 1.
+    const dossier = extractDossierMaterielSidecar(buf);
     const loadingTask = pdfjsLib.getDocument({
       data: buf,
       cMapUrl: null,
@@ -2291,6 +2614,27 @@ class PDFViewer {
     hideLoader();
     setStatus('Document chargé · ' + this.totalPages + ' page(s)');
     showToast(this.totalPages + ' page(s) chargée(s)', 'ok');
+
+    // Dossier matériel : si on a un sidecar DM_DATA valide, on calcule la page
+    // de chaque fiche dans le PDF (cover=1, fiche i+1 = fiche i + 1 + attach_i).
+    // Ceci alimente le bouton SOMMAIRE et la vignette virtuelle dans le panel.
+    if (dossier && Array.isArray(dossier.fiches) && dossier.fiches.length) {
+      try {
+        const pageMap = await computeDossierFichePages(dossier);
+        this.dossierData = {
+          cover: dossier.cover || null,
+          fiches: dossier.fiches,
+          fichePages: pageMap,
+          firstFichePage: pageMap.size ? Math.min(...pageMap.values()) : 2
+        };
+      } catch (e) {
+        console.warn('Sommaire dossier matériel : calcul des pages échoué', e);
+        this.dossierData = null;
+      }
+    } else {
+      this.dossierData = null;
+    }
+    if (this === app.primary) updateSommaireButton();
 
     // Render page 1 + build thumbnails + detect equipment
     await this.renderPage(1);
@@ -2734,6 +3078,13 @@ class PDFViewer {
     list.style.padding = '4px';
     body.appendChild(list);
 
+    // Position d'insertion de la vignette virtuelle SOMMAIRE (entre la page
+    // de garde et la fiche 1). On l'insère juste après la page p == 1 si on
+    // a un dossier matériel détecté.
+    const sommaireAfter = (this.dossierData && this.dossierData.firstFichePage > 1)
+      ? 1
+      : -1;
+
     for (let p = 1; p <= this.totalPages; p++) {
       const thumb = document.createElement('div');
       thumb.className = 'thumb';
@@ -2751,6 +3102,23 @@ class PDFViewer {
 
       // Rendu asynchrone en tâche de fond
       this._renderThumb(p, cv);
+
+      // Vignette virtuelle SOMMAIRE entre cover (p=1) et fiche 1 (p=2+)
+      if (p === sommaireAfter) {
+        const sthumb = document.createElement('div');
+        sthumb.className = 'thumb thumb-sommaire';
+        sthumb.dataset.pane = this.paneId;
+        sthumb.title = 'Sommaire AL GOMES — table des matières des fiches';
+        sthumb.innerHTML =
+          '<div class="summary-card">' +
+            '<div class="ico">≡</div>' +
+            '<div class="ttl">SOMMAIRE</div>' +
+            '<div class="sub">A.L. GOMES</div>' +
+          '</div>' +
+          '<div class="label">Table des matières</div>';
+        sthumb.addEventListener('click', () => openSommaireModal());
+        list.appendChild(sthumb);
+      }
     }
   }
 
@@ -4875,6 +5243,67 @@ function extractEmbeddedLiseuseData(arrayBuffer) {
   }
 }
 
+// Décode base64 → Uint8Array (par chunks pour éviter call stack overflow).
+function _dmB64ToBytes(b64) {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+// Lit le sidecar DM_DATA injecté par DOSSIER_MATERIEL.html après %%EOF.
+// Le sidecar contient les fiches (champs FOURNISSEUR/MATERIELS/...) et les PDFs
+// techniques attachés en base64. Renvoie l'objet décodé ou null si absent.
+function extractDossierMaterielSidecar(arrayBuffer) {
+  try {
+    // PDFs avec pièces jointes peuvent être lourds → on scanne jusqu'à 100 Mo
+    const maxScan = Math.min(arrayBuffer.byteLength, 100 * 1024 * 1024);
+    const view = new Uint8Array(arrayBuffer, 0, maxScan);
+    const txt = new TextDecoder('latin1').decode(view);
+    const START = '%DM_DATA_START:';
+    const END = ':DM_DATA_END';
+    const sIdx = txt.indexOf(START);
+    if (sIdx < 0) return null;
+    const eIdx = txt.indexOf(END, sIdx + START.length);
+    if (eIdx < 0) return null;
+    const b64 = txt.substring(sIdx + START.length, eIdx).trim();
+    const json = decodeURIComponent(escape(atob(b64)));
+    const data = JSON.parse(json);
+    if (!data || data._kind !== 'algomes-dossier-materiel') return null;
+    return data;
+  } catch (e) {
+    console.warn('Extraction DM_DATA échouée :', e);
+    return null;
+  }
+}
+
+// Calcule la position de chaque fiche dans le PDF généré par DOSSIER_MATERIEL.
+// Le PDF suit la structure : [cover, fiche1, attach1?, fiche2, attach2?, ...].
+// On charge chaque attachement avec pdf-lib pour récupérer le nombre de pages
+// (l'info n'est pas stockée dans le sidecar). Renvoie un Map id→pagePdf.
+async function computeDossierFichePages(dossierData) {
+  if (!dossierData || !Array.isArray(dossierData.fiches)) return new Map();
+  const map = new Map();
+  // Page 1 = cover ; fiche 1 démarre en page 2
+  let cursor = 2;
+  for (const f of dossierData.fiches) {
+    map.set(f.id, cursor);
+    let attachPages = 0;
+    const att = dossierData.attachments && dossierData.attachments[f.id];
+    if (att && att.b64 && typeof PDFLib !== 'undefined') {
+      try {
+        const bytes = _dmB64ToBytes(att.b64);
+        const doc = await PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true });
+        attachPages = doc.getPageCount();
+      } catch (e) {
+        console.warn('Impossible de lire l\'attachement de la fiche', f.f_num, e);
+      }
+    }
+    cursor += 1 + attachPages; // 1 page pour la fiche + pages de l'attachement
+  }
+  return map;
+}
+
 function buildPdfFromJpegs(images, embeddedJson) {
   // On construit en écrivant dans un tableau de bytes, en notant les offsets xref.
   const chunks = [];
@@ -5974,6 +6403,22 @@ function installEvents() {
   // Help
   $('btn-help').addEventListener('click', () => openModal('modal-help'));
   $('help-close').addEventListener('click', () => closeModal('modal-help'));
+
+  // Sommaire (dossier matériel)
+  const btnSommaire = $('btn-sommaire');
+  if (btnSommaire) btnSommaire.addEventListener('click', openSommaireModal);
+  const sommaireClose = $('sommaire-close');
+  if (sommaireClose) sommaireClose.addEventListener('click', () => closeModal('modal-sommaire'));
+  // Échap pour fermer
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && document.getElementById('modal-sommaire').classList.contains('open')) {
+      closeModal('modal-sommaire');
+    }
+  });
+  // Clic sur le backdrop (mais pas sur la modale elle-même) pour fermer
+  document.getElementById('modal-sommaire').addEventListener('click', (e) => {
+    if (e.target.id === 'modal-sommaire') closeModal('modal-sommaire');
+  });
 
   // Viewer mouse events
   installViewerEvents(app.primary);

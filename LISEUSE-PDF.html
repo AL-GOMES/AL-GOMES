@@ -433,18 +433,6 @@ html, body {
 }
 .thumb.thumb-sommaire:hover { border-color: var(--accent); }
 
-/* Vignette de la page sommaire physique (PDF v2+) : bordure accent et label
-   en majuscules pour la distinguer des fiches techniques. */
-.thumb.thumb-sommaire-page {
-  border-color: var(--accent-d);
-  box-shadow: 0 0 0 1px rgba(139,92,246,0.25) inset;
-}
-.thumb.thumb-sommaire-page .label {
-  color: var(--accent-2);
-  font-weight: 700;
-  letter-spacing: 0.1em;
-}
-
 /* ============================================================================
    MODALE SOMMAIRE — table des matières AL GOMES pour dossier matériel
    ============================================================================ */
@@ -2452,29 +2440,6 @@ function updateSommaireButton() {
   if (!btn) return;
   const has = !!(typeof app !== 'undefined' && app.primary && app.primary.dossierData);
   btn.style.display = has ? '' : 'none';
-  // Le label/title diffère selon que le sommaire est une page physique ou
-  // seulement une vue interne de la liseuse.
-  if (has) {
-    const dd = app.primary.dossierData;
-    if (dd.hasSommairePage) {
-      btn.title = 'Aller à la page sommaire du PDF (page ' + dd.sommairePageNum + ')';
-    } else {
-      btn.title = 'Sommaire AL GOMES — table des matières des fiches matériel';
-    }
-  }
-}
-
-// Bouton SOMMAIRE du topbar :
-// - PDF v2+ (page sommaire physique) → on saute simplement à la page 2 du PDF
-// - PDF v1 (legacy, pas de page physique) → on ouvre la modale interactive
-function handleSommaireButton() {
-  const v = (typeof app !== 'undefined') ? app.primary : null;
-  if (!v || !v.dossierData) return;
-  if (v.dossierData.hasSommairePage) {
-    v.gotoPage(v.dossierData.sommairePageNum || 2);
-  } else {
-    openSommaireModal();
-  }
 }
 
 // Construit et ouvre le modal SOMMAIRE pour le viewer principal.
@@ -2660,11 +2625,7 @@ class PDFViewer {
           cover: dossier.cover || null,
           fiches: dossier.fiches,
           fichePages: pageMap,
-          firstFichePage: pageMap.size ? Math.min(...pageMap.values()) : 2,
-          // hasSommairePage : v2+ => page 2 du PDF est la table des matières.
-          // Le bouton SOMMAIRE du topbar peut alors juste y naviguer.
-          hasSommairePage: !!dossier.hasSommairePage,
-          sommairePageNum: dossier.hasSommairePage ? 2 : null
+          firstFichePage: pageMap.size ? Math.min(...pageMap.values()) : 2
         };
       } catch (e) {
         console.warn('Sommaire dossier matériel : calcul des pages échoué', e);
@@ -3117,27 +3078,23 @@ class PDFViewer {
     list.style.padding = '4px';
     body.appendChild(list);
 
-    // Vignette virtuelle SOMMAIRE — utile uniquement pour les dossiers v1
-    // (legacy : pas de page sommaire physique dans le PDF). Pour les v2+, la
-    // page 2 du PDF EST le sommaire et son thumbnail s'affiche automatiquement.
-    const dd = this.dossierData;
-    const needsVirtualSommaire = !!(dd && dd.firstFichePage > 1 && !dd.hasSommairePage);
-    const sommaireAfter = needsVirtualSommaire ? 1 : -1;
-    // Numéro de la page sommaire physique (pour bordure spéciale sur sa vignette)
-    const sommairePhysicalPage = (dd && dd.hasSommairePage) ? dd.sommairePageNum : null;
+    // Position d'insertion de la vignette virtuelle SOMMAIRE (entre la page
+    // de garde et la fiche 1). On l'insère juste après la page p == 1 si on
+    // a un dossier matériel détecté.
+    const sommaireAfter = (this.dossierData && this.dossierData.firstFichePage > 1)
+      ? 1
+      : -1;
 
     for (let p = 1; p <= this.totalPages; p++) {
       const thumb = document.createElement('div');
       thumb.className = 'thumb';
-      if (p === sommairePhysicalPage) thumb.classList.add('thumb-sommaire-page');
       thumb.dataset.page = p;
       thumb.dataset.pane = this.paneId;
       if (p === this.currentPageNum) thumb.classList.add('active');
       const cv = document.createElement('canvas');
       const label = document.createElement('div');
       label.className = 'label';
-      // Étiquette spéciale pour la page sommaire physique
-      label.textContent = (p === sommairePhysicalPage) ? 'SOMMAIRE' : ('Page ' + p);
+      label.textContent = 'Page ' + p;
       thumb.appendChild(cv);
       thumb.appendChild(label);
       list.appendChild(thumb);
@@ -3147,7 +3104,6 @@ class PDFViewer {
       this._renderThumb(p, cv);
 
       // Vignette virtuelle SOMMAIRE entre cover (p=1) et fiche 1 (p=2+)
-      // → uniquement pour les dossiers v1 (sans page sommaire physique).
       if (p === sommaireAfter) {
         const sthumb = document.createElement('div');
         sthumb.className = 'thumb thumb-sommaire';
@@ -5328,11 +5284,8 @@ function extractDossierMaterielSidecar(arrayBuffer) {
 async function computeDossierFichePages(dossierData) {
   if (!dossierData || !Array.isArray(dossierData.fiches)) return new Map();
   const map = new Map();
-  // Structure du PDF :
-  //   v1 (legacy) : page 1 = cover, fiches à partir de page 2
-  //   v2 (avec sommaire) : page 1 = cover, page 2 = sommaire, fiches à partir de 3
-  const hasSommaire = !!dossierData.hasSommairePage;
-  let cursor = hasSommaire ? 3 : 2;
+  // Page 1 = cover ; fiche 1 démarre en page 2
+  let cursor = 2;
   for (const f of dossierData.fiches) {
     map.set(f.id, cursor);
     let attachPages = 0;
@@ -6453,7 +6406,7 @@ function installEvents() {
 
   // Sommaire (dossier matériel)
   const btnSommaire = $('btn-sommaire');
-  if (btnSommaire) btnSommaire.addEventListener('click', handleSommaireButton);
+  if (btnSommaire) btnSommaire.addEventListener('click', openSommaireModal);
   const sommaireClose = $('sommaire-close');
   if (sommaireClose) sommaireClose.addEventListener('click', () => closeModal('modal-sommaire'));
   // Échap pour fermer

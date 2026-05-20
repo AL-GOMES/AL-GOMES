@@ -365,13 +365,16 @@ table.fp th {
 .sheet.eiffage .ef-field-val { padding-left: 4px; }
 .sheet.eiffage .ef-field-val input,
 .sheet.eiffage .ef-field-val textarea { width: 100%; border: 0; font: inherit; background: transparent; padding: 1px 0; resize: none; line-height: inherit; }
-.sheet.eiffage .ef-pj-cell { padding-left: 4px; }
-.sheet.eiffage .ef-pj-cell label { display: inline-flex; align-items: center; gap: 4px; font-weight: 400; padding: 1px 0; }
-.sheet.eiffage .ef-pj-cell label input[type="text"] { border: 0; border-bottom: 1px dotted #666; font: inherit; min-width: 40px; flex: 1; padding: 0 2px; background: transparent; }
+.sheet.eiffage .ef-pj-cell { padding: 2px 6px; }
+.sheet.eiffage .ef-pj-cell label { display: inline-flex; align-items: center; gap: 5px; font-weight: 400; padding: 1px 0; width: 100%; }
+.sheet.eiffage .ef-pj-cell label span { white-space: nowrap; }
+.sheet.eiffage .ef-pj-cell label input[type="text"] { border: 0; border-bottom: 1px dotted #666; font: inherit; min-width: 40px; flex: 1; padding: 0 2px; background: transparent; margin-left: 4px; }
 .sheet.eiffage .ef-pj-cell sup { font-size: 8pt; font-weight: 700; vertical-align: super; }
+.sheet.eiffage .ef-inline-date { border: 0; border-bottom: 1px dotted #666; background: transparent; font: inherit; padding: 1px 2px; }
 .sheet.eiffage .ef-avis-th { font-weight: 700; text-align: center; padding: 3px 4px; font-size: 10pt; }
-.sheet.eiffage .ef-avis-opt { padding: 2px 4px 2px 8px; }
-.sheet.eiffage .ef-avis-opt label { display: inline-flex; align-items: center; gap: 4px; font-size: 8.5pt; }
+.sheet.eiffage .ef-avis-opt { padding: 3px 6px; }
+.sheet.eiffage .ef-avis-opt label { display: inline-flex; align-items: center; gap: 5px; font-size: 9pt; }
+.sheet.eiffage .ef-avis-opt label span { white-space: nowrap; }
 .sheet.eiffage .ef-le-vis { padding: 3px 4px; }
 .sheet.eiffage .ef-le-vis input { width: 100%; border: 0; border-bottom: 1px dotted #666; font: inherit; background: transparent; padding: 1px 0; font-size: 8.5pt; }
 .sheet.eiffage .ef-le-vis-lbl { font-weight: 700; text-align: left; }
@@ -706,200 +709,153 @@ input.proj { font-size: 28pt; font-weight: 700; text-align: center; letter-spaci
 </form>
 
 <!-- ────────────────────────────────────────────────────────────────────────────
-     FICHE EIFFAGE — reproduction fidèle du modèle XLSX fourni :
-     "Fiche d'acceptation produits". Layout 6 colonnes, fusions et hauteurs
-     de ligne reprises exactement (voir mergeCells dans sheet1.xml).
+     FICHE EIFFAGE — structure compacte, sans lignes vides intermédiaires
+     (correspond au rendu Excel attendu).
      ──────────────────────────────────────────────────────────────────────── -->
 <form class="sheet eiffage" id="ficheEiffageForm" style="display:none" onsubmit="event.preventDefault();saveFiche();">
   <table class="ef-grid">
     <colgroup>
-      <col style="width:20.1%">
-      <col style="width:19.8%">
-      <col style="width:19.8%">
+      <col style="width:20%">
+      <col style="width:20%">
+      <col style="width:20%">
       <col style="width:11.5%">
-      <col style="width:9.0%">
-      <col style="width:19.8%">
+      <col style="width:9%">
+      <col style="width:19.5%">
     </colgroup>
 
-    <!-- ROW 1 + 2 : Logo (A1:A2) | Project (B1:D2) | N° : | num -->
-    <tr style="height:32px">
+    <tr style="height:38px">
       <td rowspan="2" class="ef-logo-cell"><img src="assets/img/eiffage-logo.png" alt="EIFFAGE"></td>
-      <td colspan="3" rowspan="2" class="ef-project"><input type="text" id="ef_project" placeholder="L'HAY LES ROSES"></td>
+      <td colspan="3" class="ef-project"><input type="text" id="ef_project" placeholder="L'HAY LES ROSES"></td>
       <td class="ef-num-lbl">N° :</td>
       <td class="ef-num-val"><input type="text" id="ef_num" placeholder="lot/fiche"></td>
     </tr>
-    <tr style="height:28px">
-      <td>&nbsp;</td>
-      <td>&nbsp;</td>
-    </tr>
 
-    <!-- ROW 3 + 4 : Title (A3:D4) | LOT (E3:F3) | STE (E4:F4) -->
-    <tr style="height:40px">
+    <tr style="height:34px">
       <td colspan="4" rowspan="2" class="ef-title">FICHE D'ACCEPTATION PRODUITS</td>
       <td colspan="2" class="ef-headband"><input type="text" id="ef_lot" placeholder="LOT (n°…) : Electricité Cfo / Cfa"></td>
     </tr>
-    <tr style="height:28px">
+
+    <tr style="height:24px">
       <td colspan="2" class="ef-headband"><input type="text" id="ef_ste" value="STE : A.L.GOMES"></td>
     </tr>
 
-    <!-- ROW 5-7 : DESCRIPTIF DU PRODUIT (A5:D7) | Marché (E5:E7) | ☐ (F5-7) -->
-    <tr style="height:10px">
-      <td colspan="4" rowspan="3" class="ef-section-header">DESCRIPTIF DU PRODUIT</td>
-      <td rowspan="3" class="ef-checkbox-lbl">Marché</td>
-      <td class="ef-checkbox-cell">&nbsp;</td>
-    </tr>
-    <tr style="height:20px">
+    <tr style="height:28px">
+      <td colspan="4" rowspan="2" class="ef-section-header">DESCRIPTIF DU PRODUIT</td>
+      <td class="ef-checkbox-lbl">Marché</td>
       <td class="ef-checkbox-cell"><input type="checkbox" id="ef_marche"></td>
     </tr>
-    <tr style="height:10px">
-      <td class="ef-checkbox-cell">&nbsp;</td>
+
+    <tr style="height:28px">
+      <td class="ef-checkbox-lbl">Variante</td>
+      <td class="ef-checkbox-cell"><input type="checkbox" id="ef_variante"></td>
     </tr>
 
-    <!-- ROW 8-10 : separator A-C | Variante (E8:E10) | ☐ (F8-10) -->
-    <tr style="height:10px">
-      <td colspan="3" class="ef-thin">&nbsp;</td>
-      <td>&nbsp;</td>
-      <td rowspan="3" class="ef-checkbox-lbl">Variante</td>
-      <td class="ef-checkbox-cell">&nbsp;</td>
-    </tr>
-    <tr style="height:20px">
+    <tr style="height:26px">
       <td class="ef-field-lbl">Désignation :</td>
       <td colspan="2" class="ef-field-val"><input type="text" id="ef_designation" placeholder="Appareillage"></td>
       <td>&nbsp;</td>
-      <td class="ef-checkbox-cell"><input type="checkbox" id="ef_variante"></td>
-    </tr>
-    <tr style="height:10px">
-      <td colspan="4" class="ef-thin">&nbsp;</td>
-      <td class="ef-checkbox-cell">&nbsp;</td>
+      <td>&nbsp;</td>
+      <td>&nbsp;</td>
     </tr>
 
-    <!-- ROW 11 : Localisation : / value | Observations : -->
-    <tr style="height:20px">
+    <tr style="height:26px">
       <td class="ef-field-lbl">Localisation :</td>
       <td colspan="2" class="ef-field-val"><input type="text" id="ef_loc" placeholder="Logements"></td>
       <td>&nbsp;</td>
       <td colspan="2" class="ef-field-lbl">Observations :</td>
     </tr>
-    <tr style="height:10px"><td colspan="6" class="ef-thin">&nbsp;</td></tr>
 
-    <!-- ROW 13 : Marque : / value | Observations value -->
-    <tr style="height:20px">
+    <tr style="height:26px">
       <td class="ef-field-lbl">Marque :</td>
       <td colspan="2" class="ef-field-val"><input type="text" id="ef_marque" placeholder="SCHNEIDER"></td>
       <td>&nbsp;</td>
       <td colspan="2" class="ef-field-val"><input type="text" id="ef_observations" placeholder="Appareillage encastré"></td>
     </tr>
-    <tr style="height:10px"><td colspan="6" class="ef-thin">&nbsp;</td></tr>
 
-    <!-- ROW 15 : Référence : / value | BAT (F15) -->
-    <tr style="height:20px">
+    <tr style="height:26px">
       <td class="ef-field-lbl">Référence :</td>
       <td colspan="2" class="ef-field-val"><input type="text" id="ef_reference" placeholder="ODACE"></td>
       <td>&nbsp;</td>
       <td>&nbsp;</td>
-      <td class="ef-field-val"><input type="text" id="ef_bat" placeholder="BAT A,B & C"></td>
+      <td>&nbsp;</td>
     </tr>
-    <tr style="height:10px"><td colspan="6" class="ef-thin">&nbsp;</td></tr>
 
-    <!-- ROW 17 : Couleur : / value -->
-    <tr style="height:20px">
+    <tr style="height:26px">
       <td class="ef-field-lbl">Couleur :</td>
       <td colspan="2" class="ef-field-val"><input type="text" id="ef_couleur" placeholder="Blanc"></td>
       <td>&nbsp;</td>
       <td>&nbsp;</td>
+      <td class="ef-field-val"><input type="text" id="ef_bat" placeholder="BAT A,B & C"></td>
+    </tr>
+
+    <tr style="height:30px"><td colspan="6" class="ef-section-header">PIECES JOINTES</td></tr>
+
+    <tr style="height:28px">
+      <td class="ef-pj-cell"><label><input type="checkbox" id="ef_pj_fiche"><span>Fiche technique</span></label></td>
+      <td class="ef-pj-cell"><label><input type="checkbox" id="ef_pj_pv"><span>PV</span></label></td>
+      <td class="ef-pj-cell"><label><input type="checkbox" id="ef_pj_avis"><span>Avis technique</span></label></td>
+      <td class="ef-pj-cell"><label><input type="checkbox" id="ef_pj_fdes"><span>FDES<sup>1</sup></span></label></td>
       <td>&nbsp;</td>
+      <td class="ef-pj-cell"><label><input type="checkbox" id="ef_pj_label"><span>Label<sup>2</sup> :</span><input type="text" id="ef_pj_label_txt"></label></td>
     </tr>
-    <tr style="height:10px"><td colspan="3" class="ef-thin">&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
 
-    <!-- ROW 19 : PIECES JOINTES header (A19:F19) -->
-    <tr style="height:28px"><td colspan="6" class="ef-section-header">PIECES JOINTES</td></tr>
-    <tr style="height:10px"><td colspan="6" class="ef-thin">&nbsp;</td></tr>
-
-    <!-- ROW 21 : Fiche tech | PV | Avis tech | FDES¹ | (E vide) | Label² -->
-    <tr style="height:22px">
-      <td class="ef-pj-cell"><label><input type="checkbox" id="ef_pj_fiche">Fiche technique</label></td>
-      <td class="ef-pj-cell"><label><input type="checkbox" id="ef_pj_pv">PV</label></td>
-      <td class="ef-pj-cell"><label><input type="checkbox" id="ef_pj_avis">Avis technique</label></td>
-      <td class="ef-pj-cell"><label><input type="checkbox" id="ef_pj_fdes">FDES<sup>1</sup></label></td>
+    <tr style="height:28px">
+      <td class="ef-pj-cell"><label><input type="checkbox" id="ef_pj_echantillon"><span>Echantillon</span></label></td>
+      <td class="ef-pj-cell"><label><input type="checkbox" id="ef_pj_pv_das"><span>PV DAS</span></label></td>
+      <td class="ef-pj-cell"><label><input type="checkbox" id="ef_pj_qse"><span>Certificats QSE<sup>3</sup></span></label></td>
+      <td class="ef-pj-cell"><label><input type="checkbox" id="ef_pj_acs"><span>ACS<sup>4</sup></span></label></td>
       <td>&nbsp;</td>
-      <td class="ef-pj-cell"><label><input type="checkbox" id="ef_pj_label">Label<sup>2</sup> : <input type="text" id="ef_pj_label_txt"></label></td>
+      <td class="ef-pj-cell"><label><input type="checkbox" id="ef_pj_fds"><span>FDS<sup>5</sup></span></label></td>
     </tr>
-    <tr style="height:10px"><td colspan="6" class="ef-thin">&nbsp;</td></tr>
 
-    <!-- ROW 23 : Echantillon | PV DAS | QSE³ | ACS⁴ | (E vide) | FDS⁵ -->
-    <tr style="height:22px">
-      <td class="ef-pj-cell"><label><input type="checkbox" id="ef_pj_echantillon">Echantillon</label></td>
-      <td class="ef-pj-cell"><label><input type="checkbox" id="ef_pj_pv_das">PV DAS</label></td>
-      <td class="ef-pj-cell"><label><input type="checkbox" id="ef_pj_qse">Certificats QSE<sup>3</sup></label></td>
-      <td class="ef-pj-cell"><label><input type="checkbox" id="ef_pj_acs">ACS<sup>4</sup></label></td>
-      <td>&nbsp;</td>
-      <td class="ef-pj-cell"><label><input type="checkbox" id="ef_pj_fds">FDS<sup>5</sup></label></td>
+    <tr style="height:28px">
+      <td colspan="3" class="ef-field-lbl">Fiche transmise le : <input type="date" id="ef_transmis_le" class="ef-inline-date"></td>
+      <td colspan="3" class="ef-field-lbl">Accord avant le : <input type="date" id="ef_accord_avant" class="ef-inline-date"></td>
     </tr>
-    <tr style="height:10px"><td colspan="6" class="ef-thin">&nbsp;</td></tr>
-    <tr style="height:6px"><td colspan="2" class="ef-thin">&nbsp;</td><td colspan="4" class="ef-thin">&nbsp;</td></tr>
 
-    <!-- ROW 26 : Fiche transmise le | Accord avant le -->
-    <tr style="height:22px">
-      <td colspan="3" class="ef-field-lbl">Fiche transmise le : <input type="date" id="ef_transmis_le" style="border:0;border-bottom:1px dotted #666;background:transparent;font:inherit"></td>
-      <td colspan="3" class="ef-field-lbl">Accord avant le : <input type="date" id="ef_accord_avant" style="border:0;border-bottom:1px dotted #666;background:transparent;font:inherit"></td>
-    </tr>
-    <tr style="height:10px"><td colspan="2" class="ef-thin">&nbsp;</td><td colspan="4" class="ef-thin">&nbsp;</td></tr>
+    <tr style="height:30px"><td colspan="6" class="ef-section-header">AVIS</td></tr>
 
-    <!-- ROW 28 : AVIS header (A28:F28) -->
-    <tr style="height:28px"><td colspan="6" class="ef-section-header">AVIS</td></tr>
-
-    <!-- ROW 29 : MO | MOE | BET | BC (D29:E29) | AMO HQE® -->
-    <tr style="height:24px">
+    <tr style="height:26px">
       <td class="ef-avis-th">MO</td>
       <td class="ef-avis-th">MOE</td>
       <td class="ef-avis-th">BET</td>
       <td colspan="2" class="ef-avis-th">BC</td>
       <td class="ef-avis-th">AMO HQE®</td>
     </tr>
-    <tr style="height:10px"><td colspan="6" class="ef-thin">&nbsp;</td></tr>
 
-    <!-- ROW 31 : Sans objet × 5 -->
-    <tr style="height:22px">
-      <td class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_mo_so">Sans objet</label></td>
-      <td class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_moe_so">Sans objet</label></td>
-      <td class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_bet_so">Sans objet</label></td>
-      <td colspan="2" class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_bc_so">Sans objet</label></td>
-      <td class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_amo_so">Sans objet</label></td>
+    <tr style="height:24px">
+      <td class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_mo_so"><span>Sans objet</span></label></td>
+      <td class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_moe_so"><span>Sans objet</span></label></td>
+      <td class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_bet_so"><span>Sans objet</span></label></td>
+      <td colspan="2" class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_bc_so"><span>Sans objet</span></label></td>
+      <td class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_amo_so"><span>Sans objet</span></label></td>
     </tr>
-    <tr style="height:10px"><td colspan="6" class="ef-thin">&nbsp;</td></tr>
 
-    <!-- ROW 33 : Accord × 5 -->
-    <tr style="height:22px">
-      <td class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_mo_acc">Accord</label></td>
-      <td class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_moe_acc">Accord</label></td>
-      <td class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_bet_acc">Accord</label></td>
-      <td colspan="2" class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_bc_acc">Accord</label></td>
-      <td class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_amo_acc">Accord</label></td>
+    <tr style="height:24px">
+      <td class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_mo_acc"><span>Accord</span></label></td>
+      <td class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_moe_acc"><span>Accord</span></label></td>
+      <td class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_bet_acc"><span>Accord</span></label></td>
+      <td colspan="2" class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_bc_acc"><span>Accord</span></label></td>
+      <td class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_amo_acc"><span>Accord</span></label></td>
     </tr>
-    <tr style="height:10px"><td colspan="6" class="ef-thin">&nbsp;</td></tr>
 
-    <!-- ROW 35 : Accord sous réserves × 5 -->
-    <tr style="height:22px">
-      <td class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_mo_res">Accord sous réserves</label></td>
-      <td class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_moe_res">Accord sous réserves</label></td>
-      <td class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_bet_res">Accord sous réserves</label></td>
-      <td colspan="2" class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_bc_res">Accord sous réserves</label></td>
-      <td class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_amo_res">Accord sous réserves</label></td>
+    <tr style="height:24px">
+      <td class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_mo_res"><span>Accord sous réserves</span></label></td>
+      <td class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_moe_res"><span>Accord sous réserves</span></label></td>
+      <td class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_bet_res"><span>Accord sous réserves</span></label></td>
+      <td colspan="2" class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_bc_res"><span>Accord sous réserves</span></label></td>
+      <td class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_amo_res"><span>Accord sous réserves</span></label></td>
     </tr>
-    <tr style="height:10px"><td colspan="6" class="ef-thin">&nbsp;</td></tr>
 
-    <!-- ROW 37 : Refus × 5 -->
-    <tr style="height:22px">
-      <td class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_mo_ref">Refus</label></td>
-      <td class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_moe_ref">Refus</label></td>
-      <td class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_bet_ref">Refus</label></td>
-      <td colspan="2" class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_bc_ref">Refus</label></td>
-      <td class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_amo_ref">Refus</label></td>
+    <tr style="height:24px">
+      <td class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_mo_ref"><span>Refus</span></label></td>
+      <td class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_moe_ref"><span>Refus</span></label></td>
+      <td class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_bet_ref"><span>Refus</span></label></td>
+      <td colspan="2" class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_bc_ref"><span>Refus</span></label></td>
+      <td class="ef-avis-opt"><label><input type="checkbox" id="ef_avis_amo_ref"><span>Refus</span></label></td>
     </tr>
-    <tr style="height:10px"><td colspan="6" class="ef-thin">&nbsp;</td></tr>
 
-    <!-- ROW 39 : Commentaires × 5 (par colonne d'avis) -->
-    <tr style="height:90px">
+    <tr style="height:115px">
       <td class="ef-comments-cell"><div class="ef-comments-lbl">Commentaires :</div><textarea id="ef_com_mo"></textarea></td>
       <td class="ef-comments-cell"><div class="ef-comments-lbl">Commentaires :</div><textarea id="ef_com_moe"></textarea></td>
       <td class="ef-comments-cell"><div class="ef-comments-lbl">Commentaires :</div><textarea id="ef_com_bet"></textarea></td>
@@ -907,8 +863,7 @@ input.proj { font-size: 28pt; font-weight: 700; text-align: center; letter-spaci
       <td class="ef-comments-cell"><div class="ef-comments-lbl">Commentaires :</div><textarea id="ef_com_amo"></textarea></td>
     </tr>
 
-    <!-- ROW 40 : Le : × 5 -->
-    <tr style="height:22px">
+    <tr style="height:24px">
       <td class="ef-le-vis"><span class="ef-le-vis-lbl">Le :</span> <input type="date" id="ef_date_mo"></td>
       <td class="ef-le-vis"><span class="ef-le-vis-lbl">Le :</span> <input type="date" id="ef_date_moe"></td>
       <td class="ef-le-vis"><span class="ef-le-vis-lbl">Le :</span> <input type="date" id="ef_date_bet"></td>
@@ -916,8 +871,7 @@ input.proj { font-size: 28pt; font-weight: 700; text-align: center; letter-spaci
       <td class="ef-le-vis"><span class="ef-le-vis-lbl">Le :</span> <input type="date" id="ef_date_amo"></td>
     </tr>
 
-    <!-- ROW 41 : Visa × 5 -->
-    <tr style="height:64px">
+    <tr style="height:75px">
       <td class="ef-le-vis"><span class="ef-le-vis-lbl">Visa</span> <input type="text" id="ef_visa_mo"></td>
       <td class="ef-le-vis"><span class="ef-le-vis-lbl">Visa</span> <input type="text" id="ef_visa_moe"></td>
       <td class="ef-le-vis"><span class="ef-le-vis-lbl">Visa</span> <input type="text" id="ef_visa_bet"></td>
@@ -925,10 +879,8 @@ input.proj { font-size: 28pt; font-weight: 700; text-align: center; letter-spaci
       <td class="ef-le-vis"><span class="ef-le-vis-lbl">Visa</span> <input type="text" id="ef_visa_amo"></td>
     </tr>
 
-    <!-- ROW 43 : * n°lot/n°fiche -->
     <tr><td colspan="6" class="ef-asterisk">* n°lot/n°fiche</td></tr>
 
-    <!-- ROWS 44-48 : Notes de bas de page -->
     <tr><td colspan="6" class="ef-fnote">
       <p><sup>1</sup> <b>Fiches de Déclaration Environnementales et Sanitaires</b> (norme NF P01-010) pour cloisons, faux-plafonds, couverture, étanchéité, doublage, isolation, façade, menuiserie, revêtements sols-murs-plafonds, structure, maçonnerie, charpente…</p>
       <p><sup>2</sup> <b>Labels</b> GUT (moquette), NF environnement ou Eco-label ou Ange Bleu (peintures…), FSC ou PEFC (bois issu de forêts durables)…</p>

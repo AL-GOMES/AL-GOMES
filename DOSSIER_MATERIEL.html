@@ -1859,19 +1859,46 @@ async function exportDossierPdf(){
     for (const fiche of fiches) {
       writeForm(fiche);
       currentFicheId = fiche.id;
+      // Garantit que ficheForm est bien visible avant chaque capture (le
+      // viewMode initial 'cover' ou 'sommaire' ou un refactor pourrait
+      // l'avoir laissé caché → html2canvas renvoie alors un canvas vide
+      // → toDataURL → "data:," → throw "format inattendu").
+      const ficheFormCheck = document.getElementById('ficheForm');
+      if (ficheFormCheck) {
+        ficheFormCheck.style.display = '';
+        // S'assure aussi que cover et sommaire sont cachés pendant la capture
+        const cv = document.getElementById('coverSheet');
+        if (cv) cv.style.display = 'none';
+        const sm = document.getElementById('sommaireSheet');
+        if (sm) sm.style.display = 'none';
+      }
       // Attend 2 frames pour que le DOM se mette à jour (inputs et focus)
       await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
       // ⚠ '.sheet' renvoie en premier la cover (id=coverSheet) qui est cachée
       // → on cible explicitement le ficheForm pour ne pas html2canvas-render
       // un élément display:none (qui déclenche une erreur "undefined").
       const sheet = document.getElementById('ficheForm');
+      // Garde supplémentaire : si malgré tout le sheet a une dimension nulle,
+      // on force la mise en page (rare mais évite un crash silencieux).
+      if (!sheet.scrollWidth || !sheet.scrollHeight) {
+        console.warn('ficheForm sans dimensions pour la fiche', fiche.f_num, '— relance');
+        sheet.style.display = '';
+        // Force un reflow
+        // eslint-disable-next-line no-unused-expressions
+        sheet.offsetHeight;
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      }
+      // Fallback final : si scrollWidth/Height reste à 0, on passe des dims
+      // A4 connues à html2canvas pour qu'il génère quand même un canvas.
+      const sheetW = sheet.scrollWidth  || 794;   // 210mm @ 96dpi
+      const sheetH = sheet.scrollHeight || 1123;  // 297mm @ 96dpi
       const canvas = await html2canvas(sheet, {
         scale: 2,
         backgroundColor: '#ffffff',
         useCORS: true,
         logging: false,
-        windowWidth: sheet.scrollWidth,
-        windowHeight: sheet.scrollHeight,
+        windowWidth: sheetW,
+        windowHeight: sheetH,
         // html2canvas rend mal les <input> / <textarea> (souvent vide ou
         // texte wrappé sur 2 lignes pour les inputs un peu longs comme le
         // titre projet). On remplace dans le DOM cloné par des <span>/<div>

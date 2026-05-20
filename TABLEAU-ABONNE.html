@@ -121,6 +121,8 @@ input:focus{outline:none;border-color:rgba(123,95,172,0.35)}
 <div class="content" id="sh"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <script>
 // ═══ CIRCUITS ═══
@@ -179,13 +181,13 @@ function typeBadge(t){const i=t.charCodeAt(0)-65;const c=TYPE_COLORS[i%TYPE_COLO
 // schémas pour distinguer visuellement les 10A, 16A, 20A, 32A... et
 // dans l'encadré récapitulatif quantitatif.
 const CALIBRE_COLORS={
-  2:  {bg:'#F3E5F5', color:'#6A1B9A', border:'#9C27B0'}, // violet — TH, RT2012
-  10: {bg:'#FFF9C4', color:'#F57F17', border:'#FBC02D'}, // jaune  — ECL, CHAUD, VR
-  16: {bg:'#E3F2FD', color:'#0D47A1', border:'#1E88E5'}, // bleu   — PC, PCGTL, CLIM, PISC, VARM
-  20: {bg:'#E8F5E9', color:'#1B5E20', border:'#43A047'}, // vert   — LL, FOUR, LV, SL, SS, BEC, CHAUF, MO, PAC
-  32: {bg:'#FFE0B2', color:'#E65100', border:'#FB8C00'}, // orange — PLAQUE, IRVE AC
-  40: {bg:'#FFCCBC', color:'#BF360C', border:'#FF5722'}, // orange foncé — borne haute
-  63: {bg:'#FFCDD2', color:'#B71C1C', border:'#E53935'}  // rouge  — gros calibre
+  2:  {bg:'#FCE4EC', color:'#E91E63', border:'#F50057'}, // magenta flash — TH, RT2012
+  10: {bg:'#FFF9C4', color:'#FF6F00', border:'#FFB300'}, // amber/jaune flash — ECL, CHAUD, VR
+  16: {bg:'#E1F5FE', color:'#0091EA', border:'#00B0FF'}, // bleu électrique — PC, PCGTL, CLIM, PISC, VARM
+  20: {bg:'#E8F5E9', color:'#00C853', border:'#00E676'}, // vert flash — LL, FOUR, LV, SL, SS, BEC, CHAUF, MO, PAC
+  32: {bg:'#F5F5F5', color:'#000000', border:'#000000'}, // NOIR — PLAQUE, IRVE AC (32A)
+  40: {bg:'#FFF3E0', color:'#FF6D00', border:'#FF9100'}, // orange flash — borne haute
+  63: {bg:'#FFEBEE', color:'#D50000', border:'#FF1744'}  // rouge flash — gros calibre
 };
 function _ampOf(a){const n=parseInt(String(a).replace(/[^0-9]/g,''));return isNaN(n)?10:n}
 function colByCalibre(a){
@@ -1236,23 +1238,33 @@ let _LOGO_B64='';
 async function _loadLogoB64(){if(_LOGO_B64)return;try{const r=await fetch('assets/img/algomes-logo.jpg');if(!r.ok)throw new Error('HTTP '+r.status);const b=await r.blob();_LOGO_B64=await new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.onerror=rej;fr.readAsDataURL(b);});}catch(e){console.warn('Logo load failed',e);_LOGO_B64='';}}
 async function exportPDF(){
   if(!B.length){alert('Aucun bâtiment');return}
+  if(!window.jspdf || !window.html2canvas){alert('Bibliothèques PDF non chargées (jsPDF / html2canvas) — vérifie la connexion');return}
   await _loadLogoB64();
   const pName=document.getElementById('projName').value.trim()||'Sans titre';
-  const pw2=window.open('','_blank');
-  // Échappement HTML pour les chaînes injectées dans pw2.document.write —
+  // On accumule le HTML dans une chaîne au lieu de l'écrire dans une fenêtre
+  // window.open : le rendu se fait dans une iframe cachée puis chaque .pg est
+  // capturé par html2canvas et ajouté à un document jsPDF pour sauvegarde
+  // directe au format PDF (sans aperçu de print).
+  let HTML = '';
+  // Échappement HTML pour les chaînes injectées dans le document généré —
   // hygiène de base au cas où un nom de projet ou de bâtiment importé
   // depuis Excel contiendrait des balises HTML.
   const _e = s => String(s==null?'':s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const pNameH = _e(pName);
+  // Feedback visuel sur le bouton PDF pendant la génération (peut prendre
+  // plusieurs secondes selon le nombre de bâtiments / types).
+  const _btn = Array.from(document.querySelectorAll('.btn-top')).find(b => /onclick=["']?exportPDF/.test(b.outerHTML));
+  const _btnHTML = _btn ? _btn.innerHTML : '';
+  if(_btn){_btn.disabled=true;_btn.innerHTML='⏳ Génération PDF…';}
 
-  pw2.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  HTML += (`<!DOCTYPE html><html><head><meta charset="UTF-8">
     <title>${pNameH} — Tableau Abonné</title>
     <style>
-      @page{size:A4 landscape;margin:0}
-      @media print{.pb{page-break-before:always}}
       *{box-sizing:border-box;font-family:'Segoe UI',Calibri,Arial,sans-serif}
       body{margin:0;padding:0;background:#fff;color:#1a1a2e}
-      .pg{padding:24px 28px}
+      /* Chaque .pg = une page A4 paysage (297×210 mm) — html2canvas
+         capture la box entière qu'on insère dans jsPDF à plein cadre. */
+      .pg{padding:24px 28px;width:297mm;height:210mm;background:#fff;overflow:hidden;position:relative}
       .hdr{background:linear-gradient(135deg,#1F3864,#2D1B4E);padding:10px 20px;display:flex;justify-content:space-between;align-items:center;border-radius:8px;margin-bottom:16px}
       .hdr h1{margin:0;font-size:15px;color:#fff}.hdr span{font-size:9px;color:rgba(255,255,255,0.7)}
       .card{border:1px solid rgba(123,95,172,0.25);border-radius:10px;padding:16px;background:#fff;margin-bottom:14px}
@@ -1280,9 +1292,12 @@ async function exportPDF(){
     const sT=Object.entries(typeCounts).sort((a2,b2)=>a2[0].localeCompare(b2[0]));
     const byT={};a.forEach(x=>{if(!byT[x.type])byT[x.type]=[];byT[x.type].push(x)});
 
-    // PAGE 1: Synthèse + Listing
-    if(bi>0)pw2.document.write('<div class="pb"></div>');
-    pw2.document.write(`<div class="pg"><div class="hdr"><img src='${_LOGO_B64}' style='height:32px;border-radius:4px'><h1>${pNameH} — ${_e(b.n)}</h1><span>NF C 15-100 · AL GOMES</span></div>`);
+    // Mini helpers d'entête/pied réutilisés sur chaque page du bâtiment.
+    const _pgHdr = `<div class="hdr"><img src='${_LOGO_B64}' style='height:32px;border-radius:4px'><h1>${pNameH} — ${_e(b.n)}</h1><span>NF C 15-100 · AL GOMES</span></div>`;
+    const _pgFt  = `<div class="ft">AL GOMES — Bureau d'Études Techniques Électricité</div>`;
+
+    // PAGE 1 du bâtiment : Synthèse + Récapitulatif des rangées
+    HTML += (`<div class="pg">${_pgHdr}`);
 
     // Pré-calcule pour chaque type le nombre de modules et de rangées
     // (= calcul des départs différentiels + somme modules + ⌈totalMod×1.2/13⌉)
@@ -1324,29 +1339,29 @@ async function exportPDF(){
       totalBatimentLgts += cnt;
     });
 
-    pw2.document.write(`<div class="card"><div class="card-t">📊 Synthèse des Types</div><table><thead><tr><th>TYPE</th><th>QTÉ</th><th>CAL.</th><th>MOD.</th><th>RG.</th>`);
-    CIR.forEach(c=>{pw2.document.write(`<th>${c.n}</th>`)});
-    pw2.document.write(`</tr></thead><tbody>`);
+    HTML += (`<div class="card"><div class="card-t">📊 Synthèse des Types</div><table><thead><tr><th>TYPE</th><th>QTÉ</th><th>CAL.</th><th>MOD.</th><th>RG.</th>`);
+    CIR.forEach(c=>{HTML += (`<th>${c.n}</th>`)});
+    HTML += (`</tr></thead><tbody>`);
     sT.forEach(([t,cnt])=>{
       const ref=tRef[t];const tc=TYPE_COLORS[(t.charCodeAt(0)-65)%TYPE_COLORS.length];
       const mr = typeModRg[t] || { mod: 0, rg: 0 };
-      pw2.document.write(`<tr><td><span class="badge" style="background:${tc.bg};border:1px solid ${tc.border};color:${tc.color}">${t}</span></td><td style="font-weight:bold;font-size:11px">${cnt}</td><td style="font-weight:bold">${ref.c}A</td><td style="font-weight:bold;color:#BB6BD9">${mr.mod}</td><td style="font-weight:bold;color:#BB6BD9">${mr.rg}</td>`);
-      CIR.forEach(c=>{pw2.document.write(`<td>${ref[c.k]}</td>`)});pw2.document.write(`</tr>`);
+      HTML += (`<tr><td><span class="badge" style="background:${tc.bg};border:1px solid ${tc.border};color:${tc.color}">${t}</span></td><td style="font-weight:bold;font-size:11px">${cnt}</td><td style="font-weight:bold">${ref.c}A</td><td style="font-weight:bold;color:#BB6BD9">${mr.mod}</td><td style="font-weight:bold;color:#BB6BD9">${mr.rg}</td>`);
+      CIR.forEach(c=>{HTML += (`<td>${ref[c.k]}</td>`)});HTML += (`</tr>`);
     });
-    pw2.document.write(`<tr class="tot"><td>TOTAL</td><td>${a.length}</td><td></td><td>${totalBatimentMod}</td><td>${Math.ceil(totalBatimentMod * 1.2 / 13)}</td>`);
-    CIR.forEach(c=>{pw2.document.write(`<td>${a.reduce((s,x)=>s+(x[c.k]||0),0)}</td>`)});
-    pw2.document.write(`</tr></tbody></table></div>`);
+    HTML += (`<tr class="tot"><td>TOTAL</td><td>${a.length}</td><td></td><td>${totalBatimentMod}</td><td>${Math.ceil(totalBatimentMod * 1.2 / 13)}</td>`);
+    CIR.forEach(c=>{HTML += (`<td>${a.reduce((s,x)=>s+(x[c.k]||0),0)}</td>`)});
+    HTML += (`</tr></tbody></table></div>`);
 
     // Carte dédiée "Récapitulatif des rangées" — bien visible, indépendante
     // de la table Synthèse (où les colonnes MOD./RG. peuvent être cut par
     // la largeur de page sur les bâtiments à beaucoup de circuits).
-    pw2.document.write(`<div class="card" style="border-color:rgba(187,107,217,0.35);background:linear-gradient(135deg,rgba(187,107,217,0.04),rgba(45,27,78,0.02))">`);
-    pw2.document.write(`<div class="card-t">📐 Récapitulatif des rangées</div>`);
-    pw2.document.write(`<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px">`);
+    HTML += (`<div class="card" style="border-color:rgba(187,107,217,0.35);background:linear-gradient(135deg,rgba(187,107,217,0.04),rgba(45,27,78,0.02))">`);
+    HTML += (`<div class="card-t">📐 Récapitulatif des rangées</div>`);
+    HTML += (`<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px">`);
     sT.forEach(([t,cnt])=>{
       const tc = TYPE_COLORS[(t.charCodeAt(0)-65)%TYPE_COLORS.length];
       const mr = typeModRg[t] || { mod: 0, rg: 0 };
-      pw2.document.write(
+      HTML += (
         `<div style="flex:0 0 auto;padding:10px 16px;border:1.5px solid ${tc.border};border-radius:10px;background:#fff;display:flex;align-items:center;gap:12px">` +
         `<span class="badge" style="background:${tc.bg};border:1px solid ${tc.border};color:${tc.color};font-size:11px">${t}</span>` +
         `<div style="font-size:10px;color:#666;line-height:1.4">` +
@@ -1356,35 +1371,39 @@ async function exportPDF(){
         `</div></div>`
       );
     });
-    pw2.document.write(`</div>`);
-    pw2.document.write(`</div>`);
+    HTML += (`</div>`);
+    HTML += (`</div>`);
+    // Fin de la PAGE 1 du bâtiment (Synthèse + Récap)
+    HTML += (`${_pgFt}</div>`);
 
-    pw2.document.write(`<div class="card"><div class="card-t">📑 Listing par Type</div>`);
+    // PAGE 2 du bâtiment : Listing par Type (sur sa propre page A4)
+    HTML += (`<div class="pg">${_pgHdr}`);
+    HTML += (`<div class="card"><div class="card-t">📑 Listing par Type</div>`);
     sT.forEach(([t,cnt])=>{
       const items=byT[t]||[];const ref=tRef[t];const tc=TYPE_COLORS[(t.charCodeAt(0)-65)%TYPE_COLORS.length];
       const mr = typeModRg[t] || { mod: 0, rg: 0 };
-      pw2.document.write(`<div class="th"><span class="badge" style="background:${tc.bg};border:1px solid ${tc.border};color:${tc.color}">${t}</span> ${cnt} lgts — ${ref.p}kVA / ${ref.c}A · <strong style="color:#BB6BD9">${mr.mod} mod · ${mr.rg} rangée${mr.rg>1?'s':''}</strong></div>`);
+      HTML += (`<div class="th"><span class="badge" style="background:${tc.bg};border:1px solid ${tc.border};color:${tc.color}">${t}</span> ${cnt} lgts — ${ref.p}kVA / ${ref.c}A · <strong style="color:#BB6BD9">${mr.mod} mod · ${mr.rg} rangée${mr.rg>1?'s':''}</strong></div>`);
       const maxRows=15;
       if(items.length<=maxRows){
-        pw2.document.write(`<table><thead><tr><th>Niveau</th><th>N° Archi</th><th>N° ENEDIS</th><th>m²</th><th>kVA</th><th>Cal.</th></tr></thead><tbody>`);
-        items.forEach(x=>{pw2.document.write(`<tr><td style="font-weight:bold;text-align:left">${x.f}</td><td style="text-align:left">${x.r}</td><td style="text-align:left">${x.e}</td><td>${x.u}</td><td style="font-weight:bold">${x.p}</td><td>${x.c}A</td></tr>`)});
-        pw2.document.write(`</tbody></table>`);
+        HTML += (`<table><thead><tr><th>Niveau</th><th>N° Archi</th><th>N° ENEDIS</th><th>m²</th><th>kVA</th><th>Cal.</th></tr></thead><tbody>`);
+        items.forEach(x=>{HTML += (`<tr><td style="font-weight:bold;text-align:left">${x.f}</td><td style="text-align:left">${x.r}</td><td style="text-align:left">${x.e}</td><td>${x.u}</td><td style="font-weight:bold">${x.p}</td><td>${x.c}A</td></tr>`)});
+        HTML += (`</tbody></table>`);
       } else {
         const nCols=items.length>30?3:2;
         const perCol=Math.ceil(items.length/nCols);
-        pw2.document.write(`<div style="display:flex;gap:8px">`);
+        HTML += (`<div style="display:flex;gap:8px">`);
         for(let col=0;col<nCols;col++){
           const start=col*perCol;const end=Math.min(start+perCol,items.length);
-          pw2.document.write(`<table style="flex:1"><thead><tr><th>Niveau</th><th>N° Archi</th><th>N° ENEDIS</th><th>m²</th><th>kVA</th><th>Cal.</th></tr></thead><tbody>`);
-          for(let i=start;i<end;i++){const x=items[i];pw2.document.write(`<tr><td style="font-weight:bold;text-align:left">${x.f}</td><td style="text-align:left">${x.r}</td><td style="text-align:left">${x.e}</td><td>${x.u}</td><td style="font-weight:bold">${x.p}</td><td>${x.c}A</td></tr>`)}
-          pw2.document.write(`</tbody></table>`);
+          HTML += (`<table style="flex:1"><thead><tr><th>Niveau</th><th>N° Archi</th><th>N° ENEDIS</th><th>m²</th><th>kVA</th><th>Cal.</th></tr></thead><tbody>`);
+          for(let i=start;i<end;i++){const x=items[i];HTML += (`<tr><td style="font-weight:bold;text-align:left">${x.f}</td><td style="text-align:left">${x.r}</td><td style="text-align:left">${x.e}</td><td>${x.u}</td><td style="font-weight:bold">${x.p}</td><td>${x.c}A</td></tr>`)}
+          HTML += (`</tbody></table>`);
         }
-        pw2.document.write(`</div>`);
+        HTML += (`</div>`);
       }
     });
-    pw2.document.write(`</div><div class="ft">AL GOMES — Bureau d'Études Techniques Électricité</div></div>`);
+    HTML += (`</div>${_pgFt}</div>`);
 
-    // SCHEMA PAGES (SVG)
+    // SCHEMA PAGES (SVG) — une page par type
     sT.forEach(([t,cnt])=>{
       const ref=tRef[t];
       if(!ref._deps){if(!b.typeAuto)b.typeAuto={};if(b.typeAuto[t]!==false)computeAutoDepsType(bi,t,ref)}
@@ -1615,7 +1634,7 @@ async function exportPDF(){
 
       svg+=`</svg>`;
 
-      pw2.document.write(`<div class="pb"></div><div class="pg" style="page-break-inside:avoid">
+      HTML += (`<div class="pg">
         <div class="hdr" style="margin-bottom:4px"><img src='${_LOGO_B64}' style='height:28px;border-radius:4px'><h1>${pNameH} — ${_e(b.n)} — Schéma Type ${_e(t)}</h1><span>NF C 15-100 · AL GOMES</span></div>
         ${svg}
         <div class="ft" style="margin-top:4px;font-size:8px">AL GOMES — Bureau d'Études Techniques Électricité — NF C 15-100</div>
@@ -1623,9 +1642,60 @@ async function exportPDF(){
     });
   });
 
-  pw2.document.write(`</body></html>`);
-  pw2.document.close();
-  setTimeout(()=>{pw2.print()},600);
+  HTML += (`</body></html>`);
+
+  // Rendu hors-écran dans une iframe cachée puis capture de chaque .pg
+  // avec html2canvas → ajout à un jsPDF → téléchargement direct du fichier
+  // PDF (pas de fenêtre d'aperçu/print).
+  const iframe = document.createElement('iframe');
+  iframe.setAttribute('aria-hidden','true');
+  iframe.style.cssText = 'position:fixed;left:-10000px;top:0;width:1130px;height:800px;border:0;visibility:hidden';
+  document.body.appendChild(iframe);
+  iframe.contentDocument.open();
+  iframe.contentDocument.write(HTML);
+  iframe.contentDocument.close();
+  // Laisse le temps au layout / aux images de se charger avant la capture
+  await new Promise(r => setTimeout(r, 600));
+
+  try {
+    const pages = iframe.contentDocument.querySelectorAll('.pg');
+    if(!pages.length) throw new Error('Aucune page à générer');
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({orientation:'landscape', unit:'mm', format:'a4'});
+    for(let i=0; i<pages.length; i++){
+      const canvas = await window.html2canvas(pages[i], {
+        scale: 2, useCORS: true, backgroundColor: '#ffffff',
+        logging: false, windowWidth: 1130, windowHeight: 800
+      });
+      const imgData = canvas.toDataURL('image/jpeg', 0.92);
+      if(i>0) pdf.addPage();
+      pdf.addImage(imgData, 'JPEG', 0, 0, 297, 210);
+    }
+    const filename = (pName.replace(/[^a-zA-Z0-9éèêëàâùûôîïç _-]/g,'_')) + '_Tableau_Abonne.pdf';
+    if(window.showSaveFilePicker){
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: filename,
+          types: [{description:'PDF', accept:{'application/pdf':['.pdf']}}]
+        });
+        const blob = pdf.output('blob');
+        const w = await handle.createWritable();
+        await w.write(blob);
+        await w.close();
+      } catch(e){
+        if(e.name === 'AbortError') return; // utilisateur a annulé
+        pdf.save(filename); // fallback téléchargement classique
+      }
+    } else {
+      pdf.save(filename);
+    }
+  } catch(e){
+    console.error('PDF generation error:', e);
+    alert('Erreur lors de la génération du PDF :\n'+(e.message||e));
+  } finally {
+    if(iframe.parentNode) iframe.parentNode.removeChild(iframe);
+    if(_btn){_btn.disabled=false;_btn.innerHTML=_btnHTML;}
+  }
 }
 
 

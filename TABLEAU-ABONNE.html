@@ -1576,8 +1576,8 @@ async function exportPDF(){
             const subC=c._subColor||'#F1C40F';
             const parentIdx=dep.cir.indexOf(c._parentEcl);
             const parentX=parentIdx>=0?cS+parentIdx*32+16:ccx;
-            // Tick partant de la sous-barre (couleur diff.)
-            svg+=`<line x1="${ccx}" y1="${dy}" x2="${ccx}" y2="${dy+8}" stroke="${col}" stroke-width="1"/>`;
+            // Pas de tick vertical depuis la sous-barre : le sous-circuit
+            // n'est pas alimenté directement par la barre du différentiel.
             // Liaison pointillée entre l'ECL parent et le sous-circuit (juste sous la sous-barre)
             svg+=`<line x1="${parentX}" y1="${dy+5}" x2="${ccx}" y2="${dy+5}" stroke="${subC}" stroke-width="1.2" stroke-dasharray="3,2"/>`;
             // Box télérupteur/contacteur (bordure pointillée pour distinguer du disj.)

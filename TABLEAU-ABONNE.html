@@ -292,7 +292,12 @@ function rB(bi){
     const hb=typeDiffBg(dt);       // fond léger
     // Calibre éditable : input mince inline. Modifier → setCirCal() ré-rend.
     const calInput = `<input type="text" value="${(c.a||'').replace(/"/g,'&quot;')}" onchange="setCirCal('${c.k}', this.value)" onclick="event.stopPropagation()" title="Cliquer pour modifier le calibre" style="width:36px;font-size:9px;background:transparent;border:1px solid ${hc}33;color:${hc};text-align:center;border-radius:3px;padding:1px 2px;cursor:text"/>`;
-    h+=`<th class="${ci===0?'sep-l':''}" style="width:40px;background:${hb};color:${hc};border-top:2px solid ${hc}" title="Type ${dt}">${c.n}${c.k.startsWith('_a')?`<span onclick="removeAlim('${c.k}')" style="cursor:pointer;color:#E74C3C;font-size:10px;margin-left:2px" title="Supprimer">×</span>`:''}<br>${calInput}</th>`;
+    // Nombre de modules occupé par UN disjoncteur de ce type — éditable
+    // (1 par défaut, 2 pour PLAQUE, 6 pour RT2012, libre pour les colonnes
+    // ajoutées via "+"). Sert au calcul dep.mc / totalMod / rangées.
+    const modVal = modOf(c.k);
+    const modInput = `<input type="number" min="1" step="1" value="${modVal}" onchange="setCirMod('${c.k}', this.value)" onclick="event.stopPropagation()" title="Nombre de modules par disjoncteur" style="width:30px;font-size:9px;background:transparent;border:1px solid ${hc}33;color:${hc};text-align:center;border-radius:3px;padding:1px 2px;cursor:text"/>`;
+    h+=`<th class="${ci===0?'sep-l':''}" style="width:40px;background:${hb};color:${hc};border-top:2px solid ${hc}" title="Type ${dt} · ${modVal} module${modVal>1?'s':''}/disj">${c.n}${c.k.startsWith('_a')?`<span onclick="removeAlim('${c.k}')" style="cursor:pointer;color:#E74C3C;font-size:10px;margin-left:2px" title="Supprimer">×</span>`:''}<br>${calInput}<br><span style="display:inline-flex;align-items:center;gap:2px;font-size:8px;opacity:0.7">${modInput}<span>mod</span></span></th>`;
   });
   h+=`<th style="width:30px;cursor:pointer;opacity:0.5" onclick="addAlim()" title="Ajouter une alimentation">＋</th>`;
   h+=`<th class="sep-l">TYPE</th>`;
@@ -612,6 +617,13 @@ function typeDiffBg(t){return t==='A'?'rgba(237,125,49,0.06)':t==='F'?'rgba(241,
 // Amperage par circuit
 const CIR_AMP={pcgtl:16,ecl:10,pc:16,plaq:32,four:20,ll:20,lv:20,sl:20,ss:20,bec:20,chauf:20,chaud:10,vr:10,th:2,rt:2,mo:20,pac:20,clim:16,pisc:16,varm:16,irve_ac:32};
 const CIR_AMP_DEFAULT = Object.assign({}, CIR_AMP);
+// Nombre de modules occupés par chaque type de circuit dans le tableau abonné.
+// La majorité des disjoncteurs prennent 1 module ; certains spéciaux en
+// prennent davantage (PLAQUE = 2 modules pour le 32A bipolaire, RT2012 = 6
+// modules avec son gestionnaire d'énergie annexe).
+const CIR_MOD={plaq:2,rt:6};
+const CIR_MOD_DEFAULT = Object.assign({}, CIR_MOD);
+function modOf(k){const m=CIR_MOD[k];return (typeof m==='number'&&m>0)?m:1;}
 // Circuits non divisés (chauffage + ECS comptés à 100%)
 const NON_DIV=['chauf','chaud'];
 
@@ -628,8 +640,14 @@ function setCirCal(k, val){
   if (!isNaN(num) && num > 0) CIR_AMP[k] = num;
   R();
 }
+function setCirMod(k, val){
+  const n = parseInt(val, 10);
+  if (isNaN(n) || n < 1) return;
+  if (n === 1) delete CIR_MOD[k]; else CIR_MOD[k] = n;
+  R();
+}
 function resetCalibres(){
-  if(!confirm('Remettre tous les calibres et types d\'interrupteur à leurs valeurs par défaut ?\n\n(Les colonnes personnalisées que vous avez ajoutées sont conservées.)')) return;
+  if(!confirm('Remettre tous les calibres, modules et types d\'interrupteur à leurs valeurs par défaut ?\n\n(Les colonnes personnalisées que vous avez ajoutées sont conservées.)')) return;
   // Restaurer CIR[*].a pour les clés "standard" (pas _a*) à partir du snapshot
   CIR.forEach(c => {
     const d = CIR_DEFAULT.find(x => x.k === c.k);
@@ -637,6 +655,10 @@ function resetCalibres(){
   });
   // Restaurer CIR_AMP pour les clés standard
   Object.keys(CIR_AMP_DEFAULT).forEach(k => { CIR_AMP[k] = CIR_AMP_DEFAULT[k]; });
+  // Restaurer CIR_MOD : on supprime tous les ajouts manuels, puis on remet
+  // les valeurs spéciales (plaq=2, rt=6) telles qu'à l'initialisation.
+  Object.keys(CIR_MOD).forEach(k => { delete CIR_MOD[k]; });
+  Object.keys(CIR_MOD_DEFAULT).forEach(k => { CIR_MOD[k] = CIR_MOD_DEFAULT[k]; });
   // Restaurer TYPE_BY_KEY — supprime les types ajoutés manuellement sur des
   // clés standard et remet les valeurs d'origine
   Object.keys(TYPE_BY_KEY).forEach(k => {
@@ -675,7 +697,7 @@ function drawPanel(type,ap,bi,isAuto){
     for(let i=0;i<q;i++)allCir.push({...c,
       isTypeA:c.k==='plaq'||c.k==='ll',
       diffType:dt,
-      mod:c.k==='plaq'?2:c.k==='rt'?6:1,
+      mod:modOf(c.k),
       uid:c.k+'_'+i
     });
   });
@@ -1082,6 +1104,12 @@ async function importDeriv(input){
       }
     }
     if(data._cir)data._cir.forEach(c=>{if(!CIR.find(x=>x.k===c.k)){CIR.push(c);CIR_AMP[c.k]=parseInt(c.a)||20}});
+    if(data._cirMod && typeof data._cirMod==='object'){
+      Object.keys(data._cirMod).forEach(k=>{
+        const v=parseInt(data._cirMod[k],10);
+        if(!isNaN(v)&&v>1)CIR_MOD[k]=v;
+      });
+    }
     if(data.P)document.getElementById('projName').value=data.P;
     if(data.B&&data.B.length>0){
       B=data.B.map(b=>({
@@ -1125,6 +1153,12 @@ async function importTA(input){
       }
     }
     if(data._cir)data._cir.forEach(c=>{if(!CIR.find(x=>x.k===c.k)){CIR.push(c);CIR_AMP[c.k]=parseInt(c.a)||20}});
+    if(data._cirMod && typeof data._cirMod==='object'){
+      Object.keys(data._cirMod).forEach(k=>{
+        const v=parseInt(data._cirMod[k],10);
+        if(!isNaN(v)&&v>1)CIR_MOD[k]=v;
+      });
+    }
     if(data.P)document.getElementById('projName').value=data.P;
     if(data.B&&data.B.length>0){
       B=data.B.map(b=>({
@@ -1162,6 +1196,7 @@ async function saveTaAlg(){
     _note:'Sauvegarde Tableau Abonné — A.L. GOMES',
     P:pName,
     _cir:CIR.filter(c=>c.k.startsWith('_a')),
+    _cirMod:Object.assign({}, CIR_MOD), // overrides nombre de modules / disj
     B:B.map(b=>({n:b.n,niv:b.niv,fl:b.fl,typeAuto:b.typeAuto,
       a:b.a.map(x=>{const o={f:x.f,r:x.r,e:x.e,u:x.u};CIR.forEach(c=>{o[c.k]=x[c.k]});if(x.tb)o.tb=x.tb;if(x._deps)o._deps=x._deps;if(x._depTypes)o._depTypes=x._depTypes;if(x._teleParents)o._teleParents=x._teleParents;if(x._sonnParents)o._sonnParents=x._sonnParents;return o})}))
   };
@@ -1297,7 +1332,7 @@ async function exportXLS(){
 
   // Hidden data sheet for re-import
   const ds=wb.addWorksheet('_DATA',{state:'veryHidden'});
-  ds.getCell('A1').value=JSON.stringify({P:pName,_cir:CIR.filter(c=>c.k.startsWith('_a')),B:B.map(b=>({n:b.n,niv:b.niv,fl:b.fl,typeAuto:b.typeAuto,
+  ds.getCell('A1').value=JSON.stringify({P:pName,_cir:CIR.filter(c=>c.k.startsWith('_a')),_cirMod:Object.assign({}, CIR_MOD),B:B.map(b=>({n:b.n,niv:b.niv,fl:b.fl,typeAuto:b.typeAuto,
     a:b.a.map(x=>{const o={f:x.f,r:x.r,e:x.e,u:x.u};CIR.forEach(c=>{o[c.k]=x[c.k]});if(x.tb)o.tb=x.tb;if(x._deps)o._deps=x._deps;if(x._depTypes)o._depTypes=x._depTypes;if(x._teleParents)o._teleParents=x._teleParents;if(x._sonnParents)o._sonnParents=x._sonnParents;return o})}))});
 
   const buf=await wb.xlsx.writeBuffer();
@@ -1395,7 +1430,7 @@ async function exportPDF(){
         if (c.k === 'tele' || c.k === 'sonn') return;
         const q = ref[c.k] || 0;
         for (let i = 0; i < q; i++) {
-          allC.push({ k: c.k, mod: c.k === 'plaq' ? 2 : c.k === 'rt' ? 6 : 1, uid: c.k+'_'+i });
+          allC.push({ k: c.k, mod: modOf(c.k), uid: c.k+'_'+i });
         }
       });
       const bD = [];
@@ -1510,7 +1545,7 @@ async function exportPDF(){
       const deps=ref._deps||[];
       const depTypes=ref._depTypes||[];
       const allC=[];
-      CIR.forEach(c=>{if(c.k==='tele'||c.k==='sonn')return;const q=ref[c.k]||0;for(let i=0;i<q;i++)allC.push({k:c.k,n:c.n,a:c.a,mod:c.k==='plaq'?2:c.k==='rt'?6:1,uid:c.k+'_'+i})});
+      CIR.forEach(c=>{if(c.k==='tele'||c.k==='sonn')return;const q=ref[c.k]||0;for(let i=0;i<q;i++)allC.push({k:c.k,n:c.n,a:c.a,mod:modOf(c.k),uid:c.k+'_'+i})});
       const bD=[];
       deps.forEach((dk,di)=>{
         const dc=[];dk.forEach(k=>{const c=allC.find(cc=>cc.k===k&&!cc._u);if(c){c._u=true;dc.push(c)}});
@@ -1870,7 +1905,7 @@ function exportDXF(){
   function buildDeps(ref){
     const allCir=[];
     CIR.forEach(c=>{if(c.k==='tele'||c.k==='sonn')return;const q=ref[c.k]||0;
-      for(let i=0;i<q;i++)allCir.push({k:c.k,n:_CN[c.k]||c.k,a:CIR_AMP[c.k]||10,mod:c.k==='plaq'?2:c.k==='rt'?6:1,subs:[],uid:c.k+'_'+i});
+      for(let i=0;i<q;i++)allCir.push({k:c.k,n:_CN[c.k]||c.k,a:CIR_AMP[c.k]||10,mod:modOf(c.k),subs:[],uid:c.k+'_'+i});
       if(!_CN[c.k])_CN[c.k]=c.n});
     const ecls=allCir.filter(c=>c.k==='ecl');
     for(let i=0;i<(ref.tele||0);i++)if(ecls.length)ecls[i%ecls.length].subs.push('TEL');
@@ -1999,6 +2034,11 @@ function addAlim(){
   const calStr=prompt('Calibre (A) :','20');
   if(!calStr)return;
   const cal=parseInt(calStr)||20;
+  // Nombre de modules occupé par UN disjoncteur de ce circuit dans le
+  // tableau (1 par défaut ; 2 pour plaque bipolaire ; 6 pour RT2012).
+  const modStr=prompt('Nombre de modules par disjoncteur :','1');
+  if(modStr===null)return;
+  const mod=Math.max(1,parseInt(modStr)||1);
   // Type d'interrupteur différentiel sous lequel placer ce nouveau circuit.
   // AC = classique, A = composante continue, F = onduleur/variateur, B = DC.
   const typeIn=(prompt(
@@ -2014,6 +2054,7 @@ function addAlim(){
   const k='_a'+idx;
   CIR.push({k,n:name,a:cal+'A'});
   CIR_AMP[k]=cal;
+  if (mod !== 1) CIR_MOD[k] = mod;
   if (type !== 'AC') TYPE_BY_KEY[k] = type;
   B.forEach(b=>b.a.forEach(ap=>{if(ap[k]===undefined)ap[k]=0}));
   R();
@@ -2023,6 +2064,7 @@ function removeAlim(k){
   const idx=CIR.findIndex(c=>c.k===k);
   if(idx>-1)CIR.splice(idx,1);
   delete CIR_AMP[k];
+  delete CIR_MOD[k];
   delete TYPE_BY_KEY[k];
   B.forEach(b=>b.a.forEach(ap=>{delete ap[k]}));
   R();

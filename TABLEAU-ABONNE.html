@@ -1690,14 +1690,21 @@ async function exportPDF(){
           // Labels — code couleur par calibre uniquement sur les textes
           svg+=`<text x="${ccx}" y="${dy+56}" font-size="10" font-weight="bold" fill="${cc.color}" text-anchor="middle">${c.a}</text>`;
           svg+=`<text x="${ccx}" y="${dy+68}" font-size="8" fill="${cc.color}" text-anchor="middle" opacity="0.85">${c.n}</text>`;
-          // RT2012 gestionnaire box
+          // RT2012 gestionnaire d'énergie : positionné EN DESSOUS du
+          // disjoncteur et de ses labels, centré dans la colonne, pour ne
+          // pas déborder horizontalement dans le départ adjacent (le RT2012
+          // est souvent placé en fin de départ).
           if(c.k==='rt'){
-            const rx=ccx+20,ry=dy+12;
-            svg+=`<line x1="${ccx+10}" y1="${dy+24}" x2="${rx}" y2="${dy+24}" stroke="#E74C3C" stroke-width="1"/>`;
-            svg+=`<line x1="${rx}" y1="${dy+24}" x2="${rx}" y2="${ry}" stroke="#E74C3C" stroke-width="1"/>`;
-            svg+=`<rect x="${rx-2}" y="${ry}" width="50" height="28" rx="3" fill="rgba(231,76,60,0.06)" stroke="#E74C3C" stroke-width="1"/>`;
-            for(let sq=0;sq<5;sq++) svg+=`<rect x="${rx+2+sq*9}" y="${ry+3}" width="6" height="9" rx="1" fill="none" stroke="#E74C3C" stroke-width="0.7" opacity="0.6"/>`;
-            svg+=`<text x="${rx+23}" y="${ry+22}" font-size="5" fill="#E74C3C" text-anchor="middle" font-family="Segoe UI" font-weight="bold">Gest. Énergie</text>`;
+            const _gw=36,_gh=24;
+            const _gx=ccx-_gw/2,_gy=dy+78;
+            // Mini connecteur pointillé (depuis sous les labels)
+            svg+=`<line x1="${ccx}" y1="${dy+72}" x2="${ccx}" y2="${_gy}" stroke="#E74C3C" stroke-width="1" stroke-dasharray="2,2" opacity="0.7"/>`;
+            // Box gestionnaire
+            svg+=`<rect x="${_gx}" y="${_gy}" width="${_gw}" height="${_gh}" rx="3" fill="rgba(231,76,60,0.08)" stroke="#E74C3C" stroke-width="1"/>`;
+            // Mini-cellules (5 carrés) représentant les compteurs/modules internes
+            for(let sq=0;sq<5;sq++) svg+=`<rect x="${_gx+4+sq*5.6}" y="${_gy+3}" width="3.5" height="9" rx="0.5" fill="none" stroke="#E74C3C" stroke-width="0.7" opacity="0.7"/>`;
+            // Libellé
+            svg+=`<text x="${ccx}" y="${_gy+20}" font-size="5" fill="#E74C3C" text-anchor="middle" font-family="Segoe UI" font-weight="bold">Gest. Énergie</text>`;
           }
         });
       });

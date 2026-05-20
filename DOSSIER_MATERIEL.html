@@ -1151,8 +1151,6 @@ async function exportDossierPdf(){
     {
       const ficheFormEl = document.getElementById('ficheForm');
       const coverEl = document.getElementById('coverSheet');
-      const prevFicheDisplay = ficheFormEl.style.display;
-      const prevCoverDisplay = coverEl.style.display;
       ficheFormEl.style.display = 'none';
       coverEl.style.display = '';
       writeCover(cover || defaultCover());
@@ -1239,9 +1237,14 @@ async function exportDossierPdf(){
       const ratio = Math.min(A4W / img.width, A4H / img.height);
       const w = img.width * ratio, h = img.height * ratio;
       page.drawImage(img, { x: (A4W - w) / 2, y: (A4H - h) / 2, width: w, height: h });
-      // Restaure l'état d'affichage avant la boucle fiches
-      ficheFormEl.style.display = prevFicheDisplay || '';
-      coverEl.style.display = prevCoverDisplay || 'none';
+      // Pour la boucle fiches : on FORCE ficheForm visible (peu importe l'état
+      // initial). Sans ça, si l'utilisateur a cliqué "Enregistrer" depuis la
+      // page de garde, prevFicheDisplay vaut 'none' → ficheForm reste caché →
+      // html2canvas renvoie un canvas vide → toDataURL renvoie "data:," et on
+      // throw "format inattendu". L'état final est restauré plus bas selon
+      // originalView.
+      ficheFormEl.style.display = '';
+      coverEl.style.display = 'none';
     }
 
     for (const fiche of fiches) {

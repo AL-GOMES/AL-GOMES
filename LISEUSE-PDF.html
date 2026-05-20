@@ -2086,18 +2086,12 @@ const STORAGE_VERSION = 1;
 const EMPTY_STATE = () => ({ _v: STORAGE_VERSION, annotations: [], calibration: null, rotation: 0 });
 
 function loadDocState(docHash) {
-  // Restaure l'état du document depuis le localStorage (annotations,
-  // calibration, comptages, catégories…). Si rien n'est trouvé pour ce
-  // hash, on retourne un état vide neuf.
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_PREFIX + docHash);
-    if (!raw) return EMPTY_STATE();
-    const data = JSON.parse(raw);
-    if (!data || data._v !== STORAGE_VERSION) return EMPTY_STATE();
-    return data;
-  } catch (e) {
-    return EMPTY_STATE();
-  }
+  // Sauvegarde locale désactivée par choix utilisateur : on retourne toujours
+  // un état vide. Les annotations sont uniquement en mémoire pendant la
+  // session ; pour les retrouver à la prochaine ouverture, l'utilisateur doit
+  // cliquer ENREGISTRER (qui exporte un PDF contenant le marqueur LP_DATA
+  // restaurable à la réouverture de ce même PDF).
+  return EMPTY_STATE();
 }
 // Mode "save manuel" : par défaut, les appels à saveDocState ne persistent pas
 // dans localStorage. Ils marquent simplement le viewer concerné comme "dirty"
@@ -2182,30 +2176,15 @@ function saveDocState(docHash, state) {
   }
 }
 
-// Persiste réellement l'état de chaque viewer ouvert dans le localStorage,
-// puis réinitialise le flag "dirty". Le suspend d'autosave est temporairement
-// levé pendant l'écriture pour que saveDocState() ne soit pas un no-op.
+// Sauvegarde locale désactivée par choix utilisateur. Le bouton SAUVEGARDER
+// ne fait plus que reset l'indicateur "dirty" — la persistance des
+// annotations passe exclusivement par le PDF exporté (marqueur LP_DATA
+// embarqué, restaurable à la réouverture de ce même fichier).
 function commitAllSaves() {
-  const prev = _suspendAutoSave;
-  _suspendAutoSave = false;
-  let savedCount = 0;
-  try {
-    for (const v of [app.primary, app.secondary, app.tertiary]) {
-      if (v && v.docHash && v.state) {
-        saveDocState(v.docHash, v.state);
-        savedCount++;
-      }
-    }
-  } finally {
-    _suspendAutoSave = prev;
-  }
   for (const v of [app.primary, app.secondary, app.tertiary]) {
     if (v) v._dirty = false;
   }
   updateSaveButton();
-  if (savedCount > 0 && typeof showToast === 'function') {
-    showToast('Sauvegardé localement (' + savedCount + ' plan' + (savedCount > 1 ? 's' : '') + ')', 'ok', 2200);
-  }
 }
 
 function updateSaveButton() {

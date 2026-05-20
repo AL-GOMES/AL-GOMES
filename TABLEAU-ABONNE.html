@@ -1500,21 +1500,23 @@ async function exportPDF(){
         const nC=dep.cir.length;const cW=nC*32;const cS=dCx-cW/2;
         svg+=`<line x1="${cS+16}" y1="${dy}" x2="${cS+cW-16}" y2="${dy}" stroke="${col}" stroke-width="1.5"/>`;
 
-        // Disjoncteurs — code couleur par calibre (10A, 16A, 20A, 32A…)
+        // Disjoncteurs — code couleur par calibre appliqué UNIQUEMENT sur
+        // les textes (calibre + nom de circuit). Le symbole (box, traits)
+        // garde la couleur du différentiel parent.
         dep.cir.forEach((c,ci)=>{
           const ccx=cS+ci*32+16;
-          const cc=colByCalibre(c.a); // couleur spécifique au calibre du disj.
-          // Tick (rattaché à la barre du différentiel : on garde la couleur du diff.)
+          const cc=colByCalibre(c.a); // couleur appliquée aux textes seuls
+          // Tick
           svg+=`<line x1="${ccx}" y1="${dy}" x2="${ccx}" y2="${dy+8}" stroke="${col}" stroke-width="1"/>`;
-          // Box du disjoncteur — couleur par calibre
+          // Box du disjoncteur (couleur du différentiel)
           const bw=c.k==='rt'?20:c.mod===2?28:20;
-          svg+=`<rect x="${ccx-bw/2}" y="${dy+8}" width="${bw}" height="36" rx="3" fill="${cc.bg}" stroke="${cc.color}" stroke-width="1.5"/>`;
-          // Symbol
-          svg+=`<line x1="${ccx-6}" y1="${dy+18}" x2="${ccx+6}" y2="${dy+18}" stroke="${cc.color}" stroke-width="1.5"/>`;
-          svg+=`<rect x="${ccx-5}" y="${dy+22}" width="10" height="10" rx="2" fill="none" stroke="${cc.color}" stroke-width="1" opacity="0.7"/>`;
-          // Labels (calibre en gros, nom de circuit en dessous)
+          svg+=`<rect x="${ccx-bw/2}" y="${dy+8}" width="${bw}" height="36" rx="3" fill="${drk}" stroke="${col}" stroke-width="1.5"/>`;
+          // Symbol (couleur du différentiel)
+          svg+=`<line x1="${ccx-6}" y1="${dy+18}" x2="${ccx+6}" y2="${dy+18}" stroke="${col}" stroke-width="1.5"/>`;
+          svg+=`<rect x="${ccx-5}" y="${dy+22}" width="10" height="10" rx="2" fill="none" stroke="${col}" stroke-width="1" opacity="0.7"/>`;
+          // Labels — code couleur par calibre uniquement sur les textes
           svg+=`<text x="${ccx}" y="${dy+56}" font-size="10" font-weight="bold" fill="${cc.color}" text-anchor="middle">${c.a}</text>`;
-          svg+=`<text x="${ccx}" y="${dy+68}" font-size="8" fill="${cc.color}" text-anchor="middle" opacity="0.7">${c.n}</text>`;
+          svg+=`<text x="${ccx}" y="${dy+68}" font-size="8" fill="${cc.color}" text-anchor="middle" opacity="0.85">${c.n}</text>`;
           // TELE/SON
           if(c._s&&c._s.length){
             c._s.forEach((s,si)=>{

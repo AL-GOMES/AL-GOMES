@@ -750,12 +750,15 @@ input.proj { font-size: 28pt; font-weight: 700; text-align: center; letter-spaci
       <td class="ef-checkbox-cell"><input type="checkbox" id="ef_variante"></td>
     </tr>
 
+    <!-- 5 lignes de données : label/value à gauche (A | B-C), colonne D
+         étroite vide, et bloc à droite (E-F colspan 2) pour Observations,
+         Appareillage encastré et BAT (alignés sur Localisation / Marque /
+         Référence, comme dans l'image de référence). -->
     <tr style="height:26px">
       <td class="ef-field-lbl">Désignation :</td>
       <td colspan="2" class="ef-field-val"><input type="text" id="ef_designation" placeholder="Appareillage"></td>
       <td>&nbsp;</td>
-      <td>&nbsp;</td>
-      <td>&nbsp;</td>
+      <td colspan="2">&nbsp;</td>
     </tr>
 
     <tr style="height:26px">
@@ -776,16 +779,14 @@ input.proj { font-size: 28pt; font-weight: 700; text-align: center; letter-spaci
       <td class="ef-field-lbl">Référence :</td>
       <td colspan="2" class="ef-field-val"><input type="text" id="ef_reference" placeholder="ODACE"></td>
       <td>&nbsp;</td>
-      <td>&nbsp;</td>
-      <td>&nbsp;</td>
+      <td colspan="2" class="ef-field-val"><input type="text" id="ef_bat" placeholder="BAT A,B & C"></td>
     </tr>
 
     <tr style="height:26px">
       <td class="ef-field-lbl">Couleur :</td>
       <td colspan="2" class="ef-field-val"><input type="text" id="ef_couleur" placeholder="Blanc"></td>
       <td>&nbsp;</td>
-      <td>&nbsp;</td>
-      <td class="ef-field-val"><input type="text" id="ef_bat" placeholder="BAT A,B & C"></td>
+      <td colspan="2">&nbsp;</td>
     </tr>
 
     <tr style="height:30px"><td colspan="6" class="ef-section-header">PIECES JOINTES</td></tr>

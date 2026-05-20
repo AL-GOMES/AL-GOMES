@@ -7814,7 +7814,22 @@ function drawAllAnnotationsOnCanvasForExport(ctx, viewer, pageNum, renderScale) 
   }
 }
 
-// Construit le canvas de la page de synthèse (A4 portrait)
+// Préchargement asynchrone du logo A.L. GOMES pour la synthèse PDF.
+// Appelé une fois avant buildSynthesisPageCanvas() (qui reste synchrone).
+async function _ensureSynthLogo() {
+  if (window._SYNTH_LOGO_IMG && window._SYNTH_LOGO_IMG.complete) return;
+  return new Promise((res) => {
+    const img = new Image();
+    img.onload = () => { window._SYNTH_LOGO_IMG = img; res(); };
+    img.onerror = () => res();
+    img.src = 'assets/img/algomes-logo.png';
+  });
+}
+
+// Construit le canvas de la page de synthèse (A4 portrait, 2x).
+// Design "BET professionnel" : header gradient + logo, 4 KPI cards en haut,
+// bande document, sections avec accent latéral et badge compteur, tables
+// avec barres horizontales pour proportions, footer raffiné.
 function buildSynthesisPageCanvas() {
   const v = app.primary;
   // A4 portrait à 2x (150 DPI ≈ 1190x1684 px)
@@ -7823,398 +7838,560 @@ function buildSynthesisPageCanvas() {
   cv.width = W; cv.height = H;
   const ctx = cv.getContext('2d');
 
-  // === PALETTE CORPORATE ===
-  const COLOR_PRIMARY = '#8b5cf6';       // violet
-  const COLOR_PRIMARY_DARK = '#6d28d9';  // violet foncé (en-tête)
-  const COLOR_ACCENT = '#a855f7';        // violet clair (accents)
-  const COLOR_TEXT = '#1e293b';          // slate 800
-  const COLOR_TEXT_LIGHT = '#64748b';    // slate 500
-  const COLOR_SURFACE = '#f8fafc';       // slate 50 (bandes)
-  const COLOR_BORDER = '#e2e8f0';        // slate 200
+  // ========== PALETTE ==========
+  const C = {
+    primary:      '#7C3AED',   // violet 600
+    primaryDark:  '#5B21B6',   // violet 800
+    primaryLight: '#EDE9FE',   // violet 100
+    primarySoft:  '#F5F3FF',   // violet 50
+    accent:       '#A78BFA',   // violet 400
+    text:         '#0F172A',   // slate 900
+    textMed:      '#334155',   // slate 700
+    textLight:    '#64748B',   // slate 500
+    surface:      '#F8FAFC',   // slate 50
+    surfaceAlt:   '#FAFAFB',
+    border:       '#E2E8F0',   // slate 200
+    borderLight:  '#F1F5F9',   // slate 100
+    success:      '#10B981',
+    warning:      '#F59E0B'
+  };
 
-  // Fond général blanc cassé
-  ctx.fillStyle = '#ffffff';
+  // Helper roundRect (compat anciens Canvas)
+  function roundRect(x, y, w, h, r) {
+    const rr = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rr);
+    ctx.arcTo(x + w, y + h, x, y + h, rr);
+    ctx.arcTo(x, y + h, x, y, rr);
+    ctx.arcTo(x, y, x + w, y, rr);
+    ctx.closePath();
+  }
+
+  // Fond général
+  ctx.fillStyle = '#FFFFFF';
   ctx.fillRect(0, 0, W, H);
 
-  // ========== EN-TÊTE CORPORATE ==========
-  const headerH = 180;
-  // Gradient violet pour la bande d'en-tête
-  const grad = ctx.createLinearGradient(0, 0, W, headerH);
-  grad.addColorStop(0, COLOR_PRIMARY_DARK);
-  grad.addColorStop(1, COLOR_PRIMARY);
-  ctx.fillStyle = grad;
+  // ========== HEADER ==========
+  const headerH = 200;
+  // Gradient violet diagonal (foncé → vif)
+  const hgrad = ctx.createLinearGradient(0, 0, W, headerH);
+  hgrad.addColorStop(0, C.primaryDark);
+  hgrad.addColorStop(0.55, C.primary);
+  hgrad.addColorStop(1, '#9333EA');
+  ctx.fillStyle = hgrad;
   ctx.fillRect(0, 0, W, headerH);
 
-  // Accent clair en bas de l'en-tête
-  ctx.fillStyle = COLOR_ACCENT;
-  ctx.fillRect(0, headerH, W, 6);
+  // Motif décoratif (grille de points subtile, haut droit)
+  ctx.fillStyle = 'rgba(255,255,255,0.07)';
+  for (let r = 0; r < 7; r++) {
+    for (let c = 0; c < 14; c++) {
+      ctx.beginPath();
+      ctx.arc(W - 60 - c * 14, 24 + r * 14, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
 
-  // Logo A.L. GOMES (typo monogramme stylisée)
-  ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 58px sans-serif';
+  // Logo image si chargé, sinon fallback typo
+  if (window._SYNTH_LOGO_IMG && window._SYNTH_LOGO_IMG.complete && window._SYNTH_LOGO_IMG.naturalWidth > 0) {
+    const lh = 88;
+    const lw = window._SYNTH_LOGO_IMG.naturalWidth * (lh / window._SYNTH_LOGO_IMG.naturalHeight);
+    ctx.drawImage(window._SYNTH_LOGO_IMG, 70, 50, lw, lh);
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    ctx.font = '600 14px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText("BUREAU D'ÉTUDES TECHNIQUES · ÉLECTRICITÉ", 70, 148);
+  } else {
+    // Fallback typographique
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 56px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText('A.L. GOMES', 70, 52);
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    ctx.font = '600 14px sans-serif';
+    ctx.fillText("BUREAU D'ÉTUDES TECHNIQUES · ÉLECTRICITÉ", 70, 128);
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.font = '11px sans-serif';
+    ctx.fillText('Conformité NF C 14-100 · NF C 15-100', 70, 152);
+  }
+
+  // Bloc coordonnées à droite
+  ctx.fillStyle = 'rgba(255,255,255,0.95)';
+  ctx.font = '500 14px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'top';
+  ctx.fillText("77 Boulevard d'Aulnay", W - 70, 60);
+  ctx.fillText('93250 Villemomble', W - 70, 80);
+  ctx.fillStyle = 'rgba(255,255,255,0.58)';
+  ctx.font = '11px sans-serif';
+  ctx.fillText('Conformité NF C 14-100 · NF C 15-100', W - 70, 112);
+
+  // Bande accent en bas du header
+  ctx.fillStyle = C.accent;
+  ctx.fillRect(0, headerH, W, 4);
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.fillRect(0, headerH + 4, W, 1);
+
+  // ========== TITRE ==========
+  let y = headerH + 48;
+  ctx.fillStyle = C.text;
+  ctx.font = 'bold 42px sans-serif';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
-  ctx.fillText('A.L. GOMES', 70, 45);
+  ctx.fillText('Synthèse du plan', 70, y);
+  // Accent décoratif sous le titre
+  ctx.fillStyle = C.primary;
+  ctx.fillRect(70, y + 58, 64, 4);
 
-  // Baseline décorative
-  ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(70, 112);
-  ctx.lineTo(500, 112);
-  ctx.stroke();
-
-  ctx.fillStyle = 'rgba(255,255,255,0.92)';
-  ctx.font = '18px sans-serif';
-  ctx.fillText('BUREAU D\'ÉTUDES TECHNIQUES ÉLECTRICITÉ', 70, 122);
-
-  // Infos à droite (coordonnées)
-  ctx.fillStyle = 'rgba(255,255,255,0.88)';
-  ctx.font = '13px sans-serif';
-  ctx.textAlign = 'right';
-  ctx.fillText('77 Bd d\'Aulnay · 93250 Villemomble', W - 70, 55);
-  ctx.fillText('Électricité résidentielle', W - 70, 78);
-  ctx.fillText('NF C 14-100 · NF C 15-100', W - 70, 101);
-
-  // ========== ZONE TITRE "SYNTHÈSE" ==========
-  let y = headerH + 6 + 50;
-  ctx.textAlign = 'left';
-  ctx.fillStyle = COLOR_TEXT;
-  ctx.font = 'bold 38px sans-serif';
-  ctx.fillText('SYNTHÈSE DU PLAN', 70, y);
-  y += 44;
-
-  // Sous-titre
+  // Pill date à droite
   const now = new Date();
   const dateStr = now.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
   const timeStr = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-  ctx.fillStyle = COLOR_TEXT_LIGHT;
-  ctx.font = '16px sans-serif';
-  ctx.fillText('Édité le ' + dateStr + ' à ' + timeStr, 70, y);
-  y += 42;
+  const dateText = 'Édité le ' + dateStr + ' · ' + timeStr;
+  ctx.font = '500 13px sans-serif';
+  const dateW = ctx.measureText(dateText).width + 30;
+  const dpy = y + 14, dph = 30;
+  roundRect(W - 70 - dateW, dpy, dateW, dph, 15);
+  ctx.fillStyle = C.primaryLight;
+  ctx.fill();
+  ctx.fillStyle = C.primaryDark;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(dateText, W - 70 - dateW + 15, dpy + dph / 2 + 1);
+  ctx.textBaseline = 'top';
+  y += 100;
 
-  // ========== BOÎTE INFOS PROJET ==========
-  const infoH = 140;
-  ctx.fillStyle = COLOR_SURFACE;
-  ctx.fillRect(70, y, W - 140, infoH);
-  ctx.strokeStyle = COLOR_BORDER; ctx.lineWidth = 1;
-  ctx.strokeRect(70, y, W - 140, infoH);
-  // Barre latérale violette
-  ctx.fillStyle = COLOR_PRIMARY;
-  ctx.fillRect(70, y, 6, infoH);
-
-  // Contenu 2 colonnes
-  const infoPad = 25;
-  const colW = (W - 140 - infoPad * 3) / 2;
-  const colX1 = 70 + infoPad + 6;
-  const colX2 = colX1 + colW + infoPad;
-  let infoY = y + infoPad;
-
-  function drawInfoPair(x, yp, label, value) {
-    ctx.fillStyle = COLOR_TEXT_LIGHT;
-    ctx.font = 'bold 11px sans-serif';
-    ctx.fillText(label.toUpperCase(), x, yp);
-    ctx.fillStyle = COLOR_TEXT;
-    ctx.font = '17px sans-serif';
-    ctx.fillText(value, x, yp + 18);
-  }
-
-  const docName = v.file?.name || 'plan.pdf';
-  const docName2 = (app.secondary && app.secondary.pdf) ? app.secondary.file?.name : null;
-  const docName3 = (app.tertiary && app.tertiary.pdf) ? app.tertiary.file?.name : null;
-
-  drawInfoPair(colX1, infoY, 'Document principal', docName.length > 32 ? docName.substring(0, 30) + '…' : docName);
-  drawInfoPair(colX2, infoY, 'Date d\'édition', dateStr);
-  infoY += 52;
-  if (docName2 && docName3) {
-    drawInfoPair(colX1, infoY, 'Zones 2 & 3', (docName2.length > 14 ? docName2.substring(0, 12) + '…' : docName2) + ' + ' + (docName3.length > 14 ? docName3.substring(0, 12) + '…' : docName3));
-  } else if (docName2) {
-    drawInfoPair(colX1, infoY, 'Plan secondaire', docName2.length > 32 ? docName2.substring(0, 30) + '…' : docName2);
-  } else if (docName3) {
-    drawInfoPair(colX1, infoY, 'Plan tertiaire', docName3.length > 32 ? docName3.substring(0, 30) + '…' : docName3);
-  } else {
-    drawInfoPair(colX1, infoY, 'Plans combinés', 'Non');
-  }
-  // Calibration
-  const cal = v.state.calibration;
-  let calStr = 'Non calibré';
-  if (cal) {
-    const ratios = [50, 100, 200, 500, 1000];
-    const expected = ratios.map(r => ({ r, px: 72 / (r * 0.0254) }));
-    const match = expected.find(e => Math.abs(e.px - cal.pxPerMeter) < 0.5);
-    calStr = match ? '1:' + match.r : (cal.pxPerMeter.toFixed(1) + 'px / m');
-  }
-  drawInfoPair(colX2, infoY, 'Échelle appliquée', calStr);
-  y += infoH + 40;
-
-  // ========== SECTION COMPTAGE ==========
+  // ========== KPI CARDS ==========
   const cats = getCategories(v);
-  // Compter sur les 2 viewers combinés
   const allCounts = [];
   for (const vw of [app.primary, app.secondary, app.tertiary]) {
     if (!vw || !vw.state) continue;
     for (const c of (vw.state.counts || [])) allCounts.push(c);
   }
-
-  function drawSectionHeader(label, yPos) {
-    // Petite barre violette à gauche
-    ctx.fillStyle = COLOR_PRIMARY;
-    ctx.fillRect(70, yPos + 4, 6, 28);
-    ctx.fillStyle = COLOR_TEXT;
-    ctx.font = 'bold 22px sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText(label, 90, yPos);
-  }
-
-  function drawTableHeader(yPos, cols) {
-    // Ligne d'en-tête avec fond gris clair
-    ctx.fillStyle = COLOR_SURFACE;
-    ctx.fillRect(70, yPos - 4, W - 140, 30);
-    ctx.fillStyle = COLOR_TEXT_LIGHT;
-    ctx.font = 'bold 11px sans-serif';
-    for (const c of cols) {
-      ctx.textAlign = c.align || 'left';
-      const tx = c.align === 'right' ? c.x : c.x;
-      ctx.fillText(c.label.toUpperCase(), tx, yPos + 10);
-    }
-    // Ligne fine
-    ctx.strokeStyle = COLOR_BORDER; ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(70, yPos + 26);
-    ctx.lineTo(W - 70, yPos + 26);
-    ctx.stroke();
-  }
-
-  if (cats.length > 0 && allCounts.length > 0) {
-    drawSectionHeader('COMPTAGE', y);
-    y += 42;
-
-    // Tableau
-    const cols = [
-      { label: 'Catégorie', x: 110, align: 'left' },
-      { label: 'Raccourci', x: 770, align: 'center' },
-      { label: 'Quantité', x: W - 80, align: 'right' }
-    ];
-    drawTableHeader(y, cols);
-    y += 34;
-
-    let grand = 0;
-    let rowIdx = 0;
-    for (const cat of cats) {
-      const n = allCounts.filter(c => c.category === cat.id).length;
-      if (n === 0) continue;
-      grand += n;
-      // Bande alternée
-      if (rowIdx % 2 === 1) {
-        ctx.fillStyle = COLOR_SURFACE;
-        ctx.fillRect(70, y - 6, W - 140, 36);
-      }
-      // Pastille couleur
-      ctx.fillStyle = cat.color;
-      ctx.beginPath();
-      ctx.arc(92, y + 10, 10, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = '#00000022'; ctx.lineWidth = 1;
-      ctx.stroke();
-      // Nom
-      ctx.fillStyle = COLOR_TEXT;
-      ctx.font = '16px sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText(cat.name, 110, y + 8);
-      // Raccourci
-      ctx.fillStyle = COLOR_TEXT_LIGHT;
-      ctx.font = '13px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(cat.shortcut || '—', 770, y + 8);
-      // Quantité
-      ctx.fillStyle = COLOR_TEXT;
-      ctx.font = 'bold 18px sans-serif';
-      ctx.textAlign = 'right';
-      ctx.fillText(String(n), W - 80, y + 8);
-      y += 36;
-      rowIdx++;
-    }
-
-    // Ligne de total
-    ctx.strokeStyle = COLOR_PRIMARY; ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(70, y);
-    ctx.lineTo(W - 70, y);
-    ctx.stroke();
-    y += 14;
-    ctx.fillStyle = COLOR_PRIMARY_DARK;
-    ctx.font = 'bold 18px sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText('TOTAL SYMBOLES COMPTÉS', 90, y + 4);
-    ctx.textAlign = 'right';
-    ctx.font = 'bold 22px sans-serif';
-    ctx.fillText(String(grand), W - 80, y + 4);
-    y += 50;
-  }
-
-  // ========== SECTION CHEMINS DE CÂBLES ==========
   const groups = groupCablesByName();
   let totalElbows = 0;
   for (const vw of [app.primary, app.secondary, app.tertiary]) {
     if (!vw || !vw.state || !vw.state.annotations) continue;
     totalElbows += vw.state.annotations.filter(a => a.type === 'elbow').length;
   }
+  let totalLen = 0;
+  for (const g of groups) if (g.totalMeters !== null) totalLen += g.totalMeters;
 
-  if (groups.length > 0) {
-    drawSectionHeader('CHEMINS DE CÂBLES (CDC)', y);
-    y += 42;
+  const cal = v.state.calibration;
+  let calStr = 'N.C.';
+  if (cal) {
+    const ratios = [50, 100, 200, 500, 1000];
+    const expected = ratios.map(r => ({ r, px: 72 / (r * 0.0254) }));
+    const match = expected.find(e => Math.abs(e.px - cal.pxPerMeter) < 0.5);
+    calStr = match ? '1:' + match.r : (cal.pxPerMeter.toFixed(1) + 'px/m');
+  }
 
-    const cols = [
-      { label: 'Nom', x: 110, align: 'left' },
-      { label: 'Plans', x: 600, align: 'center' },
-      { label: 'Tronçons', x: 770, align: 'center' },
-      { label: 'Longueur', x: W - 80, align: 'right' }
-    ];
-    drawTableHeader(y, cols);
-    y += 34;
-
-    let grandM = 0;
-    let rowIdx = 0;
-    // Map de couleurs cohérente avec celle utilisée sur les pages annotées
-    // (mêmes paramètres sat/light pour que la pastille du tableau récap
-    // corresponde exactement à la couleur du câble dessiné sur le plan).
-    const _summaryColorMap = buildCableColorMap(getAllCableAnnotations(), 70, 45);
-    const cableColor = (name) => _summaryColorMap.get(name) || '#8b5cf6';
-    for (const g of groups) {
-      if (rowIdx % 2 === 1) {
-        ctx.fillStyle = COLOR_SURFACE;
-        ctx.fillRect(70, y - 6, W - 140, 36);
-      }
-      // Swatch couleur du câble
-      ctx.fillStyle = cableColor(g.name);
-      ctx.fillRect(84, y + 2, 16, 16);
-      ctx.strokeStyle = '#00000022'; ctx.lineWidth = 1;
-      ctx.strokeRect(84, y + 2, 16, 16);
-      // Nom
-      ctx.fillStyle = COLOR_TEXT;
-      ctx.font = '16px sans-serif';
-      ctx.textAlign = 'left';
-      const name = g.name.length > 40 ? g.name.substring(0, 38) + '…' : g.name;
-      ctx.fillText(name, 110, y + 8);
-      // Plans utilisés
-      ctx.fillStyle = COLOR_TEXT_LIGHT;
-      ctx.font = '13px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText([...g.sources].sort().join('+') || '—', 600, y + 8);
-      // Tronçons
-      ctx.fillText(String(g.segments.length), 770, y + 8);
-      // Longueur
-      ctx.fillStyle = COLOR_TEXT;
-      ctx.font = 'bold 16px sans-serif';
-      ctx.textAlign = 'right';
-      const lenStr = g.totalMeters !== null ? g.totalMeters.toFixed(2) + ' m' : g.totalPx.toFixed(0) + ' px';
-      ctx.fillText(lenStr, W - 80, y + 8);
-      if (g.totalMeters !== null) grandM += g.totalMeters;
-      y += 36;
-      rowIdx++;
-    }
-
-    // Total longueur
-    ctx.strokeStyle = COLOR_PRIMARY; ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(70, y);
-    ctx.lineTo(W - 70, y);
+  const cardGap = 14;
+  const cardW = (W - 140 - cardGap * 3) / 4;
+  const cardH = 124;
+  function drawKpiCard(x, label, value, sub, accentColor, iconFn) {
+    // Body
+    roundRect(x, y, cardW, cardH, 6);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fill();
+    // Border
+    ctx.strokeStyle = C.border;
+    ctx.lineWidth = 1;
+    roundRect(x + 0.5, y + 0.5, cardW - 1, cardH - 1, 6);
     ctx.stroke();
-    y += 14;
-    ctx.fillStyle = COLOR_PRIMARY_DARK;
+    // Top accent (clip arrondi en haut)
+    ctx.save();
+    roundRect(x, y, cardW, cardH, 6);
+    ctx.clip();
+    ctx.fillStyle = accentColor || C.primary;
+    ctx.fillRect(x, y, cardW, 5);
+    ctx.restore();
+    // Icon
+    if (iconFn) iconFn(x + cardW - 44, y + 22, accentColor || C.primary);
+    // Label
+    ctx.fillStyle = C.textLight;
+    ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(label.toUpperCase(), x + 20, y + 24);
+    // Big value
+    ctx.fillStyle = C.text;
+    // Calibre value en plus petit si long (1:1000)
+    const valStr = String(value);
+    ctx.font = 'bold ' + (valStr.length > 5 ? 26 : 34) + 'px sans-serif';
+    ctx.fillText(valStr, x + 20, y + 48);
+    // Subtitle
+    ctx.fillStyle = C.textLight;
+    ctx.font = '12px sans-serif';
+    ctx.fillText(sub, x + 20, y + 96);
+  }
+
+  // Icônes
+  function iconSymbols(x, y, col) {
+    ctx.fillStyle = col;
+    for (let i = 0; i < 4; i++) {
+      const dx = x + (i % 2) * 11;
+      const dy = y + Math.floor(i / 2) * 11;
+      ctx.beginPath();
+      ctx.arc(dx, dy, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  function iconCable(x, y, col) {
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(x, y + 14);
+    ctx.bezierCurveTo(x + 8, y + 0, x + 16, y + 18, x + 22, y + 4);
+    ctx.stroke();
+  }
+  function iconAngle(x, y, col) {
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(x, y + 18);
+    ctx.lineTo(x + 13, y + 18);
+    ctx.lineTo(x + 13, y + 4);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x + 13, y + 18, 7, -Math.PI / 2, 0);
+    ctx.stroke();
+  }
+  function iconScale(x, y, col) {
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, y + 6, 26, 11);
+    for (let i = 0; i < 6; i++) {
+      ctx.beginPath();
+      ctx.moveTo(x + 3 + i * 4, y + 6);
+      ctx.lineTo(x + 3 + i * 4, y + 6 + (i % 2 === 0 ? 6 : 3));
+      ctx.stroke();
+    }
+  }
+
+  const usedCats = cats.filter(c => allCounts.some(cc => cc.category === c.id));
+  drawKpiCard(70, 'Symboles comptés', allCounts.length,
+    usedCats.length + ' catégorie' + (usedCats.length > 1 ? 's' : ''),
+    C.primary, iconSymbols);
+  drawKpiCard(70 + cardW + cardGap, 'Longueur câble', totalLen.toFixed(1) + ' m',
+    groups.length + ' type' + (groups.length > 1 ? 's' : '') + ' relevé' + (groups.length > 1 ? 's' : ''),
+    '#7C3AED', iconCable);
+  drawKpiCard(70 + 2 * (cardW + cardGap), 'Coudes placés', totalElbows,
+    totalElbows > 1 ? 'changements de direction' : 'changement de direction',
+    '#A855F7', iconAngle);
+  drawKpiCard(70 + 3 * (cardW + cardGap), 'Échelle', calStr,
+    cal ? 'calibration appliquée' : 'à définir',
+    cal ? C.success : C.warning, iconScale);
+
+  y += cardH + 28;
+
+  // ========== BANDE DOCUMENT ==========
+  const docName = v.file?.name || 'plan.pdf';
+  const docName2 = (app.secondary && app.secondary.pdf) ? app.secondary.file?.name : null;
+  const docName3 = (app.tertiary && app.tertiary.pdf) ? app.tertiary.file?.name : null;
+
+  const infoH = 56;
+  roundRect(70, y, W - 140, infoH, 5);
+  ctx.fillStyle = C.primarySoft;
+  ctx.fill();
+  ctx.fillStyle = C.primary;
+  ctx.fillRect(70, y, 4, infoH);
+
+  ctx.fillStyle = C.textLight;
+  ctx.font = 'bold 10px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('DOCUMENT PRINCIPAL', 92, y + 18);
+  ctx.fillStyle = C.text;
+  ctx.font = '600 14px sans-serif';
+  ctx.fillText(docName.length > 50 ? docName.substring(0, 48) + '…' : docName, 92, y + 38);
+
+  const extras = [docName2, docName3].filter(Boolean);
+  ctx.textAlign = 'right';
+  ctx.fillStyle = C.textLight;
+  ctx.font = 'bold 10px sans-serif';
+  ctx.fillText('PLANS COMBINÉS', W - 90, y + 18);
+  if (extras.length) {
+    ctx.fillStyle = C.text;
+    ctx.font = '600 14px sans-serif';
+    const extrasStr = extras.map(e => e.length > 18 ? e.substring(0, 16) + '…' : e).join(' + ');
+    ctx.fillText(extrasStr, W - 90, y + 38);
+  } else {
+    ctx.fillStyle = C.textLight;
+    ctx.font = 'italic 13px sans-serif';
+    ctx.fillText('—', W - 90, y + 38);
+  }
+  ctx.textBaseline = 'top';
+  y += infoH + 32;
+
+  // ========== HELPERS sections ==========
+  function drawSectionHeader(label, badge, accentColor) {
+    const sh = 38;
+    const g = ctx.createLinearGradient(70, y, 70 + 420, y);
+    g.addColorStop(0, C.primarySoft);
+    g.addColorStop(1, 'rgba(245,243,255,0)');
+    roundRect(70, y, W - 140, sh, 4);
+    ctx.fillStyle = g;
+    ctx.fill();
+    ctx.fillStyle = accentColor || C.primary;
+    ctx.fillRect(70, y, 5, sh);
+    ctx.fillStyle = C.text;
     ctx.font = 'bold 18px sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText('LONGUEUR TOTALE DE CÂBLE', 90, y + 4);
-    ctx.textAlign = 'right';
-    ctx.font = 'bold 22px sans-serif';
-    ctx.fillText(grandM.toFixed(2) + ' m', W - 80, y + 4);
-    y += 50;
-  }
-
-  // ========== SECTION COUDES ==========
-  if (totalElbows > 0) {
-    drawSectionHeader('COUDES PLACÉS', y);
-    y += 42;
-
-    // Badge grand format
-    ctx.fillStyle = COLOR_SURFACE;
-    ctx.fillRect(70, y, W - 140, 88);
-    ctx.strokeStyle = COLOR_BORDER; ctx.lineWidth = 1;
-    ctx.strokeRect(70, y, W - 140, 88);
-    ctx.fillStyle = COLOR_PRIMARY;
-    ctx.fillRect(70, y, 6, 88);
-
-    // Icône (cercle numéroté emblématique)
-    const iconX = 140, iconY = y + 44;
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(iconX, iconY, 28, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = COLOR_PRIMARY;
-    ctx.lineWidth = 4;
-    ctx.stroke();
-    ctx.fillStyle = COLOR_PRIMARY;
-    ctx.font = 'bold 28px sans-serif';
-    ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('N', iconX, iconY + 1);
-
-    // Texte
-    ctx.fillStyle = COLOR_TEXT;
-    ctx.font = 'bold 16px sans-serif';
+    ctx.fillText(label, 92, y + sh / 2);
+    if (badge != null) {
+      const bt = String(badge);
+      ctx.font = 'bold 12px sans-serif';
+      const bw = ctx.measureText(bt).width + 20;
+      const bx = W - 90 - bw;
+      const by = y + 9, bh = 20;
+      roundRect(bx, by, bw, bh, 10);
+      const ac = accentColor || C.primary;
+      ctx.fillStyle = ac + '22';
+      ctx.fill();
+      ctx.strokeStyle = ac + '55';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = ac;
+      ctx.textAlign = 'center';
+      ctx.fillText(bt, bx + bw / 2, by + bh / 2 + 1);
+    }
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    ctx.fillText('Nombre de coudes relevés sur le parcours', 200, y + 22);
-    ctx.fillStyle = COLOR_TEXT_LIGHT;
-    ctx.font = '13px sans-serif';
-    ctx.fillText('Changements de direction physiques (tés, dérivations, angles)', 200, y + 48);
-
-    // Chiffre imposant à droite
-    ctx.fillStyle = COLOR_PRIMARY_DARK;
-    ctx.font = 'bold 56px sans-serif';
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(String(totalElbows), W - 100, y + 44);
-
-    ctx.textBaseline = 'top';
-    y += 110;
+    return y + sh + 14;
   }
 
-  // ========== SI AUCUNE DATA ==========
+  function drawTotalRow(label, value, accentColor) {
+    ctx.strokeStyle = accentColor || C.primary;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(80, y + 4);
+    ctx.lineTo(W - 80, y + 4);
+    ctx.stroke();
+    y += 14;
+    ctx.fillStyle = accentColor || C.primaryDark;
+    ctx.font = 'bold 13px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, 96, y + 12);
+    ctx.font = 'bold 22px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(String(value), W - 100, y + 12);
+    y += 38;
+    ctx.textBaseline = 'top';
+  }
+
+  // ========== SECTION : COMPTAGE ==========
+  if (cats.length > 0 && allCounts.length > 0) {
+    y = drawSectionHeader('Comptage des symboles', allCounts.length + (allCounts.length > 1 ? ' éléments' : ' élément'), C.primary);
+
+    const rowH = 38;
+    usedCats.forEach((cat, i) => {
+      const n = allCounts.filter(c => c.category === cat.id).length;
+      if (i % 2 === 1) {
+        ctx.fillStyle = C.surface;
+        ctx.fillRect(80, y, W - 160, rowH);
+      }
+      const ym = y + rowH / 2;
+      // Pastille
+      ctx.fillStyle = cat.color;
+      ctx.beginPath();
+      ctx.arc(100, ym, 9, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#00000020';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      // Nom
+      ctx.fillStyle = C.text;
+      ctx.font = '500 15px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(cat.name.length > 50 ? cat.name.substring(0, 48) + '…' : cat.name, 122, ym);
+      // Raccourci en pill
+      if (cat.shortcut) {
+        const sc = cat.shortcut.toUpperCase();
+        ctx.font = '600 11px monospace';
+        const sw = ctx.measureText(sc).width + 18;
+        const sx = 720 - sw / 2;
+        roundRect(sx, ym - 11, sw, 22, 11);
+        ctx.fillStyle = C.borderLight;
+        ctx.fill();
+        ctx.fillStyle = C.textMed;
+        ctx.textAlign = 'center';
+        ctx.fillText(sc, 720, ym + 1);
+      }
+      // Qté
+      ctx.fillStyle = C.text;
+      ctx.font = 'bold 19px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(String(n), W - 100, ym);
+      y += rowH;
+    });
+    ctx.textBaseline = 'top';
+
+    drawTotalRow('TOTAL SYMBOLES', allCounts.length, C.primary);
+  }
+
+  // ========== SECTION : CHEMINS DE CÂBLES ==========
+  if (groups.length > 0) {
+    y = drawSectionHeader('Chemins de câbles', groups.length + (groups.length > 1 ? ' types' : ' type'), '#9333EA');
+
+    const maxLen = Math.max.apply(null, groups.map(g => g.totalMeters || 0).concat([1]));
+    const _summaryColorMap = buildCableColorMap(getAllCableAnnotations(), 70, 45);
+    const cableColor = (name) => _summaryColorMap.get(name) || C.primary;
+
+    const rowH = 46;
+    groups.forEach((g, i) => {
+      if (i % 2 === 1) {
+        ctx.fillStyle = C.surface;
+        ctx.fillRect(80, y, W - 160, rowH);
+      }
+      const ym = y + rowH / 2;
+      // Swatch
+      ctx.fillStyle = cableColor(g.name);
+      roundRect(95, ym - 9, 18, 18, 3);
+      ctx.fill();
+      ctx.strokeStyle = '#00000022';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      // Nom + sous-titre
+      ctx.fillStyle = C.text;
+      ctx.font = '600 15px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+      const name = g.name.length > 30 ? g.name.substring(0, 28) + '…' : g.name;
+      ctx.fillText(name, 130, ym - 3);
+      ctx.fillStyle = C.textLight;
+      ctx.font = '11.5px sans-serif';
+      const subInfo = g.segments.length + ' tronçon' + (g.segments.length > 1 ? 's' : '') +
+                      ' · plan' + (g.sources.size > 1 ? 's' : '') + ' ' +
+                      ([...g.sources].sort().join('+') || '—');
+      ctx.fillText(subInfo, 130, ym + 13);
+      ctx.textBaseline = 'top';
+
+      // Barre proportion
+      const barX = 620, barMaxW = 230, barH = 8;
+      const barY = ym - barH / 2;
+      roundRect(barX, barY, barMaxW, barH, 4);
+      ctx.fillStyle = C.borderLight;
+      ctx.fill();
+      const fillW = g.totalMeters !== null ? Math.max(6, (g.totalMeters / maxLen) * barMaxW) : 0;
+      if (fillW > 0) {
+        roundRect(barX, barY, fillW, barH, 4);
+        ctx.fillStyle = cableColor(g.name);
+        ctx.fill();
+      }
+
+      // Valeur longueur
+      ctx.fillStyle = C.text;
+      ctx.font = 'bold 16px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      const lenStr = g.totalMeters !== null ? g.totalMeters.toFixed(2) + ' m' : g.totalPx.toFixed(0) + ' px';
+      ctx.fillText(lenStr, W - 100, ym);
+      y += rowH;
+    });
+    ctx.textBaseline = 'top';
+
+    drawTotalRow('LONGUEUR TOTALE CÂBLES', totalLen.toFixed(2) + ' m', '#9333EA');
+  }
+
+  // ========== SECTION : COUDES ==========
+  if (totalElbows > 0) {
+    y = drawSectionHeader('Coudes & changements de direction', totalElbows, '#A855F7');
+
+    const ch = 66;
+    roundRect(80, y, W - 160, ch, 6);
+    ctx.fillStyle = C.primarySoft;
+    ctx.fill();
+    ctx.strokeStyle = C.primaryLight;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Icône télescopée (angle)
+    const ix = 116, iy = y + ch / 2;
+    ctx.strokeStyle = '#A855F7';
+    ctx.lineWidth = 3.5;
+    ctx.beginPath();
+    ctx.moveTo(ix - 15, iy + 10);
+    ctx.lineTo(ix + 6, iy + 10);
+    ctx.lineTo(ix + 6, iy - 13);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(ix + 6, iy + 10, 9, -Math.PI / 2, 0);
+    ctx.stroke();
+
+    // Texte
+    ctx.fillStyle = C.text;
+    ctx.font = 'bold 16px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Coudes relevés sur le parcours', 152, y + 22);
+    ctx.fillStyle = C.textLight;
+    ctx.font = '12px sans-serif';
+    ctx.fillText('Tés · dérivations · angles physiques', 152, y + 44);
+
+    // Big count
+    ctx.fillStyle = C.primaryDark;
+    ctx.font = 'bold 44px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(String(totalElbows), W - 110, y + ch / 2);
+    ctx.textBaseline = 'top';
+    y += ch + 20;
+  }
+
+  // ========== EMPTY STATE ==========
   if (allCounts.length === 0 && groups.length === 0 && totalElbows === 0) {
-    ctx.fillStyle = COLOR_SURFACE;
-    ctx.fillRect(70, y, W - 140, 100);
-    ctx.strokeStyle = COLOR_BORDER; ctx.lineWidth = 1;
-    ctx.strokeRect(70, y, W - 140, 100);
-    ctx.fillStyle = COLOR_TEXT_LIGHT;
+    const eh = 100;
+    roundRect(70, y, W - 140, eh, 6);
+    ctx.fillStyle = C.surface;
+    ctx.fill();
+    ctx.strokeStyle = C.border;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = C.textLight;
     ctx.font = 'italic 18px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('Aucune annotation relevée sur ce document.', W / 2, y + 42);
-    y += 120;
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Aucune annotation relevée sur ce document.', W / 2, y + eh / 2);
+    ctx.textBaseline = 'top';
+    y += eh + 20;
   }
 
-  // ========== PIED DE PAGE ==========
-  const footerY = H - 90;
-  // Ligne de séparation
-  ctx.strokeStyle = COLOR_BORDER; ctx.lineWidth = 1;
+  // ========== FOOTER ==========
+  const footerY = H - 96;
+  // Séparateur dégradé
+  const fg = ctx.createLinearGradient(70, footerY, W - 70, footerY);
+  fg.addColorStop(0, 'rgba(124,58,237,0.4)');
+  fg.addColorStop(0.5, 'rgba(124,58,237,0)');
+  ctx.strokeStyle = fg;
+  ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(70, footerY);
   ctx.lineTo(W - 70, footerY);
   ctx.stroke();
-
-  // Accent violet
-  ctx.fillStyle = COLOR_PRIMARY;
-  ctx.fillRect(70, footerY, 80, 3);
-
-  ctx.fillStyle = COLOR_TEXT_LIGHT;
-  ctx.font = '11px sans-serif';
+  // Accent
+  ctx.fillStyle = C.primary;
+  ctx.fillRect(70, footerY, 70, 3);
+  // Left
+  ctx.fillStyle = C.textMed;
+  ctx.font = 'bold 12px sans-serif';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
-  ctx.fillText('A.L. GOMES · Bureau d\'études techniques électricité', 70, footerY + 18);
-  ctx.fillText('77 Bd d\'Aulnay · 93250 Villemomble', 70, footerY + 36);
-
+  ctx.fillText("A.L. GOMES · BUREAU D'ÉTUDES TECHNIQUES ÉLECTRICITÉ", 70, footerY + 16);
+  ctx.fillStyle = C.textLight;
+  ctx.font = '11px sans-serif';
+  ctx.fillText("77 Boulevard d'Aulnay · 93250 Villemomble · Conformité NF C 14-100 / 15-100", 70, footerY + 36);
+  // Right
   ctx.textAlign = 'right';
-  ctx.fillText('Document généré par LISEUSE PLAN', W - 70, footerY + 18);
+  ctx.fillStyle = C.textMed;
+  ctx.font = 'bold 11px sans-serif';
+  ctx.fillText('SYNTHÈSE GÉNÉRÉE PAR LISEUSE PLAN', W - 70, footerY + 16);
+  ctx.fillStyle = C.textLight;
+  ctx.font = '11px sans-serif';
   ctx.fillText(dateStr + ' · ' + timeStr, W - 70, footerY + 36);
 
   return cv;
@@ -8386,6 +8563,7 @@ async function exportFullPdf() {
   if (_hasSynthContent) {
     showLoader('Export PDF', 'Génération de la synthèse…', 88);
     await new Promise(r => setTimeout(r, 10));
+    await _ensureSynthLogo();
     const synthCv = buildSynthesisPageCanvas();
     pushCanvasAsPage(synthCv, 0.92);
   }

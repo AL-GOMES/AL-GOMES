@@ -115,6 +115,20 @@ html, body { background: #2a2a35; font-family: 'Calibri', 'Segoe UI', Arial, san
 }
 .sheet > form, .sheet form { display: flex; flex-direction: column; flex: 1; }
 
+/* Valeurs d'exemple (placeholders) en italique pour bien les distinguer
+   des valeurs réelles saisies par l'utilisateur — s'applique aux deux
+   modèles de fiche (AL GOMES et EIFFAGE). */
+.sheet input::placeholder,
+.sheet textarea::placeholder {
+  font-style: italic;
+  color: #888;
+  opacity: 1;
+}
+.sheet input::-webkit-input-placeholder,
+.sheet textarea::-webkit-input-placeholder { font-style: italic; color: #888; }
+.sheet input::-moz-placeholder,
+.sheet textarea::-moz-placeholder { font-style: italic; color: #888; opacity: 1; }
+
 /* Visualiseur PDF (fiche technique attachée à la fiche courante) */
 .pdf-panel {
   width: 210mm; max-width: 100%; min-height: 297mm;
@@ -1064,13 +1078,15 @@ function showActiveFicheForm(){
 function _crossMapFields(fiche, toTemplate){
   if (!fiche) return;
   const map = {
-    f_project:     'ef_project',
-    f_lot:         'ef_lot',
-    m_fournisseur: 'ef_marque',
-    m_materiel:    'ef_designation',
-    m_caract:      'ef_observations',
-    m_couleur:     'ef_couleur',
-    m_loc:         'ef_loc'
+    f_project:      'ef_project',
+    f_lot:          'ef_lot',
+    f_num:          'ef_num',
+    m_fournisseur:  'ef_marque',
+    m_materiel:     'ef_designation',
+    m_caract:       'ef_reference',     // caractéristiques (Excel) ≈ référence (Eiffage = modèle)
+    m_couleur:      'ef_couleur',
+    m_loc:          'ef_loc',
+    m_observations: 'ef_observations'
   };
   if (toTemplate === 'eiffage'){
     for (const k in map){
@@ -1172,18 +1188,28 @@ async function renderSommaireSheet(){
     '<th class="center">PAGE</th>' +
   '</tr></thead><tbody>';
   for (const f of fiches){
+    // Lecture template-aware : on essaie d'abord les champs AL GOMES (m_*),
+    // puis on retombe sur les champs EIFFAGE (ef_*) si vides. Ainsi le
+    // sommaire s'adapte automatiquement au modèle utilisé pour la fiche.
+    const fourn = f.m_fournisseur || f.ef_marque       || '—';
+    const mat   = f.m_materiel    || f.ef_designation  || '—';
+    const couleur = f.m_couleur   || f.ef_couleur      || '';
+    const loc   = f.m_loc         || f.ef_loc          || '—';
     const caractBits = [];
-    if (f.m_caract)   caractBits.push(f.m_caract);
-    if (f.m_couleur)  caractBits.push('Couleur : ' + f.m_couleur);
+    if (f.m_caract)        caractBits.push(f.m_caract);
+    else if (f.ef_reference)    caractBits.push(f.ef_reference);
+    if (f.m_observations)  caractBits.push(f.m_observations);
+    else if (f.ef_observations) caractBits.push(f.ef_observations);
+    if (couleur)  caractBits.push('Couleur : ' + couleur);
     if (f.m_finition) caractBits.push('Finition : ' + f.m_finition);
     const caract = caractBits.join(' · ') || '—';
     const pageNum = pageMap.get(f.id) || '?';
     html += '<tr>' +
       '<td class="num"><button type="button" class="smr-btn" data-fiche-id="' + _escHtmlSm(f.id) + '">Fiche ' + _escHtmlSm(f.f_num || '?') + '</button></td>' +
-      '<td>' + _escHtmlSm(f.m_fournisseur || '—') + '</td>' +
-      '<td>' + _escHtmlSm(f.m_materiel || '—') + '</td>' +
+      '<td>' + _escHtmlSm(fourn) + '</td>' +
+      '<td>' + _escHtmlSm(mat) + '</td>' +
       '<td>' + _escHtmlSm(caract) + '</td>' +
-      '<td>' + _escHtmlSm(f.m_loc || '—') + '</td>' +
+      '<td>' + _escHtmlSm(loc) + '</td>' +
       '<td class="page">' + _escHtmlSm(pageNum) + '</td>' +
     '</tr>';
   }
@@ -1262,6 +1288,14 @@ function writeForm(data){
       r.checked = data ? (r.value === data[grp]) : false;
     });
   }
+  // Sync f_num ↔ ef_num : la source de vérité est f_num. Quand on ouvre
+  // le form EIFFAGE, le N° affiché doit refléter f_num même si la fiche
+  // n'a jamais été éditée côté EIFFAGE (ef_num vide à l'origine).
+  const fNum  = document.getElementById('f_num');
+  const efNum = document.getElementById('ef_num');
+  const num = (data && data.f_num) || (data && data.ef_num) || '';
+  if (fNum  && fNum.value  !== num) fNum.value  = num;
+  if (efNum && efNum.value !== num) efNum.value = num;
 }
 function setStatus(text, cls){
   const s = document.getElementById('saveStatus');
@@ -1809,16 +1843,22 @@ async function drawSommairePages(out, fiches, attachCounts, logoBytes, A4W, A4H)
   const hdrH    = 22;
 
   // === Pré-calcul : données + hauteur de ligne pour chaque fiche ===========
+  // Lecture template-aware : m_* (AL GOMES) en priorité, fallback sur
+  // ef_* (EIFFAGE) pour que le sommaire fonctionne quel que soit le modèle.
   const rows = fiches.map(f => {
-    const num   = safeText(f.f_num || '—');
-    const fourn = safeText(f.m_fournisseur || '—');
-    const mat   = safeText(f.m_materiel || '—');
+    const num     = safeText(f.f_num || '—');
+    const fourn   = safeText(f.m_fournisseur || f.ef_marque      || '—');
+    const mat     = safeText(f.m_materiel    || f.ef_designation || '—');
+    const couleur = f.m_couleur || f.ef_couleur || '';
+    const loc     = safeText(f.m_loc         || f.ef_loc         || '—');
     const caractBits = [];
-    if (f.m_caract)   caractBits.push(safeText(f.m_caract));
-    if (f.m_couleur)  caractBits.push('Couleur : ' + safeText(f.m_couleur));
+    if (f.m_caract)        caractBits.push(safeText(f.m_caract));
+    else if (f.ef_reference)    caractBits.push(safeText(f.ef_reference));
+    if (f.m_observations)  caractBits.push(safeText(f.m_observations));
+    else if (f.ef_observations) caractBits.push(safeText(f.ef_observations));
+    if (couleur)           caractBits.push('Couleur : ' + safeText(couleur));
     if (f.m_finition) caractBits.push('Finition : ' + safeText(f.m_finition));
     const caract = caractBits.join(' · ') || '—';
-    const loc    = safeText(f.m_loc || '—');
     const fournLines  = wrap(fourn,  fontReg, cellFs, cols[1].px - 2*padding, 2);
     const matLines    = wrap(mat,    fontReg, cellFs, cols[2].px - 2*padding, 2);
     const caractLines = wrap(caract, fontReg, cellFs, cols[3].px - 2*padding, 2);
@@ -2715,11 +2755,26 @@ document.addEventListener('DOMContentLoaded', () => {
   showActiveFicheForm();
   // Le numéro de fiche est éditable manuellement — re-trie + redraw à chaque
   // modif du champ pour que les onglets restent dans l'ordre.
-  document.getElementById('f_num').addEventListener('change', () => {
+  // Les deux inputs (#f_num AL GOMES et #ef_num EIFFAGE) sont synchronisés
+  // pour que le N° édité dans n'importe quel formulaire mette à jour les
+  // onglets et persiste sur le champ f_num (source de vérité pour le tri).
+  const fNumIn  = document.getElementById('f_num');
+  const efNumIn = document.getElementById('ef_num');
+  function _syncNumAndReorder(srcVal){
+    if (fNumIn  && fNumIn.value  !== srcVal) fNumIn.value  = srcVal;
+    if (efNumIn && efNumIn.value !== srcVal) efNumIn.value = srcVal;
     syncFormToActive();
     sortFiches();
     renderTabs();
-  });
+  }
+  if (fNumIn){
+    fNumIn.addEventListener('change', () => _syncNumAndReorder(fNumIn.value));
+    fNumIn.addEventListener('input',  () => { if (efNumIn) efNumIn.value = fNumIn.value; });
+  }
+  if (efNumIn){
+    efNumIn.addEventListener('change', () => _syncNumAndReorder(efNumIn.value));
+    efNumIn.addEventListener('input',  () => { if (fNumIn) fNumIn.value = efNumIn.value; });
+  }
   document.getElementById('ficheForm').addEventListener('input', markDirty);
   document.getElementById('ficheForm').addEventListener('change', markDirty);
   // EIFFAGE form : mêmes hooks pour le dirty state

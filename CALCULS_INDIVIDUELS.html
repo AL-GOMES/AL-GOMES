@@ -151,6 +151,46 @@ tr:hover .rd{opacity:1}.rd:hover{color:#FF6B6B}
 .dim-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
 @media(max-width:900px){.dim-grid{grid-template-columns:1fr}.summary{grid-template-columns:repeat(2,1fr)}}
 
+/* ═══ REMBT cards ═══ */
+.rembt-topbar{display:flex;align-items:center;gap:18px;padding:14px 18px;margin-bottom:14px;border-radius:10px;
+  border:1px solid rgba(123,95,172,0.18);background:linear-gradient(165deg,rgba(91,63,140,0.10) 0%,rgba(22,18,32,0.5) 100%)}
+.rembt-top-info{display:flex;flex-direction:column;gap:2px}
+.rembt-top-count{font-family:'Segoe UI',system-ui,sans-serif;font-size:16px;font-weight:700;color:#E8E0F2;letter-spacing:0.5px}
+.rembt-top-sub{font-size:11px;color:rgba(180,165,200,0.55);letter-spacing:0.5px}
+.rembt-top-actions{margin-left:auto;display:flex;gap:8px}
+.rembt-list{display:flex;flex-direction:column;gap:14px;margin-bottom:18px}
+.rembt-card{margin-bottom:0}
+.rembt-card-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.rembt-card-h .rt{margin-left:auto;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.rembt-name{font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;font-weight:700;letter-spacing:0.5px;color:#E8E0F2;
+  background:rgba(91,63,140,0.10);border:1px solid rgba(123,95,172,0.20);border-radius:6px;padding:5px 10px;min-width:160px;text-transform:none}
+.rembt-name:focus{outline:none;border-color:rgba(123,95,172,0.50);background:rgba(91,63,140,0.18)}
+.rembt-meta{font-size:11px;font-weight:500;color:rgba(180,165,200,0.55);letter-spacing:0.4px;text-transform:none}
+.rembt-mod-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;font-size:11px;color:rgba(155,125,197,0.70);letter-spacing:1px;text-transform:uppercase;font-weight:700}
+.rembt-sugg{padding:18px;border-radius:10px;background:rgba(22,18,32,0.6);border:1px solid rgba(123,95,172,0.18);margin-bottom:14px;text-align:center}
+.rembt-sugg.green{border-color:rgba(46,213,115,0.25);background:rgba(46,213,115,0.06)}
+.rembt-sugg.orange{border-color:rgba(255,159,67,0.25);background:rgba(255,159,67,0.06)}
+.rembt-sugg.red{border-color:rgba(255,85,85,0.30);background:rgba(255,85,85,0.06)}
+.rembt-sugg-lbl{font-size:10px;color:rgba(180,165,200,0.55);letter-spacing:1.5px;text-transform:uppercase;font-weight:700}
+.rembt-sugg-val{font-family:'Segoe UI',system-ui,sans-serif;font-size:30px;font-weight:800;letter-spacing:1px;color:#E8E0F2;margin:4px 0 2px;font-variant-numeric:tabular-nums}
+.rembt-sugg.green .rembt-sugg-val{color:#5FE09A}
+.rembt-sugg.orange .rembt-sugg-val{color:#FFB86C}
+.rembt-sugg.red .rembt-sugg-val{color:#FF6B6B}
+.rembt-sugg-sub{font-size:11px;color:rgba(180,165,200,0.65);margin-top:2px}
+.rembt-sugg-bar{display:flex;gap:8px;justify-content:center;margin-top:10px}
+.rembt-sz-chip{padding:4px 14px;border-radius:6px;font-family:'Courier New',monospace;font-size:13px;font-weight:700;
+  background:rgba(91,63,140,0.10);color:rgba(180,165,200,0.45);border:1px solid rgba(123,95,172,0.18);letter-spacing:1px}
+.rembt-sz-chip.on{background:rgba(46,213,115,0.18);color:#5FE09A;border-color:rgba(46,213,115,0.35)}
+.rembt-sz-chip.off{opacity:0.35;text-decoration:line-through}
+.rembt-notes-wrap{display:flex;flex-direction:column;gap:6px}
+.rembt-notes-lbl{font-size:10.5px;color:rgba(180,165,200,0.65);letter-spacing:1.2px;text-transform:uppercase;font-weight:700}
+.rembt-notes{width:100%;min-height:84px;padding:10px 12px;background:rgba(22,18,32,0.80);border:1px solid rgba(123,95,172,0.18);
+  color:rgba(220,210,235,0.90);font-family:inherit;font-size:12.5px;border-radius:6px;resize:vertical;transition:all .25s;line-height:1.5}
+.rembt-notes:focus{outline:none;border-color:rgba(123,95,172,0.50);background:rgba(32,24,50,0.90);box-shadow:0 0 0 3px rgba(91,63,140,0.12)}
+.rembt-notes::placeholder{color:rgba(180,165,200,0.35)}
+.rembt-sel{min-width:88px;font-size:10.5px}
+button.btn[disabled]{opacity:0.4;cursor:not-allowed}
+
 .ts{overflow-x:auto;-webkit-overflow-scrolling:touch}
 ::-webkit-scrollbar{width:6px;height:6px}
 ::-webkit-scrollbar-track{background:rgba(14,14,16,0.5)}
@@ -307,14 +347,61 @@ function emptyDim(){
   const d={};MODULES.forEach(m=>d[m.k]=0);return d;
 }
 
-let CI = {
-  P: '',
-  lgts: defaultLgts(),
-  dim: emptyDim(),
-  limT: 1,    // limite par tronçon (%) — NF C 14-100 défaut 1 %, Excel d'origine 1,15 %
-  limTot: 2,  // limite totale C1+C2 (%) — NF C 14-100
-  ts: 0
-};
+// ─── REMBT helpers ───────────────────────────────────────────────
+// Tailles standard de REMBT (nombre de plages)
+const REMBT_SIZES = [6, 9, 12];
+
+function newRembtId(existing){
+  const used = new Set((existing||[]).map(r=>r.id));
+  let i = 1; while(used.has('r'+i)) i++;
+  return 'r'+i;
+}
+function newRembt(name, existing){
+  const id = newRembtId(existing);
+  return { id, name: name || ('REMBT '+id.slice(1)), notes:'', parentId:null, dim:emptyDim() };
+}
+function defaultRembts(){ return [ newRembt('REMBT 1', []) ]; }
+
+// Plages occupées par un REMBT (somme places × quantité)
+function rembtPlages(r){
+  if(!r || !r.dim) return 0;
+  let p = 0;
+  MODULES.forEach(m => { p += (r.dim[m.k] || 0) * m.p; });
+  return p;
+}
+// Renvoie la taille standard de REMBT (6/9/12) qui accueille N plages,
+// ou null si > 12.
+function rembtSuggest(plages){
+  for(const sz of REMBT_SIZES) if(plages <= sz) return sz;
+  return null;
+}
+// Compte modules suggérés par les logements assignés à ce REMBT.
+//  - 1× RA240 (arrivée) si au moins 1 logement → 2 plages
+//  - 1× BR60M par logement mono
+//  - 1× BR60T par logement tri
+// (l'utilisateur peut compléter avec RAC150 / RAC35 / RCP400 manuellement)
+function autoModules(rembtId){
+  const lgts = CI.lgts.filter(l => l.rembtId === rembtId);
+  const mono = lgts.filter(l => l.K === 'M').length;
+  const tri  = lgts.filter(l => l.K === 'T').length;
+  const dim = emptyDim();
+  if(lgts.length > 0) dim.RA240 = 1;
+  dim.BR60M = mono;
+  dim.BR60T = tri;
+  return dim;
+}
+
+let CI = (function(){
+  const r = defaultRembts();
+  return {
+    P: '',
+    lgts: defaultLgts().map(l => ({...l, rembtId: r[0].id})),
+    rembts: r,
+    limT: 1,    // limite par tronçon (%) — NF C 14-100 défaut 1 %, Excel d'origine 1,15 %
+    limTot: 2,  // limite totale C1+C2 (%) — NF C 14-100
+    ts: 0
+  };
+})();
 
 let active = 'rc';
 
@@ -336,18 +423,19 @@ function load(){
     if(!raw) return false;
     const d = JSON.parse(raw);
     if(d && typeof d === 'object'){
-      CI.P = d.P || '';
-      CI.lgts = Array.isArray(d.lgts) && d.lgts.length ? d.lgts.map(normLgt) : defaultLgts();
-      CI.dim = Object.assign(emptyDim(), d.dim || {});
-      CI.limT   = (typeof d.limT   === 'number' && d.limT   > 0) ? d.limT   : 1;
-      CI.limTot = (typeof d.limTot === 'number' && d.limTot > 0) ? d.limTot : 2;
-      CI.ts = d.ts || 0;
+      const m = migrate(d);
+      CI.P = m.P;
+      CI.lgts = m.lgts;
+      CI.rembts = m.rembts;
+      CI.limT = m.limT;
+      CI.limTot = m.limTot;
+      CI.ts = m.ts;
       return true;
     }
   }catch(e){ console.warn('Load failed', e); }
   return false;
 }
-function normLgt(x){
+function normLgt(x, defaultRembtId){
   return {
     bat: x.bat || '',
     niv: x.niv || 'RDC',
@@ -357,8 +445,46 @@ function normLgt(x){
     S:    x.S    === '' || x.S    == null ? '' : Number(x.S),
     K:    x.K === 'T' ? 'T' : 'M',
     rc:   { O: (x.rc && x.rc.O!=null) ? Number(x.rc.O) : 5,  P: (x.rc && x.rc.P) ? Number(x.rc.P) : 35 },
-    ct:   { O: (x.ct && x.ct.O!=null) ? Number(x.ct.O) : 5,  P: (x.ct && x.ct.P) ? Number(x.ct.P) : 35 }
+    ct:   { O: (x.ct && x.ct.O!=null) ? Number(x.ct.O) : 5,  P: (x.ct && x.ct.P) ? Number(x.ct.P) : 35 },
+    rembtId: x.rembtId || defaultRembtId || null
   };
+}
+function normRembt(x){
+  return {
+    id: x.id || 'r1',
+    name: x.name || 'REMBT',
+    notes: x.notes || '',
+    parentId: x.parentId || null,
+    dim: Object.assign(emptyDim(), x.dim || {})
+  };
+}
+// Migration : ancien format {P, lgts, dim, limT, limTot} → {P, lgts(+rembtId), rembts[], …}
+function migrate(d){
+  const out = {
+    P: d.P || '',
+    limT:   (typeof d.limT   === 'number' && d.limT   > 0) ? d.limT   : 1,
+    limTot: (typeof d.limTot === 'number' && d.limTot > 0) ? d.limTot : 2,
+    ts: d.ts || 0
+  };
+  if(Array.isArray(d.rembts) && d.rembts.length){
+    out.rembts = d.rembts.map(normRembt);
+  } else {
+    out.rembts = defaultRembts();
+    if(d.dim) out.rembts[0].dim = Object.assign(emptyDim(), d.dim);
+  }
+  const validIds = new Set(out.rembts.map(r=>r.id));
+  const fallbackId = out.rembts[0].id;
+  const lgtsSrc = Array.isArray(d.lgts) && d.lgts.length ? d.lgts : defaultLgts();
+  out.lgts = lgtsSrc.map(l => {
+    const n = normLgt(l, fallbackId);
+    if(!validIds.has(n.rembtId)) n.rembtId = fallbackId;
+    return n;
+  });
+  // Garde-fou : si parent inconnu, on l'enlève
+  out.rembts.forEach(r => {
+    if(r.parentId && !validIds.has(r.parentId)) r.parentId = null;
+  });
+  return out;
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -540,6 +666,7 @@ function renderSide(side){
           <tr>
             <th style="width:24px"></th>
             <th>Bâtiment</th>
+            <th class="col-h" title="REMBT auquel ce logement est raccordé">REMBT</th>
             <th>Niveau</th>
             <th>Type</th>
             <th>Lettrage EDF</th>
@@ -554,7 +681,7 @@ function renderSide(side){
             <th class="col-h" title="Chute de tension (V) — ΔU = ρ·L·I/S">VU<br><span style="font-size:9px;color:rgba(180,165,200,0.40)">V</span></th>
             <th class="col-h" title="% chute de tension du tronçon (= VU / 2,3)">% ΔU ${isRc?'C2':'C1'}</th>
             <th class="col-h" title="Total C1+C2 — somme avec l'autre tronçon">% C1+C2</th>
-            <th class="col-h" title="Section minimale recommandée selon norme HN33S33 (chute < 1,15 %)">Reco</th>
+            <th class="col-h" title="Section minimale recommandée (chute Al ≤ limite tronçon)">Reco</th>
           </tr>`;
 
   let prevKey = '';
@@ -574,7 +701,13 @@ function renderSide(side){
       h += `<tr class="${first?'fsep':''}">`;
       h += `<td><button class="rd" onclick="delLgt(${i})">✕</button></td>`;
       h += first
-        ? `<td class="bat" rowspan="${grp[k].length}">${l.bat||'—'}</td><td class="fl" rowspan="${grp[k].length}">${l.niv||'—'}</td>`
+        ? `<td class="bat" rowspan="${grp[k].length}">${l.bat||'—'}</td>`
+        : '';
+      // REMBT (par logement)
+      const rembtOpts = CI.rembts.map(r => `<option value="${r.id}"${l.rembtId===r.id?' selected':''}>${r.name}</option>`).join('');
+      h += `<td><select class="sel rembt-sel" onchange="updRembt(${i},this.value)">${rembtOpts}</select></td>`;
+      h += first
+        ? `<td class="fl" rowspan="${grp[k].length}">${l.niv||'—'}</td>`
         : '';
       // Type
       h += `<td><input type="text" class="ws" value="${l.type||''}" onchange="upd(${i},'type',this.value)"></td>`;
@@ -631,62 +764,125 @@ function renderSide(side){
 }
 
 function renderDim(){
-  let totP = 0;
+  const totGlobal = CI.rembts.reduce((s,r)=>s+rembtPlages(r),0);
+  // Header global
   let h = `
-    <div class="dim-grid">
-      <div class="card">
-        <div class="card-h">
-          <div class="ic">📦</div>
-          <span>Dimensionnement REMBT — comptage des modules</span>
-        </div>
-        <div class="card-b">
-          <table>
-            <tr>
-              <th style="text-align:left">Module</th>
-              <th>Places / module</th>
-              <th>Quantité</th>
-              <th>Plages totales</th>
-            </tr>`;
-  MODULES.forEach(m=>{
-    const q = CI.dim[m.k] || 0;
-    const p = q * m.p;
-    totP += p;
-    h += `<tr>
-      <td class="L" style="font-weight:600;color:rgba(220,210,235,0.85)">${m.l}</td>
-      <td class="fm">${m.p}</td>
-      <td><input type="number" class="ws ns" min="0" value="${q}" onchange="updDim('${m.k}',this.value)"></td>
-      <td class="sx">${p}</td>
-    </tr>`;
-  });
-  h += `<tr class="tot">
-    <td class="L" colspan="3">Nombre de plages total</td>
-    <td><span class="ch cp">${totP}</span></td>
-  </tr>`;
-  h += `</table>
+    <div class="rembt-topbar">
+      <div class="rembt-top-info">
+        <div class="rembt-top-count">${CI.rembts.length} REMBT${CI.rembts.length>1?'s':''}</div>
+        <div class="rembt-top-sub">${CI.lgts.length} logement(s) répartis  ·  ${totGlobal} plage(s) au total</div>
+      </div>
+      <div class="rembt-top-actions">
+        <button class="btn ba" onclick="addRembt()">＋ Ajouter REMBT</button>
+      </div>
+    </div>
+    <div class="rembt-list">`;
+
+  CI.rembts.forEach((r, idx) => {
+    const lgtsR = CI.lgts.filter(l => l.rembtId === r.id);
+    const nMono = lgtsR.filter(l=>l.K==='M').length;
+    const nTri  = lgtsR.filter(l=>l.K==='T').length;
+    const plages = rembtPlages(r);
+    const sugg = rembtSuggest(plages);
+    const sizeClass = sugg == null ? 'red' : (plages > sugg - 1 ? 'orange' : 'green');
+    const sizeLabel = sugg == null ? `⚠ ${plages} plages — au-delà de 12, ajouter un REMBT` : `${plages} / ${sugg} plages — REMBT ${sugg} plages`;
+    const parentOpts = ['<option value="">— racine (alimenté par ENEDIS)</option>']
+      .concat(CI.rembts.filter(rr => rr.id !== r.id).map(rr => `<option value="${rr.id}"${r.parentId===rr.id?' selected':''}>↑ ${rr.name}</option>`))
+      .join('');
+
+    h += `
+    <div class="card rembt-card" data-id="${r.id}">
+      <div class="card-h rembt-card-h">
+        <div class="ic">📦</div>
+        <input type="text" class="rembt-name" value="${(r.name||'').replace(/"/g,'&quot;')}" placeholder="Nom du REMBT" onchange="setRembtName('${r.id}',this.value)">
+        <span class="rembt-meta">·</span>
+        <span class="rembt-meta">Parent :</span>
+        <select class="sel" style="min-width:180px" onchange="setRembtParent('${r.id}',this.value)">${parentOpts}</select>
+        <div class="rt">
+          <span class="ch cp" title="Logements rattachés">${lgtsR.length} lgt</span>
+          ${nMono?`<span class="ch cc" title="Logements mono">${nMono} mono</span>`:''}
+          ${nTri?`<span class="ch co" title="Logements tri">${nTri} tri</span>`:''}
+          <button class="btn bd" onclick="delRembt('${r.id}')" ${CI.rembts.length<=1?'disabled':''} title="${CI.rembts.length<=1?'Au moins un REMBT requis':'Supprimer ce REMBT'}">Supprimer</button>
         </div>
       </div>
-      <div class="card">
-        <div class="card-h">
-          <div class="ic">📋</div>
-          <span>Référence — places par module</span>
-        </div>
-        <div class="card-b">
-          <table>
-            <tr><th style="text-align:left">Module</th><th>Description</th><th>Places</th></tr>
-            <tr><td class="fl L">RA240</td><td class="L" style="color:rgba(180,165,200,0.65)">3 Ph + 1 N — 240 mm²</td><td>2</td></tr>
-            <tr><td class="fl L">RAC150</td><td class="L" style="color:rgba(180,165,200,0.65)">3 Ph + 1 N — 150 mm²</td><td>2</td></tr>
-            <tr><td class="fl L">RAC 35</td><td class="L" style="color:rgba(180,165,200,0.65)">3 Ph + 1 N — 35 mm²</td><td>1</td></tr>
-            <tr><td class="fl L">BR60T</td><td class="L" style="color:rgba(180,165,200,0.65)">3 Ph + 1 N — 60 A tri</td><td>1</td></tr>
-            <tr><td class="fl L">BR60M</td><td class="L" style="color:rgba(180,165,200,0.65)">1 Ph + 1 N — 60 A mono</td><td>1</td></tr>
-            <tr><td class="fl L">RCP400</td><td class="L" style="color:rgba(180,165,200,0.65)">Coffret de répartition 400 A</td><td>4</td></tr>
-          </table>
-          <div class="formula-box" style="margin-top:14px">
-            <b>Source</b> — Onglet « DIMENSIONNEMENT REMBT » du fichier <code>ETUDE_ENEDIS_INDIV.xlsm</code>.<br>
-            Le nombre de plages totales correspond à <code>SUM(places × quantités)</code> et permet de dimensionner le coffret REMBT.
+      <div class="card-b">
+        <div class="dim-grid">
+          <div>
+            <div class="rembt-mod-head">
+              <span>Modules installés</span>
+              <button class="btn" style="padding:4px 12px;font-size:10.5px" onclick="autoFillRembt('${r.id}')" title="Auto-remplir : 1 RA240 + 1 module BR par logement assigné">⚡ Calcul auto</button>
+            </div>
+            <table>
+              <tr>
+                <th style="text-align:left">Module</th>
+                <th>Places</th>
+                <th>Quantité</th>
+                <th>Plages</th>
+              </tr>`;
+    MODULES.forEach(m => {
+      const q = r.dim[m.k] || 0;
+      const p = q * m.p;
+      h += `<tr>
+        <td class="L" style="font-weight:600;color:rgba(220,210,235,0.85)">${m.l}</td>
+        <td class="fm">${m.p}</td>
+        <td><input type="number" class="ws ns" min="0" value="${q}" onchange="updRembtDim('${r.id}','${m.k}',this.value)"></td>
+        <td class="sx">${p}</td>
+      </tr>`;
+    });
+    h += `<tr class="tot">
+        <td class="L" colspan="3">Nombre de plages total</td>
+        <td><span class="ch cp">${plages}</span></td>
+      </tr></table>
+          </div>
+          <div>
+            <div class="rembt-sugg ${sizeClass}">
+              <div class="rembt-sugg-lbl">Taille suggérée</div>
+              <div class="rembt-sugg-val">${sugg == null ? '> 12' : sugg+' plages'}</div>
+              <div class="rembt-sugg-sub">${sizeLabel}</div>
+              <div class="rembt-sugg-bar">
+                ${REMBT_SIZES.map(sz => `<span class="rembt-sz-chip${sugg===sz?' on':''}${plages>sz?' off':''}">${sz}</span>`).join('')}
+              </div>
+            </div>
+            <div class="rembt-notes-wrap">
+              <label class="rembt-notes-lbl">📝 Notes / observations</label>
+              <textarea class="rembt-notes" placeholder="Saisir ici les notes pour ce REMBT : repérage, observation chantier, particularités…" onchange="setRembtNotes('${r.id}',this.value)">${(r.notes||'').replace(/</g,'&lt;')}</textarea>
+            </div>
           </div>
         </div>
       </div>
     </div>`;
+  });
+
+  h += `</div>`;
+
+  // Référence (collapsible)
+  h += `
+    <div class="card">
+      <div class="card-h">
+        <div class="ic">📋</div>
+        <span>Référence — places par module</span>
+      </div>
+      <div class="card-b">
+        <div class="dim-grid">
+          <table>
+            <tr><th style="text-align:left">Module</th><th>Description</th><th>Places</th></tr>
+            <tr><td class="fl L">RA240</td><td class="L" style="color:rgba(180,165,200,0.65)">3 Ph + 1 N — 240 mm² (arrivée)</td><td>2</td></tr>
+            <tr><td class="fl L">RAC150</td><td class="L" style="color:rgba(180,165,200,0.65)">3 Ph + 1 N — 150 mm²</td><td>2</td></tr>
+            <tr><td class="fl L">RAC 35</td><td class="L" style="color:rgba(180,165,200,0.65)">3 Ph + 1 N — 35 mm²</td><td>1</td></tr>
+            <tr><td class="fl L">BR60T</td><td class="L" style="color:rgba(180,165,200,0.65)">3 Ph + 1 N — 60 A tri (départ logement tri)</td><td>1</td></tr>
+            <tr><td class="fl L">BR60M</td><td class="L" style="color:rgba(180,165,200,0.65)">1 Ph + 1 N — 60 A mono (départ logement mono)</td><td>1</td></tr>
+            <tr><td class="fl L">RCP400</td><td class="L" style="color:rgba(180,165,200,0.65)">Coffret de répartition 400 A</td><td>4</td></tr>
+          </table>
+          <div class="formula-box" style="margin:0">
+            <b>Tailles standard REMBT</b> — coffrets disponibles : <code>6</code>, <code>9</code> et <code>12</code> plages.<br>
+            <b>Auto-remplissage</b> : 1 RA240 (arrivée) + 1 BR60M par logement mono + 1 BR60T par logement tri.
+            Ajustez ensuite RAC150 / RAC35 / RCP400 selon votre architecture.<br>
+            <b>Notes</b> — saisies par REMBT, exportées en Excel et PDF.
+          </div>
+        </div>
+      </div>
+    </div>`;
+
   document.getElementById('sh-dim').innerHTML = h;
 }
 
@@ -704,10 +900,6 @@ function updSub(i, side, k, v){
   l[side][k] = (v === '' ? '' : parseFloat(v));
   save(); R();
 }
-function updDim(k, v){
-  CI.dim[k] = Math.max(0, parseInt(v,10) || 0);
-  save(); R();
-}
 function updLim(k, v){
   const n = parseFloat(v);
   if(isNaN(n) || n <= 0) return;
@@ -719,7 +911,7 @@ function setPreset(tronc, total){
   save(); R();
 }
 function addLgt(){
-  const last = CI.lgts[CI.lgts.length-1] || { bat:'A', niv:'RDC', rc:{O:5,P:35}, ct:{O:5,P:35} };
+  const last = CI.lgts[CI.lgts.length-1] || { bat:'A', niv:'RDC', rc:{O:5,P:35}, ct:{O:5,P:35}, rembtId: CI.rembts[0].id };
   CI.lgts.push({
     bat: last.bat || 'A',
     niv: last.niv || 'RDC',
@@ -729,7 +921,8 @@ function addLgt(){
     S: '',
     K: 'M',
     rc: { O: (last.rc && last.rc.O) || 5, P: (last.rc && last.rc.P) || 35 },
-    ct: { O: (last.ct && last.ct.O) || 5, P: (last.ct && last.ct.P) || 35 }
+    ct: { O: (last.ct && last.ct.O) || 5, P: (last.ct && last.ct.P) || 35 },
+    rembtId: last.rembtId || CI.rembts[0].id
   });
   save(); R();
 }
@@ -738,7 +931,76 @@ function delLgt(i){
     if(!confirm('Supprimer le dernier logement ?')) return;
   }
   CI.lgts.splice(i, 1);
-  if(CI.lgts.length === 0) CI.lgts = [normLgt({bat:'A',niv:'RDC'})];
+  if(CI.lgts.length === 0) CI.lgts = [normLgt({bat:'A',niv:'RDC'}, CI.rembts[0].id)];
+  save(); R();
+}
+function updRembt(i, rid){
+  const l = CI.lgts[i]; if(!l) return;
+  if(!CI.rembts.some(r => r.id === rid)) return;
+  l.rembtId = rid;
+  save(); R();
+}
+
+// ─── REMBT CRUD ───────────────────────────────────────────────
+function addRembt(){
+  const r = newRembt(null, CI.rembts);
+  CI.rembts.push(r);
+  save(); R();
+}
+function delRembt(id){
+  if(CI.rembts.length <= 1){ alert('Au moins un REMBT est nécessaire.'); return; }
+  const r = CI.rembts.find(x => x.id === id); if(!r) return;
+  const assigned = CI.lgts.filter(l => l.rembtId === id).length;
+  if(assigned > 0){
+    if(!confirm(`Supprimer "${r.name}" ? ${assigned} logement(s) seront réaffectés au premier REMBT restant.`)) return;
+  }
+  const others = CI.rembts.filter(x => x.id !== id);
+  const fallback = others[0].id;
+  CI.lgts.forEach(l => { if(l.rembtId === id) l.rembtId = fallback; });
+  // Si un autre REMBT pointait celui-ci comme parent → racine
+  others.forEach(o => { if(o.parentId === id) o.parentId = null; });
+  CI.rembts = others;
+  save(); R();
+}
+function setRembtName(id, v){
+  const r = CI.rembts.find(x => x.id === id); if(!r) return;
+  r.name = (v || '').trim() || r.id.toUpperCase();
+  save(); R();
+}
+function setRembtNotes(id, v){
+  const r = CI.rembts.find(x => x.id === id); if(!r) return;
+  r.notes = v || '';
+  save();
+}
+function setRembtParent(id, parentId){
+  const r = CI.rembts.find(x => x.id === id); if(!r) return;
+  if(parentId === '' || parentId == null){ r.parentId = null; }
+  else if(parentId === id){ r.parentId = null; }
+  else {
+    // Éviter les cycles : refuse si parentId descend de id (parcours ascendant)
+    let cur = CI.rembts.find(x => x.id === parentId);
+    const seen = new Set([id]);
+    while(cur){
+      if(seen.has(cur.id)){ alert('Boucle détectée — choisissez un autre parent.'); return; }
+      seen.add(cur.id);
+      cur = cur.parentId ? CI.rembts.find(x => x.id === cur.parentId) : null;
+    }
+    r.parentId = parentId;
+  }
+  save(); R();
+}
+function updRembtDim(id, k, v){
+  const r = CI.rembts.find(x => x.id === id); if(!r) return;
+  r.dim[k] = Math.max(0, parseInt(v, 10) || 0);
+  save(); R();
+}
+function autoFillRembt(id){
+  const r = CI.rembts.find(x => x.id === id); if(!r) return;
+  const suggested = autoModules(id);
+  // Conserve RAC150/RAC35/RCP400 saisis manuellement, écrase RA240/BR60M/BR60T
+  r.dim.RA240 = suggested.RA240;
+  r.dim.BR60M = suggested.BR60M;
+  r.dim.BR60T = suggested.BR60T;
   save(); R();
 }
 
@@ -766,7 +1028,11 @@ function R(){
 // ═══════════════════════════════════════════════════════════════════════
 function newProject(){
   if(!confirm('Créer un nouveau projet ? Les données actuelles seront perdues (export possible avant).')) return;
-  CI = { P:'', lgts:defaultLgts(), dim:emptyDim(), ts:0 };
+  const r = defaultRembts();
+  CI = {
+    P:'', lgts: defaultLgts().map(l => ({...l, rembtId: r[0].id})),
+    rembts: r, limT:1, limTot:2, ts:0
+  };
   save(); R();
 }
 
@@ -804,18 +1070,18 @@ async function exportXLS(){
     const ws = wb.addWorksheet(name, { properties:{tabColor:{argb:'FF7B5DA8'}},
       pageSetup:{paperSize:9, orientation:'landscape', fitToPage:true, fitToWidth:1} });
     ws.columns = [
-      {width:10},{width:10},{width:10},{width:14},{width:10},{width:11},{width:7},{width:11},{width:13},
+      {width:9},{width:13},{width:10},{width:10},{width:14},{width:10},{width:11},{width:7},{width:11},{width:13},
       {width:9},{width:9},{width:9},{width:11},{width:12},{width:12},{width:10}
     ];
     // Titre
-    ws.mergeCells('A1:P1');
+    ws.mergeCells('A1:Q1');
     const c1 = ws.getCell('A1'); c1.value = pName + ' — ' + sideLabel;
     c1.font = { bold:true, color:white, size:16, name:'Calibri' };
     c1.fill = { type:'pattern', pattern:'solid', fgColor:navy };
     c1.alignment = ca; ws.getRow(1).height = 32;
 
-    ws.mergeCells('A2:P2');
-    const c2 = ws.getCell('A2'); c2.value = 'Calcul de la chute de tension — câble ALU (ρ = 0,036 Ω·mm²/m à 90°C)';
+    ws.mergeCells('A2:Q2');
+    const c2 = ws.getCell('A2'); c2.value = 'Calcul de la chute de tension — câble ALU (ρ = 0,036 Ω·mm²/m à 90°C)  ·  limite tronçon = '+CI.limT.toFixed(2)+' %  ·  limite C1+C2 = '+CI.limTot.toFixed(2)+' %';
     c2.font = { bold:true, color:{argb:'FFB4C7E7'}, size:9.5, name:'Calibri' };
     c2.fill = { type:'pattern', pattern:'solid', fgColor:navyL };
     c2.alignment = ca; ws.getRow(2).height = 18;
@@ -823,7 +1089,7 @@ async function exportXLS(){
     ws.getRow(3).height = 8;
 
     // En-têtes
-    const headers = ['Bâtiment','Niveau','Type','Lettrage EDF','HALL','Surface m²','M/T','Long. m','Section mm²',
+    const headers = ['Bâtiment','REMBT','Niveau','Type','Lettrage EDF','HALL','Surface m²','M/T','Long. m','Section mm²',
                      'Puiss. kVA','Disj.','Calibre A','VU (V)','% ΔU '+(side==='rc'?'C2':'C1'), '% C1+C2', 'Reco'];
     headers.forEach((v,ci)=>{
       const cell = ws.getCell(4, ci+1);
@@ -836,6 +1102,7 @@ async function exportXLS(){
     ws.getRow(4).height = 30;
 
     // Lignes
+    const rembtById = Object.fromEntries(CI.rembts.map(r => [r.id, r]));
     CI.lgts.forEach((l, idx)=>{
       const r = 5 + idx;
       const rThis = compute(l, side);
@@ -844,8 +1111,9 @@ async function exportXLS(){
       const reco = rThis.rec;
       const sub = l[side];
       const bg = idx % 2 === 0 ? white : greyL;
+      const rembtName = (rembtById[l.rembtId] && rembtById[l.rembtId].name) || '—';
       const row = [
-        l.bat||'', l.niv||'', l.type||'', l.lett||'',
+        l.bat||'', rembtName, l.niv||'', l.type||'', l.lett||'',
         l.hall===''?null:l.hall, l.S===''?null:l.S, l.K||'',
         sub.O===''?null:sub.O, sub.P===''?null:sub.P,
         rThis.p ?? null, rThis.M || '', rThis.N ?? null,
@@ -862,8 +1130,8 @@ async function exportXLS(){
         cell.alignment = ca;
         cell.border = border;
       });
-      // % chute formatting
-      const cThis = ws.getCell(r, 14);
+      // % chute formatting (column 15 now since we added REMBT)
+      const cThis = ws.getCell(r, 15);
       cThis.value = rThis.pc == null ? null : +(rThis.pc/100).toFixed(6);
       cThis.numFmt = '0.000%';
       if(rThis.pc != null){
@@ -871,7 +1139,7 @@ async function exportXLS(){
         else if(rThis.pc > CI.limT * 0.8) cThis.fill = { type:'pattern', pattern:'solid', fgColor:warn };
         else cThis.fill = { type:'pattern', pattern:'solid', fgColor:ok };
       }
-      const cTot = ws.getCell(r, 15);
+      const cTot = ws.getCell(r, 16);
       cTot.numFmt = '0.000%';
       cTot.value = pcTotal == null ? null : +(pcTotal/100).toFixed(6);
       if(pcTotal != null){
@@ -879,62 +1147,131 @@ async function exportXLS(){
         else if(pcTotal > CI.limTot * 0.85) cTot.fill = { type:'pattern', pattern:'solid', fgColor:warn };
         else cTot.fill = { type:'pattern', pattern:'solid', fgColor:ok };
       }
-      // VU formatting
-      const cVU = ws.getCell(r, 13);
-      cVU.numFmt = '0.000';
-      // Surface
-      const cS = ws.getCell(r, 6); cS.numFmt = '0.00';
+      const cVU = ws.getCell(r, 14); cVU.numFmt = '0.000';
+      const cS  = ws.getCell(r, 7);  cS.numFmt  = '0.00';
       ws.getRow(r).height = 18;
     });
     // Légende
     const rEnd = 5 + CI.lgts.length;
     ws.getRow(rEnd).height = 8;
     const cl = ws.getCell(rEnd+1, 1);
-    ws.mergeCells(rEnd+1, 1, rEnd+1, 16);
-    cl.value = 'Formules — Mono : ΔU = (0,036 × 2 × L × I) / S  ·  Tri : ΔU = (0,036 × L × I) / S  ·  %ΔU = ΔU / 2,3  ·  Section recommandée selon HN33S33 (limite 1,15 %)';
+    ws.mergeCells(rEnd+1, 1, rEnd+1, 17);
+    cl.value = 'Formules — Mono : ΔU = (0,036 × 2 × L × I) / S  ·  Tri : ΔU = (0,036 × L × I) / S  ·  %ΔU = ΔU / 2,3  ·  Section recommandée : minimum permettant %ΔU ≤ limite tronçon';
     cl.font = { italic:true, color:{argb:'FF666666'}, size:9, name:'Calibri' };
     cl.alignment = la;
   }
   buildSheet('REMBT-CIBE', 'rc', 'REMBT → COFFRET CIBE');
   buildSheet('CIBE-TA',    'ct', 'COFFRET CIBE → TABLEAU ABONNÉ');
 
-  // ═══ DIMENSIONNEMENT REMBT ═══
+  // ═══ DIMENSIONNEMENT REMBT (un bloc par REMBT) ═══
   const wd = wb.addWorksheet('DIMENSIONNEMENT REMBT', { properties:{tabColor:{argb:'FF7B5DA8'}} });
-  wd.columns = [{width:34},{width:18},{width:14},{width:16}];
+  wd.columns = [{width:36},{width:18},{width:14},{width:16}];
   wd.mergeCells('A1:D1');
   const wdc1 = wd.getCell('A1'); wdc1.value = pName + ' — DIMENSIONNEMENT REMBT';
   wdc1.font = { bold:true, color:white, size:16, name:'Calibri' };
   wdc1.fill = { type:'pattern', pattern:'solid', fgColor:navy };
   wdc1.alignment = ca; wd.getRow(1).height = 32;
-  ['Module','Places / module','Quantité','Plages totales'].forEach((v,ci)=>{
-    const cell = wd.getCell(3, ci+1);
-    cell.value = v; cell.font = hdrFont; cell.fill = {type:'pattern',pattern:'solid',fgColor:navy};
-    cell.alignment = ca; cell.border = borderH;
-  });
-  wd.getRow(3).height = 28;
-  let totDim = 0;
-  MODULES.forEach((m, idx)=>{
-    const r = 4 + idx, q = CI.dim[m.k]||0, p = q * m.p; totDim += p;
-    const bg = idx % 2 === 0 ? white : greyL;
-    [m.l, m.p, q, p].forEach((v, ci)=>{
-      const cell = wd.getCell(r, ci+1);
-      cell.value = v;
-      cell.font = { color:{argb:'FF000000'}, size:10, name:'Calibri' };
-      cell.fill = { type:'pattern', pattern:'solid', fgColor:bg };
-      cell.alignment = ci === 0 ? la : ca; cell.border = border;
+
+  let curRow = 3;
+  const rembtById = Object.fromEntries(CI.rembts.map(r => [r.id, r]));
+  CI.rembts.forEach((r, ri) => {
+    const plages = rembtPlages(r);
+    const sugg = rembtSuggest(plages);
+    const parent = r.parentId ? (rembtById[r.parentId] && rembtById[r.parentId].name) || '—' : 'racine (ENEDIS)';
+    const nLgts = CI.lgts.filter(l => l.rembtId === r.id).length;
+
+    // Bandeau REMBT
+    wd.mergeCells(curRow, 1, curRow, 4);
+    const hdr = wd.getCell(curRow, 1);
+    hdr.value = r.name + '   ·   ' + nLgts + ' logement(s)   ·   alimenté par : ' + parent;
+    hdr.font = { bold:true, color:white, size:12, name:'Calibri' };
+    hdr.fill = { type:'pattern', pattern:'solid', fgColor:navy };
+    hdr.alignment = la;
+    wd.getRow(curRow).height = 24;
+    curRow++;
+
+    // En-têtes table
+    ['Module','Places / module','Quantité','Plages'].forEach((v,ci)=>{
+      const cell = wd.getCell(curRow, ci+1);
+      cell.value = v; cell.font = hdrFont;
+      cell.fill = { type:'pattern', pattern:'solid', fgColor:navyL };
+      cell.alignment = ca; cell.border = borderH;
     });
+    wd.getRow(curRow).height = 22;
+    curRow++;
+
+    MODULES.forEach((m, idx) => {
+      const q = r.dim[m.k] || 0, p = q * m.p;
+      const bg = idx % 2 === 0 ? white : greyL;
+      [m.l, m.p, q, p].forEach((v, ci) => {
+        const cell = wd.getCell(curRow, ci+1);
+        cell.value = v;
+        cell.font = { color:{argb:'FF000000'}, size:10, name:'Calibri' };
+        cell.fill = { type:'pattern', pattern:'solid', fgColor:bg };
+        cell.alignment = ci === 0 ? la : ca; cell.border = border;
+      });
+      curRow++;
+    });
+
+    // Total + suggéré
+    wd.mergeCells(curRow, 1, curRow, 3);
+    const ct = wd.getCell(curRow, 1); ct.value = 'NOMBRE DE PLAGES TOTAL';
+    ct.font = { bold:true, color:white, size:11, name:'Calibri' };
+    ct.fill = { type:'pattern', pattern:'solid', fgColor:navy };
+    ct.alignment = la; ct.border = borderH;
+    const ctV = wd.getCell(curRow, 4); ctV.value = plages;
+    ctV.font = { bold:true, color:white, size:14, name:'Calibri' };
+    ctV.fill = { type:'pattern', pattern:'solid', fgColor:navy };
+    ctV.alignment = ca; ctV.border = borderH;
+    wd.getRow(curRow).height = 26;
+    curRow++;
+
+    // Taille suggérée
+    wd.mergeCells(curRow, 1, curRow, 3);
+    const cs = wd.getCell(curRow, 1);
+    cs.value = sugg == null ? 'TAILLE REMBT REQUISE  (au-delà de 12 plages)' : 'TAILLE REMBT SUGGÉRÉE';
+    cs.font = { bold:true, color:black, size:10.5, name:'Calibri' };
+    const fillSugg = sugg == null ? bad : (plages > sugg - 1 ? warn : ok);
+    cs.fill = { type:'pattern', pattern:'solid', fgColor:fillSugg };
+    cs.alignment = la; cs.border = border;
+    const csV = wd.getCell(curRow, 4);
+    csV.value = sugg == null ? '> 12 — diviser' : (sugg + ' plages');
+    csV.font = { bold:true, color:black, size:12, name:'Calibri' };
+    csV.fill = { type:'pattern', pattern:'solid', fgColor:fillSugg };
+    csV.alignment = ca; csV.border = border;
+    wd.getRow(curRow).height = 22;
+    curRow++;
+
+    // Notes
+    if(r.notes && r.notes.trim()){
+      wd.mergeCells(curRow, 1, curRow, 4);
+      const cn = wd.getCell(curRow, 1);
+      cn.value = '📝 Notes : ' + r.notes;
+      cn.font = { italic:true, color:{argb:'FF333333'}, size:10, name:'Calibri' };
+      cn.fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFFFF2CC'} };
+      cn.alignment = { horizontal:'left', vertical:'top', wrapText:true };
+      cn.border = border;
+      // Hauteur en fonction du texte
+      const nLines = Math.max(1, Math.ceil(r.notes.length / 110));
+      wd.getRow(curRow).height = Math.min(120, 18 + 14 * (nLines - 1));
+      curRow++;
+    }
+
+    curRow++; // ligne vide entre REMBTs
   });
-  const rT = 4 + MODULES.length;
-  wd.mergeCells(rT, 1, rT, 3);
-  const ct = wd.getCell(rT, 1); ct.value = 'NOMBRE DE PLAGES TOTAL';
-  ct.font = { bold:true, color:white, size:11, name:'Calibri' };
-  ct.fill = { type:'pattern', pattern:'solid', fgColor:navy };
-  ct.alignment = la; ct.border = borderH;
-  const ctV = wd.getCell(rT, 4); ctV.value = totDim;
-  ctV.font = { bold:true, color:white, size:14, name:'Calibri' };
-  ctV.fill = { type:'pattern', pattern:'solid', fgColor:navy };
-  ctV.alignment = ca; ctV.border = borderH;
-  wd.getRow(rT).height = 28;
+
+  // Récap global en bas
+  const totPlagesAll = CI.rembts.reduce((s,r)=>s+rembtPlages(r),0);
+  wd.mergeCells(curRow, 1, curRow, 3);
+  const rg = wd.getCell(curRow, 1); rg.value = `RÉCAPITULATIF — ${CI.rembts.length} REMBT(s) · ${CI.lgts.length} logement(s)`;
+  rg.font = { bold:true, color:white, size:11, name:'Calibri' };
+  rg.fill = { type:'pattern', pattern:'solid', fgColor:navy };
+  rg.alignment = la; rg.border = borderH;
+  const rgV = wd.getCell(curRow, 4); rgV.value = totPlagesAll + ' plages';
+  rgV.font = { bold:true, color:white, size:12, name:'Calibri' };
+  rgV.fill = { type:'pattern', pattern:'solid', fgColor:navy };
+  rgV.alignment = ca; rgV.border = borderH;
+  wd.getRow(curRow).height = 26;
 
   // ═══ HIDDEN DATA SHEET (for re-import) ═══
   const wsData = wb.addWorksheet('_DATA', { state:'hidden' });
@@ -973,9 +1310,9 @@ async function importXLS(input){
       if(v){
         const d = JSON.parse(v);
         if(d && typeof d === 'object'){
-          CI.P = d.P || '';
-          CI.lgts = Array.isArray(d.lgts) && d.lgts.length ? d.lgts.map(normLgt) : defaultLgts();
-          CI.dim = Object.assign(emptyDim(), d.dim || {});
+          const m = migrate(d);
+          CI.P = m.P; CI.lgts = m.lgts; CI.rembts = m.rembts;
+          CI.limT = m.limT; CI.limTot = m.limTot; CI.ts = m.ts;
           save(); R(); input.value=''; return;
         }
       }
@@ -1008,26 +1345,29 @@ async function exportPDF(){
     doc.text('Page '+doc.internal.getNumberOfPages(), pageW/2, pageH-6, {align:'center'});
   }
 
+  const rembtByIdPDF = Object.fromEntries(CI.rembts.map(r => [r.id, r]));
+
   function addSidePage(title, side){
     doc.setFillColor(...navy); doc.rect(0,0,pageW,18,'F');
     doc.setFontSize(15); doc.setTextColor(...white); doc.setFont('helvetica','bold');
     doc.text(pName + ' — ' + title, pageW/2, 11, {align:'center'});
     doc.setFontSize(9); doc.setTextColor(180,199,231);
-    doc.text('Câble ALU — ρ = 0,036 Ω·mm²/m  ·  Mono : ΔU = 0,036×2×L×I/S  ·  Tri : ΔU = 0,036×L×I/S  ·  %ΔU = ΔU/2,3', pageW/2, 16, {align:'center'});
+    doc.text('Câble ALU  ρ = 0,036 Ω·mm²/m  ·  limite tronçon = '+CI.limT.toFixed(2)+' %  ·  limite C1+C2 = '+CI.limTot.toFixed(2)+' %', pageW/2, 16, {align:'center'});
 
-    const head = [['Bât','Niv','Type','Lettr.','HALL','S (m²)','M/T','L (m)','S mm²','kVA','Disj.','I (A)','VU (V)','%ΔU '+(side==='rc'?'C2':'C1'),'% C1+C2','Reco']];
+    const head = [['Bât','REMBT','Niv','Type','Lettr.','HALL','S (m²)','M/T','L (m)','S mm²','kVA','Disj.','I (A)','VU (V)','%ΔU '+(side==='rc'?'C2':'C1'),'% C1+C2','Reco']];
     const body = CI.lgts.map(l=>{
       const r = compute(l, side);
       const o = compute(l, side==='rc'?'ct':'rc');
       const tot = (r.pc!=null && o.pc!=null) ? r.pc + o.pc : null;
       const sub = l[side];
+      const rembtName = (rembtByIdPDF[l.rembtId] && rembtByIdPDF[l.rembtId].name) || '—';
       const pcCell = (v, lim) => {
         if(v == null) return '';
         const bg = v > lim ? badC : (v > lim*0.85 ? warnC : okC);
         return { content: v.toFixed(3)+' %', styles: { fillColor: bg, fontStyle:'bold' } };
       };
       return [
-        l.bat||'', l.niv||'', l.type||'', l.lett||'',
+        l.bat||'', rembtName, l.niv||'', l.type||'', l.lett||'',
         l.hall===''?'':l.hall, l.S===''?'':l.S, l.K||'',
         sub.O===''?'':sub.O, sub.P===''?'':sub.P,
         r.p ?? '', r.M || '', r.N ?? '',
@@ -1039,11 +1379,11 @@ async function exportPDF(){
     });
     doc.autoTable({
       head, body, startY: 22, theme:'grid',
-      headStyles:{fillColor:navy, textColor:white, fontStyle:'bold', fontSize:8, halign:'center'},
-      bodyStyles:{fontSize:8, halign:'center'},
+      headStyles:{fillColor:navy, textColor:white, fontStyle:'bold', fontSize:7.5, halign:'center'},
+      bodyStyles:{fontSize:7.5, halign:'center'},
       alternateRowStyles:{fillColor:greyL},
-      styles:{cellPadding:1.5, lineColor:[180,180,180], lineWidth:0.2},
-      margin:{left:8, right:8}
+      styles:{cellPadding:1.2, lineColor:[180,180,180], lineWidth:0.2},
+      margin:{left:6, right:6}
     });
     footer();
   }
@@ -1052,29 +1392,62 @@ async function exportPDF(){
   doc.addPage();
   addSidePage('COFFRET CIBE → TABLEAU ABONNÉ', 'ct');
 
-  // Dim REMBT page
+  // ── Dimensionnement REMBT (un bloc par REMBT) ─────────────────
   doc.addPage();
   doc.setFillColor(...navy); doc.rect(0,0,pageW,18,'F');
   doc.setFontSize(15); doc.setTextColor(...white); doc.setFont('helvetica','bold');
   doc.text(pName + ' — DIMENSIONNEMENT REMBT', pageW/2, 12, {align:'center'});
+  doc.setFontSize(9); doc.setTextColor(180,199,231);
+  doc.text(`${CI.rembts.length} REMBT(s)  ·  ${CI.lgts.length} logement(s)  ·  ${CI.rembts.reduce((s,r)=>s+rembtPlages(r),0)} plages au total`, pageW/2, 16, {align:'center'});
 
-  const dHead = [['Module','Places / module','Quantité','Plages totales']];
-  let totDim = 0;
-  const dBody = MODULES.map(m=>{
-    const q = CI.dim[m.k]||0, p = q*m.p; totDim += p;
-    return [m.l, m.p, q, p];
-  });
-  dBody.push([{content:'NOMBRE DE PLAGES TOTAL', colSpan:3, styles:{fillColor:navy, textColor:white, fontStyle:'bold'}},
-              {content:totDim, styles:{fillColor:navy, textColor:white, fontStyle:'bold'}}]);
+  let yPos = 24;
+  const okPDF = [198,239,206], warnPDF = [255,235,156], badPDF = [255,199,206];
 
-  doc.autoTable({
-    head:dHead, body:dBody, startY:26, theme:'grid',
-    headStyles:{fillColor:navy, textColor:white, fontStyle:'bold', halign:'center'},
-    bodyStyles:{halign:'center'},
-    columnStyles:{0:{halign:'left',cellWidth:80}},
-    alternateRowStyles:{fillColor:greyL},
-    styles:{cellPadding:3, lineColor:[180,180,180], lineWidth:0.2},
-    margin:{left:14,right:14}
+  CI.rembts.forEach((r, ri) => {
+    const plages = rembtPlages(r);
+    const sugg = rembtSuggest(plages);
+    const parent = r.parentId ? (rembtByIdPDF[r.parentId] && rembtByIdPDF[r.parentId].name) || '—' : 'racine (ENEDIS)';
+    const nLgts = CI.lgts.filter(l => l.rembtId === r.id).length;
+
+    // Saut de page si plus de place
+    if(yPos > pageH - 70){
+      footer();
+      doc.addPage();
+      doc.setFillColor(...navy); doc.rect(0,0,pageW,18,'F');
+      doc.setFontSize(15); doc.setTextColor(...white); doc.setFont('helvetica','bold');
+      doc.text(pName + ' — DIMENSIONNEMENT REMBT (suite)', pageW/2, 12, {align:'center'});
+      yPos = 24;
+    }
+
+    // Bandeau REMBT
+    doc.setFillColor(...navy); doc.rect(8, yPos, pageW - 16, 8, 'F');
+    doc.setFontSize(10); doc.setTextColor(...white); doc.setFont('helvetica','bold');
+    doc.text(`${r.name}  ·  ${nLgts} logement(s)  ·  alimenté par : ${parent}`, 12, yPos + 5.5);
+    yPos += 9;
+
+    const dHead = [['Module','Places','Qté','Plages']];
+    const dBody = MODULES.map(m => {
+      const q = r.dim[m.k] || 0, p = q*m.p;
+      return [m.l, m.p, q, p];
+    });
+    const sizeBg = sugg == null ? badPDF : (plages > sugg - 1 ? warnPDF : okPDF);
+    dBody.push([{content:'NOMBRE DE PLAGES', colSpan:3, styles:{fillColor:navy, textColor:white, fontStyle:'bold'}},
+                {content:plages, styles:{fillColor:navy, textColor:white, fontStyle:'bold'}}]);
+    dBody.push([{content:'TAILLE REMBT SUGGÉRÉE', colSpan:3, styles:{fillColor:sizeBg, fontStyle:'bold'}},
+                {content: sugg == null ? '> 12 — diviser' : (sugg+' plages'), styles:{fillColor:sizeBg, fontStyle:'bold'}}]);
+    if(r.notes && r.notes.trim()){
+      dBody.push([{content:'📝 Notes : '+r.notes, colSpan:4, styles:{fontStyle:'italic', fillColor:[255,242,204], halign:'left'}}]);
+    }
+
+    doc.autoTable({
+      head:dHead, body:dBody, startY: yPos, theme:'grid',
+      headStyles:{fillColor:[91,63,140], textColor:white, fontStyle:'bold', fontSize:9, halign:'center'},
+      bodyStyles:{fontSize:9, halign:'center'},
+      columnStyles:{0:{halign:'left', cellWidth:120}},
+      styles:{cellPadding:2, lineColor:[180,180,180], lineWidth:0.2},
+      margin:{left:8, right:8}
+    });
+    yPos = doc.lastAutoTable.finalY + 6;
   });
   footer();
 

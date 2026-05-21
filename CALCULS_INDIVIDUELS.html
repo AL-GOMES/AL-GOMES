@@ -51,15 +51,32 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .badge-purple{background:rgba(91,63,140,0.15);color:rgba(155,125,197,0.85);border:1px solid rgba(123,95,172,0.20)}
 .badge-count{background:rgba(91,63,140,0.25);color:rgba(200,186,216,0.90);border:1px solid rgba(123,95,172,0.30)}
 
-.tabs{position:fixed;top:48px;left:0;right:0;z-index:99;display:flex;gap:2px;padding:0 24px;height:42px;align-items:stretch;
-  background:linear-gradient(180deg,rgba(14,14,16,0.90),rgba(14,14,16,0.85));border-bottom:1px solid rgba(123,95,172,0.10);
-  backdrop-filter:blur(10px)}
-.tab{padding:0 22px;display:flex;align-items:center;font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;
-  color:rgba(180,165,200,0.45);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.3s;background:none;border-top:none;border-left:none;border-right:none;font-family:inherit}
-.tab:hover{color:rgba(200,186,216,0.75);background:rgba(91,63,140,0.06)}
-.tab.active{color:rgba(155,125,197,0.95);border-bottom-color:#7B5DA8}
+.tabs{position:fixed;top:48px;left:0;right:0;z-index:99;display:flex;gap:0;padding:0 12px;height:62px;align-items:stretch;
+  background:linear-gradient(180deg,rgba(14,14,16,0.92),rgba(14,14,16,0.88));border-bottom:1px solid rgba(123,95,172,0.18);
+  backdrop-filter:blur(12px)}
+.tab{padding:0 18px;display:flex;align-items:center;gap:12px;font-size:12px;font-weight:600;letter-spacing:0.4px;
+  color:rgba(180,165,200,0.50);cursor:pointer;border-bottom:3px solid transparent;border-top:none;border-left:none;border-right:none;background:none;font-family:inherit;transition:all 0.25s;text-align:left;text-transform:none;position:relative}
+.tab:hover{color:rgba(220,210,235,0.90);background:rgba(91,63,140,0.06)}
+.tab.active{color:#E8E0F2;border-bottom-color:#7B5DA8;background:linear-gradient(180deg,rgba(91,63,140,0.10) 0%,transparent 100%)}
+.tab-num{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:rgba(91,63,140,0.20);color:rgba(155,125,197,0.85);
+  border:1px solid rgba(123,95,172,0.30);border-radius:50%;font-family:'Courier New',monospace;font-size:12px;font-weight:700;flex-shrink:0;letter-spacing:0}
+.tab.active .tab-num{background:#7B5DA8;color:#fff;border-color:#7B5DA8;box-shadow:0 2px 6px rgba(123,95,172,0.40)}
+.tab-ic{font-size:16px;flex-shrink:0}
+.tab-lbl{font-family:'Segoe UI',system-ui,sans-serif;font-size:12.5px;font-weight:700;letter-spacing:0.3px;line-height:1.2;display:flex;flex-direction:column}
+.tab-lbl small{font-size:10px;font-weight:500;color:rgba(180,165,200,0.55);letter-spacing:0.2px;text-transform:none}
+.tab.active .tab-lbl small{color:rgba(200,186,216,0.65)}
 
-.content{position:relative;z-index:1;margin-top:90px;padding:20px 24px 60px}
+/* Encart d'intro en haut de chaque onglet */
+.intro{position:relative;display:flex;align-items:flex-start;gap:14px;padding:14px 18px;margin-bottom:18px;border-radius:10px;
+  border:1px solid rgba(123,95,172,0.20);background:linear-gradient(165deg,rgba(91,63,140,0.10) 0%,rgba(22,18,32,0.5) 100%)}
+.intro-num{flex-shrink:0;width:36px;height:36px;border-radius:50%;background:#7B5DA8;color:#fff;display:flex;align-items:center;justify-content:center;
+  font-family:'Segoe UI',system-ui,sans-serif;font-size:16px;font-weight:800;box-shadow:0 3px 8px rgba(123,95,172,0.40)}
+.intro-txt{flex:1;font-size:12.5px;color:rgba(220,210,235,0.85);line-height:1.5}
+.intro-txt b{color:#D4B5FF;font-weight:700}
+.intro-txt code{background:rgba(91,63,140,0.18);padding:1px 7px;border-radius:4px;color:#D4B5FF;font-family:'Courier New',monospace;font-size:11px}
+.intro-h{font-family:'Segoe UI',system-ui,sans-serif;font-size:13.5px;font-weight:700;color:#E8E0F2;letter-spacing:0.4px;margin-bottom:4px}
+
+.content{position:relative;z-index:1;margin-top:114px;padding:20px 24px 60px}
 .sheet{display:none;animation:shIn .3s ease}.sheet.active{display:block}
 @keyframes shIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
@@ -166,7 +183,9 @@ tr:hover .rd{opacity:1}.rd:hover{color:#FF6B6B}
   background:rgba(91,63,140,0.10);border:1px solid rgba(123,95,172,0.20);border-radius:6px;padding:5px 10px;min-width:160px;text-transform:none}
 .rembt-name:focus{outline:none;border-color:rgba(123,95,172,0.50);background:rgba(91,63,140,0.18)}
 .rembt-meta{font-size:11px;font-weight:500;color:rgba(180,165,200,0.55);letter-spacing:0.4px;text-transform:none}
-.rembt-mod-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;font-size:11px;color:rgba(155,125,197,0.70);letter-spacing:1px;text-transform:uppercase;font-weight:700}
+.rembt-mod-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.rembt-sect-h{font-family:'Segoe UI',system-ui,sans-serif;font-size:11.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(155,125,197,0.85);
+  margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid rgba(123,95,172,0.18);display:flex;align-items:center;gap:7px}
 .rembt-sugg{padding:18px;border-radius:10px;background:rgba(22,18,32,0.6);border:1px solid rgba(123,95,172,0.18);margin-bottom:14px;text-align:center}
 .rembt-sugg.green{border-color:rgba(46,213,115,0.25);background:rgba(46,213,115,0.06)}
 .rembt-sugg.orange{border-color:rgba(255,159,67,0.25);background:rgba(255,159,67,0.06)}
@@ -383,15 +402,15 @@ button.btn[disabled]{opacity:0.4;cursor:not-allowed}
   </div>
 </div>
 <div class="tabs">
-  <button class="tab active" data-sh="rc" onclick="goSheet('rc')">REMBT → COFFRET CIBE</button>
-  <button class="tab" data-sh="ct" onclick="goSheet('ct')">COFFRET CIBE → TABLEAU ABONNÉ</button>
-  <button class="tab" data-sh="dim" onclick="goSheet('dim')">DIMENSIONNEMENT REMBT</button>
-  <button class="tab" data-sh="sch" onclick="goSheet('sch')">SCHÉMA RÉCAPITULATIF</button>
+  <button class="tab active" data-sh="dim" onclick="goSheet('dim')"><span class="tab-num">1</span><span class="tab-ic">🏗️</span><span class="tab-lbl">Installation<br><small>REMBTs + CCU</small></span></button>
+  <button class="tab" data-sh="rc" onclick="goSheet('rc')"><span class="tab-num">2</span><span class="tab-ic">📏</span><span class="tab-lbl">Chutes REMBT → CIBE<br><small>%C2 par logement</small></span></button>
+  <button class="tab" data-sh="ct" onclick="goSheet('ct')"><span class="tab-num">3</span><span class="tab-ic">📏</span><span class="tab-lbl">Chutes CIBE → TA<br><small>%C1 par logement</small></span></button>
+  <button class="tab" data-sh="sch" onclick="goSheet('sch')"><span class="tab-num">4</span><span class="tab-ic">📐</span><span class="tab-lbl">Synthèse<br><small>schéma + exports</small></span></button>
 </div>
 <div class="content">
-  <div class="sheet active" id="sh-rc"></div>
+  <div class="sheet" id="sh-rc"></div>
   <div class="sheet" id="sh-ct"></div>
-  <div class="sheet" id="sh-dim"></div>
+  <div class="sheet active" id="sh-dim"></div>
   <div class="sheet" id="sh-sch"></div>
 </div>
 
@@ -555,7 +574,7 @@ let CI = (function(){
   };
 })();
 
-let active = 'rc';
+let active = 'dim';
 
 // ═══════════════════════════════════════════════════════════════════════
 // PERSISTENCE — localStorage (key = "algomes_calculs_individuels_v1")
@@ -731,6 +750,15 @@ function renderSide(side){
   const label = isRc ? 'REMBT → COFFRET CIBE' : 'COFFRET CIBE → TABLEAU D\'ABONNÉ';
   const subL  = isRc ? 'Calcul de la chute de tension C2 (départ REMBT)' : 'Calcul de la chute de tension C1 (montée vers le tableau abonné)';
   const elId  = isRc ? 'sh-rc' : 'sh-ct';
+  const stepN = isRc ? 2 : 3;
+  const intro = isRc
+    ? `<div class="intro-h">📏 Étape ${stepN} — Chutes <code>%C2</code> sur le tronçon REMBT → CIBE</div>
+       Pour chaque logement : saisissez <b>Bâtiment</b>, <b>Niveau</b>, <b>Type</b>, <b>Lettrage EDF</b>, <b>Surface</b>, <b>Mono/Tri</b>, puis la <b>Longueur</b> et la <b>Section</b> du câble entre le REMBT et son CIBE.<br>
+       La puissance (kVA), le disjoncteur ENEDIS, la chute en V et en % <code>%ΔU C2 = ΔU/2,3</code> sont calculés automatiquement.<br>
+       <b>Logements rattachés à un REMBT</b> : utilisez la colonne <code>REMBT</code> pour rattacher chaque logement à un REMBT déclaré à l'étape 1.`
+    : `<div class="intro-h">📏 Étape ${stepN} — Chutes <code>%C1</code> sur le tronçon CIBE → Tableau Abonné</div>
+       Mêmes logements que l'étape 2. Saisissez ici la <b>Longueur</b> et la <b>Section</b> du câble entre le CIBE et le TA (typiquement court : 3-7 m).<br>
+       La colonne <code>%C1+C2</code> additionne la chute des deux tronçons. Elle doit rester sous la <b>limite totale</b> configurée (par défaut 2 % — NF C 14-100).`;
 
   // Group by bâtiment then niveau
   const grp = {};
@@ -753,6 +781,10 @@ function renderSide(side){
   const moy = CI.lgts.length ? sumPc / CI.lgts.length : 0;
 
   let h = `
+    <div class="intro">
+      <div class="intro-num">${stepN}</div>
+      <div class="intro-txt">${intro}</div>
+    </div>
     <div class="limits-bar">
       <div class="limits-title">
         <span style="font-size:12px">🎯</span>
@@ -920,6 +952,18 @@ function renderDim(){
   const totGlobal = CI.rembts.reduce((s,r)=>s+rembtPlages(r),0);
   // Header global
   let h = `
+    <div class="intro">
+      <div class="intro-num">1</div>
+      <div class="intro-txt">
+        <div class="intro-h">🏗️ Étape 1 — Installation des REMBT et coffrets de façade</div>
+        Déclarez ici la <b>structure physique</b> de votre branchement collectif. Pour chaque REMBT (Cahors G3 — 6, 9 ou 12 plages) :<br>
+        ① éventuellement son <b>Coffret de Façade (CCU)</b> avec longueur + section du câble vers le REMBT ·
+        ② ses <b>modules</b> (RA240, BR60M/T, …) — bouton <code>⚡ Calcul auto</code> pour pré-remplir ·
+        ③ ses <b>logements rattachés</b> (déclarés aux étapes 2/3) ·
+        ④ son éventuel <b>REMBT parent</b> en cas de cascade.<br>
+        La <b>taille standard</b> du coffret (REMBT 300/450/600) est suggérée automatiquement.
+      </div>
+    </div>
     <div class="rembt-topbar">
       <div class="rembt-top-info">
         <div class="rembt-top-count">${CI.rembts.length} REMBT${CI.rembts.length>1?'s':''}</div>
@@ -966,8 +1010,9 @@ function renderDim(){
       <div class="card-b">
         <div class="dim-grid">
           <div>
+            <div class="rembt-sect-h">📦 Modules installés sur le jeu de barres</div>
             <div class="rembt-mod-head">
-              <span>Modules installés</span>
+              <span style="color:rgba(180,165,200,0.55);font-size:10.5px;font-weight:500;letter-spacing:0.3px;text-transform:none">Saisissez les quantités ou cliquez sur Calcul auto</span>
               <button class="btn" style="padding:4px 12px;font-size:10.5px" onclick="autoFillRembt('${r.id}')" title="Auto-remplir : 1 RA240 + 1 module BR par logement assigné">⚡ Calcul auto</button>
             </div>
             <table>
@@ -993,6 +1038,7 @@ function renderDim(){
       </tr></table>
           </div>
           <div>
+            <div class="rembt-sect-h">📊 Dimensionnement automatique</div>
             <div class="rembt-sugg ${sizeClass}">
               <div class="rembt-sugg-lbl">Taille suggérée (Cahors G3)</div>
               <div class="rembt-sugg-val">${(sugg == null || tooManyLgts) ? '↗ diviser' : 'REMBT '+(sugg===6?'300':sugg===9?'450':'600')}</div>
@@ -1005,11 +1051,12 @@ function renderDim(){
               </div>
             </div>
             ${r.parentId == null ? `
+            <div class="rembt-sect-h" style="margin-top:14px">⚡ Amont — Coffret de façade (CCU)</div>
             <div class="cf-panel">
               <div class="cf-head">
                 <label class="cf-toggle">
                   <input type="checkbox" ${r.cf && r.cf.active ? 'checked':''} onchange="toggleCF('${r.id}',this.checked)">
-                  <span>🏠 Coffret de façade (CCU) — alimente ${escapeHtml(r.name)}</span>
+                  <span>🏠 Coffret de façade entre ENEDIS et ${escapeHtml(r.name)}</span>
                 </label>
                 ${r.cf && r.cf.active ? (function(){
                   const c = cfChute(r.cf);
@@ -1045,8 +1092,8 @@ function renderDim(){
                 </label>
               </div>` : ''}
             </div>` : ''}
+            <div class="rembt-sect-h" style="margin-top:14px">📝 Notes / observations</div>
             <div class="rembt-notes-wrap">
-              <label class="rembt-notes-lbl">📝 Notes / observations</label>
               <textarea class="rembt-notes" placeholder="Saisir ici les notes pour ce REMBT : repérage, observation chantier, particularités…" onchange="setRembtNotes('${r.id}',this.value)">${(r.notes||'').replace(/</g,'&lt;')}</textarea>
             </div>
           </div>
@@ -1273,6 +1320,14 @@ function renderSchema(){
   const nbOversized = CI.rembts.filter(r => rembtSuggest(rembtPlages(r)) == null).length;
 
   let h = `
+    <div class="intro">
+      <div class="intro-num">4</div>
+      <div class="intro-txt">
+        <div class="intro-h">📐 Étape 4 — Synthèse visuelle et exports</div>
+        Vue d'ensemble de l'installation : <code>ENEDIS → Coffret de façade → REMBT → logements</code>, avec toutes les chutes <code>%C2</code>, <code>%C1</code> et <code>%C1+C2</code> calculées.
+        Cliquez sur <b>📥 Excel</b> ou <b>📄 PDF</b> en haut pour exporter l'intégralité du dossier (4 feuilles Excel + 5 pages PDF).
+      </div>
+    </div>
     <div class="schema-stats">
       <div class="schema-stat">
         <div class="schema-stat-lbl">REMBTs</div>

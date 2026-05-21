@@ -6,7 +6,7 @@
 //   - AL_VERSION_TIME  : HH:MM      (heure de la MAJ — local Paris)
 //   - AL_VERSION_NOTE  : 1 phrase courte qui décrit le motif de la MAJ
 // =====================================================================
-window.AL_VERSION      = 'v1.55';
+window.AL_VERSION      = 'v1.56';
 window.AL_VERSION_DATE = '2026-05-21';
-window.AL_VERSION_TIME = '19:00';
-window.AL_VERSION_NOTE = 'Calculs individuels : nouvel onglet « Schéma récapitulatif » avec arborescence ENEDIS → REMBT → logements (boîtes colorées par état, modules listés, cascade visuelle, badges chute C2/C1/total). Export PDF complet avec page schéma graphique + tableau récap intégral.';
+window.AL_VERSION_TIME = '19:45';
+window.AL_VERSION_NOTE = 'Calculs individuels : dimensionnement REMBT aligné Cahors G3 — REMBT 300 (6 plages) / 450 (9 plages) / 600 (12 plages avec RRCP), et règle « petit collectif » (NF C 14-100 §10) max 6 logements par REMBT, avec alerte si dépassement dans le schéma et les exports Excel/PDF.';

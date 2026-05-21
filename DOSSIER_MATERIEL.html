@@ -460,9 +460,10 @@ table.fp th {
 .fp-approval { margin-top: 10px; }
 .fp-approval th { padding: 5px 8px; font-size: 10pt; }
 .fp-approval td.aor { padding: 3px 8px; font-size: 10pt; }
-.fp-approval td.aor .row { display: grid; grid-template-columns: 18px 1fr; gap: 8px; align-items: center; padding: 1px 0; }
-.fp-approval td.aor input[type="radio"] { width: 14px; height: 14px; accent-color: #000; }
-.fp-approval td.aor .key { font-weight: 700; text-align: center; }
+.fp-approval td.aor .row { display: flex; align-items: center; gap: 12px; padding: 2px 0; }
+.fp-approval td.aor input[type="checkbox"],
+.fp-approval td.aor input[type="radio"] { width: 14px; height: 14px; accent-color: #000; margin: 0; cursor: pointer; }
+.fp-approval td.aor .key { font-weight: 700; text-align: center; min-width: 18px; }
 .fp-approval td.date { padding: 4px 8px; font-size: 10pt; }
 .fp-approval td.date .row { display: grid; grid-template-columns: 28px 1fr; gap: 6px; }
 .fp-approval td.date label { font-weight: 700; }
@@ -695,19 +696,19 @@ input.proj { font-size: 28pt; font-weight: 700; text-align: center; letter-spaci
     <tr><th>B.E.T. / Bureau de contrôle</th><th>Architecte</th><th>Maître d'Œuvre d'Exécution</th></tr>
     <tr>
       <td class="aor">
-        <div class="row"><span class="key">A</span><label><input type="radio" name="bet_aor" value="A"> APPROUVÉ</label></div>
-        <div class="row"><span class="key">O</span><label><input type="radio" name="bet_aor" value="O"> OBSERVATIONS</label></div>
-        <div class="row"><span class="key">R</span><label><input type="radio" name="bet_aor" value="R"> REFUSÉ</label></div>
+        <div class="row"><span class="key">A</span><input type="checkbox" id="bet_a"></div>
+        <div class="row"><span class="key">O</span><input type="checkbox" id="bet_o"></div>
+        <div class="row"><span class="key">R</span><input type="checkbox" id="bet_r"></div>
       </td>
       <td class="aor">
-        <div class="row"><span class="key">A</span><label><input type="radio" name="arch_aor" value="A"> APPROUVÉ</label></div>
-        <div class="row"><span class="key">O</span><label><input type="radio" name="arch_aor" value="O"> OBSERVATIONS</label></div>
-        <div class="row"><span class="key">R</span><label><input type="radio" name="arch_aor" value="R"> REFUSÉ</label></div>
+        <div class="row"><span class="key">A</span><input type="checkbox" id="arch_a"></div>
+        <div class="row"><span class="key">O</span><input type="checkbox" id="arch_o"></div>
+        <div class="row"><span class="key">R</span><input type="checkbox" id="arch_r"></div>
       </td>
       <td class="aor">
-        <div class="row"><span class="key">A</span><label><input type="radio" name="moe_aor" value="A"> APPROUVÉ</label></div>
-        <div class="row"><span class="key">O</span><label><input type="radio" name="moe_aor" value="O"> OBSERVATIONS</label></div>
-        <div class="row"><span class="key">R</span><label><input type="radio" name="moe_aor" value="R"> REFUSÉ</label></div>
+        <div class="row"><span class="key">A</span><input type="checkbox" id="moe_a"></div>
+        <div class="row"><span class="key">O</span><input type="checkbox" id="moe_o"></div>
+        <div class="row"><span class="key">R</span><input type="checkbox" id="moe_r"></div>
       </td>
     </tr>
     <tr>
@@ -949,6 +950,10 @@ const FIELDS = [
   'm_fournisseur', 'm_materiel', 'm_caract', 'm_couleur', 'm_finition',
   'm_autres', 'm_observations', 'm_loc',
   'bet_date', 'arch_date', 'moe_date',
+  // Approbations (checkboxes au lieu des anciens radios bet_aor/arch_aor/moe_aor)
+  'bet_a', 'bet_o', 'bet_r',
+  'arch_a', 'arch_o', 'arch_r',
+  'moe_a', 'moe_o', 'moe_r',
   // ─── Champs EIFFAGE ──────────────────────────────────────────────────────
   'ef_project', 'ef_num', 'ef_ste', 'ef_lot', 'ef_bat',
   'ef_marche', 'ef_variante',
@@ -966,7 +971,10 @@ const FIELDS = [
   // Commentaires : un par colonne d'avis (MO / MOE / BET / BC / AMO HQE)
   'ef_com_mo', 'ef_com_moe', 'ef_com_bet', 'ef_com_bc', 'ef_com_amo'
 ];
-const RADIO_GROUPS = ['bet_aor', 'arch_aor', 'moe_aor'];
+// Plus de radio groups : les approbations (A/O/R) sont désormais des
+// checkboxes indépendantes (bet_a, bet_o, bet_r, etc.) qu'on peut
+// cocher/décocher à volonté.
+const RADIO_GROUPS = [];
 
 // État global du dossier
 let fiches = [];
@@ -1276,6 +1284,20 @@ function readForm(){
   return data;
 }
 function writeForm(data){
+  // Migration ancien format : les approbations étaient des radio buttons
+  // (bet_aor='A'/'O'/'R'). Désormais ce sont des checkboxes indépendantes
+  // (bet_a, bet_o, bet_r). Si une fiche sauvegardée a encore le vieux champ,
+  // on coche la case correspondante pour ne pas perdre la donnée.
+  if (data) {
+    for (const prefix of ['bet', 'arch', 'moe']) {
+      const aor = data[prefix + '_aor'];
+      if (aor && !data[prefix + '_a'] && !data[prefix + '_o'] && !data[prefix + '_r']) {
+        if (aor === 'A') data[prefix + '_a'] = true;
+        if (aor === 'O') data[prefix + '_o'] = true;
+        if (aor === 'R') data[prefix + '_r'] = true;
+      }
+    }
+  }
   // Clear d'abord pour ne pas hériter de la fiche précédente
   for(const id of FIELDS){
     const el = document.getElementById(id);

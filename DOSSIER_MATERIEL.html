@@ -1050,12 +1050,50 @@ function showActiveFicheForm(){
   }
 }
 // Bascule le template du dossier — visible dans tout l'éditeur.
+// Copie les champs équivalents entre les deux modèles. Ne touche jamais à un
+// champ déjà rempli sur la cible : si tu basculas AL GOMES → EIFFAGE puis
+// remplis EIFFAGE, le retour AL GOMES → EIFFAGE ne réécrasera pas EIFFAGE.
+// Concepts mappés :
+//   f_project       <-> ef_project    (nom du projet / localisation chantier)
+//   f_lot           <-> ef_lot        (lot)
+//   m_fournisseur   <-> ef_marque     (marque / fournisseur)
+//   m_materiel      <-> ef_designation (désignation du produit)
+//   m_caract        <-> ef_observations (caractéristiques / observations)
+//   m_couleur       <-> ef_couleur    (couleur)
+//   m_loc           <-> ef_loc        (localisation de mise en œuvre)
+function _crossMapFields(fiche, toTemplate){
+  if (!fiche) return;
+  const map = {
+    f_project:     'ef_project',
+    f_lot:         'ef_lot',
+    m_fournisseur: 'ef_marque',
+    m_materiel:    'ef_designation',
+    m_caract:      'ef_observations',
+    m_couleur:     'ef_couleur',
+    m_loc:         'ef_loc'
+  };
+  if (toTemplate === 'eiffage'){
+    for (const k in map){
+      const v = map[k];
+      if (!fiche[v] && fiche[k]) fiche[v] = fiche[k];
+    }
+  } else {
+    for (const k in map){
+      const v = map[k];
+      if (!fiche[k] && fiche[v]) fiche[k] = fiche[v];
+    }
+  }
+}
+
 function setDossierTemplate(tpl){
   if (tpl !== 'algomes' && tpl !== 'eiffage') return;
   if (tpl === dossierTemplate) return;
   // On sauve les valeurs du formulaire courant avant de basculer
   if (viewMode === 'fiche') syncFormToActive();
   dossierTemplate = tpl;
+  // Map les champs équivalents entre les 2 modèles pour TOUTES les fiches
+  // (ne touche pas aux champs déjà remplis sur la cible).
+  for (const f of fiches) _crossMapFields(f, tpl);
   // Met à jour le select pour rester synchro même si l'appel ne vient pas
   // de l'utilisateur (par exemple chargement initial).
   const sel = document.getElementById('dossierTemplateSel');
@@ -1244,14 +1282,21 @@ function genId(){ return 'f_' + Date.now() + '_' + Math.random().toString(36).sl
 // Valeurs par défaut pour une nouvelle fiche, reproduit les cases cochées
 // dans le fichier modèle "FICHE PRODUIT indice A.xls" du dépôt.
 function newFicheDefaults(){
+  const today = new Date().toISOString().slice(0, 10);
   return {
     id: genId(),
+    // ─── Champs AL GOMES (modèle historique) ──────────────────────────────
     f_emetteur: 'AL GOMES',
-    f_date: new Date().toISOString().slice(0, 10),
+    f_date: today,
     // OBJET DE LA FICHE — cases cochées par défaut comme dans le modèle Excel
     o_conforme: true,
     o_echantillon: true,
-    o_documentation: true
+    o_documentation: true,
+    // ─── Champs EIFFAGE (modèle "Fiche d'acceptation produits") ───────────
+    ef_ste: 'STE : A.L.GOMES',
+    ef_transmis_le: today,
+    ef_marche: true,        // X par défaut sur "Marché" comme dans le XLSX
+    ef_pj_fiche: true       // "Fiche technique" cochée par défaut
   };
 }
 function getActive(){ return fiches.find(f => f.id === currentFicheId) || fiches[0] || null; }
@@ -1289,10 +1334,19 @@ function addNewFiche(){
   syncFormToActive();
   const num = nextMainNumber();
   const nf = Object.assign(newFicheDefaults(), { f_num: num });
-  // Hérite du nom de projet de la fiche active pour cohérence du dossier
+  // Hérite des champs "contexte projet" de la fiche active pour cohérence
+  // du dossier — pour AL GOMES (f_*) et pour EIFFAGE (ef_*).
   const cur = getActive();
-  if (cur && cur.f_project) nf.f_project = cur.f_project;
-  if (cur && cur.f_lot) nf.f_lot = cur.f_lot;
+  if (cur) {
+    // AL GOMES : projet + lot
+    if (cur.f_project) nf.f_project = cur.f_project;
+    if (cur.f_lot)     nf.f_lot     = cur.f_lot;
+    // EIFFAGE : projet (L'HAY LES ROSES), lot, bâtiment, société
+    if (cur.ef_project) nf.ef_project = cur.ef_project;
+    if (cur.ef_lot)     nf.ef_lot     = cur.ef_lot;
+    if (cur.ef_bat)     nf.ef_bat     = cur.ef_bat;
+    if (cur.ef_ste)     nf.ef_ste     = cur.ef_ste;
+  }
   fiches.push(nf);
   currentFicheId = nf.id;
   sortFiches();

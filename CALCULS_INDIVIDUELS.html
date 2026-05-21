@@ -133,6 +133,14 @@ select.sel option{background:#1a1228;color:rgba(220,210,235,0.90)}
 .rd{opacity:0;cursor:pointer;color:rgba(255,85,85,0.50);font-size:12px;background:none;border:none;padding:2px 6px;transition:opacity .2s}
 tr:hover .rd{opacity:1}.rd:hover{color:#FF6B6B}
 
+.limits-bar{display:flex;flex-wrap:wrap;align-items:center;gap:18px;padding:12px 18px;margin-bottom:14px;border-radius:8px;
+  border:1px solid rgba(123,95,172,0.18);background:linear-gradient(165deg,rgba(91,63,140,0.10) 0%,rgba(22,18,32,0.5) 100%)}
+.limits-title{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:rgba(200,186,216,0.80);padding-right:10px;border-right:1px solid rgba(123,95,172,0.18)}
+.limits-field{display:flex;align-items:center;gap:7px;font-size:11.5px;color:rgba(200,186,216,0.65)}
+.limits-field input{width:60px}
+.limits-unit{font-size:11px;color:rgba(180,165,200,0.55);min-width:14px}
+.limits-presets{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+
 .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
 .summary-tile{background:rgba(22,18,32,0.6);border:1px solid rgba(123,95,172,0.15);border-radius:8px;padding:12px 16px}
 .summary-lbl{font-size:10px;color:rgba(180,165,200,0.50);letter-spacing:1.2px;text-transform:uppercase;font-weight:600}
@@ -239,12 +247,13 @@ tr:hover .rd{opacity:1}.rd:hover{color:#FF6B6B}
     <p style="font-size:11px;color:rgba(180,165,200,0.55)">avec ρ<sub>Alu</sub> = 0,036 Ω·mm²/m (à 90°C), L = longueur (m), I = calibre disjoncteur (A), S = section (mm²)</p>
     <p><b style="color:#B89AE0">Pourcentage de chute</b> : <code>%ΔU = ΔU / 2,3</code></p>
     <p><b style="color:#B89AE0">Total C1+C2</b> : somme des chutes REMBT→CIBE et CIBE→TA pour le même logement.</p>
-    <p style="margin-top:14px"><b style="color:#FFB86C">Section recommandée</b> : on cherche la section minimale parmi <code>10, 16, 25, 35, 50 mm²</code> qui donne une chute &lt; 1,15 % (limite normative HN33S33), avec la formule :</p>
+    <p style="margin-top:14px"><b style="color:#FFB86C">Section recommandée</b> : on cherche la section minimale parmi <code>10, 16, 25, 35, 50 mm²</code> (Al) telle que <code>%ΔU ≤ limite tronçon</code> configurée (champ en haut de l'onglet) :</p>
     <ul>
-      <li>Mono : <code>%ΔU = (0.0225 × 2 × L × I) / S</code></li>
-      <li>Tri : <code>%ΔU = (0.0225 × L × I) / S</code></li>
+      <li>Mono : <code>%ΔU = (0,036 × 2 × L × I) / S / 2,3</code></li>
+      <li>Tri : <code>%ΔU = (0,036 × L × I) / S / 2,3</code></li>
     </ul>
-    <p style="font-size:11px;color:rgba(180,165,200,0.55)">Section 10 mm² exclue si disjoncteur 30/60 (12 kVA).</p>
+    <p style="font-size:11px;color:rgba(180,165,200,0.55)">Section 10 mm² exclue si disjoncteur 30/60 (12 kVA), conformément à HN33S33.<br>
+    Note : ceci corrige le calcul d'origine de l'Excel qui utilisait par erreur ρ_Cu = 0,0225 au lieu de ρ_Al = 0,036 pour la section possible.</p>
     <div style="text-align:right;margin-top:18px">
       <button class="btn" onclick="document.getElementById('moHelp').classList.remove('open')">Fermer</button>
     </div>
@@ -274,8 +283,6 @@ tk();setInterval(tk,1000);
 // ═══════════════════════════════════════════════════════════════════════
 const SECTIONS = [10, 16, 25, 35, 50, 70, 95, 120, 150];
 const PHASES = ['M','T'];
-const LIMIT_NORM = 1.15;   // % limite normative pour la section possible (HN33S33)
-const LIMIT_C1C2 = 2;      // % limite C1+C2 (NFC14-100 §)
 
 const MODULES = [
   { k:'RA240',  l:'MODULE RA240 (3Ph+1N)',  p:2 },
@@ -304,6 +311,8 @@ let CI = {
   P: '',
   lgts: defaultLgts(),
   dim: emptyDim(),
+  limT: 1,    // limite par tronçon (%) — NF C 14-100 défaut 1 %, Excel d'origine 1,15 %
+  limTot: 2,  // limite totale C1+C2 (%) — NF C 14-100
   ts: 0
 };
 
@@ -330,6 +339,8 @@ function load(){
       CI.P = d.P || '';
       CI.lgts = Array.isArray(d.lgts) && d.lgts.length ? d.lgts.map(normLgt) : defaultLgts();
       CI.dim = Object.assign(emptyDim(), d.dim || {});
+      CI.limT   = (typeof d.limT   === 'number' && d.limT   > 0) ? d.limT   : 1;
+      CI.limTot = (typeof d.limTot === 'number' && d.limTot > 0) ? d.limTot : 2;
       CI.ts = d.ts || 0;
       return true;
     }
@@ -384,17 +395,18 @@ function chuteVU(K, O, N, P){
 // % chute = VU / 2.3
 function chutePc(vu){ return vu == null ? null : vu / 2.3; }
 
-// Section recommandée — Excel cherche la section minimale parmi [10,16,25,35,50]
-// telle que la chute (formule 0.0225) ≤ 1.15 %.
-// Pour disj. 30/60 (12 kVA) la section 10 est exclue.
+// Section recommandée — chute en ALU réel (0,036 / 2,3) ≤ limite par tronçon
+// configurable (CI.limT, défaut 1 % NF C 14-100). Pour disj. 30/60 (12 kVA)
+// la section 10 mm² est exclue (HN33S33).
 function sectionMin(K, O, N, p){
   O = parseFloat(O); N = parseFloat(N);
   if(!O || !N) return null;
   const has12 = (p === 12);
   const cands = has12 ? [16,25,35,50] : [10,16,25,35,50];
   for(const s of cands){
-    const ch = K === 'M' ? (0.0225 * 2 * O * N) / s : (0.0225 * O * N) / s;
-    if(ch <= LIMIT_NORM) return s;
+    const vu = K === 'M' ? (0.036 * 2 * O * N) / s : (0.036 * O * N) / s;
+    const pc = vu / 2.3;
+    if(pc <= CI.limT) return s;
   }
   return null;
 }
@@ -418,15 +430,14 @@ function fmt(v, d){
 }
 function tdHl(pc){
   if(pc == null) return 'vu';
-  // For one segment, > 1.15% would already be unacceptable (HN33S33)
-  if(pc > LIMIT_NORM) return 'bad';
-  if(pc > LIMIT_NORM * 0.8) return 'warn';
+  if(pc > CI.limT) return 'bad';
+  if(pc > CI.limT * 0.8) return 'warn';
   return 'ok';
 }
 function tdHlTotal(pc){
   if(pc == null) return 'vu';
-  if(pc > LIMIT_C1C2) return 'bad';
-  if(pc > LIMIT_C1C2 * 0.85) return 'warn';
+  if(pc > CI.limTot) return 'bad';
+  if(pc > CI.limTot * 0.85) return 'warn';
   return 'ok';
 }
 
@@ -455,14 +466,36 @@ function renderSide(side){
     const r = compute(l, side);
     if(r.pc != null){
       sumPc += r.pc; if(r.pc > maxPc) maxPc = r.pc;
-      if(r.pc > LIMIT_NORM) nbBad++;
-      else if(r.pc > LIMIT_NORM * 0.8) nbWarn++;
+      if(r.pc > CI.limT) nbBad++;
+      else if(r.pc > CI.limT * 0.8) nbWarn++;
       else nbOk++;
     }
   });
   const moy = CI.lgts.length ? sumPc / CI.lgts.length : 0;
 
   let h = `
+    <div class="limits-bar">
+      <div class="limits-title">
+        <span style="font-size:12px">🎯</span>
+        <span>Limites normatives</span>
+      </div>
+      <label class="limits-field">
+        <span>Limite par tronçon</span>
+        <input type="number" class="ws ns" step="0.05" min="0.1" max="10" value="${CI.limT}"
+               onchange="updLim('limT',this.value)">
+        <span class="limits-unit">%</span>
+      </label>
+      <label class="limits-field">
+        <span>Limite totale C1+C2</span>
+        <input type="number" class="ws ns" step="0.1" min="0.5" max="20" value="${CI.limTot}"
+               onchange="updLim('limTot',this.value)">
+        <span class="limits-unit">%</span>
+      </label>
+      <div class="limits-presets">
+        <button class="btn ${CI.limT===1?'ba':''}" style="padding:4px 10px;font-size:10px" onclick="setPreset(1,2)">NF C 14-100 (1 / 2 %)</button>
+        <button class="btn ${CI.limT===1.15?'ba':''}" style="padding:4px 10px;font-size:10px" onclick="setPreset(1.15,2)">Excel d'origine (1,15 / 2 %)</button>
+      </div>
+    </div>
     <div class="summary">
       <div class="summary-tile">
         <div class="summary-lbl">Nb logements</div>
@@ -471,12 +504,12 @@ function renderSide(side){
       </div>
       <div class="summary-tile">
         <div class="summary-lbl">Chute MAX</div>
-        <div class="summary-val ${maxPc > LIMIT_NORM ? 'red' : (maxPc > LIMIT_NORM*0.8 ? 'orange' : 'green')}">${fmt(maxPc, 3)} %</div>
-        <div class="summary-sub">limite C2 = ${LIMIT_NORM} %</div>
+        <div class="summary-val ${maxPc > CI.limT ? 'red' : (maxPc > CI.limT*0.8 ? 'orange' : 'green')}">${fmt(maxPc, 3)} %</div>
+        <div class="summary-sub">limite tronçon = ${fmt(CI.limT,2)} %</div>
       </div>
       <div class="summary-tile">
         <div class="summary-lbl">Chute moyenne</div>
-        <div class="summary-val ${moy > LIMIT_NORM ? 'red' : (moy > LIMIT_NORM*0.8 ? 'orange' : 'green')}">${fmt(moy, 3)} %</div>
+        <div class="summary-val ${moy > CI.limT ? 'red' : (moy > CI.limT*0.8 ? 'orange' : 'green')}">${fmt(moy, 3)} %</div>
         <div class="summary-sub">moyenne arithmétique</div>
       </div>
       <div class="summary-tile">
@@ -579,18 +612,19 @@ function renderSide(side){
 
   // Status banner
   if(nbBad > 0){
-    h += `<div class="ban ban-no">⚠️ ${nbBad} logement(s) hors limite C2 (${LIMIT_NORM} %) — section à augmenter</div>`;
+    h += `<div class="ban ban-no">⚠️ ${nbBad} logement(s) au-dessus de la limite tronçon (${fmt(CI.limT,2)} %) — section à augmenter</div>`;
   } else if(nbWarn > 0){
-    h += `<div class="ban ban-w">⚠ ${nbWarn} logement(s) en limite — surveillez la section retenue</div>`;
+    h += `<div class="ban ban-w">⚠ ${nbWarn} logement(s) proche(s) de la limite — surveillez la section retenue</div>`;
   } else if(CI.lgts.length > 0){
-    h += `<div class="ban ban-ok">✅ Toutes les chutes sont conformes (≤ ${LIMIT_NORM} %)</div>`;
+    h += `<div class="ban ban-ok">✅ Toutes les chutes sont conformes (≤ ${fmt(CI.limT,2)} %)</div>`;
   }
 
   // Notice
   h += `<div class="formula-box">
     <b>Formules appliquées</b> — câble en aluminium (ρ = 0,036 Ω·mm²/m à 90°C)<br>
     Mono : <code>ΔU = (0,036 × 2 × L × I) / S</code> &nbsp;·&nbsp; Tri : <code>ΔU = (0,036 × L × I) / S</code><br>
-    <code>%ΔU = ΔU / 2,3</code> &nbsp;·&nbsp; Total : <code>%ΔU<sub>C1+C2</sub> = %ΔU<sub>REMBT-CIBE</sub> + %ΔU<sub>CIBE-TA</sub></code>
+    <code>%ΔU = ΔU / 2,3</code> &nbsp;·&nbsp; Total : <code>%ΔU<sub>C1+C2</sub> = %ΔU<sub>REMBT-CIBE</sub> + %ΔU<sub>CIBE-TA</sub></code><br>
+    <b>Section recommandée</b> : section minimale parmi 10, 16, 25, 35, 50 mm² (Al) donnant <code>%ΔU ≤ ${fmt(CI.limT,2)} %</code> (limite tronçon configurée).
   </div>`;
 
   document.getElementById(elId).innerHTML = h;
@@ -672,6 +706,16 @@ function updSub(i, side, k, v){
 }
 function updDim(k, v){
   CI.dim[k] = Math.max(0, parseInt(v,10) || 0);
+  save(); R();
+}
+function updLim(k, v){
+  const n = parseFloat(v);
+  if(isNaN(n) || n <= 0) return;
+  CI[k] = n;
+  save(); R();
+}
+function setPreset(tronc, total){
+  CI.limT = tronc; CI.limTot = total;
   save(); R();
 }
 function addLgt(){
@@ -823,16 +867,16 @@ async function exportXLS(){
       cThis.value = rThis.pc == null ? null : +(rThis.pc/100).toFixed(6);
       cThis.numFmt = '0.000%';
       if(rThis.pc != null){
-        if(rThis.pc > 1.15) cThis.fill = { type:'pattern', pattern:'solid', fgColor:bad };
-        else if(rThis.pc > 0.92) cThis.fill = { type:'pattern', pattern:'solid', fgColor:warn };
+        if(rThis.pc > CI.limT) cThis.fill = { type:'pattern', pattern:'solid', fgColor:bad };
+        else if(rThis.pc > CI.limT * 0.8) cThis.fill = { type:'pattern', pattern:'solid', fgColor:warn };
         else cThis.fill = { type:'pattern', pattern:'solid', fgColor:ok };
       }
       const cTot = ws.getCell(r, 15);
       cTot.numFmt = '0.000%';
       cTot.value = pcTotal == null ? null : +(pcTotal/100).toFixed(6);
       if(pcTotal != null){
-        if(pcTotal > 2) cTot.fill = { type:'pattern', pattern:'solid', fgColor:bad };
-        else if(pcTotal > 1.7) cTot.fill = { type:'pattern', pattern:'solid', fgColor:warn };
+        if(pcTotal > CI.limTot) cTot.fill = { type:'pattern', pattern:'solid', fgColor:bad };
+        else if(pcTotal > CI.limTot * 0.85) cTot.fill = { type:'pattern', pattern:'solid', fgColor:warn };
         else cTot.fill = { type:'pattern', pattern:'solid', fgColor:ok };
       }
       // VU formatting
@@ -977,7 +1021,6 @@ async function exportPDF(){
       const o = compute(l, side==='rc'?'ct':'rc');
       const tot = (r.pc!=null && o.pc!=null) ? r.pc + o.pc : null;
       const sub = l[side];
-      const pcFmt = (v) => v == null ? '' : v.toFixed(3) + ' %';
       const pcCell = (v, lim) => {
         if(v == null) return '';
         const bg = v > lim ? badC : (v > lim*0.85 ? warnC : okC);
@@ -989,8 +1032,8 @@ async function exportPDF(){
         sub.O===''?'':sub.O, sub.P===''?'':sub.P,
         r.p ?? '', r.M || '', r.N ?? '',
         r.VU == null ? '' : r.VU.toFixed(2),
-        pcCell(r.pc, 1.15),
-        pcCell(tot, 2),
+        pcCell(r.pc, CI.limT),
+        pcCell(tot, CI.limTot),
         r.rec ?? ''
       ];
     });

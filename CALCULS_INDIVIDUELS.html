@@ -450,8 +450,20 @@ function emptyDim(){
 }
 
 // ─── REMBT helpers ───────────────────────────────────────────────
-// Tailles standard de REMBT (nombre de plages)
+// Tailles standard de REMBT G3 (nombre de plages du jeu de barres)
+//   REMBT 300 → JDB 300 →  6 plages
+//   REMBT 450 → JDB 450 →  9 plages
+//   REMBT 600 → JDB 600 → 12 plages  (livré avec module RRCP 400A/200A)
+// Règle « petit collectif » NF C 14-100 §10 : 6 dérivations maxi par REMBT.
+// Au-delà → grand collectif → diviser en plusieurs REMBT (ou utiliser RCP400).
 const REMBT_SIZES = [6, 9, 12];
+const REMBT_MAX_LGTS = 6;
+function rembtSizeLabel(p){
+  if(p === 6)  return 'REMBT 300 (6 plages)';
+  if(p === 9)  return 'REMBT 450 (9 plages)';
+  if(p === 12) return 'REMBT 600 (12 plages)';
+  return p + ' plages';
+}
 
 function newRembtId(existing){
   const used = new Set((existing||[]).map(r=>r.id));
@@ -886,8 +898,13 @@ function renderDim(){
     const nTri  = lgtsR.filter(l=>l.K==='T').length;
     const plages = rembtPlages(r);
     const sugg = rembtSuggest(plages);
-    const sizeClass = sugg == null ? 'red' : (plages > sugg - 1 ? 'orange' : 'green');
-    const sizeLabel = sugg == null ? `⚠ ${plages} plages — au-delà de 12, ajouter un REMBT` : `${plages} / ${sugg} plages — REMBT ${sugg} plages`;
+    const tooManyLgts = lgtsR.length > REMBT_MAX_LGTS;
+    const sizeClass = (sugg == null || tooManyLgts) ? 'red' : (plages > sugg - 1 ? 'orange' : 'green');
+    const sizeLabel = sugg == null
+      ? `⚠ ${plages} plages — au-delà de 12, ajouter un REMBT`
+      : tooManyLgts
+        ? `⚠ ${lgtsR.length} logements — petit collectif limité à ${REMBT_MAX_LGTS}, ajouter un REMBT`
+        : `${plages} / ${sugg} plages — ${rembtSizeLabel(sugg)}`;
     const parentOpts = ['<option value="">— racine (alimenté par ENEDIS)</option>']
       .concat(CI.rembts.filter(rr => rr.id !== r.id).map(rr => `<option value="${rr.id}"${r.parentId===rr.id?' selected':''}>↑ ${rr.name}</option>`))
       .join('');
@@ -938,11 +955,14 @@ function renderDim(){
           </div>
           <div>
             <div class="rembt-sugg ${sizeClass}">
-              <div class="rembt-sugg-lbl">Taille suggérée</div>
-              <div class="rembt-sugg-val">${sugg == null ? '> 12' : sugg+' plages'}</div>
+              <div class="rembt-sugg-lbl">Taille suggérée (Cahors G3)</div>
+              <div class="rembt-sugg-val">${(sugg == null || tooManyLgts) ? '↗ diviser' : 'REMBT '+(sugg===6?'300':sugg===9?'450':'600')}</div>
               <div class="rembt-sugg-sub">${sizeLabel}</div>
               <div class="rembt-sugg-bar">
-                ${REMBT_SIZES.map(sz => `<span class="rembt-sz-chip${sugg===sz?' on':''}${plages>sz?' off':''}">${sz}</span>`).join('')}
+                ${REMBT_SIZES.map(sz => `<span class="rembt-sz-chip${sugg===sz && !tooManyLgts ?' on':''}${plages>sz?' off':''}">${sz}p</span>`).join('')}
+              </div>
+              <div style="font-size:10px;color:rgba(180,165,200,0.55);margin-top:8px;line-height:1.4">
+                Petit collectif (NF C 14-100 §10) — max ${REMBT_MAX_LGTS} logements / REMBT
               </div>
             </div>
             <div class="rembt-notes-wrap">
@@ -976,7 +996,11 @@ function renderDim(){
             <tr><td class="fl L">RCP400</td><td class="L" style="color:rgba(180,165,200,0.65)">Coffret de répartition 400 A</td><td>4</td></tr>
           </table>
           <div class="formula-box" style="margin:0">
-            <b>Tailles standard REMBT</b> — coffrets disponibles : <code>6</code>, <code>9</code> et <code>12</code> plages.<br>
+            <b>Tailles standard REMBT (Cahors G3)</b> — interchangeable entre fabricants :<br>
+            · <code>REMBT 300</code> / JDB 300 — 6 plages<br>
+            · <code>REMBT 450</code> / JDB 450 — 9 plages<br>
+            · <code>REMBT 600</code> / JDB 600 — 12 plages (livré avec module RRCP — sectionnement 400A nominal / 200A protection)<br>
+            <b>Petit collectif</b> — NF C 14-100 §10 : un REMBT alimente <code>${REMBT_MAX_LGTS} logements maximum</code>. Au-delà → grand collectif, ajouter un REMBT (cascade).<br>
             <b>Auto-remplissage</b> : 1 RA240 (arrivée) + 1 BR60M par logement mono + 1 BR60T par logement tri.
             Ajustez ensuite RAC150 / RAC35 / RCP400 selon votre architecture.<br>
             <b>Notes</b> — saisies par REMBT, exportées en Excel et PDF.
@@ -1214,9 +1238,14 @@ function renderSchema(){
     function renderRembt(r){
       const plages = rembtPlages(r);
       const sugg = rembtSuggest(plages);
-      const sizeClass = sugg == null ? 'sz-bad' : (plages > sugg - 1 ? 'sz-warn' : 'sz-ok');
-      const sizeLbl = sugg == null ? '> 12 — DIVISER' : `${plages}/${sugg} plages → REMBT ${sugg}`;
       const lgts = lgtsOf(r.id);
+      const tooMany = lgts.length > REMBT_MAX_LGTS;
+      const sizeClass = (sugg == null || tooMany) ? 'sz-bad' : (plages > sugg - 1 ? 'sz-warn' : 'sz-ok');
+      const sizeLbl = sugg == null
+        ? '> 12 plages — DIVISER'
+        : tooMany
+          ? `⚠ ${lgts.length} > ${REMBT_MAX_LGTS} lgts — DIVISER`
+          : `${plages}/${sugg}p → REMBT ${sugg===6?'300':sugg===9?'450':'600'}`;
       const modChips = MODULES
         .filter(m => (r.dim[m.k] || 0) > 0)
         .map(m => `<span class="schema-mod-chip">${m.k}×${r.dim[m.k]}</span>`)
@@ -1510,16 +1539,26 @@ async function exportXLS(){
     wd.getRow(curRow).height = 26;
     curRow++;
 
-    // Taille suggérée
+    // Taille suggérée Cahors G3
+    const nLgtsXLS = CI.lgts.filter(l => l.rembtId === r.id).length;
+    const tooManyXLS = nLgtsXLS > REMBT_MAX_LGTS;
     wd.mergeCells(curRow, 1, curRow, 3);
     const cs = wd.getCell(curRow, 1);
-    cs.value = sugg == null ? 'TAILLE REMBT REQUISE  (au-delà de 12 plages)' : 'TAILLE REMBT SUGGÉRÉE';
+    cs.value = sugg == null
+      ? 'TAILLE REMBT — au-delà de 12 plages, diviser'
+      : tooManyXLS
+        ? `TAILLE REMBT — ⚠ ${nLgtsXLS} logements > ${REMBT_MAX_LGTS} (petit collectif), diviser`
+        : 'TAILLE REMBT SUGGÉRÉE (Cahors G3)';
     cs.font = { bold:true, color:black, size:10.5, name:'Calibri' };
-    const fillSugg = sugg == null ? bad : (plages > sugg - 1 ? warn : ok);
+    const fillSugg = (sugg == null || tooManyXLS) ? bad : (plages > sugg - 1 ? warn : ok);
     cs.fill = { type:'pattern', pattern:'solid', fgColor:fillSugg };
     cs.alignment = la; cs.border = border;
     const csV = wd.getCell(curRow, 4);
-    csV.value = sugg == null ? '> 12 — diviser' : (sugg + ' plages');
+    csV.value = sugg == null
+      ? '> 12 — diviser'
+      : tooManyXLS
+        ? '↗ diviser'
+        : `REMBT ${sugg===6?'300':sugg===9?'450':'600'} (${sugg}p)`;
     csV.font = { bold:true, color:black, size:12, name:'Calibri' };
     csV.fill = { type:'pattern', pattern:'solid', fgColor:fillSugg };
     csV.alignment = ca; csV.border = border;
@@ -1714,11 +1753,24 @@ async function exportPDF(){
       const q = r.dim[m.k] || 0, p = q*m.p;
       return [m.l, m.p, q, p];
     });
-    const sizeBg = sugg == null ? badPDF : (plages > sugg - 1 ? warnPDF : okPDF);
+    const tooManyPDF = nLgts > REMBT_MAX_LGTS;
+    const sizeBg = (sugg == null || tooManyPDF) ? badPDF : (plages > sugg - 1 ? warnPDF : okPDF);
     dBody.push([{content:'NOMBRE DE PLAGES', colSpan:3, styles:{fillColor:navy, textColor:white, fontStyle:'bold'}},
                 {content:plages, styles:{fillColor:navy, textColor:white, fontStyle:'bold'}}]);
-    dBody.push([{content:'TAILLE REMBT SUGGÉRÉE', colSpan:3, styles:{fillColor:sizeBg, fontStyle:'bold'}},
-                {content: sugg == null ? '> 12 — diviser' : (sugg+' plages'), styles:{fillColor:sizeBg, fontStyle:'bold'}}]);
+    dBody.push([{
+      content: tooManyPDF
+        ? `TAILLE REMBT — ⚠ ${nLgts}>${REMBT_MAX_LGTS} lgts, diviser`
+        : 'TAILLE REMBT SUGGÉRÉE (Cahors G3)',
+      colSpan:3,
+      styles:{fillColor:sizeBg, fontStyle:'bold'}
+    }, {
+      content: sugg == null
+        ? '> 12 — diviser'
+        : tooManyPDF
+          ? '↗ diviser'
+          : `REMBT ${sugg===6?'300':sugg===9?'450':'600'} (${sugg}p)`,
+      styles:{fillColor:sizeBg, fontStyle:'bold'}
+    }]);
     if(r.notes && r.notes.trim()){
       dBody.push([{content:'📝 Notes : '+r.notes, colSpan:4, styles:{fontStyle:'italic', fillColor:[255,242,204], halign:'left'}}]);
     }
@@ -1766,7 +1818,8 @@ async function exportPDF(){
     const plages = rembtPlages(r);
     const sugg = rembtSuggest(plages);
     const nLgts = CI.lgts.filter(l => l.rembtId === r.id).length;
-    const sizeBg = sugg == null ? badPDF : (plages > sugg - 1 ? warnPDF : okPDF);
+    const tooMany = nLgts > REMBT_MAX_LGTS;
+    const sizeBg = (sugg == null || tooMany) ? badPDF : (plages > sugg - 1 ? warnPDF : okPDF);
     // Boîte
     doc.setFillColor(...sizeBg);
     doc.setDrawColor(120, 100, 160);
@@ -1777,7 +1830,12 @@ async function exportPDF(){
     doc.text(r.name.substring(0,28), x + boxW/2, y + 5, {align:'center'});
     // Taille
     doc.setFontSize(7); doc.setFont('helvetica','normal');
-    doc.text(sugg == null ? '> 12 plages — à diviser' : `${plages} / ${sugg} plages → REMBT ${sugg}`, x + boxW/2, y + 10, {align:'center'});
+    const sizeLine = sugg == null
+      ? '> 12 plages — diviser'
+      : tooMany
+        ? `${nLgts}>${REMBT_MAX_LGTS} lgts — diviser`
+        : `${plages}/${sugg}p → REMBT ${sugg===6?'300':sugg===9?'450':'600'}`;
+    doc.text(sizeLine, x + boxW/2, y + 10, {align:'center'});
     // Stats
     doc.text(`${nLgts} logement(s)`, x + boxW/2, y + 14.5, {align:'center'});
     // Modules

@@ -191,6 +191,30 @@ tr:hover .rd{opacity:1}.rd:hover{color:#FF6B6B}
 .rembt-sel{min-width:88px;font-size:10.5px}
 button.btn[disabled]{opacity:0.4;cursor:not-allowed}
 
+/* ═══ Coffret de façade (CCU) ═══ */
+.cf-panel{margin-top:14px;padding:12px 14px;border:1px dashed rgba(0,176,240,0.40);border-radius:8px;background:rgba(0,176,240,0.06)}
+.cf-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.cf-toggle{display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:11.5px;color:rgba(200,186,216,0.85);letter-spacing:0.3px;font-weight:600;user-select:none}
+.cf-toggle input{accent-color:#00B0F0;width:14px;height:14px;cursor:pointer}
+.cf-chute{font-family:'Courier New',monospace;font-size:11px;font-weight:700;padding:3px 9px;border-radius:5px}
+.cf-chute.ok  {background:rgba(46,213,115,0.15);color:#5FE09A;border:1px solid rgba(46,213,115,0.30)}
+.cf-chute.warn{background:rgba(255,159,67,0.15);color:#FFB86C;border:1px solid rgba(255,159,67,0.30)}
+.cf-chute.bad {background:rgba(255,85,85,0.18);color:#FF6B6B;border:1px solid rgba(255,85,85,0.30)}
+.cf-fields{display:flex;gap:14px;margin-top:10px;flex-wrap:wrap}
+.cf-field{display:flex;flex-direction:column;gap:3px;font-size:10.5px;color:rgba(180,165,200,0.65)}
+.cf-field input,.cf-field select{width:78px}
+
+/* ═══ CF box dans le schéma ═══ */
+.schema-cf{display:flex;flex-direction:column;align-items:center;gap:0;margin-top:0}
+.schema-cf-box{background:linear-gradient(135deg,rgba(0,176,240,0.18) 0%,rgba(0,120,168,0.12) 100%);
+  border:2px solid rgba(0,176,240,0.55);border-radius:8px;padding:8px 14px;text-align:center;min-width:200px;max-width:280px;
+  box-shadow:0 4px 10px rgba(0,176,240,0.10)}
+.schema-cf-name{font-family:'Segoe UI',system-ui,sans-serif;font-size:12px;font-weight:700;color:#7BC8FF;letter-spacing:0.5px;margin-bottom:3px}
+.schema-cf-meta{font-family:'Courier New',monospace;font-size:10px;color:rgba(180,210,235,0.70);letter-spacing:0.3px}
+.schema-cf-chute{margin-top:3px;font-family:'Courier New',monospace;font-size:10.5px;font-weight:700;letter-spacing:0.3px}
+.schema-cf-chute.ok{color:#5FE09A}.schema-cf-chute.warn{color:#FFB86C}.schema-cf-chute.bad{color:#FF6B6B}
+.schema-cable-lbl{font-family:'Courier New',monospace;font-size:9.5px;color:rgba(180,165,200,0.65);background:rgba(22,18,32,0.85);padding:2px 8px;border-radius:4px;margin:2px 0;letter-spacing:0.3px;border:1px solid rgba(123,95,172,0.18)}
+
 /* ═══ SCHÉMA RÉCAPITULATIF ═══ */
 .schema-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px}
 @media(max-width:900px){.schema-stats{grid-template-columns:repeat(2,1fr)}}
@@ -472,7 +496,21 @@ function newRembtId(existing){
 }
 function newRembt(name, existing){
   const id = newRembtId(existing);
-  return { id, name: name || ('REMBT '+id.slice(1)), notes:'', parentId:null, dim:emptyDim() };
+  return { id, name: name || ('REMBT '+id.slice(1)), notes:'', parentId:null, dim:emptyDim(),
+           cf: defaultCF() };
+}
+// Coffret de façade (CCU) — entre ENEDIS et un REMBT racine.
+// Inactif par défaut pour préserver la compat ascendante.
+function defaultCF(){
+  return { active:false, name:'CF', long:5, section:35, calibre:60, phase:'T' };
+}
+// Chute de tension sur le câble Coffret façade → REMBT (formule ALU identique)
+function cfChute(cf){
+  if(!cf || !cf.active) return null;
+  const L = parseFloat(cf.long), S = parseFloat(cf.section), I = parseFloat(cf.calibre);
+  if(!L || !S || !I) return null;
+  const vu = cf.phase === 'M' ? (0.036 * 2 * L * I) / S : (0.036 * L * I) / S;
+  return { vu, pc: vu / 2.3 };
 }
 function defaultRembts(){ return [ newRembt('REMBT 1', []) ]; }
 
@@ -569,7 +607,8 @@ function normRembt(x){
     name: x.name || 'REMBT',
     notes: x.notes || '',
     parentId: x.parentId || null,
-    dim: Object.assign(emptyDim(), x.dim || {})
+    dim: Object.assign(emptyDim(), x.dim || {}),
+    cf: Object.assign(defaultCF(), x.cf || {})
   };
 }
 // Migration : ancien format {P, lgts, dim, limT, limTot} → {P, lgts(+rembtId), rembts[], …}
@@ -965,6 +1004,47 @@ function renderDim(){
                 Petit collectif (NF C 14-100 §10) — max ${REMBT_MAX_LGTS} logements / REMBT
               </div>
             </div>
+            ${r.parentId == null ? `
+            <div class="cf-panel">
+              <div class="cf-head">
+                <label class="cf-toggle">
+                  <input type="checkbox" ${r.cf && r.cf.active ? 'checked':''} onchange="toggleCF('${r.id}',this.checked)">
+                  <span>🏠 Coffret de façade (CCU) — alimente ${escapeHtml(r.name)}</span>
+                </label>
+                ${r.cf && r.cf.active ? (function(){
+                  const c = cfChute(r.cf);
+                  if(!c) return '';
+                  const cls = c.pc > CI.limT ? 'bad' : (c.pc > CI.limT*0.8 ? 'warn' : 'ok');
+                  return `<span class="cf-chute ${cls}">ΔU = ${c.vu.toFixed(2)} V · ${c.pc.toFixed(3)} %</span>`;
+                })() : ''}
+              </div>
+              ${r.cf && r.cf.active ? `
+              <div class="cf-fields">
+                <label class="cf-field">
+                  <span>Long. (m)</span>
+                  <input type="number" class="ws ns" min="0" step="0.5" value="${r.cf.long===''?'':r.cf.long}" onchange="updCF('${r.id}','long',this.value)">
+                </label>
+                <label class="cf-field">
+                  <span>Section (mm²)</span>
+                  <select class="sel" onchange="updCF('${r.id}','section',this.value)">
+                    ${[10,16,25,35,50,70,95,120,150,185,240].map(s => `<option value="${s}"${r.cf.section==s?' selected':''}>${s}</option>`).join('')}
+                  </select>
+                </label>
+                <label class="cf-field">
+                  <span>Disj. (A)</span>
+                  <select class="sel" onchange="updCF('${r.id}','calibre',this.value)">
+                    ${[30,45,60,90,125,160,200,250,400].map(a => `<option value="${a}"${r.cf.calibre==a?' selected':''}>${a}</option>`).join('')}
+                  </select>
+                </label>
+                <label class="cf-field">
+                  <span>Phase</span>
+                  <select class="sel" onchange="updCF('${r.id}','phase',this.value)">
+                    <option value="M"${r.cf.phase==='M'?' selected':''}>Mono</option>
+                    <option value="T"${r.cf.phase==='T'?' selected':''}>Tri</option>
+                  </select>
+                </label>
+              </div>` : ''}
+            </div>` : ''}
             <div class="rembt-notes-wrap">
               <label class="rembt-notes-lbl">📝 Notes / observations</label>
               <textarea class="rembt-notes" placeholder="Saisir ici les notes pour ce REMBT : repérage, observation chantier, particularités…" onchange="setRembtNotes('${r.id}',this.value)">${(r.notes||'').replace(/</g,'&lt;')}</textarea>
@@ -1129,6 +1209,23 @@ function autoFillRembt(id){
   r.dim.BR60T = suggested.BR60T;
   save(); R();
 }
+// ─── Coffret de façade (CCU) ────────────────────────────────
+function toggleCF(rid, on){
+  const r = CI.rembts.find(x => x.id === rid); if(!r) return;
+  if(!r.cf) r.cf = defaultCF();
+  r.cf.active = !!on;
+  save(); R();
+}
+function updCF(rid, k, v){
+  const r = CI.rembts.find(x => x.id === rid); if(!r) return;
+  if(!r.cf) r.cf = defaultCF();
+  if(k === 'long' || k === 'section' || k === 'calibre'){
+    r.cf[k] = (v === '' || isNaN(parseFloat(v))) ? '' : parseFloat(v);
+  } else {
+    r.cf[k] = v;
+  }
+  save(); R();
+}
 
 // ═══════════════════════════════════════════════════════════════════════
 // NAVIGATION
@@ -1235,7 +1332,7 @@ function renderSchema(){
       if(!byParent.has(pid)) byParent.set(pid, []);
       byParent.get(pid).push(r);
     });
-    function renderRembt(r){
+    function renderRembt(r, isRoot){
       const plages = rembtPlages(r);
       const sugg = rembtSuggest(plages);
       const lgts = lgtsOf(r.id);
@@ -1252,6 +1349,20 @@ function renderSchema(){
         .join('');
 
       let block = `<div class="schema-rembt-branch">`;
+      // Coffret de façade (uniquement pour les REMBT racines avec CF actif)
+      if(isRoot && r.cf && r.cf.active){
+        const c = cfChute(r.cf);
+        const cls = c == null ? '' : (c.pc > CI.limT ? 'bad' : (c.pc > CI.limT*0.8 ? 'warn' : 'ok'));
+        block += `<div class="schema-cf">
+          <div class="schema-cf-box">
+            <div class="schema-cf-name">🏠 ${escapeHtml(r.cf.name || 'CF')} — Coffret de façade</div>
+            <div class="schema-cf-meta">Disj. ${r.cf.calibre} A · ${r.cf.phase === 'M' ? 'mono' : 'tri'}</div>
+            ${c ? `<div class="schema-cf-chute ${cls}">ΔU = ${c.vu.toFixed(2)} V · ${c.pc.toFixed(3)} %</div>` : ''}
+          </div>
+          <div class="schema-cable-lbl">⬇ Câble ALU : L = ${r.cf.long || '?'} m · S = ${r.cf.section || '?'} mm²</div>
+          <div class="schema-line short"></div>
+        </div>`;
+      }
       block += `<div class="schema-rembt ${sizeClass}">
         <div class="schema-rembt-h">
           <span class="schema-rembt-name">${escapeHtml(r.name)}</span>
@@ -1298,7 +1409,7 @@ function renderSchema(){
       if(children.length){
         block += `<div class="schema-children">`;
         block += `<div class="schema-children-row${children.length===1?' single':''}">`;
-        children.forEach(c => { block += renderRembt(c); });
+        children.forEach(c => { block += renderRembt(c, false); });
         block += `</div></div>`;
       }
       block += `</div>`;
@@ -1312,7 +1423,7 @@ function renderSchema(){
       </div>
       <div class="schema-line med"></div>
       <div class="schema-rembts-row${roots.length===1?' single':''}">
-        ${roots.map(r => renderRembt(r)).join('')}
+        ${roots.map(r => renderRembt(r, true)).join('')}
       </div>
     </div>`;
 
@@ -1903,11 +2014,18 @@ async function exportPDF(){
     });
   }
 
+  // Si au moins un root a un coffret de façade actif, on insère une ligne
+  // de CF entre ENEDIS et les REMBT racines.
+  const hasAnyCF = rootsPDF.some(r => r.cf && r.cf.active);
+  const cfH = 14, cfGapBelow = 6;
+  const sy0 = sy;                              // y de la ligne ENEDIS (barre horizontale)
+  if(hasAnyCF) sy = sy + cfH + cfGapBelow + 6; // décale les REMBTs vers le bas
+
   let cx = startX;
   // Ligne ENEDIS → barre des racines
   if(rootsPDF.length > 0){
     doc.setDrawColor(120, 100, 160); doc.setLineWidth(0.4);
-    doc.line(pageW/2, sy - 4, pageW/2, sy);
+    doc.line(pageW/2, sy0 - 4, pageW/2, sy0);
     if(rootsPDF.length > 1){
       // Barre horizontale au-dessus des racines
       let firstC, lastC, rx = startX;
@@ -1918,9 +2036,51 @@ async function exportPDF(){
         lastC = c;
         rx += sw + hGap;
       });
-      doc.line(firstC, sy - 4, lastC, sy - 4);
+      doc.line(firstC, sy0 - 4, lastC, sy0 - 4);
     }
   }
+
+  // Dessine éventuellement les coffrets de façade et les liaisons CF→REMBT
+  if(hasAnyCF){
+    let rx = startX;
+    rootsPDF.forEach(r => {
+      const sw = subtreeWidth(r) * (boxW + hGap) - hGap;
+      const centerX = rx + sw/2;
+      if(r.cf && r.cf.active){
+        const c = cfChute(r.cf);
+        const cfClr = c == null ? okPDF : (c.pc > CI.limT ? badPDF : (c.pc > CI.limT*0.8 ? warnPDF : okPDF));
+        const cfW = 50;
+        const cfX = centerX - cfW/2;
+        const cfY = sy0;
+        // Boîte CF
+        doc.setFillColor(...cfClr);
+        doc.setDrawColor(0, 130, 200);
+        doc.setLineWidth(0.4);
+        doc.roundedRect(cfX, cfY, cfW, cfH, 1.5, 1.5, 'FD');
+        doc.setFontSize(8); doc.setTextColor(0, 60, 100); doc.setFont('helvetica','bold');
+        doc.text(`🏠 ${r.cf.name || 'CF'} — Coffret façade`, centerX, cfY + 4.5, {align:'center'});
+        doc.setFontSize(6.5); doc.setFont('helvetica','normal');
+        doc.text(`Disj. ${r.cf.calibre} A · ${r.cf.phase === 'M' ? 'mono' : 'tri'}`, centerX, cfY + 8, {align:'center'});
+        if(c){
+          doc.setFont('helvetica','bold'); doc.setTextColor(80, 40, 0);
+          doc.text(`ΔU = ${c.vu.toFixed(2)} V · ${c.pc.toFixed(3)} %`, centerX, cfY + 12, {align:'center'});
+        }
+        // Liaison ENEDIS → CF
+        doc.setDrawColor(120, 100, 160); doc.setLineWidth(0.4);
+        doc.line(centerX, sy0 - 4, centerX, cfY);
+        // Liaison CF → REMBT (avec étiquette câble)
+        doc.line(centerX, cfY + cfH, centerX, sy - vGap/2);
+        doc.setFontSize(6); doc.setTextColor(110, 100, 130); doc.setFont('helvetica','italic');
+        doc.text(`L=${r.cf.long||'?'} m · S=${r.cf.section||'?'} mm² ALU`, centerX + 1, cfY + cfH + (sy - vGap/2 - cfY - cfH)/2, {baseline:'middle'});
+      } else {
+        // Sans CF, juste prolonger la ligne ENEDIS → REMBT
+        doc.setDrawColor(120, 100, 160); doc.setLineWidth(0.4);
+        doc.line(centerX, sy0 - 4, centerX, sy - vGap/2);
+      }
+      rx += sw + hGap;
+    });
+  }
+
   // Dessine chaque racine
   rootsPDF.forEach(r => {
     const sw = subtreeWidth(r) * (boxW + hGap) - hGap;

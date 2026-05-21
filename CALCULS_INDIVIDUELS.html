@@ -191,6 +191,106 @@ tr:hover .rd{opacity:1}.rd:hover{color:#FF6B6B}
 .rembt-sel{min-width:88px;font-size:10.5px}
 button.btn[disabled]{opacity:0.4;cursor:not-allowed}
 
+/* ═══ SCHÉMA RÉCAPITULATIF ═══ */
+.schema-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px}
+@media(max-width:900px){.schema-stats{grid-template-columns:repeat(2,1fr)}}
+.schema-stat{background:rgba(22,18,32,0.6);border:1px solid rgba(123,95,172,0.18);border-radius:8px;padding:14px 16px;text-align:center}
+.schema-stat-lbl{font-size:10px;color:rgba(180,165,200,0.55);letter-spacing:1.2px;text-transform:uppercase;font-weight:700;margin-bottom:6px}
+.schema-stat-val{font-family:'Segoe UI',system-ui,sans-serif;font-size:22px;font-weight:700;color:#E8E0F2;letter-spacing:0.5px;font-variant-numeric:tabular-nums}
+.schema-stat-val.green{color:#5FE09A}.schema-stat-val.orange{color:#FFB86C}.schema-stat-val.red{color:#FF6B6B}
+.schema-stat-sub{font-size:10px;color:rgba(180,165,200,0.40);margin-top:3px;letter-spacing:0.3px}
+
+.schema-wrap{background:linear-gradient(165deg,rgba(22,18,32,0.85) 0%,rgba(14,14,16,0.95) 100%);border:1px solid rgba(123,95,172,0.15);border-radius:12px;padding:30px 24px;margin-bottom:18px;overflow-x:auto;position:relative}
+.schema-tree{display:flex;flex-direction:column;align-items:center;gap:0;min-width:fit-content}
+
+/* Bloc source ENEDIS */
+.schema-source{background:linear-gradient(135deg,#00B0F0 0%,#0078A8 100%);color:#fff;padding:14px 36px;border-radius:8px;
+  font-family:'Segoe UI',system-ui,sans-serif;font-weight:700;font-size:14px;letter-spacing:2px;text-transform:uppercase;
+  box-shadow:0 6px 18px rgba(0,176,240,0.25);border:1px solid rgba(255,255,255,0.15);text-align:center;min-width:240px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.schema-source-sub{font-size:10px;font-weight:500;color:rgba(255,255,255,0.75);letter-spacing:1px;text-transform:none}
+
+/* Lignes verticales/horizontales */
+.schema-line{width:2px;background:rgba(123,95,172,0.45);flex:none}
+.schema-line.short{height:18px}
+.schema-line.med{height:24px}
+.schema-line.long{height:32px}
+.schema-hline{height:2px;background:rgba(123,95,172,0.45)}
+
+/* Niveau REMBT racines (en row) */
+.schema-rembts-row{display:flex;align-items:flex-start;gap:36px;position:relative;padding-top:14px}
+.schema-rembts-row::before{content:'';position:absolute;top:0;left:50%;right:50%;height:2px;background:rgba(123,95,172,0.45)}
+.schema-rembts-row.single::before{display:none}
+.schema-rembts-row > .schema-rembt-branch{position:relative}
+.schema-rembts-row > .schema-rembt-branch::before{content:'';position:absolute;top:-14px;left:50%;width:2px;height:14px;background:rgba(123,95,172,0.45);transform:translateX(-50%)}
+
+/* Branche REMBT (verticale REMBT + children + logements) */
+.schema-rembt-branch{display:flex;flex-direction:column;align-items:center;gap:0}
+
+/* Boîte REMBT */
+.schema-rembt{background:linear-gradient(160deg,rgba(91,63,140,0.30) 0%,rgba(60,40,100,0.45) 100%);
+  border:2px solid rgba(155,125,197,0.55);border-radius:10px;padding:14px 18px;min-width:280px;max-width:340px;
+  box-shadow:0 6px 14px rgba(91,63,140,0.20);position:relative}
+.schema-rembt.sz-ok    {border-color:rgba(95,224,154,0.60);background:linear-gradient(160deg,rgba(46,213,115,0.18) 0%,rgba(91,63,140,0.30) 100%)}
+.schema-rembt.sz-warn  {border-color:rgba(255,184,108,0.60);background:linear-gradient(160deg,rgba(255,159,67,0.18) 0%,rgba(91,63,140,0.30) 100%)}
+.schema-rembt.sz-bad   {border-color:rgba(255,107,107,0.60);background:linear-gradient(160deg,rgba(255,85,85,0.20) 0%,rgba(91,63,140,0.30) 100%)}
+
+.schema-rembt-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid rgba(155,125,197,0.25)}
+.schema-rembt-name{font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;font-weight:700;color:#E8E0F2;letter-spacing:0.5px}
+.schema-rembt-size{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:rgba(155,125,197,0.20);border:1px solid rgba(155,125,197,0.40);border-radius:5px;
+  font-family:'Courier New',monospace;font-size:12px;font-weight:700;color:#D4B5FF;white-space:nowrap}
+.schema-rembt.sz-ok   .schema-rembt-size{background:rgba(46,213,115,0.18);border-color:rgba(46,213,115,0.40);color:#5FE09A}
+.schema-rembt.sz-warn .schema-rembt-size{background:rgba(255,159,67,0.18);border-color:rgba(255,159,67,0.40);color:#FFB86C}
+.schema-rembt.sz-bad  .schema-rembt-size{background:rgba(255,85,85,0.20);border-color:rgba(255,85,85,0.40);color:#FF6B6B}
+
+.schema-rembt-row{display:flex;justify-content:space-between;font-size:11px;color:rgba(200,186,216,0.65);padding:2px 0;letter-spacing:0.3px}
+.schema-rembt-row span:last-child{font-weight:600;color:rgba(220,210,235,0.90);font-family:'Courier New',monospace;font-variant-numeric:tabular-nums}
+.schema-rembt-modules{margin-top:6px;display:flex;flex-wrap:wrap;gap:4px}
+.schema-mod-chip{font-family:'Courier New',monospace;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;
+  background:rgba(155,125,197,0.18);color:#D4B5FF;border:1px solid rgba(155,125,197,0.25);letter-spacing:0.3px}
+.schema-rembt-notes{margin-top:8px;padding:6px 10px;background:rgba(255,242,204,0.06);border-left:2px solid rgba(255,235,156,0.45);
+  border-radius:0 4px 4px 0;font-size:10.5px;font-style:italic;color:rgba(255,235,156,0.85);line-height:1.5}
+
+/* Liste logements sous chaque REMBT */
+.schema-lgts{display:flex;flex-direction:column;gap:5px;margin-top:14px;align-items:stretch;width:100%;max-width:340px}
+.schema-lgts::before{content:'';width:2px;height:16px;background:rgba(123,95,172,0.45);align-self:center;margin-bottom:4px}
+.schema-lgt{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:6px;padding:6px 10px;
+  background:rgba(22,18,32,0.75);border:1px solid rgba(123,95,172,0.18);border-radius:6px;font-size:11px}
+.schema-lgt.ok     {border-left:3px solid #5FE09A}
+.schema-lgt.warn   {border-left:3px solid #FFB86C}
+.schema-lgt.bad    {border-left:3px solid #FF6B6B;background:rgba(255,85,85,0.06)}
+.schema-lgt-id{font-family:'Courier New',monospace;font-weight:700;color:#D4B5FF;font-size:11px;letter-spacing:0.3px;min-width:78px}
+.schema-lgt-mid{display:flex;flex-direction:column;gap:1px;font-size:10px;color:rgba(180,165,200,0.65)}
+.schema-lgt-meta{display:flex;gap:8px;color:rgba(180,165,200,0.60);font-family:'Courier New',monospace}
+.schema-lgt-meta b{color:rgba(220,210,235,0.85);font-weight:700}
+.schema-lgt-chutes{display:flex;flex-direction:column;align-items:flex-end;gap:1px;font-family:'Courier New',monospace;font-size:10.5px;font-weight:700;font-variant-numeric:tabular-nums}
+.schema-lgt-chutes .pcg{color:rgba(200,186,216,0.65);font-size:9.5px}
+.schema-lgt-chutes .tot{color:#E8E0F2;font-size:11.5px}
+.schema-lgt.ok   .schema-lgt-chutes .tot{color:#5FE09A}
+.schema-lgt.warn .schema-lgt-chutes .tot{color:#FFB86C}
+.schema-lgt.bad  .schema-lgt-chutes .tot{color:#FF6B6B}
+
+/* Liste enfants REMBT cascadés */
+.schema-children{display:flex;flex-direction:column;align-items:center;gap:0;margin-top:16px;width:100%}
+.schema-children::before{content:'';width:2px;height:18px;background:rgba(123,95,172,0.45);align-self:center}
+.schema-children-row{display:flex;align-items:flex-start;gap:24px;position:relative;padding-top:14px}
+.schema-children-row.single::before{display:none}
+.schema-children-row::before{content:'';position:absolute;top:0;left:50%;right:50%;height:2px;background:rgba(123,95,172,0.45)}
+.schema-children-row > .schema-rembt-branch{position:relative}
+.schema-children-row > .schema-rembt-branch::before{content:'';position:absolute;top:-14px;left:50%;width:2px;height:14px;background:rgba(123,95,172,0.45);transform:translateX(-50%)}
+
+/* Légende */
+.schema-legend{display:flex;flex-wrap:wrap;justify-content:center;gap:20px;padding:12px 20px;margin-top:14px;border-top:1px dashed rgba(123,95,172,0.20)}
+.schema-leg-item{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:rgba(200,186,216,0.65);letter-spacing:0.3px}
+.schema-leg-swatch{width:14px;height:14px;border-radius:3px;border:1px solid rgba(123,95,172,0.30)}
+.schema-leg-swatch.ok{background:#5FE09A;border-color:rgba(95,224,154,0.50)}
+.schema-leg-swatch.warn{background:#FFB86C;border-color:rgba(255,184,108,0.50)}
+.schema-leg-swatch.bad{background:#FF6B6B;border-color:rgba(255,107,107,0.50)}
+.schema-leg-swatch.cable{background:rgba(123,95,172,0.45);border:none;height:2px}
+
+/* Bouton export schéma */
+.schema-actions{display:flex;justify-content:flex-end;gap:8px;margin-bottom:14px}
+.schema-empty{padding:60px 20px;text-align:center;color:rgba(180,165,200,0.55);font-size:13px}
+
 .ts{overflow-x:auto;-webkit-overflow-scrolling:touch}
 ::-webkit-scrollbar{width:6px;height:6px}
 ::-webkit-scrollbar-track{background:rgba(14,14,16,0.5)}
@@ -262,11 +362,13 @@ button.btn[disabled]{opacity:0.4;cursor:not-allowed}
   <button class="tab active" data-sh="rc" onclick="goSheet('rc')">REMBT → COFFRET CIBE</button>
   <button class="tab" data-sh="ct" onclick="goSheet('ct')">COFFRET CIBE → TABLEAU ABONNÉ</button>
   <button class="tab" data-sh="dim" onclick="goSheet('dim')">DIMENSIONNEMENT REMBT</button>
+  <button class="tab" data-sh="sch" onclick="goSheet('sch')">SCHÉMA RÉCAPITULATIF</button>
 </div>
 <div class="content">
   <div class="sheet active" id="sh-rc"></div>
   <div class="sheet" id="sh-ct"></div>
   <div class="sheet" id="sh-dim"></div>
+  <div class="sheet" id="sh-sch"></div>
 </div>
 
 <!-- HELP MODAL -->
@@ -1021,6 +1123,188 @@ function R(){
   renderRC();
   renderCT();
   renderDim();
+  renderSchema();
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SCHÉMA RÉCAPITULATIF — arborescence ENEDIS → REMBT → logements
+// ═══════════════════════════════════════════════════════════════════════
+function escapeHtml(s){
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderSchema(){
+  // Stats globales
+  let totLgts = CI.lgts.length;
+  let okLgts = 0, warnLgts = 0, badLgts = 0;
+  let maxTotal = 0;
+  CI.lgts.forEach(l => {
+    const a = compute(l,'rc'), b = compute(l,'ct');
+    const tot = (a.pc != null && b.pc != null) ? a.pc + b.pc : null;
+    if(tot != null){
+      if(tot > maxTotal) maxTotal = tot;
+      if(tot > CI.limTot) badLgts++;
+      else if(tot > CI.limTot * 0.85) warnLgts++;
+      else okLgts++;
+    }
+  });
+  const totPlages = CI.rembts.reduce((s,r) => s + rembtPlages(r), 0);
+  const nbOversized = CI.rembts.filter(r => rembtSuggest(rembtPlages(r)) == null).length;
+
+  let h = `
+    <div class="schema-stats">
+      <div class="schema-stat">
+        <div class="schema-stat-lbl">REMBTs</div>
+        <div class="schema-stat-val">${CI.rembts.length}</div>
+        <div class="schema-stat-sub">${nbOversized > 0 ? `⚠ ${nbOversized} à diviser` : 'toutes tailles ≤ 12 plages'}</div>
+      </div>
+      <div class="schema-stat">
+        <div class="schema-stat-lbl">Logements</div>
+        <div class="schema-stat-val">${totLgts}</div>
+        <div class="schema-stat-sub">${okLgts} OK · ${warnLgts} limite · ${badLgts} hors-norme</div>
+      </div>
+      <div class="schema-stat">
+        <div class="schema-stat-lbl">Plages cumulées</div>
+        <div class="schema-stat-val">${totPlages}</div>
+        <div class="schema-stat-sub">sur ${CI.rembts.length} REMBT(s)</div>
+      </div>
+      <div class="schema-stat">
+        <div class="schema-stat-lbl">Chute MAX C1+C2</div>
+        <div class="schema-stat-val ${maxTotal>CI.limTot?'red':(maxTotal>CI.limTot*0.85?'orange':'green')}">${fmt(maxTotal,3)} %</div>
+        <div class="schema-stat-sub">limite = ${fmt(CI.limTot,2)} %</div>
+      </div>
+      <div class="schema-stat">
+        <div class="schema-stat-lbl">Limites</div>
+        <div class="schema-stat-val" style="font-size:16px">${fmt(CI.limT,2)} / ${fmt(CI.limTot,2)}</div>
+        <div class="schema-stat-sub">tronçon / total (%)</div>
+      </div>
+    </div>
+
+    <div class="schema-actions">
+      <button class="btn" onclick="exportPDF()" title="Inclus dans l'export PDF complet">📄 Exporter PDF complet</button>
+    </div>
+
+    <div class="schema-wrap" id="schemaWrap">`;
+
+  if(CI.lgts.length === 0 || CI.rembts.length === 0){
+    h += `<div class="schema-empty">Aucun logement ou REMBT à représenter.<br>Renseignez d'abord vos logements dans l'onglet REMBT → CIBE.</div>`;
+  } else {
+    // Tri par bâtiment → niveau → lettrage
+    const niveauxOrdre = ['SS','RDJ','RDC BAS','RDC','RDC HAUT','R+1','R+2','R+3','R+4','R+5','R+6','R+7','R+8','R+9','R+10','R+11','R+12'];
+    function nivIdx(n){ const i = niveauxOrdre.indexOf(n); return i === -1 ? 999 : i; }
+    function lgtsOf(rid){
+      return CI.lgts
+        .map((l,i) => ({l,i}))
+        .filter(x => x.l.rembtId === rid)
+        .sort((a,b) => {
+          const ab = (a.l.bat||'').localeCompare(b.l.bat||'');
+          if(ab) return ab;
+          const an = nivIdx(a.l.niv), bn = nivIdx(b.l.niv);
+          if(an !== bn) return an - bn;
+          return (a.l.lett||'').localeCompare(b.l.lett||'');
+        });
+    }
+    // Construction de l'arbre des REMBTs
+    const byParent = new Map();
+    CI.rembts.forEach(r => {
+      const pid = r.parentId || '_root';
+      if(!byParent.has(pid)) byParent.set(pid, []);
+      byParent.get(pid).push(r);
+    });
+    function renderRembt(r){
+      const plages = rembtPlages(r);
+      const sugg = rembtSuggest(plages);
+      const sizeClass = sugg == null ? 'sz-bad' : (plages > sugg - 1 ? 'sz-warn' : 'sz-ok');
+      const sizeLbl = sugg == null ? '> 12 — DIVISER' : `${plages}/${sugg} plages → REMBT ${sugg}`;
+      const lgts = lgtsOf(r.id);
+      const modChips = MODULES
+        .filter(m => (r.dim[m.k] || 0) > 0)
+        .map(m => `<span class="schema-mod-chip">${m.k}×${r.dim[m.k]}</span>`)
+        .join('');
+
+      let block = `<div class="schema-rembt-branch">`;
+      block += `<div class="schema-rembt ${sizeClass}">
+        <div class="schema-rembt-h">
+          <span class="schema-rembt-name">${escapeHtml(r.name)}</span>
+          <span class="schema-rembt-size">${sizeLbl}</span>
+        </div>
+        <div class="schema-rembt-row"><span>Logements rattachés</span><span>${lgts.length}</span></div>
+        <div class="schema-rembt-row"><span>Plages occupées</span><span>${plages}</span></div>
+        ${modChips ? `<div class="schema-rembt-modules">${modChips}</div>` : '<div class="schema-rembt-row" style="color:rgba(255,184,108,0.70);font-style:italic">Aucun module — cliquez « ⚡ Calcul auto » dans l\'onglet Dimensionnement</div>'}
+        ${r.notes && r.notes.trim() ? `<div class="schema-rembt-notes">📝 ${escapeHtml(r.notes)}</div>` : ''}
+      </div>`;
+
+      // Logements rattachés
+      if(lgts.length > 0){
+        block += `<div class="schema-lgts">`;
+        lgts.forEach(({l,i}) => {
+          const a = compute(l,'rc'), b = compute(l,'ct');
+          const tot = (a.pc != null && b.pc != null) ? a.pc + b.pc : null;
+          const cls = tot == null ? '' : (tot > CI.limTot ? 'bad' : (tot > CI.limTot*0.85 ? 'warn' : 'ok'));
+          const id = (l.bat||'?') + '-' + (l.lett||'?');
+          const niv = l.niv ? `${l.niv} · ` : '';
+          const meta = `${niv}${l.type||'—'} · ${l.S===''?'?':l.S} m²`;
+          block += `<div class="schema-lgt ${cls}">
+            <div class="schema-lgt-id">${escapeHtml(id)}</div>
+            <div class="schema-lgt-mid">
+              <div>${escapeHtml(meta)}</div>
+              <div class="schema-lgt-meta">
+                <span><b>${a.p ?? '—'}</b> kVA</span>
+                <span>${l.K === 'M' ? 'mono' : 'tri'}</span>
+                <span>L₁=<b>${l.rc.O||'—'}</b>m S=<b>${l.rc.P||'—'}</b></span>
+                <span>L₂=<b>${l.ct.O||'—'}</b>m S=<b>${l.ct.P||'—'}</b></span>
+              </div>
+            </div>
+            <div class="schema-lgt-chutes">
+              <div class="pcg">C2 ${a.pc==null?'—':fmt(a.pc,2)+'%'} · C1 ${b.pc==null?'—':fmt(b.pc,2)+'%'}</div>
+              <div class="tot">Σ ${tot==null?'—':fmt(tot,2)+'%'}</div>
+            </div>
+          </div>`;
+        });
+        block += `</div>`;
+      }
+
+      // Enfants cascadés
+      const children = byParent.get(r.id) || [];
+      if(children.length){
+        block += `<div class="schema-children">`;
+        block += `<div class="schema-children-row${children.length===1?' single':''}">`;
+        children.forEach(c => { block += renderRembt(c); });
+        block += `</div></div>`;
+      }
+      block += `</div>`;
+      return block;
+    }
+
+    const roots = byParent.get('_root') || [];
+    h += `<div class="schema-tree">
+      <div class="schema-source">⚡ RÉSEAU ENEDIS
+        <span class="schema-source-sub">arrivée 230/400 V — chute totale max ≤ ${fmt(CI.limTot,2)} %</span>
+      </div>
+      <div class="schema-line med"></div>
+      <div class="schema-rembts-row${roots.length===1?' single':''}">
+        ${roots.map(r => renderRembt(r)).join('')}
+      </div>
+    </div>`;
+
+    // Légende
+    h += `<div class="schema-legend">
+      <div class="schema-leg-item"><span class="schema-leg-swatch ok"></span>Conforme (≤ ${fmt(CI.limTot*0.85,2)} %)</div>
+      <div class="schema-leg-item"><span class="schema-leg-swatch warn"></span>Proche limite (≤ ${fmt(CI.limTot,2)} %)</div>
+      <div class="schema-leg-item"><span class="schema-leg-swatch bad"></span>Hors limite (&gt; ${fmt(CI.limTot,2)} %)</div>
+      <div class="schema-leg-item"><span class="schema-leg-swatch cable"></span>Câbles ALU dérivation</div>
+      <div class="schema-leg-item">C2 = chute REMBT→CIBE · C1 = chute CIBE→TA · Σ = total</div>
+    </div>`;
+  }
+
+  h += `</div>
+
+    <div class="formula-box">
+      <b>Comment lire ce schéma</b> — Chaque bloc REMBT affiche son nombre de plages occupées, la taille standard suggérée (6/9/12), les modules installés et les notes saisies. Les logements rattachés à chaque REMBT sont listés dessous avec : repère bâtiment-lettrage, niveau, type, surface, puissance souscrite, mono/tri, longueurs L₁ (REMBT→CIBE) et L₂ (CIBE→TA), sections, puis chutes C2 / C1 / Σ totale. Couleur de la bordure gauche du logement et du total = état de conformité.<br>
+      <b>Cascade</b> — Les REMBT alimentés par un autre REMBT (cascade) sont dessinés directement sous leur REMBT parent.
+    </div>`;
+
+  document.getElementById('sh-sch').innerHTML = h;
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1448,6 +1732,218 @@ async function exportPDF(){
       margin:{left:8, right:8}
     });
     yPos = doc.lastAutoTable.finalY + 6;
+  });
+  footer();
+
+  // ─────────────────────────────────────────────────────────────
+  // ── SCHÉMA RÉCAPITULATIF (topologie + tableau complet) ──────
+  // ─────────────────────────────────────────────────────────────
+  doc.addPage();
+  doc.setFillColor(...navy); doc.rect(0,0,pageW,18,'F');
+  doc.setFontSize(15); doc.setTextColor(...white); doc.setFont('helvetica','bold');
+  doc.text(pName + ' — SCHÉMA RÉCAPITULATIF', pageW/2, 12, {align:'center'});
+  doc.setFontSize(9); doc.setTextColor(180,199,231);
+  doc.text(`Arborescence ENEDIS → REMBT → logements  ·  ${CI.rembts.length} REMBT(s)  ·  ${CI.lgts.length} logement(s)`, pageW/2, 16, {align:'center'});
+
+  // ── 1. Topologie graphique (REMBT boxes + lignes) ──────────
+  let sy = 24;
+  // Bandeau ENEDIS centré
+  const enedisW = 80, enedisX = (pageW - enedisW)/2;
+  doc.setFillColor(0, 176, 240);
+  doc.roundedRect(enedisX, sy, enedisW, 10, 2, 2, 'F');
+  doc.setFontSize(11); doc.setTextColor(...white); doc.setFont('helvetica','bold');
+  doc.text('⚡  RÉSEAU ENEDIS', pageW/2, sy + 6.5, {align:'center'});
+  sy += 14;
+
+  // Préparer arbre REMBT
+  const byParentPDF = new Map();
+  CI.rembts.forEach(r => { const pid = r.parentId || '_root'; if(!byParentPDF.has(pid)) byParentPDF.set(pid, []); byParentPDF.get(pid).push(r); });
+  const rootsPDF = byParentPDF.get('_root') || [];
+
+  // Mise en page horizontale par profondeur
+  const boxW = 60, boxH = 26, hGap = 8, vGap = 16;
+  function drawRembtBox(r, x, y){
+    const plages = rembtPlages(r);
+    const sugg = rembtSuggest(plages);
+    const nLgts = CI.lgts.filter(l => l.rembtId === r.id).length;
+    const sizeBg = sugg == null ? badPDF : (plages > sugg - 1 ? warnPDF : okPDF);
+    // Boîte
+    doc.setFillColor(...sizeBg);
+    doc.setDrawColor(120, 100, 160);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(x, y, boxW, boxH, 1.5, 1.5, 'FD');
+    // Nom
+    doc.setFontSize(9); doc.setTextColor(40, 30, 60); doc.setFont('helvetica','bold');
+    doc.text(r.name.substring(0,28), x + boxW/2, y + 5, {align:'center'});
+    // Taille
+    doc.setFontSize(7); doc.setFont('helvetica','normal');
+    doc.text(sugg == null ? '> 12 plages — à diviser' : `${plages} / ${sugg} plages → REMBT ${sugg}`, x + boxW/2, y + 10, {align:'center'});
+    // Stats
+    doc.text(`${nLgts} logement(s)`, x + boxW/2, y + 14.5, {align:'center'});
+    // Modules
+    const mods = MODULES.filter(m => (r.dim[m.k]||0) > 0).map(m => `${m.k}×${r.dim[m.k]}`).join('  ');
+    doc.setFontSize(6); doc.setTextColor(60, 50, 80);
+    doc.text(mods || '(aucun module)', x + boxW/2, y + 19, {align:'center'});
+    // Notes si présentes
+    if(r.notes && r.notes.trim()){
+      doc.setFontSize(5.5); doc.setFont('helvetica','italic'); doc.setTextColor(120, 80, 30);
+      const notes = r.notes.length > 70 ? r.notes.substring(0, 67) + '...' : r.notes;
+      doc.text('📝 ' + notes, x + boxW/2, y + 23, {align:'center', maxWidth:boxW-4});
+    }
+  }
+
+  // Calcule la "largeur" requise par sous-arbre (en nombre de feuilles)
+  function subtreeWidth(r){
+    const children = byParentPDF.get(r.id) || [];
+    if(children.length === 0) return 1;
+    return children.reduce((s,c) => s + subtreeWidth(c), 0);
+  }
+  // Largeur globale en mm
+  const totalLeaves = rootsPDF.reduce((s,r)=>s+subtreeWidth(r),0) || 1;
+  const totalW = totalLeaves * (boxW + hGap) - hGap;
+  const startX = (pageW - totalW)/2;
+
+  // Renderer récursif
+  function drawTree(r, x, y){
+    const w = subtreeWidth(r) * (boxW + hGap) - hGap;
+    const centerX = x + w/2 - boxW/2;
+    drawRembtBox(r, centerX, y);
+    // Ligne du parent au box (en haut)
+    doc.setDrawColor(120, 100, 160); doc.setLineWidth(0.4);
+    doc.line(centerX + boxW/2, y - vGap/2, centerX + boxW/2, y);
+    const children = byParentPDF.get(r.id) || [];
+    if(children.length === 0) return;
+    // Ligne descendante du REMBT vers ses enfants
+    doc.line(centerX + boxW/2, y + boxH, centerX + boxW/2, y + boxH + vGap/2);
+    let cx = x;
+    const cy = y + boxH + vGap;
+    if(children.length > 1){
+      // Barre horizontale au-dessus de la rangée des enfants
+      const firstCx = cx + subtreeWidth(children[0])*(boxW+hGap)/2 - boxW/2 + boxW/2;
+      let lastCx = cx;
+      let runX = cx;
+      children.forEach(c => {
+        const sw = subtreeWidth(c) * (boxW+hGap) - hGap;
+        lastCx = runX + sw/2;
+        runX += sw + hGap;
+      });
+      // recalculate first center
+      let rx = x;
+      const firstC = rx + subtreeWidth(children[0])*(boxW+hGap)/2 - boxW/2 + boxW/2;
+      let lx = rx;
+      children.forEach(c => {
+        const sw = subtreeWidth(c) * (boxW+hGap) - hGap;
+        lx = rx + sw/2;
+        rx += sw + hGap;
+      });
+      doc.line(firstC, cy - vGap/2, lx, cy - vGap/2);
+    }
+    children.forEach(c => {
+      const cw = subtreeWidth(c) * (boxW + hGap) - hGap;
+      drawTree(c, cx, cy);
+      cx += cw + hGap;
+    });
+  }
+
+  let cx = startX;
+  // Ligne ENEDIS → barre des racines
+  if(rootsPDF.length > 0){
+    doc.setDrawColor(120, 100, 160); doc.setLineWidth(0.4);
+    doc.line(pageW/2, sy - 4, pageW/2, sy);
+    if(rootsPDF.length > 1){
+      // Barre horizontale au-dessus des racines
+      let firstC, lastC, rx = startX;
+      rootsPDF.forEach((r, ri) => {
+        const sw = subtreeWidth(r) * (boxW + hGap) - hGap;
+        const c = rx + sw/2;
+        if(ri === 0) firstC = c;
+        lastC = c;
+        rx += sw + hGap;
+      });
+      doc.line(firstC, sy - 4, lastC, sy - 4);
+    }
+  }
+  // Dessine chaque racine
+  rootsPDF.forEach(r => {
+    const sw = subtreeWidth(r) * (boxW + hGap) - hGap;
+    drawTree(r, cx, sy);
+    cx += sw + hGap;
+  });
+
+  // Calcule la profondeur max pour savoir où placer le tableau
+  function depth(r){
+    const c = byParentPDF.get(r.id) || [];
+    return 1 + (c.length ? Math.max(...c.map(depth)) : 0);
+  }
+  const maxDepth = rootsPDF.length ? Math.max(...rootsPDF.map(depth)) : 1;
+  const treeBottom = sy + maxDepth * (boxH + vGap) - vGap + 4;
+  let ty = Math.max(treeBottom + 8, 90);
+
+  // ── 2. Tableau récapitulatif complet ───────────────────────
+  // Saut de page si manque de place
+  if(ty > pageH - 40){
+    footer();
+    doc.addPage();
+    doc.setFillColor(...navy); doc.rect(0,0,pageW,18,'F');
+    doc.setFontSize(15); doc.setTextColor(...white); doc.setFont('helvetica','bold');
+    doc.text(pName + ' — SCHÉMA RÉCAPITULATIF (suite)', pageW/2, 12, {align:'center'});
+    ty = 24;
+  }
+
+  // En-tête bandeau
+  doc.setFillColor(...navy); doc.rect(8, ty, pageW - 16, 7, 'F');
+  doc.setFontSize(9.5); doc.setTextColor(...white); doc.setFont('helvetica','bold');
+  doc.text('TABLEAU RÉCAPITULATIF — tous les logements', 12, ty + 5);
+  ty += 9;
+
+  // Tri logements par REMBT puis bât + niv + lettrage
+  const sortedLgts = CI.lgts.slice().map((l, idx) => ({l, idx})).sort((a, b) => {
+    const ra = (rembtByIdPDF[a.l.rembtId] && rembtByIdPDF[a.l.rembtId].name) || '';
+    const rb = (rembtByIdPDF[b.l.rembtId] && rembtByIdPDF[b.l.rembtId].name) || '';
+    if(ra !== rb) return ra.localeCompare(rb);
+    if((a.l.bat||'') !== (b.l.bat||'')) return (a.l.bat||'').localeCompare(b.l.bat||'');
+    if((a.l.niv||'') !== (b.l.niv||'')) return (a.l.niv||'').localeCompare(b.l.niv||'');
+    return (a.l.lett||'').localeCompare(b.l.lett||'');
+  });
+
+  const recapHead = [['REMBT','Bât','Niv','Lett.','Type','S m²','kVA','M/T','L₁','S₁','%C2','L₂','S₂','%C1','Σ C1+C2','État']];
+  const recapBody = sortedLgts.map(({l, idx}) => {
+    const a = compute(l, 'rc'), b = compute(l, 'ct');
+    const tot = (a.pc != null && b.pc != null) ? a.pc + b.pc : null;
+    const rname = (rembtByIdPDF[l.rembtId] && rembtByIdPDF[l.rembtId].name) || '—';
+    const pcCell = (v, lim) => {
+      if(v == null) return '';
+      const bg = v > lim ? badPDF : (v > lim*0.85 ? warnPDF : okPDF);
+      return { content: v.toFixed(3)+' %', styles: { fillColor: bg, fontStyle:'bold' } };
+    };
+    const stCell = tot == null ? '' : {
+      content: tot > CI.limTot ? '✗ HORS' : (tot > CI.limTot*0.85 ? '⚠ LIMITE' : '✓ OK'),
+      styles: { fillColor: tot > CI.limTot ? badPDF : (tot > CI.limTot*0.85 ? warnPDF : okPDF), fontStyle:'bold' }
+    };
+    return [
+      rname, l.bat||'—', l.niv||'—', l.lett||'—', l.type||'—',
+      l.S===''?'—':l.S, a.p ?? '—', l.K||'—',
+      l.rc.O||'—', l.rc.P||'—', pcCell(a.pc, CI.limT),
+      l.ct.O||'—', l.ct.P||'—', pcCell(b.pc, CI.limT),
+      pcCell(tot, CI.limTot), stCell
+    ];
+  });
+
+  doc.autoTable({
+    head:recapHead, body:recapBody, startY: ty, theme:'grid',
+    headStyles:{fillColor:navy, textColor:white, fontStyle:'bold', fontSize:7, halign:'center'},
+    bodyStyles:{fontSize:6.8, halign:'center'},
+    columnStyles:{
+      0:{halign:'left', fontStyle:'bold', cellWidth:24},
+      1:{cellWidth:9}, 2:{cellWidth:12}, 3:{cellWidth:13}, 4:{cellWidth:10},
+      5:{cellWidth:12}, 6:{cellWidth:10}, 7:{cellWidth:9},
+      8:{cellWidth:10}, 9:{cellWidth:10}, 10:{cellWidth:18},
+      11:{cellWidth:10}, 12:{cellWidth:10}, 13:{cellWidth:18},
+      14:{cellWidth:20}, 15:{cellWidth:'auto'}
+    },
+    alternateRowStyles:{fillColor:[248,247,252]},
+    styles:{cellPadding:1.2, lineColor:[180,180,180], lineWidth:0.15},
+    margin:{left:6, right:6}
   });
   footer();
 

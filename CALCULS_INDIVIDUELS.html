@@ -211,6 +211,91 @@ tr:hover .rd{opacity:1}.rd:hover{color:#FF6B6B}
 button.btn[disabled]{opacity:0.4;cursor:not-allowed}
 
 /* ═══ Coffret de façade (CCU) ═══ */
+
+/* ═══ Installation REMBT — design épuré + cartes pliables ═══ */
+.intro-compact{padding:10px 16px;margin-bottom:14px}
+.intro-compact .intro-txt{font-size:13px;line-height:1.45}
+.intro-compact .intro-num{width:30px;height:30px;font-size:14px}
+
+.dim-toolbar{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;margin-bottom:14px;border-radius:8px;
+  background:rgba(22,18,32,0.45);border:1px solid rgba(123,95,172,0.18)}
+.dim-stats{display:flex;align-items:center;gap:10px;font-size:13px;color:rgba(200,186,216,0.85)}
+.dim-stat b{color:#E8E0F2;font-weight:700;font-size:15px}
+.dim-sep{color:rgba(123,95,172,0.40)}
+
+details.rembt-card{margin-bottom:10px;border:1px solid rgba(123,95,172,0.18);border-radius:10px;background:rgba(22,18,32,0.65);overflow:hidden;transition:border-color 0.2s,background 0.2s}
+details.rembt-card[open]{border-color:rgba(123,95,172,0.40);background:linear-gradient(165deg,rgba(22,18,32,0.85) 0%,rgba(14,14,16,0.92) 100%);box-shadow:0 4px 14px rgba(91,63,140,0.10)}
+.rembt-sum{display:flex;align-items:center;gap:10px;padding:11px 16px;cursor:pointer;list-style:none;font-family:inherit;flex-wrap:wrap;user-select:none}
+.rembt-sum::-webkit-details-marker{display:none}
+.rembt-sum:hover{background:rgba(91,63,140,0.06)}
+.rembt-sum-caret{font-size:9px;color:rgba(155,125,197,0.65);transition:transform 0.2s;display:inline-block;width:14px;text-align:center}
+details[open] > .rembt-sum > .rembt-sum-caret{transform:rotate(90deg)}
+.rembt-sum-icon{font-size:16px;opacity:0.85}
+.rembt-sum-name{font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;font-weight:700;color:#E8E0F2;letter-spacing:0.3px;margin-right:6px}
+.rembt-sum-spacer{flex:1}
+.btn-icon-del{background:none;border:none;color:rgba(255,107,107,0.50);font-size:14px;cursor:pointer;padding:4px 8px;border-radius:5px;transition:all 0.2s}
+.btn-icon-del:hover:not([disabled]){background:rgba(255,85,85,0.12);color:#FF6B6B}
+.btn-icon-del[disabled]{opacity:0.25;cursor:not-allowed}
+
+.rb-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:5px;font-size:11px;font-weight:600;letter-spacing:0.3px;
+  background:rgba(91,63,140,0.12);color:rgba(200,186,216,0.85);border:1px solid rgba(123,95,172,0.20);font-family:'Segoe UI',system-ui,sans-serif;white-space:nowrap}
+.rb-pill.state-ok{background:rgba(46,213,115,0.12);color:#5FE09A;border-color:rgba(46,213,115,0.30)}
+.rb-pill.state-warn{background:rgba(255,159,67,0.12);color:#FFB86C;border-color:rgba(255,159,67,0.30)}
+.rb-pill.state-bad{background:rgba(255,85,85,0.14);color:#FF6B6B;border-color:rgba(255,85,85,0.35);font-weight:700}
+.rb-pill.rb-cascade{background:rgba(168,114,221,0.12);color:#D0A8F0;border-color:rgba(168,114,221,0.30)}
+.rb-pill.rb-cf{background:rgba(0,176,240,0.10);color:#7BC8FF;border-color:rgba(0,176,240,0.25)}
+
+.rembt-body{padding:6px 18px 16px;border-top:1px solid rgba(123,95,172,0.12)}
+.rb-row{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin:14px 0 6px}
+.rb-field{display:flex;flex-direction:column;gap:4px;font-size:10.5px;color:rgba(180,165,200,0.65);font-weight:600;letter-spacing:0.5px;text-transform:uppercase}
+.rb-field-grow{flex:1;min-width:200px}
+.rb-field input,.rb-field select{font-size:13px;padding:7px 10px;text-transform:none;letter-spacing:normal;font-weight:500;text-align:left}
+.rb-field-grow input{width:100%}
+
+.rb-block{margin-top:14px;padding:12px 14px;border:1px solid rgba(123,95,172,0.12);border-radius:8px;background:rgba(22,18,32,0.45)}
+.rb-block.rb-block-on{border-color:rgba(0,176,240,0.30);background:rgba(0,176,240,0.06)}
+.rb-block-h{display:flex;align-items:center;gap:9px;font-size:12.5px;font-weight:700;letter-spacing:0.3px;color:rgba(220,210,235,0.85);user-select:none;cursor:default;flex-wrap:wrap}
+label.rb-block-h{cursor:pointer}
+.rb-block-h input[type="checkbox"]{accent-color:#00B0F0;width:15px;height:15px;cursor:pointer}
+.rb-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:5px;font-family:'Courier New',monospace;font-size:11px;font-weight:700;letter-spacing:0.3px;
+  background:rgba(91,63,140,0.12);color:rgba(200,186,216,0.85);border:1px solid rgba(123,95,172,0.20)}
+.rb-chip.ok{background:rgba(46,213,115,0.12);color:#5FE09A;border-color:rgba(46,213,115,0.30)}
+.rb-chip.warn{background:rgba(255,159,67,0.12);color:#FFB86C;border-color:rgba(255,159,67,0.30)}
+.rb-chip.bad{background:rgba(255,85,85,0.14);color:#FF6B6B;border-color:rgba(255,85,85,0.35)}
+
+.rb-mods{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;margin-top:10px}
+.rb-mod{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:6px;background:rgba(14,14,16,0.55);border:1px solid rgba(123,95,172,0.10);transition:all 0.15s}
+.rb-mod.on{border-color:rgba(155,125,197,0.40);background:rgba(91,63,140,0.10)}
+.rb-mod-name{flex:1;font-size:11.5px;color:rgba(200,186,216,0.75);font-weight:600;font-family:'Courier New',monospace;letter-spacing:0.2px}
+.rb-mod.on .rb-mod-name{color:#D4B5FF}
+.rb-mod-input{display:flex;align-items:center;gap:6px;font-family:'Courier New',monospace;font-size:11px;color:rgba(180,165,200,0.55)}
+.rb-mod-input input{width:48px;padding:4px 6px;font-size:13px;font-weight:700;text-align:center}
+.rb-mod-x{color:rgba(180,165,200,0.40);font-size:10px}
+.rb-mod-tot{color:rgba(200,186,216,0.70);font-weight:700;min-width:32px;text-align:right}
+.rb-mod.on .rb-mod-tot{color:#C8A2FF}
+
+.rb-mods-tot{display:flex;align-items:center;gap:10px;margin-top:12px;padding:10px 14px;border-radius:6px;background:rgba(91,63,140,0.10);border:1px solid rgba(123,95,172,0.20);font-size:12px;color:rgba(200,186,216,0.75)}
+.rb-mods-tot .rb-tot-val{font-family:'Courier New',monospace;font-weight:700;font-size:15px;padding:3px 11px;border-radius:5px;background:rgba(91,63,140,0.18);color:#D4B5FF;border:1px solid rgba(123,95,172,0.30)}
+.rb-mods-tot .rb-tot-val.state-ok{background:rgba(46,213,115,0.16);color:#5FE09A;border-color:rgba(46,213,115,0.35)}
+.rb-mods-tot .rb-tot-val.state-warn{background:rgba(255,159,67,0.16);color:#FFB86C;border-color:rgba(255,159,67,0.35)}
+.rb-mods-tot .rb-tot-val.state-bad{background:rgba(255,85,85,0.18);color:#FF6B6B;border-color:rgba(255,85,85,0.40)}
+.rb-mods-tot .rb-tot-suff{font-size:11.5px;color:rgba(180,165,200,0.65);letter-spacing:0.3px;margin-left:auto}
+
+.rb-notes{width:100%;min-height:60px;padding:10px 12px;background:rgba(14,14,16,0.55);border:1px solid rgba(123,95,172,0.18);
+  color:rgba(220,210,235,0.85);font-family:inherit;font-size:12.5px;border-radius:5px;resize:vertical;transition:all .2s;line-height:1.5;margin-top:8px}
+.rb-notes:focus{outline:none;border-color:rgba(123,95,172,0.50);background:rgba(32,24,50,0.85);box-shadow:0 0 0 3px rgba(91,63,140,0.10)}
+.rb-notes::placeholder{color:rgba(180,165,200,0.35)}
+
+.rembt-help{margin-top:18px;border:1px solid rgba(123,95,172,0.15);border-radius:8px;background:rgba(22,18,32,0.40);overflow:hidden}
+.rembt-help summary{padding:10px 16px;cursor:pointer;font-size:12px;color:rgba(200,186,216,0.75);font-weight:600;letter-spacing:0.3px;list-style:none;user-select:none}
+.rembt-help summary::-webkit-details-marker{display:none}
+.rembt-help summary:hover{background:rgba(91,63,140,0.06);color:#E8E0F2}
+.rembt-help[open] summary{border-bottom:1px solid rgba(123,95,172,0.15)}
+.rembt-help-body{padding:12px 16px}
+.rembt-help-body p.rb-help-p{font-size:11.5px;color:rgba(180,165,200,0.65);line-height:1.6;margin:6px 0}
+.rembt-help-body p.rb-help-p b{color:#D4B5FF}
+.rembt-help-body p.rb-help-p code{background:rgba(91,63,140,0.18);padding:1px 6px;border-radius:3px;color:#D4B5FF;font-family:'Courier New',monospace;font-size:11px}
+
 .cf-panel{margin-top:14px;padding:12px 14px;border:1px dashed rgba(0,176,240,0.40);border-radius:8px;background:rgba(0,176,240,0.06)}
 .cf-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .cf-toggle{display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:11.5px;color:rgba(200,186,216,0.85);letter-spacing:0.3px;font-weight:600;user-select:none}
@@ -997,205 +1082,168 @@ function renderSide(side){
 
 function renderDim(){
   const totGlobal = CI.rembts.reduce((s,r)=>s+rembtPlages(r),0);
-  // Header global
   let h = `
-    <div class="intro">
+    <div class="intro intro-compact">
       <div class="intro-num">1</div>
       <div class="intro-txt">
-        <div class="intro-h">🏗️ Étape 1 — Installation des REMBT et coffrets de façade</div>
-        Déclarez ici la <b>structure physique</b> de votre branchement collectif. Pour chaque REMBT (Cahors G3 — 6, 9 ou 12 plages) :<br>
-        ① éventuellement son <b>Coffret de Façade (CCU)</b> avec longueur + section du câble vers le REMBT ·
-        ② ses <b>modules</b> (RA240, BR60M/T, …) — bouton <code>⚡ Calcul auto</code> pour pré-remplir ·
-        ③ ses <b>logements rattachés</b> (déclarés aux étapes 2/3) ·
-        ④ son éventuel <b>REMBT parent</b> en cas de cascade.<br>
-        La <b>taille standard</b> du coffret (REMBT 300/450/600) est suggérée automatiquement.
+        <b>Étape 1 — Installation.</b> Déclarez vos REMBTs et leurs modules. La taille standard (6/9/12 plages) et le calibre CCU sont calculés automatiquement.
       </div>
     </div>
-    <div class="rembt-topbar">
-      <div class="rembt-top-info">
-        <div class="rembt-top-count">${CI.rembts.length} REMBT${CI.rembts.length>1?'s':''}</div>
-        <div class="rembt-top-sub">${CI.lgts.length} logement(s) répartis  ·  ${totGlobal} plage(s) au total</div>
+
+    <div class="dim-toolbar">
+      <div class="dim-stats">
+        <span class="dim-stat"><b>${CI.rembts.length}</b> REMBT${CI.rembts.length>1?'s':''}</span>
+        <span class="dim-sep">·</span>
+        <span class="dim-stat"><b>${CI.lgts.length}</b> logement${CI.lgts.length>1?'s':''}</span>
+        <span class="dim-sep">·</span>
+        <span class="dim-stat"><b>${totGlobal}</b> plage${totGlobal>1?'s':''}</span>
       </div>
-      <div class="rembt-top-actions">
-        <button class="btn ba" onclick="addRembt()">＋ Ajouter REMBT</button>
-      </div>
+      <button class="btn ba" onclick="addRembt()">＋ Ajouter un REMBT</button>
     </div>
+
     <div class="rembt-list">`;
 
   CI.rembts.forEach((r, idx) => {
     const lgtsR = CI.lgts.filter(l => l.rembtId === r.id);
-    const nMono = lgtsR.filter(l=>l.K==='M').length;
-    const nTri  = lgtsR.filter(l=>l.K==='T').length;
     const plages = rembtPlages(r);
     const sugg = rembtSuggest(plages);
-    const tooManyLgts = lgtsR.length > REMBT_MAX_LGTS;
-    const sizeClass = (sugg == null || tooManyLgts) ? 'red' : (plages > sugg - 1 ? 'orange' : 'green');
-    const sizeLabel = sugg == null
-      ? `⚠ ${plages} plages — au-delà de 12, ajouter un REMBT`
-      : tooManyLgts
-        ? `⚠ ${lgtsR.length} logements — petit collectif limité à ${REMBT_MAX_LGTS}, ajouter un REMBT`
-        : `${plages} / ${sugg} plages — ${rembtSizeLabel(sugg)}`;
-    const parentOpts = ['<option value="">— racine (alimenté par ENEDIS)</option>']
-      .concat(CI.rembts.filter(rr => rr.id !== r.id).map(rr => `<option value="${rr.id}"${r.parentId===rr.id?' selected':''}>↑ ${rr.name}</option>`))
+    const tooMany = lgtsR.length > REMBT_MAX_LGTS;
+    const isProblem = (sugg == null || tooMany);
+    const isWarn = !isProblem && plages > (sugg - 1);
+    const stateCls = isProblem ? 'state-bad' : (isWarn ? 'state-warn' : 'state-ok');
+    const sizeLbl = sugg == null
+      ? '> 12 plages — diviser'
+      : tooMany
+        ? `${lgtsR.length} > ${REMBT_MAX_LGTS} lgts — diviser`
+        : `REMBT ${sugg===6?'300':sugg===9?'450':'600'}`;
+    const parentOpts = ['<option value="">Racine (ENEDIS)</option>']
+      .concat(CI.rembts.filter(rr => rr.id !== r.id).map(rr => `<option value="${rr.id}"${r.parentId===rr.id?' selected':''}>↑ ${escapeHtml(rr.name)}</option>`))
       .join('');
 
+    // Pill CCU (résumé compact)
+    let cfPill = '';
+    if(r.parentId == null && r.cf && r.cf.active){
+      const c = cfChute(r);
+      if(c){
+        const cfCls = c.pc > CI.limT ? 'state-bad' : (c.pc > CI.limT*0.8 ? 'state-warn' : 'state-ok');
+        cfPill = `<span class="rb-pill rb-cf ${cfCls}">🏠 CCU ${c.calibre} A · ${c.pc.toFixed(2)} %</span>`;
+      } else {
+        cfPill = `<span class="rb-pill rb-cf">🏠 CCU configuré</span>`;
+      }
+    }
+
     h += `
-    <div class="card rembt-card" data-id="${r.id}">
-      <div class="card-h rembt-card-h">
-        <div class="ic">📦</div>
-        <input type="text" class="rembt-name" value="${(r.name||'').replace(/"/g,'&quot;')}" placeholder="Nom du REMBT" onchange="setRembtName('${r.id}',this.value)">
-        <span class="rembt-meta">·</span>
-        <span class="rembt-meta">Parent :</span>
-        <select class="sel" style="min-width:180px" onchange="setRembtParent('${r.id}',this.value)">${parentOpts}</select>
-        <div class="rt">
-          <span class="ch cp" title="Logements rattachés">${lgtsR.length} lgt</span>
-          ${nMono?`<span class="ch cc" title="Logements mono">${nMono} mono</span>`:''}
-          ${nTri?`<span class="ch co" title="Logements tri">${nTri} tri</span>`:''}
-          <button class="btn bd" onclick="delRembt('${r.id}')" ${CI.rembts.length<=1?'disabled':''} title="${CI.rembts.length<=1?'Au moins un REMBT requis':'Supprimer ce REMBT'}">Supprimer</button>
+    <details class="rembt-card" ${idx===0?'open':''}>
+      <summary class="rembt-sum">
+        <span class="rembt-sum-caret">▶</span>
+        <span class="rembt-sum-icon">📦</span>
+        <span class="rembt-sum-name">${escapeHtml(r.name)}</span>
+        ${r.parentId ? `<span class="rb-pill rb-cascade">↑ cascade depuis ${escapeHtml((CI.rembts.find(x=>x.id===r.parentId)||{}).name || '—')}</span>` : ''}
+        <span class="rb-pill">${lgtsR.length} lgt</span>
+        <span class="rb-pill ${stateCls}">${plages}/${sugg||'>12'}p · ${sizeLbl}</span>
+        ${cfPill}
+        <span class="rembt-sum-spacer"></span>
+        <button class="btn-icon-del" onclick="event.preventDefault();event.stopPropagation();delRembt('${r.id}')" ${CI.rembts.length<=1?'disabled':''} title="${CI.rembts.length<=1?'Au moins un REMBT requis':'Supprimer ce REMBT'}">✕</button>
+      </summary>
+
+      <div class="rembt-body">
+
+        <div class="rb-row">
+          <label class="rb-field rb-field-grow">
+            <span>Nom du REMBT</span>
+            <input type="text" value="${(r.name||'').replace(/"/g,'&quot;')}" placeholder="REMBT 1" onchange="setRembtName('${r.id}',this.value)">
+          </label>
+          <label class="rb-field">
+            <span>Alimenté par</span>
+            <select class="sel" onchange="setRembtParent('${r.id}',this.value)">${parentOpts}</select>
+          </label>
         </div>
-      </div>
-      <div class="card-b">
-        <div class="dim-grid">
-          <div>
-            <div class="rembt-sect-h">📦 Modules installés sur le jeu de barres</div>
-            <div class="rembt-mod-head">
-              <span style="color:rgba(180,165,200,0.55);font-size:10.5px;font-weight:500;letter-spacing:0.3px;text-transform:none">Saisissez les quantités ou cliquez sur Calcul auto</span>
-              <button class="btn" style="padding:4px 12px;font-size:10.5px" onclick="autoFillRembt('${r.id}')" title="Auto-remplir : 1 RA240 + 1 module BR par logement assigné">⚡ Calcul auto</button>
-            </div>
-            <table>
-              <tr>
-                <th style="text-align:left">Module</th>
-                <th>Places</th>
-                <th>Quantité</th>
-                <th>Plages</th>
-              </tr>`;
+
+        ${r.parentId == null ? `
+        <div class="rb-block ${r.cf && r.cf.active ? 'rb-block-on' : ''}">
+          <label class="rb-block-h">
+            <input type="checkbox" ${r.cf && r.cf.active ? 'checked':''} onchange="toggleCF('${r.id}',this.checked)">
+            <span>⚡ Coffret de façade (CCU) entre ENEDIS et ce REMBT</span>
+            ${r.cf && r.cf.active ? (function(){
+              const c = cfChute(r);
+              if(!c) return '';
+              const cls = c.pc > CI.limT ? 'bad' : (c.pc > CI.limT*0.8 ? 'warn' : 'ok');
+              return `<span class="rb-chip ${cls}" style="margin-left:auto">Disj. ${c.calibre} A tri · ΔU ${c.vu.toFixed(2)} V · ${c.pc.toFixed(3)} % <span style="opacity:0.55;font-size:9px">(auto)</span></span>`;
+            })() : ''}
+          </label>
+          ${r.cf && r.cf.active ? `
+          <div class="rb-row" style="margin-top:10px">
+            <label class="rb-field">
+              <span>Longueur câble (m)</span>
+              <input type="number" class="ws ns" min="0" step="0.5" value="${r.cf.long===''?'':r.cf.long}" onchange="updCF('${r.id}','long',this.value)">
+            </label>
+            <label class="rb-field">
+              <span>Section ALU (mm²)</span>
+              <select class="sel" onchange="updCF('${r.id}','section',this.value)">
+                ${[10,16,25,35,50,70,95,120,150,185,240].map(s => `<option value="${s}"${r.cf.section==s?' selected':''}>${s}</option>`).join('')}
+              </select>
+            </label>
+          </div>` : ''}
+        </div>` : ''}
+
+        <div class="rb-block">
+          <div class="rb-block-h">
+            <span>📦 Modules sur le jeu de barres</span>
+            <button class="btn" style="padding:3px 11px;font-size:10.5px;margin-left:auto" onclick="autoFillRembt('${r.id}')">⚡ Calcul auto</button>
+          </div>
+          <div class="rb-mods">`;
+
     MODULES.forEach(m => {
       const q = r.dim[m.k] || 0;
       const p = q * m.p;
-      h += `<tr>
-        <td class="L" style="font-weight:600;color:rgba(220,210,235,0.85)">${m.l}</td>
-        <td class="fm">${m.p}</td>
-        <td><input type="number" class="ws ns" min="0" value="${q}" onchange="updRembtDim('${r.id}','${m.k}',this.value)"></td>
-        <td class="sx">${p}</td>
-      </tr>`;
+      h += `<div class="rb-mod${q>0?' on':''}">
+        <div class="rb-mod-name">${m.l}</div>
+        <div class="rb-mod-input">
+          <input type="number" class="ws ns" min="0" value="${q}" onchange="updRembtDim('${r.id}','${m.k}',this.value)">
+          <span class="rb-mod-x">× ${m.p}p</span>
+          <span class="rb-mod-tot">= ${p}p</span>
+        </div>
+      </div>`;
     });
-    h += `<tr class="tot">
-        <td class="L" colspan="3">Nombre de plages total</td>
-        <td><span class="ch cp">${plages}</span></td>
-      </tr></table>
-          </div>
-          <div>
-            <div class="rembt-sect-h">📊 Dimensionnement automatique</div>
-            <div class="rembt-sugg ${sizeClass}">
-              <div class="rembt-sugg-lbl">Taille suggérée (Cahors G3)</div>
-              <div class="rembt-sugg-val">${(sugg == null || tooManyLgts) ? '↗ diviser' : 'REMBT '+(sugg===6?'300':sugg===9?'450':'600')}</div>
-              <div class="rembt-sugg-sub">${sizeLabel}</div>
-              <div class="rembt-sugg-bar">
-                ${REMBT_SIZES.map(sz => `<span class="rembt-sz-chip${sugg===sz && !tooManyLgts ?' on':''}${plages>sz?' off':''}">${sz}p</span>`).join('')}
-              </div>
-              <div style="font-size:10px;color:rgba(180,165,200,0.55);margin-top:8px;line-height:1.4">
-                Petit collectif (NF C 14-100 §10) — max ${REMBT_MAX_LGTS} logements / REMBT
-              </div>
-            </div>
-            ${r.parentId == null ? `
-            <div class="rembt-sect-h" style="margin-top:14px">⚡ Amont — Coffret de façade (CCU)</div>
-            <div class="cf-panel">
-              <div class="cf-head">
-                <label class="cf-toggle">
-                  <input type="checkbox" ${r.cf && r.cf.active ? 'checked':''} onchange="toggleCF('${r.id}',this.checked)">
-                  <span>🏠 Coffret de façade entre ENEDIS et ${escapeHtml(r.name)}</span>
-                </label>
-                ${r.cf && r.cf.active ? (function(){
-                  const c = cfChute(r);
-                  if(!c) return '';
-                  const cls = c.pc > CI.limT ? 'bad' : (c.pc > CI.limT*0.8 ? 'warn' : 'ok');
-                  return `<span class="cf-chute ${cls}">ΔU = ${c.vu.toFixed(2)} V · ${c.pc.toFixed(3)} %</span>`;
-                })() : ''}
-              </div>
-              ${r.cf && r.cf.active ? (function(){
-                const c = cfChute(r) || rembtAutoCalibre(r.id);
-                return `
-              <div class="cf-fields">
-                <label class="cf-field">
-                  <span>Long. câble (m)</span>
-                  <input type="number" class="ws ns" min="0" step="0.5" value="${r.cf.long===''?'':r.cf.long}" onchange="updCF('${r.id}','long',this.value)">
-                </label>
-                <label class="cf-field">
-                  <span>Section (mm²)</span>
-                  <select class="sel" onchange="updCF('${r.id}','section',this.value)">
-                    ${[10,16,25,35,50,70,95,120,150,185,240].map(s => `<option value="${s}"${r.cf.section==s?' selected':''}>${s}</option>`).join('')}
-                  </select>
-                </label>
-              </div>
-              <div class="cf-auto">
-                <div class="cf-auto-h">📐 Calcul automatique (NF C 14-100 — tri 400 V)</div>
-                <div class="cf-auto-row">
-                  <span>Logements rattachés</span><b>${c.nLgts || 0}</b>
-                </div>
-                <div class="cf-auto-row">
-                  <span>Puissance brute Σ logements</span><b>${(c.sumP||0)} kVA</b>
-                </div>
-                <div class="cf-auto-row">
-                  <span>Coefficient foisonnement</span><b>K = ${(c.k||1).toFixed(2)}</b>
-                </div>
-                <div class="cf-auto-row">
-                  <span>Puissance foisonnée</span><b>${(c.Pfois||0).toFixed(1)} kVA</b>
-                </div>
-                <div class="cf-auto-row">
-                  <span>Intensité I = P/(U·√3)</span><b>${(c.Itri||0).toFixed(1)} A</b>
-                </div>
-                <div class="cf-auto-row hl">
-                  <span>→ Calibre disj. standard</span><b class="cf-cal">${c.cal||30} A — Tri</b>
-                </div>
-              </div>`;
-              })() : ''}
-            </div>` : ''}
-            <div class="rembt-sect-h" style="margin-top:14px">📝 Notes / observations</div>
-            <div class="rembt-notes-wrap">
-              <textarea class="rembt-notes" placeholder="Saisir ici les notes pour ce REMBT : repérage, observation chantier, particularités…" onchange="setRembtNotes('${r.id}',this.value)">${(r.notes||'').replace(/</g,'&lt;')}</textarea>
-            </div>
+
+    h += `</div>
+          <div class="rb-mods-tot">
+            <span>Total plages</span>
+            <span class="rb-tot-val ${stateCls}">${plages} / ${sugg ?? '>12'}</span>
+            <span class="rb-tot-suff">→ ${sizeLbl}</span>
           </div>
         </div>
+
+        <div class="rb-block">
+          <div class="rb-block-h"><span>📝 Notes</span></div>
+          <textarea class="rb-notes" placeholder="Repérage, observations chantier, particularités…" onchange="setRembtNotes('${r.id}',this.value)">${(r.notes||'').replace(/</g,'&lt;')}</textarea>
+        </div>
       </div>
-    </div>`;
+    </details>`;
   });
 
-  h += `</div>`;
+  h += `</div>
 
-  // Référence (collapsible)
-  h += `
-    <div class="card">
-      <div class="card-h">
-        <div class="ic">📋</div>
-        <span>Référence — places par module</span>
+    <details class="rembt-help">
+      <summary>💡 Aide — modules Cahors G3 et règle « petit collectif »</summary>
+      <div class="rembt-help-body">
+        <table class="rb-ref">
+          <tr><th>Module</th><th>Description</th><th>Plages</th></tr>
+          <tr><td class="fl L">RA240</td><td class="L">3 Ph + 1 N — 240 mm² (arrivée)</td><td>2</td></tr>
+          <tr><td class="fl L">RAC150</td><td class="L">3 Ph + 1 N — 150 mm²</td><td>2</td></tr>
+          <tr><td class="fl L">RAC 35</td><td class="L">3 Ph + 1 N — 35 mm²</td><td>1</td></tr>
+          <tr><td class="fl L">BR60T</td><td class="L">3 Ph + 1 N — 60 A tri (départ logement)</td><td>1</td></tr>
+          <tr><td class="fl L">BR60M</td><td class="L">1 Ph + 1 N — 60 A mono (départ logement)</td><td>1</td></tr>
+          <tr><td class="fl L">RCP400</td><td class="L">Coffret répartition 400 A</td><td>4</td></tr>
+        </table>
+        <p class="rb-help-p"><b>Tailles standard</b> · REMBT 300 (6p) · REMBT 450 (9p) · REMBT 600 (12p, livré avec RRCP).</p>
+        <p class="rb-help-p"><b>Petit collectif</b> NF C 14-100 §10 : max <code>${REMBT_MAX_LGTS}</code> logements par REMBT. Au-delà → cascade.</p>
       </div>
-      <div class="card-b">
-        <div class="dim-grid">
-          <table>
-            <tr><th style="text-align:left">Module</th><th>Description</th><th>Places</th></tr>
-            <tr><td class="fl L">RA240</td><td class="L" style="color:rgba(180,165,200,0.65)">3 Ph + 1 N — 240 mm² (arrivée)</td><td>2</td></tr>
-            <tr><td class="fl L">RAC150</td><td class="L" style="color:rgba(180,165,200,0.65)">3 Ph + 1 N — 150 mm²</td><td>2</td></tr>
-            <tr><td class="fl L">RAC 35</td><td class="L" style="color:rgba(180,165,200,0.65)">3 Ph + 1 N — 35 mm²</td><td>1</td></tr>
-            <tr><td class="fl L">BR60T</td><td class="L" style="color:rgba(180,165,200,0.65)">3 Ph + 1 N — 60 A tri (départ logement tri)</td><td>1</td></tr>
-            <tr><td class="fl L">BR60M</td><td class="L" style="color:rgba(180,165,200,0.65)">1 Ph + 1 N — 60 A mono (départ logement mono)</td><td>1</td></tr>
-            <tr><td class="fl L">RCP400</td><td class="L" style="color:rgba(180,165,200,0.65)">Coffret de répartition 400 A</td><td>4</td></tr>
-          </table>
-          <div class="formula-box" style="margin:0">
-            <b>Tailles standard REMBT (Cahors G3)</b> — interchangeable entre fabricants :<br>
-            · <code>REMBT 300</code> / JDB 300 — 6 plages<br>
-            · <code>REMBT 450</code> / JDB 450 — 9 plages<br>
-            · <code>REMBT 600</code> / JDB 600 — 12 plages (livré avec module RRCP — sectionnement 400A nominal / 200A protection)<br>
-            <b>Petit collectif</b> — NF C 14-100 §10 : un REMBT alimente <code>${REMBT_MAX_LGTS} logements maximum</code>. Au-delà → grand collectif, ajouter un REMBT (cascade).<br>
-            <b>Auto-remplissage</b> : 1 RA240 (arrivée) + 1 BR60M par logement mono + 1 BR60T par logement tri.
-            Ajustez ensuite RAC150 / RAC35 / RCP400 selon votre architecture.<br>
-            <b>Notes</b> — saisies par REMBT, exportées en Excel et PDF.
-          </div>
-        </div>
-      </div>
-    </div>`;
+    </details>`;
 
   document.getElementById('sh-dim').innerHTML = h;
 }
+
 
 // ═══════════════════════════════════════════════════════════════════════
 // CRUD

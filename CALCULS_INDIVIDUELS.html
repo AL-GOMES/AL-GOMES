@@ -66,6 +66,17 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .tab-lbl small{font-size:10px;font-weight:500;color:rgba(180,165,200,0.55);letter-spacing:0.2px;text-transform:none}
 .tab.active .tab-lbl small{color:rgba(200,186,216,0.65)}
 
+/* Toggle de mode (Calcul complet / C1 seul) */
+.scope-toggle{display:inline-flex;border:1px solid rgba(123,95,172,0.25);border-radius:7px;overflow:hidden;background:rgba(91,63,140,0.06)}
+.scope-btn{padding:6px 14px;font-family:'Segoe UI',system-ui,sans-serif;font-size:11.5px;font-weight:600;letter-spacing:0.5px;
+  background:none;border:none;color:rgba(180,165,200,0.65);cursor:pointer;transition:all 0.25s;font-family:inherit}
+.scope-btn:hover{color:rgba(220,210,235,0.85);background:rgba(91,63,140,0.10)}
+.scope-btn.on{background:rgba(91,63,140,0.30);color:#E8E0F2;font-weight:700;box-shadow:inset 0 0 0 1px rgba(123,95,172,0.35)}
+
+/* Ligne comptage : couleur distinctive */
+tr.row-compt td.bat,tr.row-compt td.fl{background:rgba(0,176,240,0.06)}
+tr.row-compt:hover td{background:rgba(0,176,240,0.05)}
+
 /* Encart d'intro en haut de chaque onglet */
 .intro{position:relative;display:flex;align-items:flex-start;gap:14px;padding:14px 18px;margin-bottom:18px;border-radius:10px;
   border:1px solid rgba(123,95,172,0.20);background:linear-gradient(165deg,rgba(91,63,140,0.10) 0%,rgba(22,18,32,0.5) 100%)}
@@ -479,6 +490,10 @@ label.rb-block-h{cursor:pointer}
       oninput="CI.P=this.value;save()">
   </div>
   <div class="topbar-center">
+    <div class="scope-toggle" title="Mode de calcul">
+      <button id="scope-full" class="scope-btn" onclick="setScope('full')">Calcul complet</button>
+      <button id="scope-c1" class="scope-btn" onclick="setScope('c1only')">C1 seul (CIBE→TA)</button>
+    </div>
     <button class="btn-top" onclick="newProject()">🗒️ Nouveau</button>
     <label class="btn-top" style="cursor:pointer">📤 Import<input type="file" accept=".xlsx" onchange="importXLS(this)" style="display:none"></label>
     <button class="btn-top" onclick="exportXLS()">📥 Excel</button>
@@ -644,7 +659,7 @@ const STD_CAL = [30, 45, 60, 90, 125, 160, 200, 250, 400];
 //   I = P_foisonnée × 1000 / (U × √3)
 function rembtAutoCalibre(rid){
   const lgts = CI.lgts.filter(l => l.rembtId === rid);
-  const sumP = lgts.reduce((s, l) => s + (pwLgt(l.S) || 0), 0);
+  const sumP = lgts.reduce((s, l) => s + (lgtKva(l) || 0), 0);
   const k = foisK(lgts.length);
   const Pfois = sumP * k;
   const Itri = (Pfois * 1000) / (400 * Math.sqrt(3));
@@ -685,8 +700,8 @@ function rembtSuggest(plages){
 // (l'utilisateur peut compléter avec RAC150 / RAC35 / RCP400 manuellement)
 function autoModules(rembtId){
   const lgts = CI.lgts.filter(l => l.rembtId === rembtId);
-  const mono = lgts.filter(l => l.K === 'M').length;
-  const tri  = lgts.filter(l => l.K === 'T').length;
+  const mono = lgts.filter(l => lgtPhase(l) === 'M').length;
+  const tri  = lgts.filter(l => lgtPhase(l) === 'T').length;
   const dim = emptyDim();
   if(lgts.length > 0) dim.RA240 = 1;
   dim.BR60M = mono;
@@ -698,10 +713,11 @@ let CI = (function(){
   const r = defaultRembts();
   return {
     P: '',
-    lgts: defaultLgts().map(l => ({...l, rembtId: r[0].id})),
+    lgts: defaultLgts().map(l => ({...l, rembtId: r[0].id, kind:'lgt', kva:''})),
     rembts: r,
     limT: 1,    // limite par tronçon (%) — NF C 14-100 défaut 1 %, Excel d'origine 1,15 %
     limTot: 2,  // limite totale C1+C2 (%) — NF C 14-100
+    scope: 'full', // 'full' = REMBT→CIBE→TA  ·  'c1only' = CIBE→TA seul
     ts: 0
   };
 })();
@@ -732,6 +748,7 @@ function load(){
       CI.rembts = m.rembts;
       CI.limT = m.limT;
       CI.limTot = m.limTot;
+      CI.scope = m.scope;
       CI.ts = m.ts;
       return true;
     }
@@ -747,6 +764,8 @@ function normLgt(x, defaultRembtId){
     hall: x.hall === '' || x.hall == null ? '' : Number(x.hall),
     S:    x.S    === '' || x.S    == null ? '' : Number(x.S),
     K:    x.K === 'T' ? 'T' : 'M',
+    kind: x.kind === 'compt' ? 'compt' : 'lgt',
+    kva:  x.kva === '' || x.kva == null ? '' : Number(x.kva),
     rc:   { O: (x.rc && x.rc.O!=null) ? Number(x.rc.O) : 5,  P: (x.rc && x.rc.P) ? Number(x.rc.P) : 35 },
     ct:   { O: (x.ct && x.ct.O!=null) ? Number(x.ct.O) : 5,  P: (x.ct && x.ct.P) ? Number(x.ct.P) : 35 },
     rembtId: x.rembtId || defaultRembtId || null
@@ -768,6 +787,7 @@ function migrate(d){
     P: d.P || '',
     limT:   (typeof d.limT   === 'number' && d.limT   > 0) ? d.limT   : 1,
     limTot: (typeof d.limTot === 'number' && d.limTot > 0) ? d.limTot : 2,
+    scope: d.scope === 'c1only' ? 'c1only' : 'full',
     ts: d.ts || 0
   };
   if(Array.isArray(d.rembts) && d.rembts.length){
@@ -842,14 +862,44 @@ function sectionMin(K, O, N, p){
 }
 
 // Compute everything for one logement on one side
+// ─── Tarif Bleu tri (comptages commerciaux jusqu'à 36 kVA) ────────
+// Standard ENEDIS — disjoncteur de branchement par puissance souscrite tri.
+const KVA_TB_TRI = [6, 9, 12, 15, 18, 24, 30, 36];
+const CALIBRE_TB_TRI = { 6:10, 9:15, 12:20, 15:25, 18:30, 24:40, 30:50, 36:60 };
+const DISJ_TB_TRI    = { 6:'10/30', 9:'15/45', 12:'30/60', 15:'30/60', 18:'30/60', 24:'30/60', 30:'30/60', 36:'30/60' };
+
+// Helpers qui prennent en compte le type (logement ou comptage)
+function lgtKva(l){
+  if(l.kind === 'compt'){
+    const k = parseFloat(l.kva);
+    return isNaN(k) ? null : k;
+  }
+  return pwLgt(l.S);
+}
+function lgtCalibre(l){
+  const p = lgtKva(l);
+  if(l.kind === 'compt') return CALIBRE_TB_TRI[p] ?? null;
+  return calibreA(p);
+}
+function lgtDisjEDF(l){
+  const p = lgtKva(l);
+  if(l.kind === 'compt') return DISJ_TB_TRI[p] || '';
+  return disjEDF(p);
+}
+function lgtPhase(l){
+  if(l.kind === 'compt') return 'T'; // comptage TB tri toujours tri 400V
+  return l.K === 'T' ? 'T' : 'M';
+}
+
 function compute(l, side){
-  const p = pwLgt(l.S);
-  const M = disjEDF(p);
-  const N = calibreA(p);
+  const p = lgtKva(l);
+  const M = lgtDisjEDF(l);
+  const N = lgtCalibre(l);
   const sub = l[side] || {O:0,P:0};
-  const VU = chuteVU(l.K, sub.O, N, sub.P);
+  const K = lgtPhase(l);
+  const VU = chuteVU(K, sub.O, N, sub.P);
   const pc = chutePc(VU);
-  const rec = sectionMin(l.K, sub.O, N, p);
+  const rec = sectionMin(K, sub.O, N, p);
   return { p, M, N, VU, pc, rec };
 }
 
@@ -882,15 +932,19 @@ function renderSide(side){
   const label = isRc ? 'REMBT → COFFRET CIBE' : 'COFFRET CIBE → TABLEAU D\'ABONNÉ';
   const subL  = isRc ? 'Calcul de la chute de tension C2 (départ REMBT)' : 'Calcul de la chute de tension C1 (montée vers le tableau abonné)';
   const elId  = isRc ? 'sh-rc' : 'sh-ct';
-  const stepN = isRc ? 2 : 3;
+  const c1onlyIntro = (CI.scope === 'c1only');
+  const stepN = isRc ? 2 : (c1onlyIntro ? 1 : 3);
   const intro = isRc
     ? `<div class="intro-h">📏 Étape ${stepN} — Chutes <code>%C2</code> sur le tronçon REMBT → CIBE</div>
-       Pour chaque logement : saisissez <b>Bâtiment</b>, <b>Niveau</b>, <b>Type</b>, <b>Lettrage EDF</b>, <b>Surface</b>, <b>Mono/Tri</b>, puis la <b>Longueur</b> et la <b>Section</b> du câble entre le REMBT et son CIBE.<br>
-       La puissance (kVA), le disjoncteur ENEDIS, la chute en V et en % <code>%ΔU C2 = ΔU/2,3</code> sont calculés automatiquement.<br>
-       <b>Logements rattachés à un REMBT</b> : utilisez la colonne <code>REMBT</code> pour rattacher chaque logement à un REMBT déclaré à l'étape 1.`
-    : `<div class="intro-h">📏 Étape ${stepN} — Chutes <code>%C1</code> sur le tronçon CIBE → Tableau Abonné</div>
-       Mêmes logements que l'étape 2. Saisissez ici la <b>Longueur</b> et la <b>Section</b> du câble entre le CIBE et le TA (typiquement court : 3-7 m).<br>
-       La colonne <code>%C1+C2</code> additionne la chute des deux tronçons. Elle doit rester sous la <b>limite totale</b> configurée (par défaut 2 % — NF C 14-100).`;
+       Pour chaque entrée : saisissez <b>Bâtiment</b>, <b>Niveau</b>, <b>Type</b> (Logement ou Comptage TB tri), <b>Lettrage</b>, <b>Surface ou kVA</b>, <b>Mono/Tri</b>, puis la <b>Longueur</b> et la <b>Section</b> du câble entre le REMBT et son CIBE.<br>
+       La puissance (kVA), le disjoncteur ENEDIS, la chute en V et en % <code>%ΔU C2 = ΔU/2,3</code> sont calculés automatiquement.`
+    : (c1onlyIntro
+        ? `<div class="intro-h">📏 Étape ${stepN} — Chutes <code>%C1</code> sur le tronçon CIBE → Tableau Abonné</div>
+           Mode <b>C1 seul</b> activé : seul le tronçon CIBE → TA est calculé (utile quand on n'a en charge que cette partie du dossier).<br>
+           Vous pouvez ajouter des <b>logements</b> (kVA selon surface) et des <b>comptages tarif bleu tri</b> (jusqu'à 36 kVA). Le pourcentage de chute est comparé à la <b>limite par tronçon</b> configurée.`
+        : `<div class="intro-h">📏 Étape ${stepN} — Chutes <code>%C1</code> sur le tronçon CIBE → Tableau Abonné</div>
+           Mêmes entrées que l'étape 2 — ajoutez la <b>Longueur</b> et la <b>Section</b> du câble CIBE → TA.<br>
+           La colonne <code>%C1+C2</code> additionne la chute des deux tronçons et doit rester sous la <b>limite totale</b> (par défaut 2 % — NF C 14-100).`);
 
   // Group by bâtiment then niveau
   const grp = {};
@@ -966,6 +1020,10 @@ function renderSide(side){
       </div>
     </div>`;
 
+  const c1only = (CI.scope === 'c1only');
+  const showREMBT = !c1only;
+  const showTotal = !c1only;
+
   h += `
     <div class="card">
       <div class="card-h">
@@ -974,6 +1032,7 @@ function renderSide(side){
         <span style="color:rgba(180,165,200,0.45);font-weight:500;text-transform:none;letter-spacing:0.4px;margin-left:8px;font-size:11px">— ${subL}</span>
         <div class="rt">
           <button class="help-link" title="Formules" onclick="document.getElementById('moHelp').classList.add('open')">ⓘ</button>
+          <button class="btn" onclick="addCompt()" title="Ajouter un comptage TB tri (commercial, jusqu'à 36 kVA)">＋ Comptage TB tri</button>
           <button class="btn ba" onclick="addLgt()">＋ Logement</button>
         </div>
       </div>
@@ -983,21 +1042,22 @@ function renderSide(side){
           <tr>
             <th style="width:24px"></th>
             <th>Bâtiment</th>
-            <th class="col-h" title="REMBT auquel ce logement est raccordé">REMBT</th>
+            ${showREMBT ? '<th class="col-h" title="REMBT auquel l\'entrée est raccordée">REMBT</th>' : ''}
             <th>Niveau</th>
-            <th>Type</th>
-            <th>Lettrage EDF</th>
+            <th class="col-h" title="Type d'entrée : Logement (kVA selon surface) ou Comptage TB tri (kVA direct)">Type</th>
+            <th>Type log.</th>
+            <th>Lettrage</th>
             <th>HALL</th>
-            <th>Surface m²</th>
+            <th class="col-h" title="Pour logement : surface en m². Pour comptage TB tri : kVA souscrits.">Surf. / kVA</th>
             <th>M/T</th>
             <th>Long. m</th>
             <th>Section mm²</th>
-            <th class="col-h" title="Puissance logement selon surface (kVA)">Puiss. <br><span style="font-size:9px;color:rgba(180,165,200,0.40)">kVA</span></th>
+            <th class="col-h" title="Puissance kVA effective">Puiss. <br><span style="font-size:9px;color:rgba(180,165,200,0.40)">kVA</span></th>
             <th class="col-h" title="Disjoncteur EDF normalisé">Disj.</th>
             <th class="col-h" title="Calibre du disjoncteur (A)">N <br><span style="font-size:9px;color:rgba(180,165,200,0.40)">A</span></th>
             <th class="col-h" title="Chute de tension (V) — ΔU = ρ·L·I/S">VU<br><span style="font-size:9px;color:rgba(180,165,200,0.40)">V</span></th>
             <th class="col-h" title="% chute de tension du tronçon (= VU / 2,3)">% ΔU ${isRc?'C2':'C1'}</th>
-            <th class="col-h" title="Total C1+C2 — somme avec l'autre tronçon">% C1+C2</th>
+            ${showTotal ? '<th class="col-h" title="Total C1+C2 — somme avec l\'autre tronçon">% C1+C2</th>' : ''}
             <th class="col-h" title="Section minimale recommandée (chute Al ≤ limite tronçon)">Reco</th>
           </tr>`;
 
@@ -1015,27 +1075,45 @@ function renderSide(side){
       const sectOptions = SECTIONS.map(s => `<option value="${s}"${sub.P==s?' selected':''}>${s}</option>`).join('');
       const phaseOptions = PHASES.map(p => `<option value="${p}"${l.K==p?' selected':''}>${p==='M'?'Mono':'Tri'}</option>`).join('');
 
-      h += `<tr class="${first?'fsep':''}">`;
+      const isCompt = l.kind === 'compt';
+      const phaseOpts = isCompt
+        ? '<option value="T" selected>Tri</option>'
+        : PHASES.map(p => `<option value="${p}"${l.K==p?' selected':''}>${p==='M'?'Mono':'Tri'}</option>`).join('');
+      h += `<tr class="${first?'fsep':''}${isCompt?' row-compt':''}">`;
       h += `<td><button class="rd" onclick="delLgt(${i})">✕</button></td>`;
       h += first
         ? `<td class="bat" rowspan="${grp[k].length}">${l.bat||'—'}</td>`
         : '';
-      // REMBT (par logement)
-      const rembtOpts = CI.rembts.map(r => `<option value="${r.id}"${l.rembtId===r.id?' selected':''}>${r.name}</option>`).join('');
-      h += `<td><select class="sel rembt-sel" onchange="updRembt(${i},this.value)">${rembtOpts}</select></td>`;
+      // REMBT (par logement) — caché en C1-only
+      if(showREMBT){
+        const rembtOpts = CI.rembts.map(r => `<option value="${r.id}"${l.rembtId===r.id?' selected':''}>${r.name}</option>`).join('');
+        h += `<td><select class="sel rembt-sel" onchange="updRembt(${i},this.value)">${rembtOpts}</select></td>`;
+      }
       h += first
         ? `<td class="fl" rowspan="${grp[k].length}">${l.niv||'—'}</td>`
         : '';
-      // Type
-      h += `<td><input type="text" class="ws" value="${l.type||''}" onchange="upd(${i},'type',this.value)"></td>`;
+      // KIND (Logement vs Comptage TB)
+      h += `<td><select class="sel" style="min-width:88px" onchange="setKind(${i},this.value)">
+        <option value="lgt"${l.kind!=='compt'?' selected':''}>Logement</option>
+        <option value="compt"${l.kind==='compt'?' selected':''}>Comptage TB</option>
+      </select></td>`;
+      // Type de logement (libellé libre)
+      h += `<td><input type="text" class="ws" value="${l.type||''}" onchange="upd(${i},'type',this.value)" placeholder="${isCompt?'Local':'ST/2P/3P…'}"></td>`;
       // Lettrage
       h += `<td><input type="text" class="ws" value="${l.lett||''}" onchange="upd(${i},'lett',this.value)"></td>`;
       // HALL
       h += `<td><input type="number" class="ws ns" value="${l.hall===''?'':l.hall}" onchange="upd(${i},'hall',this.value)"></td>`;
-      // Surface
-      h += `<td><input type="number" class="ws ns" step="0.01" value="${l.S===''?'':l.S}" onchange="upd(${i},'S',this.value)"></td>`;
-      // M/T
-      h += `<td><select class="sel" onchange="upd(${i},'K',this.value)">${phaseOptions}</select></td>`;
+      // Surface OU kVA (conditionnel)
+      if(isCompt){
+        const kvaOpts = KVA_TB_TRI.map(k => `<option value="${k}"${l.kva==k?' selected':''}>${k} kVA</option>`).join('');
+        h += `<td><select class="sel" onchange="upd(${i},'kva',this.value)" title="Puissance souscrite tri tarif bleu">${kvaOpts}</select></td>`;
+      } else {
+        h += `<td><input type="number" class="ws ns" step="0.01" value="${l.S===''?'':l.S}" onchange="upd(${i},'S',this.value)" placeholder="m²"></td>`;
+      }
+      // M/T (forcé Tri si compt)
+      h += `<td>${isCompt
+        ? '<span class="ch cc" style="padding:2px 8px;font-size:10.5px">Tri</span>'
+        : `<select class="sel" onchange="upd(${i},'K',this.value)">${phaseOpts}</select>`}</td>`;
       // Long.
       h += `<td><input type="number" class="ws ns" value="${sub.O===''?'':sub.O}" onchange="updSub(${i},'${side}','O',this.value)"></td>`;
       // Section
@@ -1050,8 +1128,10 @@ function renderSide(side){
       h += `<td class="vu">${rThis.VU == null ? '—' : fmt(rThis.VU, 2)}</td>`;
       // % chute this side
       h += `<td class="${tdHl(rThis.pc)}">${rThis.pc == null ? '—' : fmt(rThis.pc, 3)+' %'}</td>`;
-      // % chute total
-      h += `<td class="${tdHlTotal(pcTotal)}">${pcTotal == null ? '—' : fmt(pcTotal, 3)+' %'}</td>`;
+      // % chute total (caché en C1-only)
+      if(showTotal){
+        h += `<td class="${tdHlTotal(pcTotal)}">${pcTotal == null ? '—' : fmt(pcTotal, 3)+' %'}</td>`;
+      }
       // Reco
       h += `<td class="sx">${reco ?? '—'}</td>`;
       h += `</tr>`;
@@ -1250,8 +1330,17 @@ function renderDim(){
 // ═══════════════════════════════════════════════════════════════════════
 function upd(i, k, v){
   const l = CI.lgts[i]; if(!l) return;
-  if(k === 'hall' || k === 'S') v = (v === '' ? '' : parseFloat(v));
+  if(k === 'hall' || k === 'S' || k === 'kva') v = (v === '' ? '' : parseFloat(v));
   l[k] = v;
+  save(); R();
+}
+function setKind(i, kind){
+  const l = CI.lgts[i]; if(!l) return;
+  l.kind = (kind === 'compt') ? 'compt' : 'lgt';
+  if(l.kind === 'compt'){
+    l.K = 'T';                          // tri forcé
+    if(!l.kva || isNaN(parseFloat(l.kva))) l.kva = 12;
+  }
   save(); R();
 }
 function updSub(i, side, k, v){
@@ -1279,6 +1368,26 @@ function addLgt(){
     hall: '',
     S: '',
     K: 'M',
+    kind: 'lgt',
+    kva: '',
+    rc: { O: (last.rc && last.rc.O) || 5, P: (last.rc && last.rc.P) || 35 },
+    ct: { O: (last.ct && last.ct.O) || 5, P: (last.ct && last.ct.P) || 35 },
+    rembtId: last.rembtId || CI.rembts[0].id
+  });
+  save(); R();
+}
+function addCompt(){
+  const last = CI.lgts[CI.lgts.length-1] || { bat:'A', niv:'RDC', rc:{O:5,P:35}, ct:{O:5,P:35}, rembtId: CI.rembts[0].id };
+  CI.lgts.push({
+    bat: last.bat || 'A',
+    niv: last.niv || 'RDC',
+    type: 'Local',
+    lett: '',
+    hall: '',
+    S: '',
+    K: 'T',
+    kind: 'compt',
+    kva: 12,
     rc: { O: (last.rc && last.rc.O) || 5, P: (last.rc && last.rc.P) || 35 },
     ct: { O: (last.ct && last.ct.O) || 5, P: (last.ct && last.ct.P) || 35 },
     rembtId: last.rembtId || CI.rembts[0].id
@@ -1384,16 +1493,66 @@ function updCF(rid, k, v){
 // NAVIGATION
 // ═══════════════════════════════════════════════════════════════════════
 function goSheet(s){
+  // Empêche d'aller sur rc/dim en mode C1 seul
+  if(CI.scope === 'c1only' && (s === 'rc' || s === 'dim')) s = 'ct';
   active = s;
   document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.sh === s));
   document.querySelectorAll('.sheet').forEach(el => el.classList.remove('active'));
   document.getElementById('sh-' + s).classList.add('active');
 }
 
+function setScope(s){
+  CI.scope = (s === 'c1only') ? 'c1only' : 'full';
+  // En passant en C1-only, si l'onglet actif est RC ou DIM, on switch vers CT
+  if(CI.scope === 'c1only' && (active === 'rc' || active === 'dim')){
+    active = 'ct';
+  }
+  // En passant en complet, par défaut on revient sur Installation
+  if(CI.scope === 'full' && active === 'ct'){
+    // garde l'onglet courant
+  }
+  save(); R();
+}
+
 // Render all
 function R(){
   document.getElementById('bL').textContent = CI.lgts.length + ' lgts';
   document.getElementById('projName').value = CI.P || '';
+  // Toggle de mode
+  const sf = document.getElementById('scope-full');
+  const sc = document.getElementById('scope-c1');
+  if(sf && sc){
+    sf.classList.toggle('on', CI.scope !== 'c1only');
+    sc.classList.toggle('on', CI.scope === 'c1only');
+  }
+  // Visibilité des onglets selon le mode
+  const c1only = (CI.scope === 'c1only');
+  document.querySelectorAll('.tab').forEach(tab => {
+    const sh = tab.dataset.sh;
+    const hide = c1only && (sh === 'rc' || sh === 'dim');
+    tab.style.display = hide ? 'none' : '';
+  });
+  // S'assurer que l'onglet actif est visible
+  if(c1only && (active === 'rc' || active === 'dim')) active = 'ct';
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.sh === active));
+  document.querySelectorAll('.sheet').forEach(el => el.classList.toggle('active', el.id === 'sh-' + active));
+  // Renumérotation dynamique
+  if(c1only){
+    const ctNum = document.querySelector('.tab[data-sh="ct"] .tab-num');
+    const schNum = document.querySelector('.tab[data-sh="sch"] .tab-num');
+    if(ctNum) ctNum.textContent = '1';
+    if(schNum) schNum.textContent = '2';
+  } else {
+    const dimNum = document.querySelector('.tab[data-sh="dim"] .tab-num');
+    const rcNum  = document.querySelector('.tab[data-sh="rc"] .tab-num');
+    const ctNum  = document.querySelector('.tab[data-sh="ct"] .tab-num');
+    const schNum = document.querySelector('.tab[data-sh="sch"] .tab-num');
+    if(dimNum) dimNum.textContent = '1';
+    if(rcNum)  rcNum.textContent  = '2';
+    if(ctNum)  ctNum.textContent  = '3';
+    if(schNum) schNum.textContent = '4';
+  }
+
   renderRC();
   renderCT();
   renderDim();
@@ -1552,7 +1711,7 @@ function renderSchema(){
               <div>${escapeHtml(meta)}</div>
               <div class="schema-lgt-meta">
                 <span><b>${a.p ?? '—'}</b> kVA</span>
-                <span>${l.K === 'M' ? 'mono' : 'tri'}</span>
+                <span>${lgtPhase(l) === 'M' ? 'mono' : 'tri'}${l.kind==='compt'?' · TB':''}</span>
                 <span>L₁=<b>${l.rc.O||'—'}</b>m S=<b>${l.rc.P||'—'}</b></span>
                 <span>L₂=<b>${l.ct.O||'—'}</b>m S=<b>${l.ct.P||'—'}</b></span>
               </div>

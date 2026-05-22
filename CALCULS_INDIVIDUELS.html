@@ -73,9 +73,17 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .scope-btn:hover{color:rgba(220,210,235,0.85);background:rgba(91,63,140,0.10)}
 .scope-btn.on{background:rgba(91,63,140,0.30);color:#E8E0F2;font-weight:700;box-shadow:inset 0 0 0 1px rgba(123,95,172,0.35)}
 
-/* Ligne comptage : couleur distinctive */
+/* Ligne comptage : couleur distinctive + cellule fusionnée */
 tr.row-compt td.bat,tr.row-compt td.fl{background:rgba(0,176,240,0.06)}
 tr.row-compt:hover td{background:rgba(0,176,240,0.05)}
+tr.row-compt td[colspan]{background:rgba(0,176,240,0.04)}
+.compt-cell{display:flex;align-items:center;gap:10px;padding:2px 6px}
+.compt-cell input[type="text"]{flex:1;min-width:180px;text-align:left;font-size:12.5px;padding:6px 12px;font-weight:600;
+  background:rgba(0,176,240,0.08);border:1px solid rgba(0,176,240,0.30);color:#E8E0F2}
+.compt-cell input[type="text"]:focus{border-color:rgba(0,176,240,0.65);background:rgba(0,176,240,0.14)}
+.compt-cell input[type="text"]::placeholder{color:rgba(180,210,235,0.40);font-weight:400;font-style:italic}
+.compt-cell .sel{font-weight:700;color:#7BC8FF;background:rgba(0,176,240,0.10);border-color:rgba(0,176,240,0.30);min-width:88px;font-size:12.5px}
+.compt-cell .compt-tri{padding:4px 10px;font-size:10.5px;letter-spacing:0.5px;background:rgba(0,176,240,0.16);color:#7BC8FF;border-color:rgba(0,176,240,0.35)}
 
 /* Encart d'intro en haut de chaque onglet */
 .intro{position:relative;display:flex;align-items:flex-start;gap:14px;padding:14px 18px;margin-bottom:18px;border-radius:10px;
@@ -1097,23 +1105,28 @@ function renderSide(side){
         <option value="lgt"${l.kind!=='compt'?' selected':''}>Logement</option>
         <option value="compt"${l.kind==='compt'?' selected':''}>Comptage TB</option>
       </select></td>`;
-      // Type de logement (libellé libre)
-      h += `<td><input type="text" class="ws" value="${l.type||''}" onchange="upd(${i},'type',this.value)" placeholder="${isCompt?'Local':'ST/2P/3P…'}"></td>`;
-      // Lettrage
-      h += `<td><input type="text" class="ws" value="${l.lett||''}" onchange="upd(${i},'lett',this.value)"></td>`;
-      // HALL
-      h += `<td><input type="number" class="ws ns" value="${l.hall===''?'':l.hall}" onchange="upd(${i},'hall',this.value)"></td>`;
-      // Surface OU kVA (conditionnel)
       if(isCompt){
+        // Cellule unique fusionnée : nom + kVA + Tri
         const kvaOpts = KVA_TB_TRI.map(k => `<option value="${k}"${l.kva==k?' selected':''}>${k} kVA</option>`).join('');
-        h += `<td><select class="sel" onchange="upd(${i},'kva',this.value)" title="Puissance souscrite tri tarif bleu">${kvaOpts}</select></td>`;
+        h += `<td colspan="5">
+          <div class="compt-cell">
+            <input type="text" placeholder="Nom du comptage (ex : Boulangerie, Local commercial 1…)" value="${(l.lett||'').replace(/"/g,'&quot;')}" onchange="upd(${i},'lett',this.value)">
+            <select class="sel" onchange="upd(${i},'kva',this.value)" title="Puissance souscrite tri tarif bleu">${kvaOpts}</select>
+            <span class="ch cc compt-tri">Tri 400 V</span>
+          </div>
+        </td>`;
       } else {
+        // Type de logement (libellé libre)
+        h += `<td><input type="text" class="ws" value="${l.type||''}" onchange="upd(${i},'type',this.value)" placeholder="ST/2P/3P…"></td>`;
+        // Lettrage
+        h += `<td><input type="text" class="ws" value="${l.lett||''}" onchange="upd(${i},'lett',this.value)"></td>`;
+        // HALL
+        h += `<td><input type="number" class="ws ns" value="${l.hall===''?'':l.hall}" onchange="upd(${i},'hall',this.value)"></td>`;
+        // Surface
         h += `<td><input type="number" class="ws ns" step="0.01" value="${l.S===''?'':l.S}" onchange="upd(${i},'S',this.value)" placeholder="m²"></td>`;
+        // M/T
+        h += `<td><select class="sel" onchange="upd(${i},'K',this.value)">${phaseOpts}</select></td>`;
       }
-      // M/T (forcé Tri si compt)
-      h += `<td>${isCompt
-        ? '<span class="ch cc" style="padding:2px 8px;font-size:10.5px">Tri</span>'
-        : `<select class="sel" onchange="upd(${i},'K',this.value)">${phaseOpts}</select>`}</td>`;
       // Long.
       h += `<td><input type="number" class="ws ns" value="${sub.O===''?'':sub.O}" onchange="updSub(${i},'${side}','O',this.value)"></td>`;
       // Section

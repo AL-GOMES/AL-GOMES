@@ -1721,13 +1721,25 @@ function renderSchema(){
           s += txt(midX, Y.cf+13, 'COFFRET', {size:9, weight:700, fill:NAVY, ls:1});
           s += txt(midX, Y.cf+24, 'DE FAÇADE', {size:9, weight:700, fill:NAVY, ls:1});
           s += line(midX, Y.cf+Y.cfH, midX, Y.rembt, {stroke:NAVY});
-          s += txt(midX+7, (Y.cf+Y.cfH+Y.rembt)/2+3, `L=${r.cf.long||'?'}m·${r.cf.section||'?'}mm²`, {size:8, anchor:'start', fill:'#555'});
+          const cfMid = (Y.cf+Y.cfH+Y.rembt)/2;
+          s += txt(midX+7, cfMid-3, `Câble ALU · L=${r.cf.long||'?'} m`, {size:8, anchor:'start', fill:'#555'});
+          s += txt(midX+7, cfMid+7, `${r.cf.section||'?'} mm²`, {size:8, weight:700, anchor:'start', fill:'#1a1a1a'});
         }
         const sugg = rembtSuggest(rembtPlages(r));
         s += rect(midX-78, Y.rembt, 156, Y.rembtH, {fill:NAVY, stroke:NAVY});
         s += txt(midX, Y.rembt+18, `${r.name} · REMBT ${sugg===6?'300':sugg===9?'450':'600'}`, {size:10, weight:700, fill:'#fff', ls:0.5});
         s += line(midX, Y.rembt+Y.rembtH, midX, Y.cibe, {stroke:NAVY});
-        s += txt(midX+7, (Y.rembt+Y.rembtH+Y.cibe)/2+3, 'colonne montante', {size:8, anchor:'start', fill:'#555'});
+        // Câble REMBT → CIBE : nature (ALU) + longueur + section (valeurs réelles)
+        const rcOset = [...new Set(lgts.map(x => x.l.rc.O))];
+        const rcPset = [...new Set(lgts.map(x => x.l.rc.P))];
+        const rcMid = (Y.rembt+Y.rembtH+Y.cibe)/2;
+        if(rcOset.length === 1 && rcPset.length === 1){
+          s += txt(midX+7, rcMid-3, `Câble ALU · L=${rcOset[0]||'?'} m`, {size:8, anchor:'start', fill:'#555'});
+          s += txt(midX+7, rcMid+7, `${rcPset[0]||'?'} mm²`, {size:8, weight:700, anchor:'start', fill:'#1a1a1a'});
+        } else {
+          s += txt(midX+7, rcMid-3, 'Câble ALU', {size:8, anchor:'start', fill:'#555'});
+          s += txt(midX+7, rcMid+7, 'L/S par départ ↓', {size:8, weight:700, anchor:'start', fill:'#1a1a1a'});
+        }
         s += rect(midX-60, Y.cibe, 120, Y.cibeH, {fill:NAVY, stroke:NAVY});
         s += txt(midX, Y.cibe+18, 'COFFRET CIBE', {size:10, weight:700, fill:'#fff', ls:0.5});
       } else {

@@ -1583,13 +1583,18 @@ function escapeHtml(s){
 }
 
 function renderSchema(){
+  const c1only = (CI.scope === 'c1only');
+  // Chute "totale" retenue : C1 seul en mode C1-only, sinon C1+C2.
+  const totChute = (a,b) => c1only
+    ? b.pc
+    : ((a.pc != null && b.pc != null) ? a.pc + b.pc : (b.pc != null ? b.pc : null));
   // Stats globales
   let totLgts = CI.lgts.length;
   let okLgts = 0, warnLgts = 0, badLgts = 0;
   let maxTotal = 0;
   CI.lgts.forEach(l => {
     const a = compute(l,'rc'), b = compute(l,'ct');
-    const tot = (a.pc != null && b.pc != null) ? a.pc + b.pc : (b.pc != null ? b.pc : null);
+    const tot = totChute(a,b);
     if(tot != null){
       if(tot > maxTotal) maxTotal = tot;
       if(tot > CI.limTot) badLgts++;
@@ -1599,7 +1604,6 @@ function renderSchema(){
   });
   const totPlages = CI.rembts.reduce((s,r) => s + rembtPlages(r), 0);
   const nbOversized = CI.rembts.filter(r => rembtSuggest(rembtPlages(r)) == null).length;
-  const c1only = (CI.scope === 'c1only');
 
   let h = `
     <div class="intro intro-compact">
@@ -1756,7 +1760,7 @@ function renderSchema(){
       lgts.forEach(({l}, i) => {
         const x = cx(i);
         const a = compute(l,'rc'), b = compute(l,'ct');
-        const tot = (a.pc!=null && b.pc!=null) ? a.pc+b.pc : (b.pc!=null ? b.pc : null);
+        const tot = totChute(a,b);
         const tClr = totColor(tot);
         const id = (l.bat||'?')+'-'+(l.lett||'?');
         const phase = lgtPhase(l), kva = lgtKva(l);
@@ -1777,7 +1781,11 @@ function renderSchema(){
         const tW = 88, tX = x-tW/2;
         s += rect(tX, Y.ta, tW, Y.taH, {fill:'#fff', stroke:tClr, sw:2, dash:'4 2'});
         s += txt(x, Y.ta+13, id, {size:9.5, weight:700, fill:tClr});
-        s += txt(x, Y.ta+24, `${kva||'?'}kVA ${phase==='M'?'M':'T'} · Σ${tot==null?'—':tot.toFixed(2)+'%'}`, {size:8, weight:700, fill:tClr});
+        // En C1 seul : pas de "Σ" (une seule chute, déjà sur le câble). En complet : total C1+C2.
+        s += txt(x, Y.ta+24, c1only
+          ? `${kva||'?'} kVA ${phase==='M'?'mono':'tri'}`
+          : `${kva||'?'}kVA ${phase==='M'?'M':'T'} · Σ${tot==null?'—':tot.toFixed(2)+'%'}`,
+          {size:8, weight:700, fill:tClr});
       });
 
       s += `</svg>`;

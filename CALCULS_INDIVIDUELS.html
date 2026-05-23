@@ -407,6 +407,10 @@ label.rb-block-h{cursor:pointer}
 .plan-segment > .plan-dot{position:absolute;right:-6.5px;top:50%;transform:translateY(-50%);z-index:2}
 .plan-dot-inline{vertical-align:middle;margin-right:4px}
 
+/* Schéma unifilaire SVG */
+.uni-wrap{overflow-x:auto;background:#fff;border:1.5px solid #1a1a1a;padding:8px;margin-bottom:8px}
+.uni-svg{display:block;margin:0 auto}
+
 /* Dérivations individuelles — chaque logement = ligne de câble horizontale */
 .plan-derivations{margin-top:14px}
 .plan-deriv-h{font-family:'Helvetica','Arial',sans-serif;font-size:9.5px;font-weight:700;color:#1f3864;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;padding:3px 8px;background:#fff;border:1px solid #1f3864;display:inline-block}
@@ -1602,8 +1606,8 @@ function renderSchema(){
       <div class="intro-num">${c1only?'2':'4'}</div>
       <div class="intro-txt">
         <b>Étape ${c1only?'2':'4'} — Synthèse.</b> ${c1only
-          ? 'Mode C1 seul : plan CIBE → dérivations individuelles (Wh + tableau abonné). Seul le tronçon CIBE → TA est représenté.'
-          : 'Plan horizontal type ENEDIS : Coffret de façade → REMBT → CIBE → dérivations individuelles (Wh + tableau abonné). Toutes les chutes calculées sont reportées sur chaque tronçon.'}
+          ? 'Schéma unifilaire : jeu de barres CIBE et un départ par logement (câble C1 → compteur Wh → tableau abonné). Section, longueur et chute affichées sur chaque câble.'
+          : 'Schéma unifilaire : Coffret de façade → REMBT (jeu de barres) → un départ par logement (disjoncteur → câble C2 → CIBE → câble C1 → compteur Wh → tableau abonné). Section, longueur et chute sur chaque tronçon.'}
       </div>
     </div>
 
@@ -1666,74 +1670,153 @@ function renderSchema(){
     });
 
     // Pour chaque REMBT (en commençant par les racines)
+    // Couleur selon chute %
+    function pcColor(pc){
+      if(pc == null) return '#666';
+      if(pc > CI.limT) return '#a83232';
+      if(pc > CI.limT*0.8) return '#b26d24';
+      return '#2e6b3e';
+    }
+    function totColor(tot){
+      if(tot == null) return '#1a1a1a';
+      if(tot > CI.limTot) return '#a83232';
+      if(tot > CI.limTot*0.85) return '#b26d24';
+      return '#2e6b3e';
+    }
+
+    // ── Construit un schéma unifilaire SVG pour un REMBT ──
+    function buildSvgPlan(r, lgts){
+      const NAVY = '#1f3864', INK = '#1a1a1a';
+      const n = Math.max(lgts.length, 1);
+      const colW = 160;
+      const leftPad = 40;
+      const busStartX = leftPad + colW/2;
+      const svgW = Math.max(leftPad*2 + n*colW, 560);
+      const cx = i => busStartX + i*colW;
+
+      // Niveaux verticaux (y)
+      let Y;
+      if(!c1only){
+        Y = { cf:18, cfH:30, rembt:74, rembtH:26, bus:118, module:130, moduleH:18,
+              c2:185, cibe:216, cibeH:20, c1:280, wh:318, ta:350, taH:30, total:392 };
+      } else {
+        Y = { cibe:18, cibeH:26, bus:64, c1:118, wh:150, ta:182, taH:30, total:224 };
+      }
+
+      // Helpers SVG
+      const esc = s => escapeHtml(String(s));
+      const rect = (x,y,w,h,o={}) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${o.rx||0}" fill="${o.fill||'#fff'}" stroke="${o.stroke||NAVY}" stroke-width="${o.sw||1.5}"${o.dash?` stroke-dasharray="${o.dash}"`:''}/>`;
+      const line = (x1,y1,x2,y2,o={}) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${o.stroke||INK}" stroke-width="${o.sw||2}"${o.dash?` stroke-dasharray="${o.dash}"`:''}/>`;
+      const txt = (x,y,t,o={}) => `<text x="${x}" y="${y}" font-family="Helvetica,Arial,sans-serif" font-size="${o.size||10}" font-weight="${o.weight||400}" fill="${o.fill||INK}" text-anchor="${o.anchor||'middle'}"${o.ls?` letter-spacing="${o.ls}"`:''}>${esc(t)}</text>`;
+      const circ = (x,y,rr,o={}) => `<circle cx="${x}" cy="${y}" r="${rr}" fill="${o.fill||'#fff'}" stroke="${o.stroke||NAVY}" stroke-width="${o.sw||1.5}"/>`;
+      const dot = (x,y,clr) => `<circle cx="${x}" cy="${y}" r="4.5" fill="${clr}" stroke="${INK}" stroke-width="1.2"/>`;
+
+      const busX1 = cx(0), busX2 = cx(n-1);
+      const midX = (busX1 + busX2)/2;
+
+      let s = `<svg viewBox="0 0 ${svgW} ${Y.total}" width="${svgW}" height="${Y.total}" class="uni-svg" xmlns="http://www.w3.org/2000/svg">`;
+
+      if(!c1only){
+        // Coffret de façade (si actif) centré au-dessus
+        if(r.cf && r.cf.active){
+          const cfW = 100, cfX = midX - cfW/2;
+          s += rect(cfX, Y.cf, cfW, Y.cfH, {fill:'#fff'});
+          s += txt(midX, Y.cf+13, 'COFFRET', {size:9, weight:700, fill:NAVY, ls:1});
+          s += txt(midX, Y.cf+24, 'DE FAÇADE', {size:9, weight:700, fill:NAVY, ls:1});
+          s += line(midX, Y.cf+Y.cfH, midX, Y.rembt, {stroke:NAVY});
+          s += txt(midX+7, (Y.cf+Y.cfH+Y.rembt)/2+3, `L=${r.cf.long||'?'}m·${r.cf.section||'?'}mm²`, {size:8, anchor:'start', fill:'#555'});
+        }
+        // REMBT (boîte + jeu de barres)
+        const sugg = rembtSuggest(rembtPlages(r));
+        const rW = 150, rX = midX - rW/2;
+        s += rect(rX, Y.rembt, rW, Y.rembtH, {fill:NAVY, stroke:NAVY});
+        s += txt(midX, Y.rembt+17, `${r.name} · REMBT ${sugg===6?'300':sugg===9?'450':'600'}`, {size:9.5, weight:700, fill:'#fff', ls:0.5});
+        s += line(midX, Y.rembt+Y.rembtH, midX, Y.bus, {stroke:NAVY});
+        // Jeu de barres
+        s += line(busX1-10, Y.bus, busX2+10, Y.bus, {stroke:NAVY, sw:4});
+        s += txt(busX1-16, Y.bus+4, 'JdB', {size:8, weight:700, fill:NAVY, anchor:'end'});
+      } else {
+        // Coffret CIBE centré au-dessus
+        const cW = 110, cX = midX - cW/2;
+        s += rect(cX, Y.cibe, cW, Y.cibeH, {fill:NAVY, stroke:NAVY});
+        s += txt(midX, Y.cibe+17, 'COFFRET CIBE', {size:9.5, weight:700, fill:'#fff', ls:0.5});
+        s += line(midX, Y.cibe+Y.cibeH, midX, Y.bus, {stroke:NAVY});
+        s += line(busX1-10, Y.bus, busX2+10, Y.bus, {stroke:NAVY, sw:4});
+      }
+
+      // Départs individuels (un par logement)
+      lgts.forEach(({l}, i) => {
+        const x = cx(i);
+        const a = compute(l,'rc'), b = compute(l,'ct');
+        const tot = (a.pc!=null && b.pc!=null) ? a.pc+b.pc : (b.pc!=null ? b.pc : null);
+        const tClr = totColor(tot);
+        const id = (l.bat||'?')+'-'+(l.lett||'?');
+        const phase = lgtPhase(l), kva = lgtKva(l);
+
+        if(!c1only){
+          // Jdb → module (disjoncteur de départ)
+          s += line(x, Y.bus, x, Y.module, {stroke:NAVY});
+          const mW = 34;
+          s += rect(x-mW/2, Y.module, mW, Y.moduleH, {fill:'#fff'});
+          s += txt(x, Y.module+12, `${a.N||'?'}A`, {size:8, weight:700, fill:NAVY});
+          // Câble C2 (REMBT → CIBE)
+          s += line(x, Y.module+Y.moduleH, x, Y.cibe, {stroke:INK});
+          s += txt(x+6, Y.c2-3, `C2 · L₁=${l.rc.O||'?'}m`, {size:8, anchor:'start', fill:'#555'});
+          s += txt(x+6, Y.c2+7, `${l.rc.P||'?'}mm² · ${a.pc==null?'—':a.pc.toFixed(2)+'%'}`, {size:8, weight:700, anchor:'start', fill:pcColor(a.pc)});
+          // CIBE (nœud)
+          const ciW = 44;
+          s += rect(x-ciW/2, Y.cibe, ciW, Y.cibeH, {fill:'#fff'});
+          s += txt(x, Y.cibe+14, 'CIBE', {size:8, weight:700, fill:NAVY});
+          // Câble C1 (CIBE → TA)
+          s += line(x, Y.cibe+Y.cibeH, x, Y.wh-12, {stroke:INK});
+          s += txt(x+6, Y.c1-3, `C1 · L₂=${l.ct.O||'?'}m`, {size:8, anchor:'start', fill:'#555'});
+          s += txt(x+6, Y.c1+7, `${l.ct.P||'?'}mm² · ${b.pc==null?'—':b.pc.toFixed(2)+'%'}`, {size:8, weight:700, anchor:'start', fill:pcColor(b.pc)});
+          // Compteur Wh
+          s += circ(x, Y.wh, 12, {fill:'#fff'});
+          s += txt(x, Y.wh+4, 'Wh', {size:8, weight:700, fill:NAVY});
+          // Point de liaison + descente vers TA
+          s += line(x, Y.wh+12, x, Y.ta, {stroke:INK});
+          s += dot(x, Y.wh+12+(Y.ta-Y.wh-12)/2, '#e08a1f');
+          // Tableau abonné (limite utilisateur, pointillé)
+          const tW = 84, tX = x-tW/2;
+          s += rect(tX, Y.ta, tW, Y.taH, {fill:'#fff', stroke:tClr, sw:2, dash:'4 2'});
+          s += txt(x, Y.ta+13, id, {size:9.5, weight:700, fill:tClr});
+          s += txt(x, Y.ta+24, `${kva||'?'}kVA ${phase==='M'?'M':'T'} · Σ${tot==null?'—':tot.toFixed(2)+'%'}`, {size:8, weight:700, fill:tClr});
+        } else {
+          // Jdb → câble C1 → Wh → TA
+          s += line(x, Y.bus, x, Y.wh-12, {stroke:INK});
+          s += txt(x+6, Y.c1-3, `C1 · L₂=${l.ct.O||'?'}m`, {size:8, anchor:'start', fill:'#555'});
+          s += txt(x+6, Y.c1+7, `${l.ct.P||'?'}mm² · ${b.pc==null?'—':b.pc.toFixed(2)+'%'}`, {size:8, weight:700, anchor:'start', fill:pcColor(b.pc)});
+          s += circ(x, Y.wh, 12, {fill:'#fff'});
+          s += txt(x, Y.wh+4, 'Wh', {size:8, weight:700, fill:NAVY});
+          s += line(x, Y.wh+12, x, Y.ta, {stroke:INK});
+          s += dot(x, Y.wh+12+(Y.ta-Y.wh-12)/2, '#e08a1f');
+          const tW = 84, tX = x-tW/2;
+          s += rect(tX, Y.ta, tW, Y.taH, {fill:'#fff', stroke:tClr, sw:2, dash:'4 2'});
+          s += txt(x, Y.ta+13, id, {size:9.5, weight:700, fill:tClr});
+          s += txt(x, Y.ta+24, `${kva||'?'}kVA ${phase==='M'?'M':'T'} · Σ${tot==null?'—':tot.toFixed(2)+'%'}`, {size:8, weight:700, fill:tClr});
+        }
+      });
+
+      s += `</svg>`;
+      return s;
+    }
+
+    // Pour chaque REMBT (en commençant par les racines)
     function renderRembtPlan(r, indent){
+      const lgts = lgtsOf(r.id);
       const plages = rembtPlages(r);
       const sugg = rembtSuggest(plages);
       const sizeLbl = sugg == null ? '> 12p' : `${sugg}p`;
-      const lgts = lgtsOf(r.id);
-      const cf = r.parentId == null && r.cf && r.cf.active ? cfChute(r) : null;
-
-      // ── Titre de la section ──
       const titleTxt = c1only
         ? `${escapeHtml(r.name)} — Coffret CIBE → Tableaux d'abonné`
         : `${escapeHtml(r.name)} — ${sugg ? 'REMBT '+(sugg===6?'300':sugg===9?'450':'600') : 'à diviser'} (${plages}/${sizeLbl})${r.parentId ? ' · cascade depuis ' + escapeHtml((CI.rembts.find(x=>x.id===r.parentId)||{}).name||'—') : ''}`;
-      let block = `<div class="plan-rembt-section" style="${indent?'margin-left:60px;border-left:2px dashed #1f3864;padding-left:30px':''}">
-        <div class="plan-rembt-title">${titleTxt}</div>`;
 
-      // ── Ligne principale horizontale (amont) ──
-      block += `<div class="plan-line">`;
-      if(!c1only){
-        if(cf){
-          block += `<div class="plan-block">Coffret<br>de façade</div>
-          <div class="plan-segment">
-            <div class="plan-seg-line"></div>
-            <div class="plan-seg-lbl">L = ${r.cf.long||'?'} m · ${r.cf.section||'?'} mm²</div>
-            <div class="plan-dot dot-green" title="Point de raccordement"></div>
-          </div>`;
-        }
-        block += `<div class="plan-block">${escapeHtml(r.name)}<br>REMBT ${sugg===6?'300':sugg===9?'450':'600'}</div>`;
-      } else {
-        block += `<div class="plan-block">Coffret<br>CIBE</div>`;
-      }
-      block += `</div>`;
+      let block = `<div class="plan-rembt-section" style="${indent?'margin-left:40px;border-left:2px dashed #1f3864;padding-left:24px':''}">
+        <div class="plan-rembt-title">${titleTxt}</div>
+        <div class="uni-wrap">${lgts.length ? buildSvgPlan(r, lgts) : '<div style="padding:20px;color:#888;font-size:11px">Aucun logement rattaché à ce REMBT.</div>'}</div>`;
 
-      // ── Dérivations : chaque logement = ligne de câble horizontale complète ──
-      if(lgts.length > 0){
-        block += `<div class="plan-derivations">
-          <div class="plan-deriv-h">${c1only?'DÉRIVATIONS CIBE → TABLEAU ABONNÉ':'DÉPARTS INDIVIDUELS (REMBT → CIBE → TABLEAU ABONNÉ)'} — ${lgts.length} logement${lgts.length>1?'s':''}</div>`;
-        lgts.forEach(({l, i}) => {
-          const a = compute(l, 'rc'), b = compute(l, 'ct');
-          const tot = (a.pc != null && b.pc != null) ? a.pc + b.pc : (b.pc != null ? b.pc : null);
-          const cls = tot == null ? '' : (tot > CI.limTot ? 'bad' : (tot > CI.limTot*0.85 ? 'warn' : 'ok'));
-          const id = (l.bat||'?') + '-' + (l.lett||'?');
-          const phase = lgtPhase(l);
-          const kva = lgtKva(l);
-          const sub = (l.niv||'?') + ' · ' + (l.type||'—') + (l.kind!=='compt' && l.S!=='' ? ' · '+l.S+' m²' : '') + ' · ' + (kva||'?') + ' kVA ' + (phase==='M'?'mono':'tri') + (l.kind==='compt'?' TB':'');
-          block += `<div class="plan-deriv ${cls}">
-            <div class="plan-deriv-id">${escapeHtml(id)}<div class="plan-deriv-kva">${escapeHtml(sub)}</div></div>`;
-          // Tronçon REMBT → CIBE (uniquement mode complet)
-          if(!c1only){
-            block += `<div class="plan-segment plan-seg-deriv" title="Câble REMBT → CIBE (C2)">
-              <div class="plan-seg-line"></div>
-              <div class="plan-seg-lbl">REMBT→CIBE · L₁ ${l.rc.O||'?'} m · ${l.rc.P||'?'} mm²<br><b class="seg-pc ${tdHl(a.pc)}">C2 = ${a.pc==null?'—':a.pc.toFixed(2)+' %'}</b></div>
-            </div>
-            <div class="plan-block plan-block-sm">CIBE</div>`;
-          }
-          // Tronçon CIBE → TA
-          block += `<div class="plan-segment plan-seg-deriv" title="Câble CIBE → Tableau abonné (C1)">
-              <div class="plan-seg-line"></div>
-              <div class="plan-seg-lbl">CIBE→TA · L₂ ${l.ct.O||'?'} m · ${l.ct.P||'?'} mm²<br><b class="seg-pc ${tdHl(b.pc)}">C1 = ${b.pc==null?'—':b.pc.toFixed(2)+' %'}</b></div>
-              <div class="plan-dot dot-orange" title="Point de liaison"></div>
-            </div>
-            <div class="plan-deriv-wh">Wh<br><small>${a.N||'?'} A</small></div>
-            <div class="plan-deriv-house">🏠 TA</div>
-            <div class="plan-deriv-pc"><span class="pc-tot">Σ ${tot==null?'—':tot.toFixed(2)+' %'}</span></div>
-          </div>`;
-        });
-        block += `</div>`;
-      }
-
-      // Zones normatives (sous la ligne principale uniquement pour les racines)
+      // Zones normatives (racines uniquement)
       if(!r.parentId){
         block += c1only
           ? `<div class="plan-zones">
@@ -1746,14 +1829,12 @@ function renderSchema(){
             </div>`;
       }
 
-      // Notes
       if(r.notes && r.notes.trim()){
         block += `<div class="plan-notes">📝 ${escapeHtml(r.notes)}</div>`;
       }
 
       block += `</div>`;
 
-      // Récursion sur les enfants en cascade
       const children = byParent.get(r.id) || [];
       children.forEach(c => { block += renderRembtPlan(c, true); });
 

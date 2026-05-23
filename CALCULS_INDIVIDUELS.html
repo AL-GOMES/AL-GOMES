@@ -636,12 +636,6 @@ function emptyDim(){
 // Au-delà → grand collectif → diviser en plusieurs REMBT (ou utiliser RCP400).
 const REMBT_SIZES = [6, 9, 12];
 const REMBT_MAX_LGTS = 6;
-function rembtSizeLabel(p){
-  if(p === 6)  return 'REMBT 300 (6 plages)';
-  if(p === 9)  return 'REMBT 450 (9 plages)';
-  if(p === 12) return 'REMBT 600 (12 plages)';
-  return p + ' plages';
-}
 
 function newRembtId(existing){
   const used = new Set((existing||[]).map(r=>r.id));
@@ -1230,7 +1224,7 @@ function renderDim(){
       ? '> 12 plages — diviser'
       : tooMany
         ? `${lgtsR.length} > ${REMBT_MAX_LGTS} lgts — diviser`
-        : `REMBT ${sugg===6?'300':sugg===9?'450':'600'}`;
+        : `${plages}/${sugg} plages`;
     const parentOpts = ['<option value="">Racine (ENEDIS)</option>']
       .concat(CI.rembts.filter(rr => rr.id !== r.id).map(rr => `<option value="${rr.id}"${r.parentId===rr.id?' selected':''}>↑ ${escapeHtml(rr.name)}</option>`))
       .join('');
@@ -1255,7 +1249,7 @@ function renderDim(){
         <span class="rembt-sum-name">${escapeHtml(r.name)}</span>
         ${r.parentId ? `<span class="rb-pill rb-cascade">↑ cascade depuis ${escapeHtml((CI.rembts.find(x=>x.id===r.parentId)||{}).name || '—')}</span>` : ''}
         <span class="rb-pill">${lgtsR.length} lgt</span>
-        <span class="rb-pill ${stateCls}">${plages}/${sugg||'>12'}p · ${sizeLbl}</span>
+        <span class="rb-pill ${stateCls}">${sizeLbl}</span>
         ${cfPill}
         <span class="rembt-sum-spacer"></span>
         <button class="btn-icon-del" onclick="event.preventDefault();event.stopPropagation();delRembt('${r.id}')" ${CI.rembts.length<=1?'disabled':''} title="${CI.rembts.length<=1?'Au moins un REMBT requis':'Supprimer ce REMBT'}">✕</button>
@@ -1303,7 +1297,7 @@ function renderDim(){
 
         <div class="rb-block">
           <div class="rb-block-h">
-            <span>📦 Modules — <b class="${stateCls==='state-bad'?'rb-h-bad':stateCls==='state-warn'?'rb-h-warn':'rb-h-ok'}">${plages}/${sugg||'>12'} plages → ${sizeLbl}</b></span>
+            <span>📦 Modules — <b class="${stateCls==='state-bad'?'rb-h-bad':stateCls==='state-warn'?'rb-h-warn':'rb-h-ok'}">${sizeLbl}</b></span>
             <button class="btn" style="padding:3px 11px;font-size:10.5px;margin-left:auto" onclick="autoFillRembt('${r.id}')">⚡ Calcul auto</button>
           </div>
           <div class="rb-mod-sum">`;
@@ -1353,7 +1347,7 @@ function renderDim(){
           <tr><td class="fl L">BR60M</td><td class="L">1 Ph + 1 N — 60 A mono (départ logement)</td><td>1</td></tr>
           <tr><td class="fl L">RCP400</td><td class="L">Coffret répartition 400 A</td><td>4</td></tr>
         </table>
-        <p class="rb-help-p"><b>Tailles standard</b> · REMBT 300 (6p) · REMBT 450 (9p) · REMBT 600 (12p, livré avec RRCP).</p>
+        <p class="rb-help-p"><b>Tailles standard</b> · coffrets de <code>6</code>, <code>9</code> ou <code>12</code> plages (réf. Cahors G3 : 300 / 450 / 600).</p>
         <p class="rb-help-p"><b>Petit collectif</b> NF C 14-100 §10 : max <code>${REMBT_MAX_LGTS}</code> logements par REMBT. Au-delà → cascade.</p>
       </div>
     </details>`;
@@ -1754,7 +1748,7 @@ function renderSchema(){
         }
         const sugg = rembtSuggest(rembtPlages(r));
         s += rect(midX-78, Y.rembt, 156, Y.rembtH, {fill:NAVY, stroke:NAVY});
-        s += txt(midX, Y.rembt+18, `${r.name} · REMBT ${sugg===6?'300':sugg===9?'450':'600'}`, {size:10, weight:700, fill:'#fff', ls:0.5});
+        s += txt(midX, Y.rembt+18, `${r.name} · ${sugg ? sugg+' plages' : '> 12 plages'}`, {size:10, weight:700, fill:'#fff', ls:0.5});
         // Répartition vers les départs
         s += line(midX, Y.rembt+Y.rembtH, midX, Y.bus, {stroke:NAVY});
         if(n > 1) s += line(depX1, Y.bus, depX2, Y.bus, {stroke:NAVY, sw:2.5});
@@ -1811,10 +1805,9 @@ function renderSchema(){
       const lgts = lgtsOf(r.id);
       const plages = rembtPlages(r);
       const sugg = rembtSuggest(plages);
-      const sizeLbl = sugg == null ? '> 12p' : `${sugg}p`;
       const titleTxt = c1only
         ? `${escapeHtml(r.name)} — Dérivations individuelles CIBE → Tableaux d'abonné`
-        : `${escapeHtml(r.name)} — ${sugg ? 'REMBT '+(sugg===6?'300':sugg===9?'450':'600') : 'à diviser'} (${plages}/${sizeLbl})${r.parentId ? ' · cascade depuis ' + escapeHtml((CI.rembts.find(x=>x.id===r.parentId)||{}).name||'—') : ''}`;
+        : `${escapeHtml(r.name)} — ${sugg ? plages+'/'+sugg+' plages' : '> 12 plages (à diviser)'}${r.parentId ? ' · cascade depuis ' + escapeHtml((CI.rembts.find(x=>x.id===r.parentId)||{}).name||'—') : ''}`;
 
       let block = `<div class="plan-rembt-section" style="${indent?'margin-left:40px;border-left:2px dashed #1f3864;padding-left:24px':''}">
         <div class="plan-rembt-title">${titleTxt}</div>
@@ -2109,7 +2102,7 @@ async function exportXLS(){
       ? '> 12 — diviser'
       : tooManyXLS
         ? '↗ diviser'
-        : `REMBT ${sugg===6?'300':sugg===9?'450':'600'} (${sugg}p)`;
+        : `${sugg} plages`;
     csV.font = { bold:true, color:black, size:12, name:'Calibri' };
     csV.fill = { type:'pattern', pattern:'solid', fgColor:fillSugg };
     csV.alignment = ca; csV.border = border;
@@ -2325,7 +2318,7 @@ async function exportPDF(){
         ? '> 12 — diviser'
         : tooManyPDF
           ? '↗ diviser'
-          : `REMBT ${sugg===6?'300':sugg===9?'450':'600'} (${sugg}p)`,
+          : `${sugg} plages`,
       styles:{fillColor:sizeBg, fontStyle:'bold'}
     }]);
     if(r.notes && r.notes.trim()){
@@ -2390,7 +2383,7 @@ async function exportPDF(){
       ? '> 12 plages — diviser'
       : tooMany
         ? `${nLgts}>${REMBT_MAX_LGTS} lgts — diviser`
-        : `${plages}/${sugg}p → REMBT ${sugg===6?'300':sugg===9?'450':'600'}`;
+        : `${plages}/${sugg} plages`;
     doc.text(sizeLine, x + boxW/2, y + 10, {align:'center'});
     // Stats
     doc.text(`${nLgts} logement(s)`, x + boxW/2, y + 14.5, {align:'center'});

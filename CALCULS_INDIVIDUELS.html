@@ -947,7 +947,7 @@ function renderSide(side){
   const stepN = isRc ? 2 : (c1onlyIntro ? 1 : 3);
   const intro = isRc
     ? `<div class="intro-h">📏 Étape ${stepN} — Chutes <code>%C2</code> sur le tronçon REMBT → CIBE</div>
-       Pour chaque entrée : saisissez <b>Bâtiment</b>, <b>Niveau</b>, <b>Type</b> (Logement ou Comptage TB tri), <b>Lettrage</b>, <b>Surface ou kVA</b>, <b>Mono/Tri</b>, puis la <b>Longueur</b> et la <b>Section</b> du câble entre le REMBT et son CIBE.<br>
+       Pour chaque entrée : saisissez <b>Niveau</b>, <b>Type</b> (Logement ou Comptage TB tri), <b>Lettrage</b>, <b>Surface ou kVA</b>, <b>Mono/Tri</b>, puis la <b>Longueur</b> et la <b>Section</b> du câble entre le REMBT et son CIBE.<br>
        La puissance (kVA), le disjoncteur ENEDIS, la chute en V et en % <code>%ΔU C2 = ΔU/2,3</code> sont calculés automatiquement.`
     : (c1onlyIntro
         ? `<div class="intro-h">📏 Étape ${stepN} — Chutes <code>%C1</code> sur le tronçon CIBE → Tableau Abonné</div>
@@ -960,7 +960,7 @@ function renderSide(side){
   // Group by bâtiment then niveau
   const grp = {};
   CI.lgts.forEach((l,i)=>{
-    const k = (l.bat||'?')+' / '+(l.niv||'?');
+    const k = (l.niv||'?');
     (grp[k] = grp[k] || []).push({l,i});
   });
 
@@ -1052,7 +1052,6 @@ function renderSide(side){
         <table>
           <tr>
             <th style="width:24px"></th>
-            <th>Bâtiment</th>
             ${showREMBT ? '<th class="col-h" title="REMBT auquel l\'entrée est raccordée">REMBT</th>' : ''}
             <th>Niveau</th>
             <th class="col-h" title="Type d'entrée : Logement (kVA selon surface) ou Comptage TB tri (kVA direct)">Type</th>
@@ -1094,9 +1093,6 @@ function renderSide(side){
         : PHASES.map(p => `<option value="${p}"${l.K==p?' selected':''}>${p==='M'?'Mono':'Tri'}</option>`).join('');
       h += `<tr class="${first?'fsep':''}${isCompt?' row-compt':''}">`;
       h += `<td><button class="rd" onclick="delLgt(${i})">✕</button></td>`;
-      h += first
-        ? `<td class="bat" rowspan="${grp[k].length}">${l.bat||'—'}</td>`
-        : '';
       // REMBT (par logement) — caché en C1-only
       if(showREMBT){
         const rembtOpts = CI.rembts.map(r => `<option value="${r.id}"${l.rembtId===r.id?' selected':''}>${r.name}</option>`).join('');
@@ -1661,8 +1657,6 @@ function renderSchema(){
         .map((l,i) => ({l,i}))
         .filter(x => x.l.rembtId === rid)
         .sort((a,b) => {
-          const ab = (a.l.bat||'').localeCompare(b.l.bat||'');
-          if(ab) return ab;
           const an = nivIdx(a.l.niv), bn = nivIdx(b.l.niv);
           if(an !== bn) return an - bn;
           return (a.l.lett||'').localeCompare(b.l.lett||'');
@@ -1751,7 +1745,7 @@ function renderSchema(){
         const a = compute(l,'rc'), b = compute(l,'ct');
         const tot = totChute(a,b);
         const tClr = totColor(tot);
-        const id = (l.bat||'?')+'-'+(l.lett||'?');
+        const id = (l.lett||'?');
         const phase = lgtPhase(l), kva = lgtKva(l);
 
         if(!c1only){
@@ -1820,7 +1814,6 @@ function renderSchema(){
       const niveauxOrdre2 = ['SS','RDJ','RDC BAS','RDC','RDC HAUT','R+1','R+2','R+3','R+4','R+5','R+6','R+7','R+8','R+9','R+10','R+11','R+12'];
       const nivIdx2 = n => { const i = niveauxOrdre2.indexOf(n); return i === -1 ? 999 : i; };
       const allLgts = CI.lgts.map((l,i)=>({l,i})).sort((a,b)=>{
-        const ab=(a.l.bat||'').localeCompare(b.l.bat||''); if(ab) return ab;
         const an=nivIdx2(a.l.niv), bn=nivIdx2(b.l.niv); if(an!==bn) return an-bn;
         return (a.l.lett||'').localeCompare(b.l.lett||'');
       });
@@ -1917,17 +1910,17 @@ async function exportXLS(){
     const ws = wb.addWorksheet(name, { properties:{tabColor:{argb:'FF7B5DA8'}},
       pageSetup:{paperSize:9, orientation:'landscape', fitToPage:true, fitToWidth:1} });
     ws.columns = [
-      {width:9},{width:13},{width:10},{width:10},{width:14},{width:10},{width:11},{width:7},{width:11},{width:13},
+      {width:13},{width:10},{width:10},{width:14},{width:10},{width:11},{width:7},{width:11},{width:13},
       {width:9},{width:9},{width:9},{width:11},{width:12},{width:12},{width:10}
     ];
     // Titre
-    ws.mergeCells('A1:Q1');
+    ws.mergeCells('A1:P1');
     const c1 = ws.getCell('A1'); c1.value = pName + ' — ' + sideLabel;
     c1.font = { bold:true, color:white, size:16, name:'Calibri' };
     c1.fill = { type:'pattern', pattern:'solid', fgColor:navy };
     c1.alignment = ca; ws.getRow(1).height = 32;
 
-    ws.mergeCells('A2:Q2');
+    ws.mergeCells('A2:P2');
     const c2 = ws.getCell('A2'); c2.value = 'Calcul de la chute de tension — câble ALU (ρ = 0,036 Ω·mm²/m à 90°C)  ·  limite tronçon = '+CI.limT.toFixed(2)+' %  ·  limite C1+C2 = '+CI.limTot.toFixed(2)+' %';
     c2.font = { bold:true, color:{argb:'FFB4C7E7'}, size:9.5, name:'Calibri' };
     c2.fill = { type:'pattern', pattern:'solid', fgColor:navyL };
@@ -1936,7 +1929,7 @@ async function exportXLS(){
     ws.getRow(3).height = 8;
 
     // En-têtes
-    const headers = ['Bâtiment','REMBT','Niveau','Type','Lettrage EDF','HALL','Surface m²','M/T','Long. m','Section mm² ('+(side==='rc'?'HN33S33':'AR2V')+')',
+    const headers = ['REMBT','Niveau','Type','Lettrage EDF','HALL','Surface / kVA','M/T','Long. m','Section mm² ('+(side==='rc'?'HN33S33':'AR2V')+')',
                      'Puiss. kVA','Disj.','Calibre A','VU (V)','% ΔU '+(side==='rc'?'C2':'C1'), '% C1+C2', 'Reco'];
     headers.forEach((v,ci)=>{
       const cell = ws.getCell(4, ci+1);
@@ -1961,7 +1954,7 @@ async function exportXLS(){
       const rembtName = (rembtById[l.rembtId] && rembtById[l.rembtId].name) || '—';
       const condX = lgtPhase(l) === 'M' ? '2×' : '4×';
       const row = [
-        l.bat||'', rembtName, l.niv||'', (l.kind==='compt'?'Comptage TB':l.type)||'', l.lett||'',
+        rembtName, l.niv||'', (l.kind==='compt'?'Comptage TB':l.type)||'', l.lett||'',
         l.hall===''?null:l.hall, l.kind==='compt'?(lgtKva(l)+' kVA'):(l.S===''?null:l.S), lgtPhase(l),
         sub.O===''?null:sub.O, sub.P===''?'':(condX+sub.P),
         rThis.p ?? null, rThis.M || '', rThis.N ?? null,
@@ -1978,8 +1971,8 @@ async function exportXLS(){
         cell.alignment = ca;
         cell.border = border;
       });
-      // % chute formatting (column 15 now since we added REMBT)
-      const cThis = ws.getCell(r, 15);
+      // % chute formatting (col 14 = %ΔU, col 15 = %C1+C2 ; Bâtiment retiré)
+      const cThis = ws.getCell(r, 14);
       cThis.value = rThis.pc == null ? null : +(rThis.pc/100).toFixed(6);
       cThis.numFmt = '0.000%';
       if(rThis.pc != null){
@@ -1987,7 +1980,7 @@ async function exportXLS(){
         else if(rThis.pc > CI.limT * 0.8) cThis.fill = { type:'pattern', pattern:'solid', fgColor:warn };
         else cThis.fill = { type:'pattern', pattern:'solid', fgColor:ok };
       }
-      const cTot = ws.getCell(r, 16);
+      const cTot = ws.getCell(r, 15);
       cTot.numFmt = '0.000%';
       cTot.value = pcTotal == null ? null : +(pcTotal/100).toFixed(6);
       if(pcTotal != null){
@@ -1995,15 +1988,15 @@ async function exportXLS(){
         else if(pcTotal > CI.limTot * 0.85) cTot.fill = { type:'pattern', pattern:'solid', fgColor:warn };
         else cTot.fill = { type:'pattern', pattern:'solid', fgColor:ok };
       }
-      const cVU = ws.getCell(r, 14); cVU.numFmt = '0.000';
-      const cS  = ws.getCell(r, 7);  cS.numFmt  = '0.00';
+      const cVU = ws.getCell(r, 13); cVU.numFmt = '0.000';
+      const cS  = ws.getCell(r, 6);  cS.numFmt  = '0.00';
       ws.getRow(r).height = 18;
     });
     // Légende
     const rEnd = 5 + CI.lgts.length;
     ws.getRow(rEnd).height = 8;
     const cl = ws.getCell(rEnd+1, 1);
-    ws.mergeCells(rEnd+1, 1, rEnd+1, 17);
+    ws.mergeCells(rEnd+1, 1, rEnd+1, 16);
     cl.value = 'Formules — Mono : ΔU = (0,036 × 2 × L × I) / S  ·  Tri : ΔU = (0,036 × L × I) / S  ·  %ΔU = ΔU / 2,3  ·  Section recommandée : minimum permettant %ΔU ≤ limite tronçon';
     cl.font = { italic:true, color:{argb:'FF666666'}, size:9, name:'Calibri' };
     cl.alignment = la;
@@ -2212,7 +2205,7 @@ async function exportPDF(){
     doc.setFontSize(9); doc.setTextColor(180,199,231);
     doc.text('Câble ALU  ρ = 0,036 Ω·mm²/m  ·  limite tronçon = '+CI.limT.toFixed(2)+' %  ·  limite C1+C2 = '+CI.limTot.toFixed(2)+' %', pageW/2, 16, {align:'center'});
 
-    const head = [['Bât','REMBT','Niv','Type','Lettr.','HALL','S (m²)','M/T','L (m)','S mm²','kVA','Disj.','I (A)','VU (V)','%ΔU '+(side==='rc'?'C2':'C1'),'% C1+C2','Reco']];
+    const head = [['REMBT','Niv','Type','Lettr.','HALL','S/kVA','M/T','L (m)','S mm²','kVA','Disj.','I (A)','VU (V)','%ΔU '+(side==='rc'?'C2':'C1'),'% C1+C2','Reco']];
     const body = CI.lgts.map(l=>{
       const r = compute(l, side);
       const o = compute(l, side==='rc'?'ct':'rc');
@@ -2226,7 +2219,7 @@ async function exportPDF(){
       };
       const condP = lgtPhase(l) === 'M' ? '2×' : '4×';
       return [
-        l.bat||'', rembtName, l.niv||'', (l.kind==='compt'?'Compt.':l.type)||'', l.lett||'',
+        rembtName, l.niv||'', (l.kind==='compt'?'Compt.':l.type)||'', l.lett||'',
         l.hall===''?'':l.hall, l.kind==='compt'?(lgtKva(l)+'kVA'):(l.S===''?'':l.S), lgtPhase(l),
         sub.O===''?'':sub.O, sub.P===''?'':(condP+sub.P),
         r.p ?? '', r.M || '', r.N ?? '',
@@ -2522,12 +2515,11 @@ async function exportPDF(){
     const ra = (rembtByIdPDF[a.l.rembtId] && rembtByIdPDF[a.l.rembtId].name) || '';
     const rb = (rembtByIdPDF[b.l.rembtId] && rembtByIdPDF[b.l.rembtId].name) || '';
     if(ra !== rb) return ra.localeCompare(rb);
-    if((a.l.bat||'') !== (b.l.bat||'')) return (a.l.bat||'').localeCompare(b.l.bat||'');
     if((a.l.niv||'') !== (b.l.niv||'')) return (a.l.niv||'').localeCompare(b.l.niv||'');
     return (a.l.lett||'').localeCompare(b.l.lett||'');
   });
 
-  const recapHead = [['REMBT','Bât','Niv','Lett.','Type','S m²','kVA','M/T','L₁','S₁','%C2','L₂','S₂','%C1','Σ C1+C2','État']];
+  const recapHead = [['REMBT','Niv','Lett.','Type','S / kVA','kVA','M/T','L₁','S₁','%C2','L₂','S₂','%C1','Σ C1+C2','État']];
   const recapBody = sortedLgts.map(({l, idx}) => {
     const a = compute(l, 'rc'), b = compute(l, 'ct');
     const tot = (a.pc != null && b.pc != null) ? a.pc + b.pc : null;
@@ -2544,8 +2536,8 @@ async function exportPDF(){
     };
     const condR = lgtPhase(l) === 'M' ? '2×' : '4×';
     return [
-      rname, l.bat||'—', l.niv||'—', l.lett||'—', (l.kind==='compt'?'Compt.':l.type)||'—',
-      l.kind==='compt'?'—':(l.S===''?'—':l.S), a.p ?? '—', lgtPhase(l),
+      rname, l.niv||'—', l.lett||'—', (l.kind==='compt'?'Compt.':l.type)||'—',
+      l.kind==='compt'?(lgtKva(l)+'kVA'):(l.S===''?'—':l.S), a.p ?? '—', lgtPhase(l),
       l.rc.O||'—', l.rc.P==''?'—':(condR+l.rc.P), pcCell(a.pc, CI.limT),
       l.ct.O||'—', l.ct.P==''?'—':(condR+l.ct.P), pcCell(b.pc, CI.limT),
       pcCell(tot2, CI.limTot), stCell
@@ -2558,11 +2550,11 @@ async function exportPDF(){
     bodyStyles:{fontSize:6.8, halign:'center'},
     columnStyles:{
       0:{halign:'left', fontStyle:'bold', cellWidth:24},
-      1:{cellWidth:9}, 2:{cellWidth:12}, 3:{cellWidth:13}, 4:{cellWidth:10},
-      5:{cellWidth:12}, 6:{cellWidth:10}, 7:{cellWidth:9},
-      8:{cellWidth:10}, 9:{cellWidth:10}, 10:{cellWidth:18},
-      11:{cellWidth:10}, 12:{cellWidth:10}, 13:{cellWidth:18},
-      14:{cellWidth:20}, 15:{cellWidth:'auto'}
+      1:{cellWidth:12}, 2:{cellWidth:13}, 3:{cellWidth:10},
+      4:{cellWidth:12}, 5:{cellWidth:10}, 6:{cellWidth:9},
+      7:{cellWidth:10}, 8:{cellWidth:12}, 9:{cellWidth:18},
+      10:{cellWidth:10}, 11:{cellWidth:12}, 12:{cellWidth:18},
+      13:{cellWidth:20}, 14:{cellWidth:'auto'}
     },
     alternateRowStyles:{fillColor:[248,247,252]},
     styles:{cellPadding:1.2, lineColor:[180,180,180], lineWidth:0.15},

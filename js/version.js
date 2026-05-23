@@ -6,7 +6,7 @@
 //   - AL_VERSION_TIME  : HH:MM      (heure de la MAJ — local Paris)
 //   - AL_VERSION_NOTE  : 1 phrase courte qui décrit le motif de la MAJ
 // =====================================================================
-window.AL_VERSION      = 'v1.84';
+window.AL_VERSION      = 'v1.85';
 window.AL_VERSION_DATE = '2026-05-24';
-window.AL_VERSION_TIME = '11:30';
-window.AL_VERSION_NOTE = 'Calculs individuels : (1) la section CIBE → TA (AR2V) est plafonnée à 35 mm² — sélecteur et section recommandée limités à 35. (2) La colonne « Section recommandée » n\'apparaît plus dans l\'export PDF (conservée à l\'écran).';
+window.AL_VERSION_TIME = '12:00';
+window.AL_VERSION_NOTE = 'Calculs individuels : inversion de l\'ordre des bandeaux — la barre « Mode de calcul » est désormais juste sous le bandeau du haut, et les onglets (étapes 1-4) en dessous.';

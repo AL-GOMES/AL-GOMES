@@ -1718,6 +1718,9 @@ function renderSchema(){
 
       let s = `<svg viewBox="0 0 ${svgW} ${Y.total}" width="${svgW}" height="${Y.total}" class="uni-svg" xmlns="http://www.w3.org/2000/svg">`;
 
+      // Nombre de conducteurs devant la section : mono = 2×, tri = 4×
+      const sect = (P, ph) => P ? `${ph==='M'?'2×':'4×'}${P} mm²` : '? mm²';
+
       // ── Amont vertical centré ──
       if(!c1only){
         if(r.cf && r.cf.active){
@@ -1727,19 +1730,20 @@ function renderSchema(){
           s += line(midX, Y.cf+Y.cfH, midX, Y.rembt, {stroke:NAVY});
           const cfMid = (Y.cf+Y.cfH+Y.rembt)/2;
           s += txt(midX+7, cfMid-3, `HN33S33 · L=${r.cf.long||'?'} m`, {size:8, anchor:'start', fill:'#555'});
-          s += txt(midX+7, cfMid+7, `${r.cf.section||'?'} mm²`, {size:8, weight:700, anchor:'start', fill:'#1a1a1a'});
+          s += txt(midX+7, cfMid+7, sect(r.cf.section, 'T'), {size:8, weight:700, anchor:'start', fill:'#1a1a1a'});
         }
         const sugg = rembtSuggest(rembtPlages(r));
         s += rect(midX-78, Y.rembt, 156, Y.rembtH, {fill:NAVY, stroke:NAVY});
         s += txt(midX, Y.rembt+18, `${r.name} · REMBT ${sugg===6?'300':sugg===9?'450':'600'}`, {size:10, weight:700, fill:'#fff', ls:0.5});
         s += line(midX, Y.rembt+Y.rembtH, midX, Y.cibe, {stroke:NAVY});
-        // Câble REMBT → CIBE : nature (ALU) + longueur + section (valeurs réelles)
+        // Câble REMBT → CIBE : nature + longueur + section (valeurs réelles)
         const rcOset = [...new Set(lgts.map(x => x.l.rc.O))];
         const rcPset = [...new Set(lgts.map(x => x.l.rc.P))];
+        const rcPhset = [...new Set(lgts.map(x => lgtPhase(x.l)))];
         const rcMid = (Y.rembt+Y.rembtH+Y.cibe)/2;
         if(rcOset.length === 1 && rcPset.length === 1){
           s += txt(midX+7, rcMid-3, `HN33S33 · L=${rcOset[0]||'?'} m`, {size:8, anchor:'start', fill:'#555'});
-          s += txt(midX+7, rcMid+7, `${rcPset[0]||'?'} mm²`, {size:8, weight:700, anchor:'start', fill:'#1a1a1a'});
+          s += txt(midX+7, rcMid+7, rcPhset.length===1 ? sect(rcPset[0], rcPhset[0]) : `${rcPset[0]||'?'} mm²`, {size:8, weight:700, anchor:'start', fill:'#1a1a1a'});
         } else {
           s += txt(midX+7, rcMid-3, 'HN33S33', {size:8, anchor:'start', fill:'#555'});
           s += txt(midX+7, rcMid+7, 'L/S par départ ↓', {size:8, weight:700, anchor:'start', fill:'#1a1a1a'});
@@ -1769,11 +1773,11 @@ function renderSchema(){
         s += line(x, Y.bus, x, Y.ta, {stroke:INK});
         // étiquette amont C2 (REMBT→CIBE) — mode complet seulement
         if(!c1only){
-          s += txt(x+6, Y.c2-2, `C2 · HN33S33 · L₁=${l.rc.O||'?'}m · ${l.rc.P||'?'}mm²`, {size:7.5, anchor:'start', fill:'#888'});
+          s += txt(x+6, Y.c2-2, `C2 · HN33S33 · L₁=${l.rc.O||'?'}m · ${sect(l.rc.P, phase)}`, {size:7.5, anchor:'start', fill:'#888'});
           s += txt(x+6, Y.c2+7, `chute C2 ${a.pc==null?'—':a.pc.toFixed(2)+'%'}`, {size:7.5, weight:700, anchor:'start', fill:pcColor(a.pc)});
         }
         // étiquette C1 (CIBE→TA)
-        s += txt(x+6, Y.c1-2, `C1 · AR2V · L₂=${l.ct.O||'?'}m · ${l.ct.P||'?'}mm²`, {size:8, anchor:'start', fill:'#555'});
+        s += txt(x+6, Y.c1-2, `C1 · AR2V · L₂=${l.ct.O||'?'}m · ${sect(l.ct.P, phase)}`, {size:8, anchor:'start', fill:'#555'});
         s += txt(x+6, Y.c1+8, `chute C1 ${b.pc==null?'—':b.pc.toFixed(2)+'%'}`, {size:8, weight:700, anchor:'start', fill:pcColor(b.pc)});
         // point de liaison
         s += dot(x, (Y.bus+Y.ta)/2, '#e08a1f');
@@ -2504,7 +2508,7 @@ async function exportPDF(){
         doc.setDrawColor(31, 56, 100); doc.setLineWidth(0.5);
         doc.line(centerX, cfY + cfH, centerX, sy - vGap/2);
         doc.setFontSize(6); doc.setTextColor(60, 60, 60); doc.setFont('helvetica','italic');
-        doc.text(`HN33S33 · L=${r.cf.long||'?'} m · ${r.cf.section||'?'} mm²`, centerX + 1, cfY + cfH + (sy - vGap/2 - cfY - cfH)/2, {baseline:'middle'});
+        doc.text(`HN33S33 · L=${r.cf.long||'?'} m · 4×${r.cf.section||'?'} mm²`, centerX + 1, cfY + cfH + (sy - vGap/2 - cfY - cfH)/2, {baseline:'middle'});
       }
       rx += sw + hGap;
     });

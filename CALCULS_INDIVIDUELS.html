@@ -411,23 +411,30 @@ label.rb-block-h{cursor:pointer}
 .plan-derivations{margin-top:8px;padding-left:60px;border-left:2px solid #1f3864;margin-left:60%}
 .plan-deriv-h{font-family:'Helvetica','Arial',sans-serif;font-size:9.5px;font-weight:700;color:#1f3864;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;padding:3px 8px;background:#fff;border:1px solid #1f3864;display:inline-block}
 
-.plan-deriv{display:flex;align-items:center;gap:10px;padding:7px 10px;margin-bottom:5px;background:#fff;border:1px solid #1a1a1a;border-radius:0;font-family:'Helvetica','Arial',sans-serif;font-size:11px;color:#1a1a1a;position:relative}
+.plan-deriv{display:flex;align-items:center;gap:8px;padding:7px 10px;margin-bottom:5px;background:#fff;border:1px solid #1a1a1a;border-radius:0;font-family:'Helvetica','Arial',sans-serif;font-size:11px;color:#1a1a1a;position:relative;min-width:fit-content}
 .plan-deriv::before{content:'';position:absolute;left:-62px;top:50%;width:60px;height:2px;background:#1f3864}
 .plan-deriv.ok    {border-left:5px solid #2e6b3e}
 .plan-deriv.warn  {border-left:5px solid #b26d24}
 .plan-deriv.bad   {border-left:5px solid #a83232;background:#fdeaea}
-.plan-deriv-id{font-weight:700;color:#1f3864;font-size:11.5px;letter-spacing:0.6px;min-width:80px;text-transform:uppercase}
-.plan-deriv-meta{flex:1;font-size:10.5px;color:#555;letter-spacing:0.2px}
-.plan-deriv-cable{font-size:10px;color:#1a1a1a;background:#faf7ee;padding:2px 8px;border:1px solid #1f3864;letter-spacing:0.3px;font-weight:600;white-space:nowrap;text-transform:uppercase}
-.plan-deriv-wh{background:#fff;border:1.5px solid #1f3864;padding:4px 10px;font-size:10px;font-weight:700;letter-spacing:1px;color:#1f3864;text-transform:uppercase;text-align:center;line-height:1.2;
+.plan-deriv-id{font-weight:700;color:#1f3864;font-size:11.5px;letter-spacing:0.6px;min-width:72px;text-transform:uppercase}
+.plan-deriv-meta{min-width:120px;font-size:10px;color:#555;letter-spacing:0.2px;line-height:1.3}
+/* Segment de câble (REMBT→CIBE ou CIBE→TA) sur la dérivation */
+.plan-deriv-seg{display:flex;flex-direction:column;align-items:center;gap:1px;position:relative;padding:3px 10px;min-width:108px;
+  background:#faf7ee;border:1px solid #1f3864;border-radius:0}
+.plan-deriv-seg::before{content:'';position:absolute;left:-11px;top:50%;width:10px;height:2px;background:#1f3864;transform:translateY(-50%)}
+.plan-deriv-seg::after{content:'';position:absolute;right:-11px;top:50%;width:10px;height:2px;background:#1f3864;transform:translateY(-50%)}
+.plan-deriv-seg .seg-lbl{font-size:8px;font-weight:700;letter-spacing:0.8px;color:#1f3864;text-transform:uppercase}
+.plan-deriv-seg .seg-val{font-size:10px;font-weight:700;color:#1a1a1a;letter-spacing:0.2px;white-space:nowrap}
+.plan-deriv-seg .seg-pc{font-size:9px;font-weight:700;letter-spacing:0.2px}
+.plan-deriv-seg .seg-pc.ok{color:#2e6b3e}.plan-deriv-seg .seg-pc.warn{color:#b26d24}.plan-deriv-seg .seg-pc.bad{color:#a83232}.plan-deriv-seg .seg-pc.vu{color:#666}
+.plan-deriv-wh{background:#fff;border:1.5px solid #1f3864;padding:4px 9px;font-size:10px;font-weight:700;letter-spacing:1px;color:#1f3864;text-transform:uppercase;text-align:center;line-height:1.2;flex-shrink:0;
   box-shadow:inset 0 0 0 1px #fff,inset 0 0 0 2px #1f3864}
 .plan-deriv-wh small{font-size:9px;font-weight:600;color:#666;letter-spacing:0.3px}
 .plan-deriv-dot{width:11px;height:11px;border-radius:50%;border:1.5px solid #1a1a1a;flex-shrink:0}
 .plan-deriv-dot.dot-orange{background:#e08a1f}
 .plan-deriv-house{padding:6px 12px;border:2px dashed #c00;color:#c00;font-weight:700;font-size:10.5px;letter-spacing:1px;text-transform:uppercase;background:#fff5f5;white-space:nowrap}
-.plan-deriv-pc{display:flex;flex-direction:column;align-items:flex-end;gap:1px;font-family:'Helvetica','Arial',sans-serif;font-size:10px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:0.2px;min-width:88px;text-align:right}
-.plan-deriv-pc .pc-c1,.plan-deriv-pc .pc-c2{color:#555;font-size:9.5px}
-.plan-deriv-pc .pc-tot{color:#1a1a1a;font-size:11.5px;border-top:1px solid #999;padding-top:1px;margin-top:1px}
+.plan-deriv-pc{display:flex;flex-direction:column;align-items:flex-end;gap:1px;font-family:'Helvetica','Arial',sans-serif;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:0.2px;min-width:64px;text-align:right;margin-left:auto;padding-left:8px}
+.plan-deriv-pc .pc-tot{color:#1a1a1a;font-size:13px}
 .plan-deriv.ok   .plan-deriv-pc .pc-tot{color:#2e6b3e}
 .plan-deriv.warn .plan-deriv-pc .pc-tot{color:#b26d24}
 .plan-deriv.bad  .plan-deriv-pc .pc-tot{color:#a83232}
@@ -1711,16 +1718,21 @@ function renderSchema(){
           const kva = lgtKva(l);
           block += `<div class="plan-deriv ${cls}">
             <div class="plan-deriv-id">${escapeHtml(id)}</div>
-            <div class="plan-deriv-meta">${escapeHtml(meta)} · ${kva||'?'} kVA ${phase==='M'?'mono':'tri'}${l.kind==='compt'?' TB':''}</div>
-            <div class="plan-deriv-cable">L₂ = ${l.ct.O||'?'} m · ${l.ct.P||'?'} mm²</div>
+            <div class="plan-deriv-meta">${escapeHtml(meta)}<br>${kva||'?'} kVA ${phase==='M'?'mono':'tri'}${l.kind==='compt'?' TB':''}</div>
+            ${c1only ? '' : `<div class="plan-deriv-seg" title="Câble REMBT → CIBE">
+              <span class="seg-lbl">REMBT→CIBE</span>
+              <span class="seg-val">L₁ ${l.rc.O||'?'}m · ${l.rc.P||'?'}mm²</span>
+              <span class="seg-pc ${tdHl(a.pc)}">C2 ${a.pc==null?'—':a.pc.toFixed(2)+'%'}</span>
+            </div>`}
             <div class="plan-deriv-wh">Wh<br><small>${a.N||'?'} A</small></div>
+            <div class="plan-deriv-seg" title="Câble CIBE → Tableau abonné">
+              <span class="seg-lbl">CIBE→TA</span>
+              <span class="seg-val">L₂ ${l.ct.O||'?'}m · ${l.ct.P||'?'}mm²</span>
+              <span class="seg-pc ${tdHl(b.pc)}">C1 ${b.pc==null?'—':b.pc.toFixed(2)+'%'}</span>
+            </div>
             <div class="plan-deriv-dot dot-orange" title="Point de liaison"></div>
             <div class="plan-deriv-house">🏠 TA</div>
-            <div class="plan-deriv-pc">
-              ${c1only ? '' : `<span class="pc-c2">C2 ${a.pc==null?'—':a.pc.toFixed(2)+'%'}</span>`}
-              <span class="pc-c1">C1 ${b.pc==null?'—':b.pc.toFixed(2)+'%'}</span>
-              <span class="pc-tot">Σ ${tot==null?'—':tot.toFixed(2)+'%'}</span>
-            </div>
+            <div class="plan-deriv-pc"><span class="pc-tot">Σ ${tot==null?'—':tot.toFixed(2)+'%'}</span></div>
           </div>`;
         });
         block += `</div>`;

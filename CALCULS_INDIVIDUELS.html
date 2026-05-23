@@ -1083,7 +1083,9 @@ function renderSide(side){
       const pcTotal = (rThis.pc != null && rOther.pc != null) ? rThis.pc + rOther.pc : null;
       const reco = rThis.rec;
       const sub = l[side];
-      const sectOptions = SECTIONS.map(s => `<option value="${s}"${sub.P==s?' selected':''}>${s}</option>`).join('');
+      // Préfixe conducteurs (cohérent avec le schéma) : mono = 2×, tri = 4×
+      const cond = lgtPhase(l) === 'M' ? '2×' : '4×';
+      const sectOptions = SECTIONS.map(s => `<option value="${s}"${sub.P==s?' selected':''}>${cond}${s}</option>`).join('');
       const phaseOptions = PHASES.map(p => `<option value="${p}"${l.K==p?' selected':''}>${p==='M'?'Mono':'Tri'}</option>`).join('');
 
       const isCompt = l.kind === 'compt';
@@ -1148,8 +1150,8 @@ function renderSide(side){
       if(showTotal){
         h += `<td class="${tdHlTotal(pcTotal)}">${pcTotal == null ? '—' : fmt(pcTotal, 3)+' %'}</td>`;
       }
-      // Reco
-      h += `<td class="sx">${reco ?? '—'}</td>`;
+      // Reco (section minimale, avec préfixe conducteurs)
+      h += `<td class="sx">${reco == null ? '—' : cond+reco}</td>`;
       h += `</tr>`;
     });
   });
@@ -1934,7 +1936,7 @@ async function exportXLS(){
     ws.getRow(3).height = 8;
 
     // En-têtes
-    const headers = ['Bâtiment','REMBT','Niveau','Type','Lettrage EDF','HALL','Surface m²','M/T','Long. m','Section mm²',
+    const headers = ['Bâtiment','REMBT','Niveau','Type','Lettrage EDF','HALL','Surface m²','M/T','Long. m','Section mm² ('+(side==='rc'?'HN33S33':'AR2V')+')',
                      'Puiss. kVA','Disj.','Calibre A','VU (V)','% ΔU '+(side==='rc'?'C2':'C1'), '% C1+C2', 'Reco'];
     headers.forEach((v,ci)=>{
       const cell = ws.getCell(4, ci+1);
@@ -1957,10 +1959,11 @@ async function exportXLS(){
       const sub = l[side];
       const bg = idx % 2 === 0 ? white : greyL;
       const rembtName = (rembtById[l.rembtId] && rembtById[l.rembtId].name) || '—';
+      const condX = lgtPhase(l) === 'M' ? '2×' : '4×';
       const row = [
-        l.bat||'', rembtName, l.niv||'', l.type||'', l.lett||'',
-        l.hall===''?null:l.hall, l.S===''?null:l.S, l.K||'',
-        sub.O===''?null:sub.O, sub.P===''?null:sub.P,
+        l.bat||'', rembtName, l.niv||'', (l.kind==='compt'?'Comptage TB':l.type)||'', l.lett||'',
+        l.hall===''?null:l.hall, l.kind==='compt'?(lgtKva(l)+' kVA'):(l.S===''?null:l.S), lgtPhase(l),
+        sub.O===''?null:sub.O, sub.P===''?'':(condX+sub.P),
         rThis.p ?? null, rThis.M || '', rThis.N ?? null,
         rThis.VU == null ? null : +rThis.VU.toFixed(3),
         rThis.pc == null ? null : +rThis.pc.toFixed(4),
@@ -2221,15 +2224,16 @@ async function exportPDF(){
         const bg = v > lim ? badC : (v > lim*0.85 ? warnC : okC);
         return { content: v.toFixed(3)+' %', styles: { fillColor: bg, fontStyle:'bold' } };
       };
+      const condP = lgtPhase(l) === 'M' ? '2×' : '4×';
       return [
-        l.bat||'', rembtName, l.niv||'', l.type||'', l.lett||'',
-        l.hall===''?'':l.hall, l.S===''?'':l.S, l.K||'',
-        sub.O===''?'':sub.O, sub.P===''?'':sub.P,
+        l.bat||'', rembtName, l.niv||'', (l.kind==='compt'?'Compt.':l.type)||'', l.lett||'',
+        l.hall===''?'':l.hall, l.kind==='compt'?(lgtKva(l)+'kVA'):(l.S===''?'':l.S), lgtPhase(l),
+        sub.O===''?'':sub.O, sub.P===''?'':(condP+sub.P),
         r.p ?? '', r.M || '', r.N ?? '',
         r.VU == null ? '' : r.VU.toFixed(2),
         pcCell(r.pc, CI.limT),
         pcCell(tot, CI.limTot),
-        r.rec ?? ''
+        r.rec == null ? '' : condP+r.rec
       ];
     });
     doc.autoTable({
@@ -2533,16 +2537,18 @@ async function exportPDF(){
       const bg = v > lim ? badPDF : (v > lim*0.85 ? warnPDF : okPDF);
       return { content: v.toFixed(3)+' %', styles: { fillColor: bg, fontStyle:'bold' } };
     };
-    const stCell = tot == null ? '' : {
-      content: tot > CI.limTot ? '✗ HORS' : (tot > CI.limTot*0.85 ? '⚠ LIMITE' : '✓ OK'),
-      styles: { fillColor: tot > CI.limTot ? badPDF : (tot > CI.limTot*0.85 ? warnPDF : okPDF), fontStyle:'bold' }
+    const tot2 = c1onlyPDF ? b.pc : tot;
+    const stCell = tot2 == null ? '' : {
+      content: tot2 > CI.limTot ? '✗ HORS' : (tot2 > CI.limTot*0.85 ? '⚠ LIMITE' : '✓ OK'),
+      styles: { fillColor: tot2 > CI.limTot ? badPDF : (tot2 > CI.limTot*0.85 ? warnPDF : okPDF), fontStyle:'bold' }
     };
+    const condR = lgtPhase(l) === 'M' ? '2×' : '4×';
     return [
-      rname, l.bat||'—', l.niv||'—', l.lett||'—', l.type||'—',
-      l.S===''?'—':l.S, a.p ?? '—', l.K||'—',
-      l.rc.O||'—', l.rc.P||'—', pcCell(a.pc, CI.limT),
-      l.ct.O||'—', l.ct.P||'—', pcCell(b.pc, CI.limT),
-      pcCell(tot, CI.limTot), stCell
+      rname, l.bat||'—', l.niv||'—', l.lett||'—', (l.kind==='compt'?'Compt.':l.type)||'—',
+      l.kind==='compt'?'—':(l.S===''?'—':l.S), a.p ?? '—', lgtPhase(l),
+      l.rc.O||'—', l.rc.P==''?'—':(condR+l.rc.P), pcCell(a.pc, CI.limT),
+      l.ct.O||'—', l.ct.P==''?'—':(condR+l.ct.P), pcCell(b.pc, CI.limT),
+      pcCell(tot2, CI.limTot), stCell
     ];
   });
 

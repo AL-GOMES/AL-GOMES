@@ -1606,8 +1606,8 @@ function renderSchema(){
       <div class="intro-num">${c1only?'2':'4'}</div>
       <div class="intro-txt">
         <b>Étape ${c1only?'2':'4'} — Synthèse.</b> ${c1only
-          ? 'Schéma unifilaire : jeu de barres CIBE et un départ par logement (câble C1 → compteur Wh → tableau abonné). Section, longueur et chute affichées sur chaque câble.'
-          : 'Schéma unifilaire : Coffret de façade → REMBT (jeu de barres) → un départ par logement (disjoncteur → câble C2 → CIBE → câble C1 → compteur Wh → tableau abonné). Section, longueur et chute sur chaque tronçon.'}
+          ? 'Schéma unifilaire : jeu de barres CIBE et un départ par logement (câble C1 → tableau abonné). Section, longueur et chute affichées sur chaque câble.'
+          : 'Schéma unifilaire : Coffret de façade → REMBT (jeu de barres) → un départ par logement (disjoncteur → câble C2 → CIBE → câble C1 → tableau abonné). Section, longueur et chute sur chaque tronçon.'}
       </div>
     </div>
 
@@ -1767,30 +1767,23 @@ function renderSchema(){
           const ciW = 44;
           s += rect(x-ciW/2, Y.cibe, ciW, Y.cibeH, {fill:'#fff'});
           s += txt(x, Y.cibe+14, 'CIBE', {size:8, weight:700, fill:NAVY});
-          // Câble C1 (CIBE → TA)
-          s += line(x, Y.cibe+Y.cibeH, x, Y.wh-12, {stroke:INK});
+          // Câble C1 (CIBE → TA) — trait direct, sans compteur
+          s += line(x, Y.cibe+Y.cibeH, x, Y.ta, {stroke:INK});
           s += txt(x+6, Y.c1-3, `C1 · L₂=${l.ct.O||'?'}m`, {size:8, anchor:'start', fill:'#555'});
           s += txt(x+6, Y.c1+7, `${l.ct.P||'?'}mm² · ${b.pc==null?'—':b.pc.toFixed(2)+'%'}`, {size:8, weight:700, anchor:'start', fill:pcColor(b.pc)});
-          // Compteur Wh
-          s += circ(x, Y.wh, 12, {fill:'#fff'});
-          s += txt(x, Y.wh+4, 'Wh', {size:8, weight:700, fill:NAVY});
-          // Point de liaison + descente vers TA
-          s += line(x, Y.wh+12, x, Y.ta, {stroke:INK});
-          s += dot(x, Y.wh+12+(Y.ta-Y.wh-12)/2, '#e08a1f');
+          // Point de liaison
+          s += dot(x, (Y.cibe+Y.cibeH+Y.ta)/2, '#e08a1f');
           // Tableau abonné (limite utilisateur, pointillé)
           const tW = 84, tX = x-tW/2;
           s += rect(tX, Y.ta, tW, Y.taH, {fill:'#fff', stroke:tClr, sw:2, dash:'4 2'});
           s += txt(x, Y.ta+13, id, {size:9.5, weight:700, fill:tClr});
           s += txt(x, Y.ta+24, `${kva||'?'}kVA ${phase==='M'?'M':'T'} · Σ${tot==null?'—':tot.toFixed(2)+'%'}`, {size:8, weight:700, fill:tClr});
         } else {
-          // Jdb → câble C1 → Wh → TA
-          s += line(x, Y.bus, x, Y.wh-12, {stroke:INK});
+          // Jdb → câble C1 → TA (sans compteur)
+          s += line(x, Y.bus, x, Y.ta, {stroke:INK});
           s += txt(x+6, Y.c1-3, `C1 · L₂=${l.ct.O||'?'}m`, {size:8, anchor:'start', fill:'#555'});
           s += txt(x+6, Y.c1+7, `${l.ct.P||'?'}mm² · ${b.pc==null?'—':b.pc.toFixed(2)+'%'}`, {size:8, weight:700, anchor:'start', fill:pcColor(b.pc)});
-          s += circ(x, Y.wh, 12, {fill:'#fff'});
-          s += txt(x, Y.wh+4, 'Wh', {size:8, weight:700, fill:NAVY});
-          s += line(x, Y.wh+12, x, Y.ta, {stroke:INK});
-          s += dot(x, Y.wh+12+(Y.ta-Y.wh-12)/2, '#e08a1f');
+          s += dot(x, (Y.bus+Y.ta)/2, '#e08a1f');
           const tW = 84, tX = x-tW/2;
           s += rect(tX, Y.ta, tW, Y.taH, {fill:'#fff', stroke:tClr, sw:2, dash:'4 2'});
           s += txt(x, Y.ta+13, id, {size:9.5, weight:700, fill:tClr});
@@ -1851,7 +1844,7 @@ function renderSchema(){
       <div class="plan-leg-item"><span class="schema-leg-swatch ok"></span>Conforme (≤ ${fmt(CI.limTot*0.85,2)} %)</div>
       <div class="plan-leg-item"><span class="schema-leg-swatch warn"></span>Proche limite</div>
       <div class="plan-leg-item"><span class="schema-leg-swatch bad"></span>Hors limite (&gt; ${fmt(CI.limTot,2)} %)</div>
-      <div class="plan-leg-item">Wh = compteur · TA = tableau abonné · CCU = coffret coupure d'urgence</div>
+      <div class="plan-leg-item">TA = tableau abonné · CIBE = coffret immeuble · disj. = disjoncteur de branchement</div>
     </div>`;
 
     // Cartouche pied de plan
@@ -1883,7 +1876,7 @@ function renderSchema(){
   h += `</div>
 
     <div class="formula-box">
-      <b>Comment lire ce plan</b> — Le plan suit la convention ENEDIS des branchements collectifs : <b>Réseau → CCU → REMBT → CIBE → dérivations individuelles (Wh + TA)</b>. La maison rouge pointillée matérialise la limite de l'installation utilisateur (NF C 15-100). Les annotations sous chaque tronçon donnent la longueur, la section ALU et le pourcentage de chute calculé.<br>
+      <b>Comment lire ce plan</b> — Schéma unifilaire du branchement collectif : <b>Coffret de façade → REMBT (jeu de barres) → départ individuel par logement (disjoncteur → câble C2 → CIBE → câble C1 → tableau abonné)</b>. Le cadre rouge pointillé matérialise la limite de l'installation utilisateur (NF C 15-100). Les annotations le long de chaque câble donnent la longueur, la section ALU et le pourcentage de chute.<br>
       <b>Cascade</b> — Les REMBT alimentés par un autre REMBT sont dessinés indentés sous leur parent.
     </div>`;
 

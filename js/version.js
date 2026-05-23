@@ -6,7 +6,7 @@
 //   - AL_VERSION_TIME  : HH:MM      (heure de la MAJ — local Paris)
 //   - AL_VERSION_NOTE  : 1 phrase courte qui décrit le motif de la MAJ
 // =====================================================================
-window.AL_VERSION      = 'v1.72';
+window.AL_VERSION      = 'v1.73';
 window.AL_VERSION_DATE = '2026-05-23';
-window.AL_VERSION_TIME = '23:45';
-window.AL_VERSION_NOTE = 'Cache-buster automatique : l\'application ajoute désormais ?v=<version> à chaque page chargée dans le bandeau, ce qui force le navigateur à charger la dernière version après chaque MAJ (fini les anciens écrans en cache). Le schéma unifilaire SVG des Calculs individuels (v1.71) s\'affichera correctement après un dernier rafraîchissement.';
+window.AL_VERSION_TIME = '23:55';
+window.AL_VERSION_NOTE = 'Calculs individuels : schéma unifilaire — suppression du symbole compteur « Wh » sur chaque départ. Le câble C1 relie désormais directement le CIBE au tableau abonné (avec le point de liaison).';

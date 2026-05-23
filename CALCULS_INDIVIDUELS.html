@@ -1606,7 +1606,7 @@ function renderSchema(){
       <div class="intro-num">${c1only?'2':'4'}</div>
       <div class="intro-txt">
         <b>Étape ${c1only?'2':'4'} — Synthèse.</b> ${c1only
-          ? 'Schéma unifilaire : jeu de barres CIBE et un départ par logement (câble C1 → tableau abonné). Section, longueur et chute affichées sur chaque câble.'
+          ? 'Schéma unifilaire : un seul coffret CIBE et un départ par logement (câble AR2V C1 → tableau abonné). Aucune notion de REMBT en mode C1 seul. Section, longueur et chute affichées sur chaque câble.'
           : 'Schéma unifilaire : Coffret de façade → REMBT (jeu de barres) → un départ par logement (disjoncteur → câble C2 → CIBE → câble C1 → tableau abonné). Section, longueur et chute sur chaque tronçon.'}
       </div>
     </div>
@@ -1823,8 +1823,27 @@ function renderSchema(){
       return block;
     }
 
-    const roots = byParent.get('_root') || [];
-    roots.forEach(r => { h += renderRembtPlan(r, false); });
+    if(c1only){
+      // Mode C1 seul : un seul schéma CIBE → tous les logements, sans notion de REMBT
+      const niveauxOrdre2 = ['SS','RDJ','RDC BAS','RDC','RDC HAUT','R+1','R+2','R+3','R+4','R+5','R+6','R+7','R+8','R+9','R+10','R+11','R+12'];
+      const nivIdx2 = n => { const i = niveauxOrdre2.indexOf(n); return i === -1 ? 999 : i; };
+      const allLgts = CI.lgts.map((l,i)=>({l,i})).sort((a,b)=>{
+        const ab=(a.l.bat||'').localeCompare(b.l.bat||''); if(ab) return ab;
+        const an=nivIdx2(a.l.niv), bn=nivIdx2(b.l.niv); if(an!==bn) return an-bn;
+        return (a.l.lett||'').localeCompare(b.l.lett||'');
+      });
+      h += `<div class="plan-rembt-section">
+        <div class="plan-rembt-title">Coffret CIBE → Tableaux d'abonné</div>
+        <div class="uni-wrap">${allLgts.length ? buildSvgPlan(null, allLgts) : '<div style="padding:20px;color:#888;font-size:11px">Aucun logement.</div>'}</div>
+        <div class="plan-zones">
+          <div class="plan-zone plan-zone-wide">COLONNE / CIBE<br><small>NF C 14-100</small></div>
+          <div class="plan-zone">UTILISATEUR<br><small>NF C 15-100</small></div>
+        </div>
+      </div>`;
+    } else {
+      const roots = byParent.get('_root') || [];
+      roots.forEach(r => { h += renderRembtPlan(r, false); });
+    }
 
     // Légende
     h += `<div class="plan-legend">
@@ -2248,11 +2267,18 @@ async function exportPDF(){
     footer();
   }
 
-  addSidePage('REMBT → COFFRET CIBE', 'rc');
-  doc.addPage();
+  const okPDF = [198,239,206], warnPDF = [255,235,156], badPDF = [255,199,206];
+  const c1onlyExport = (CI.scope === 'c1only');
+
+  // En mode complet : page des chutes REMBT → CIBE (C2). Masquée en C1 seul.
+  if(!c1onlyExport){
+    addSidePage('REMBT → COFFRET CIBE', 'rc');
+    doc.addPage();
+  }
   addSidePage('COFFRET CIBE → TABLEAU ABONNÉ', 'ct');
 
-  // ── Dimensionnement REMBT (un bloc par REMBT) ─────────────────
+  // ── Dimensionnement REMBT (un bloc par REMBT) — masqué en C1 seul ──
+  if(!c1onlyExport){
   doc.addPage();
   doc.setFillColor(...navy); doc.rect(0,0,pageW,18,'F');
   doc.setFontSize(15); doc.setTextColor(...white); doc.setFont('helvetica','bold');
@@ -2261,7 +2287,6 @@ async function exportPDF(){
   doc.text(`${CI.rembts.length} REMBT(s)  ·  ${CI.lgts.length} logement(s)  ·  ${CI.rembts.reduce((s,r)=>s+rembtPlages(r),0)} plages au total`, pageW/2, 16, {align:'center'});
 
   let yPos = 24;
-  const okPDF = [198,239,206], warnPDF = [255,235,156], badPDF = [255,199,206];
 
   CI.rembts.forEach((r, ri) => {
     const plages = rembtPlages(r);
@@ -2323,6 +2348,7 @@ async function exportPDF(){
     yPos = doc.lastAutoTable.finalY + 6;
   });
   footer();
+  } // fin if(!c1onlyExport) — dimensionnement REMBT
 
   // ─────────────────────────────────────────────────────────────
   // ── SCHÉMA RÉCAPITULATIF (topologie + tableau complet) ──────
@@ -2332,7 +2358,7 @@ async function exportPDF(){
   doc.setFontSize(15); doc.setTextColor(...white); doc.setFont('helvetica','bold');
   doc.text(pName + ' — SCHÉMA RÉCAPITULATIF', pageW/2, 12, {align:'center'});
   doc.setFontSize(9); doc.setTextColor(180,199,231);
-  const c1onlyPDF = (CI.scope === 'c1only');
+  const c1onlyPDF = c1onlyExport;
   doc.text(c1onlyPDF
     ? `Mode C1 seul — dérivations CIBE → Tableau abonné  ·  ${CI.lgts.length} logement(s)`
     : `Arborescence Coffret de façade → REMBT → logements  ·  ${CI.rembts.length} REMBT(s)  ·  ${CI.lgts.length} logement(s)`,

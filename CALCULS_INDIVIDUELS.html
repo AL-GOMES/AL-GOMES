@@ -353,7 +353,7 @@ label.rb-block-h{cursor:pointer}
 .schema-cable-lbl{font-family:'Helvetica','Arial',sans-serif;font-size:9.5px;color:#1a1a1a;
   background:#fff;padding:2px 8px;border-radius:0;margin:2px 0;letter-spacing:0.5px;border:1px solid #1a1a1a;text-transform:uppercase;font-weight:600}
 
-/* ═══ SCHÉMA RÉCAPITULATIF — style « PLAN D'ARCHITECTE » ═══ */
+/* ═══ SCHÉMA RÉCAPITULATIF — style PLAN HORIZONTAL ENEDIS ═══ */
 .schema-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px}
 @media(max-width:900px){.schema-stats{grid-template-columns:repeat(2,1fr)}}
 .schema-stat{background:rgba(22,18,32,0.6);border:1px solid rgba(123,95,172,0.18);border-radius:6px;padding:14px 16px;text-align:center}
@@ -362,149 +362,104 @@ label.rb-block-h{cursor:pointer}
 .schema-stat-val.green{color:#5FE09A}.schema-stat-val.orange{color:#FFB86C}.schema-stat-val.red{color:#FF6B6B}
 .schema-stat-sub{font-size:10px;color:rgba(180,165,200,0.40);margin-top:3px;letter-spacing:0.3px}
 
-/* Cadre type "feuille de plan papier" */
-.schema-wrap{
+.schema-actions{display:flex;justify-content:flex-end;gap:8px;margin-bottom:14px}
+.schema-empty{padding:60px 20px;text-align:center;color:rgba(180,165,200,0.55);font-size:13px}
+
+/* Feuille de plan papier ENEDIS */
+.plan-paper{
   background:
     linear-gradient(rgba(0,0,0,0.025) 1px, transparent 1px) 0 0 / 20px 20px,
     linear-gradient(90deg, rgba(0,0,0,0.025) 1px, transparent 1px) 0 0 / 20px 20px,
     #faf7ee;
-  color:#1a1a1a;
-  border:2.5px solid #1a1a1a;border-radius:2px;padding:46px 30px 18px;margin-bottom:18px;
+  color:#1a1a1a;border:2.5px solid #1a1a1a;border-radius:2px;
+  padding:46px 30px 20px;margin-bottom:18px;
   overflow-x:auto;position:relative;font-family:'Helvetica','Arial',sans-serif;
   box-shadow:0 6px 22px rgba(0,0,0,0.30)}
-/* Cartouche de titre en haut */
-.schema-wrap::before{
-  content:attr(data-title);
-  position:absolute;top:0;left:0;right:0;
+.plan-paper::before{
+  content:attr(data-title);position:absolute;top:0;left:0;right:0;
   background:#1f3864;color:#fff;
   font-family:'Helvetica','Arial',sans-serif;font-size:11px;font-weight:700;letter-spacing:4px;text-transform:uppercase;
-  padding:9px 18px;border-bottom:2.5px solid #1a1a1a;
-  text-align:center}
-.schema-tree{display:flex;flex-direction:column;align-items:center;gap:0;min-width:fit-content;font-family:'Helvetica','Arial',sans-serif;color:#1a1a1a}
+  padding:9px 18px;border-bottom:2.5px solid #1a1a1a;text-align:center}
 
-/* Source ENEDIS — symbole transfo */
-.schema-source{background:#fff;color:#1a1a1a;padding:10px 28px;border-radius:0;
-  font-family:'Helvetica','Arial',sans-serif;font-weight:700;font-size:13px;letter-spacing:3px;text-transform:uppercase;
-  border:2px solid #1a1a1a;text-align:center;min-width:240px;display:flex;flex-direction:column;align-items:center;gap:4px}
-.schema-source-sub{font-size:10px;font-weight:500;color:#555;letter-spacing:1px;text-transform:none}
+/* Bloc REMBT (une "ligne" complète Réseau→CIBE + dérivations) */
+.plan-rembt-section{margin-bottom:30px;padding-bottom:20px;border-bottom:1.5px dashed #c2b89a}
+.plan-rembt-section:last-of-type{border-bottom:none}
+.plan-rembt-title{font-family:'Helvetica','Arial',sans-serif;font-size:12px;font-weight:700;color:#1f3864;letter-spacing:2.5px;text-transform:uppercase;margin-bottom:18px;padding:6px 12px;background:#fff;border:1.5px solid #1f3864;display:inline-block}
 
-/* Lignes câbles — noir net */
-.schema-line{width:2px;background:#1a1a1a;flex:none;position:relative}
-.schema-line.short{height:18px}
-.schema-line.med{height:26px}
-.schema-line.long{height:36px}
+/* Ligne principale horizontale Réseau→CCU→REMBT→CIBE */
+.plan-line{display:flex;align-items:center;gap:0;position:relative;min-width:fit-content;margin-bottom:16px}
 
-/* Rangée REMBT racines */
-.schema-rembts-row{display:flex;align-items:flex-start;gap:42px;position:relative;padding-top:14px}
-.schema-rembts-row::before{content:'';position:absolute;top:0;left:50%;right:50%;height:2px;background:#1a1a1a}
-.schema-rembts-row.single::before{display:none}
-.schema-rembts-row > .schema-rembt-branch{position:relative}
-.schema-rembts-row > .schema-rembt-branch::before{content:'';position:absolute;top:-14px;left:50%;width:2px;height:14px;background:#1a1a1a;transform:translateX(-50%)}
+/* Blocs (boîtes type "armoire" double bordure ENEDIS) */
+.plan-block{background:#fff;color:#1f3864;border:1.5px solid #1f3864;padding:10px 14px;text-align:center;
+  font-size:10.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;line-height:1.3;min-width:80px;white-space:nowrap;
+  box-shadow:inset 0 0 0 1.5px #fff,inset 0 0 0 3px #1f3864;border-radius:0}
+.plan-block-source{background:#1f3864;color:#fff;box-shadow:inset 0 0 0 1.5px #1f3864,inset 0 0 0 3px #fff,inset 0 0 0 4.5px #1f3864}
 
-.schema-rembt-branch{display:flex;flex-direction:column;align-items:center;gap:0}
+/* Segment de câble entre 2 blocs */
+.plan-segment{flex:0 0 auto;min-width:140px;position:relative;height:54px;display:flex;align-items:center;justify-content:center}
+.plan-seg-line{position:absolute;top:50%;left:0;right:0;height:2px;background:#1f3864;transform:translateY(-50%)}
+.plan-seg-lbl{position:relative;background:#faf7ee;padding:0 7px;font-size:9.5px;font-weight:600;letter-spacing:0.4px;color:#1a1a1a;text-align:center;line-height:1.3;text-transform:none;font-family:'Helvetica','Arial',sans-serif}
 
-/* Boîte REMBT type "armoire" — fond blanc, bordure noire, header navy */
-.schema-rembt{background:#fff;color:#1a1a1a;
-  border:2px solid #1a1a1a;border-radius:0;padding:0;min-width:290px;max-width:340px;
-  position:relative;overflow:hidden;font-family:'Helvetica','Arial',sans-serif}
-.schema-rembt.sz-ok    {border-color:#1a1a1a}
-.schema-rembt.sz-warn  {border-color:#1a1a1a}
-.schema-rembt.sz-bad   {border-color:#1a1a1a}
+/* Pastilles de connexion (points de raccordement/liaison) */
+.plan-dot{width:13px;height:13px;border-radius:50%;border:1.5px solid #1a1a1a;display:inline-block}
+.plan-dot.dot-green{background:#3a9b4f}
+.plan-dot.dot-orange{background:#e08a1f}
+.plan-segment > .plan-dot{position:absolute;right:-6.5px;top:50%;transform:translateY(-50%);z-index:2}
+.plan-dot-inline{vertical-align:middle;margin-right:4px}
 
-.schema-rembt-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;
-  background:#1f3864;color:#fff;border-bottom:2px solid #1a1a1a}
-.schema-rembt.sz-ok   .schema-rembt-h{background:#2e6b3e}
-.schema-rembt.sz-warn .schema-rembt-h{background:#b26d24}
-.schema-rembt.sz-bad  .schema-rembt-h{background:#a83232}
-.schema-rembt-name{font-family:'Helvetica','Arial',sans-serif;font-size:12.5px;font-weight:700;color:#fff;letter-spacing:2px;text-transform:uppercase}
-.schema-rembt-size{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:rgba(255,255,255,0.92);border:1px solid rgba(0,0,0,0.20);border-radius:0;
-  font-family:'Helvetica','Arial',sans-serif;font-size:10.5px;font-weight:700;color:#1a1a1a;white-space:nowrap;letter-spacing:0.5px}
+/* Dérivations individuelles (sous le CIBE, alignées à droite) */
+.plan-derivations{margin-top:8px;padding-left:60px;border-left:2px solid #1f3864;margin-left:60%}
+.plan-deriv-h{font-family:'Helvetica','Arial',sans-serif;font-size:9.5px;font-weight:700;color:#1f3864;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;padding:3px 8px;background:#fff;border:1px solid #1f3864;display:inline-block}
 
-.schema-rembt-row{display:flex;justify-content:space-between;font-size:11px;color:#444;padding:3px 12px;letter-spacing:0.2px;font-family:'Helvetica','Arial',sans-serif}
-.schema-rembt-row span:last-child{font-weight:700;color:#1a1a1a;font-variant-numeric:tabular-nums}
-.schema-rembt-row:first-of-type{padding-top:6px}
-.schema-rembt-modules{padding:6px 12px;display:flex;flex-wrap:wrap;gap:4px;border-top:1px dashed rgba(0,0,0,0.20);margin-top:4px}
-.schema-mod-chip{font-family:'Helvetica','Arial',sans-serif;font-size:10px;font-weight:700;padding:2px 7px;border-radius:0;
-  background:#f0ece0;color:#1a1a1a;border:1px solid #1a1a1a;letter-spacing:0.3px}
-.schema-rembt-notes{padding:6px 12px;border-top:1px dashed rgba(0,0,0,0.20);
-  font-size:10.5px;font-style:italic;color:#7a5500;background:#fcf5d8;line-height:1.5;font-family:'Helvetica','Arial',sans-serif}
+.plan-deriv{display:flex;align-items:center;gap:10px;padding:7px 10px;margin-bottom:5px;background:#fff;border:1px solid #1a1a1a;border-radius:0;font-family:'Helvetica','Arial',sans-serif;font-size:11px;color:#1a1a1a;position:relative}
+.plan-deriv::before{content:'';position:absolute;left:-62px;top:50%;width:60px;height:2px;background:#1f3864}
+.plan-deriv.ok    {border-left:5px solid #2e6b3e}
+.plan-deriv.warn  {border-left:5px solid #b26d24}
+.plan-deriv.bad   {border-left:5px solid #a83232;background:#fdeaea}
+.plan-deriv-id{font-weight:700;color:#1f3864;font-size:11.5px;letter-spacing:0.6px;min-width:80px;text-transform:uppercase}
+.plan-deriv-meta{flex:1;font-size:10.5px;color:#555;letter-spacing:0.2px}
+.plan-deriv-cable{font-size:10px;color:#1a1a1a;background:#faf7ee;padding:2px 8px;border:1px solid #1f3864;letter-spacing:0.3px;font-weight:600;white-space:nowrap;text-transform:uppercase}
+.plan-deriv-wh{background:#fff;border:1.5px solid #1f3864;padding:4px 10px;font-size:10px;font-weight:700;letter-spacing:1px;color:#1f3864;text-transform:uppercase;text-align:center;line-height:1.2;
+  box-shadow:inset 0 0 0 1px #fff,inset 0 0 0 2px #1f3864}
+.plan-deriv-wh small{font-size:9px;font-weight:600;color:#666;letter-spacing:0.3px}
+.plan-deriv-dot{width:11px;height:11px;border-radius:50%;border:1.5px solid #1a1a1a;flex-shrink:0}
+.plan-deriv-dot.dot-orange{background:#e08a1f}
+.plan-deriv-house{padding:6px 12px;border:2px dashed #c00;color:#c00;font-weight:700;font-size:10.5px;letter-spacing:1px;text-transform:uppercase;background:#fff5f5;white-space:nowrap}
+.plan-deriv-pc{display:flex;flex-direction:column;align-items:flex-end;gap:1px;font-family:'Helvetica','Arial',sans-serif;font-size:10px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:0.2px;min-width:88px;text-align:right}
+.plan-deriv-pc .pc-c1,.plan-deriv-pc .pc-c2{color:#555;font-size:9.5px}
+.plan-deriv-pc .pc-tot{color:#1a1a1a;font-size:11.5px;border-top:1px solid #999;padding-top:1px;margin-top:1px}
+.plan-deriv.ok   .plan-deriv-pc .pc-tot{color:#2e6b3e}
+.plan-deriv.warn .plan-deriv-pc .pc-tot{color:#b26d24}
+.plan-deriv.bad  .plan-deriv-pc .pc-tot{color:#a83232}
 
-/* Liste logements */
-.schema-lgts{display:flex;flex-direction:column;gap:3px;margin-top:14px;align-items:stretch;width:100%;max-width:340px}
-.schema-lgts::before{content:'';width:2px;height:16px;background:#1a1a1a;align-self:center;margin-bottom:4px}
-.schema-lgt{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:6px;padding:5px 10px;
-  background:#fff;border:1.5px solid #1a1a1a;border-radius:0;font-size:11px;font-family:'Helvetica','Arial',sans-serif;color:#1a1a1a}
-.schema-lgt.ok     {border-left:4px solid #2e6b3e}
-.schema-lgt.warn   {border-left:4px solid #b26d24}
-.schema-lgt.bad    {border-left:4px solid #a83232;background:#fdeaea}
-.schema-lgt-id{font-family:'Helvetica','Arial',sans-serif;font-weight:700;color:#1f3864;font-size:11px;letter-spacing:0.8px;min-width:78px;text-transform:uppercase}
-.schema-lgt-mid{display:flex;flex-direction:column;gap:1px;font-size:10px;color:#555;font-family:'Helvetica','Arial',sans-serif}
-.schema-lgt-meta{display:flex;gap:8px;color:#666;font-family:'Helvetica','Arial',sans-serif}
-.schema-lgt-meta b{color:#1a1a1a;font-weight:700}
-.schema-lgt-chutes{display:flex;flex-direction:column;align-items:flex-end;gap:1px;font-family:'Helvetica','Arial',sans-serif;font-size:10.5px;font-weight:700;font-variant-numeric:tabular-nums}
-.schema-lgt-chutes .pcg{color:#666;font-size:9.5px;letter-spacing:0.2px}
-.schema-lgt-chutes .tot{color:#1a1a1a;font-size:11.5px}
-.schema-lgt.ok   .schema-lgt-chutes .tot{color:#2e6b3e}
-.schema-lgt.warn .schema-lgt-chutes .tot{color:#b26d24}
-.schema-lgt.bad  .schema-lgt-chutes .tot{color:#a83232}
+/* Zones normatives (NFC 11-201 / 14-100 / 15-100) */
+.plan-zones{display:flex;margin-top:24px;border:1.5px solid #1a1a1a;background:#fff;position:relative}
+.plan-zone{flex:1;text-align:center;padding:7px 6px;font-size:10px;font-weight:700;letter-spacing:1.5px;color:#1a1a1a;text-transform:uppercase;border-right:1.5px solid #1a1a1a;position:relative;background:#fff}
+.plan-zone-wide{flex:2.2}
+.plan-zone:last-child{border-right:none}
+.plan-zone small{display:block;font-size:9px;font-weight:500;color:#666;letter-spacing:1px;margin-top:2px}
+.plan-zone::before{content:'×';color:#c00;font-size:18px;font-weight:700;position:absolute;left:-2px;top:50%;transform:translate(-50%,-50%);background:#fff;padding:0 2px;line-height:1}
 
-/* Enfants cascadés */
-.schema-children{display:flex;flex-direction:column;align-items:center;gap:0;margin-top:16px;width:100%}
-.schema-children::before{content:'';width:2px;height:18px;background:#1a1a1a;align-self:center}
-.schema-children-row{display:flex;align-items:flex-start;gap:24px;position:relative;padding-top:14px}
-.schema-children-row.single::before{display:none}
-.schema-children-row::before{content:'';position:absolute;top:0;left:50%;right:50%;height:2px;background:#1a1a1a}
-.schema-children-row > .schema-rembt-branch{position:relative}
-.schema-children-row > .schema-rembt-branch::before{content:'';position:absolute;top:-14px;left:50%;width:2px;height:14px;background:#1a1a1a;transform:translateX(-50%)}
+/* Notes */
+.plan-notes{margin-top:14px;padding:6px 12px;background:#fcf5d8;border-left:3px solid #b26d24;font-size:10.5px;font-style:italic;color:#7a5500;font-family:'Helvetica','Arial',sans-serif;line-height:1.5}
 
-/* Légende inline en pied de plan */
-.schema-legend{display:flex;flex-wrap:wrap;justify-content:center;gap:20px;padding:8px 20px;margin-top:18px;
+/* Légende */
+.plan-legend{display:flex;flex-wrap:wrap;justify-content:center;gap:18px;padding:10px 14px;margin-top:18px;
   border:1.5px solid #1a1a1a;background:#fff;font-family:'Helvetica','Arial',sans-serif}
-.schema-leg-item{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;color:#1a1a1a;letter-spacing:0.4px;font-weight:600;text-transform:uppercase}
-
-/* Cartouche pied de plan (titre, date, auteur, échelle) */
-.schema-cartouche{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;border:2.5px solid #1a1a1a;background:#fff;margin-top:14px;color:#1a1a1a;font-family:'Helvetica','Arial',sans-serif}
-.schema-cartouche-cell{padding:8px 12px;border-right:1.5px solid #1a1a1a;display:flex;flex-direction:column;gap:2px}
-.schema-cartouche-cell:last-child{border-right:none}
-.schema-cart-lbl{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#444}
-.schema-cart-val{font-size:13px;font-weight:700;color:#1a1a1a;font-family:'Helvetica','Arial',sans-serif;letter-spacing:0.3px}
-.schema-cartouche-foot{grid-column:1/-1;border-top:1.5px solid #1a1a1a;background:#1f3864;color:#fff;
-  padding:6px 12px;font-size:10.5px;font-weight:600;letter-spacing:2px;text-transform:uppercase;text-align:center}
-.schema-leg-swatch{width:14px;height:14px;border-radius:0;border:1.5px solid #1a1a1a}
+.plan-leg-item{display:inline-flex;align-items:center;gap:6px;font-size:10px;color:#1a1a1a;letter-spacing:0.4px;font-weight:600;text-transform:uppercase}
+.schema-leg-swatch{width:13px;height:13px;border-radius:0;border:1.5px solid #1a1a1a;display:inline-block}
 .schema-leg-swatch.ok{background:#2e6b3e}
 .schema-leg-swatch.warn{background:#b26d24}
 .schema-leg-swatch.bad{background:#a83232}
 
-/* Bouton export schéma */
-.schema-actions{display:flex;justify-content:flex-end;gap:8px;margin-bottom:14px}
-.schema-empty{padding:60px 20px;text-align:center;color:rgba(180,165,200,0.55);font-size:13px}
-
-.ts{overflow-x:auto;-webkit-overflow-scrolling:touch}
-::-webkit-scrollbar{width:6px;height:6px}
-::-webkit-scrollbar-track{background:rgba(14,14,16,0.5)}
-::-webkit-scrollbar-thumb{background:rgba(123,95,172,0.25);border-radius:3px}
-::-webkit-scrollbar-thumb:hover{background:rgba(123,95,172,0.40)}
-
-.formula-box{background:rgba(91,63,140,0.06);border:1px solid rgba(123,95,172,0.15);border-radius:8px;padding:14px 18px;margin-bottom:16px;
-  font-size:11.5px;color:rgba(200,186,216,0.65);line-height:1.7}
-.formula-box b{color:#B89AE0;font-weight:600}
-.formula-box code{background:rgba(91,63,140,0.18);padding:2px 8px;border-radius:4px;color:#D4B5FF;font-family:'Courier New',monospace;font-size:11px;letter-spacing:0.3px}
-
-.help-link{cursor:pointer;color:rgba(123,95,172,0.70);font-size:13px;padding:2px 6px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center}
-.help-link:hover{background:rgba(91,63,140,0.15);color:#D4B5FF}
-
-.mo{display:none;position:fixed;inset:0;background:rgba(6,4,12,0.70);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(6px)}
-.mo.open{display:flex}
-.ml{background:linear-gradient(165deg,rgba(28,22,42,0.97),rgba(14,14,16,0.98));border:1px solid rgba(123,95,172,0.20);
-  border-radius:12px;padding:28px;width:520px;max-width:92vw;max-height:90vh;overflow-y:auto}
-.ml h3{color:rgba(232,224,242,0.95);font-size:15px;letter-spacing:1px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
-.ml p{font-size:12.5px;color:rgba(200,186,216,0.75);line-height:1.7;margin-bottom:10px}
-.ml code{background:rgba(91,63,140,0.18);padding:2px 8px;border-radius:4px;color:#D4B5FF;font-family:'Courier New',monospace;font-size:11.5px}
-.ml ul{margin:8px 0 14px 18px;color:rgba(200,186,216,0.75);font-size:12px;line-height:1.7}
-.ml ul li{margin-bottom:3px}
-
-/* hover help icon */
-.col-h{cursor:help}.col-h:hover{color:#C8A2FF}
+/* Cartouche pied de plan */
+.schema-cartouche{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;border:2.5px solid #1a1a1a;background:#fff;margin-top:14px;color:#1a1a1a;font-family:'Helvetica','Arial',sans-serif}
+.schema-cartouche-cell{padding:8px 12px;border-right:1.5px solid #1a1a1a;display:flex;flex-direction:column;gap:2px}
+.schema-cartouche-cell:last-child{border-right:none}
+.schema-cart-lbl{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#444}
+.schema-cart-val{font-size:13px;font-weight:700;color:#1a1a1a;letter-spacing:0.3px}
+.schema-cartouche-foot{grid-column:1/-1;border-top:1.5px solid #1a1a1a;background:#1f3864;color:#fff;
+  padding:6px 12px;font-size:10.5px;font-weight:600;letter-spacing:2px;text-transform:uppercase;text-align:center}
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" integrity="sha384-sEVIly94UBRLKWdkYoPpSG7GD/e79YHMrxVyZaOk712Ga7+EAw6w1EFi+xBzBdd+" crossorigin="anonymous"></script>
@@ -1624,7 +1579,7 @@ function renderSchema(){
   let maxTotal = 0;
   CI.lgts.forEach(l => {
     const a = compute(l,'rc'), b = compute(l,'ct');
-    const tot = (a.pc != null && b.pc != null) ? a.pc + b.pc : null;
+    const tot = (a.pc != null && b.pc != null) ? a.pc + b.pc : (b.pc != null ? b.pc : null);
     if(tot != null){
       if(tot > maxTotal) maxTotal = tot;
       if(tot > CI.limTot) badLgts++;
@@ -1634,21 +1589,21 @@ function renderSchema(){
   });
   const totPlages = CI.rembts.reduce((s,r) => s + rembtPlages(r), 0);
   const nbOversized = CI.rembts.filter(r => rembtSuggest(rembtPlages(r)) == null).length;
+  const c1only = (CI.scope === 'c1only');
 
   let h = `
-    <div class="intro">
-      <div class="intro-num">4</div>
+    <div class="intro intro-compact">
+      <div class="intro-num">${c1only?'2':'4'}</div>
       <div class="intro-txt">
-        <div class="intro-h">📐 Étape 4 — Synthèse visuelle et exports</div>
-        Vue d'ensemble de l'installation : <code>ENEDIS → Coffret de façade → REMBT → logements</code>, avec toutes les chutes <code>%C2</code>, <code>%C1</code> et <code>%C1+C2</code> calculées.
-        Cliquez sur <b>📥 Excel</b> ou <b>📄 PDF</b> en haut pour exporter l'intégralité du dossier (4 feuilles Excel + 5 pages PDF).
+        <b>Étape ${c1only?'2':'4'} — Synthèse.</b> Plan horizontal type ENEDIS : Réseau → CCU → REMBT → CIBE → dérivations individuelles (Wh + logement). Toutes les chutes calculées sont reportées sur chaque tronçon.
       </div>
     </div>
+
     <div class="schema-stats">
       <div class="schema-stat">
         <div class="schema-stat-lbl">REMBTs</div>
         <div class="schema-stat-val">${CI.rembts.length}</div>
-        <div class="schema-stat-sub">${nbOversized > 0 ? `⚠ ${nbOversized} à diviser` : 'toutes tailles ≤ 12 plages'}</div>
+        <div class="schema-stat-sub">${nbOversized > 0 ? `⚠ ${nbOversized} à diviser` : 'tailles ≤ 12 plages'}</div>
       </div>
       <div class="schema-stat">
         <div class="schema-stat-lbl">Logements</div>
@@ -1661,7 +1616,7 @@ function renderSchema(){
         <div class="schema-stat-sub">sur ${CI.rembts.length} REMBT(s)</div>
       </div>
       <div class="schema-stat">
-        <div class="schema-stat-lbl">Chute MAX C1+C2</div>
+        <div class="schema-stat-lbl">Chute MAX${c1only?' C1':' C1+C2'}</div>
         <div class="schema-stat-val ${maxTotal>CI.limTot?'red':(maxTotal>CI.limTot*0.85?'orange':'green')}">${fmt(maxTotal,3)} %</div>
         <div class="schema-stat-sub">limite = ${fmt(CI.limTot,2)} %</div>
       </div>
@@ -1673,15 +1628,14 @@ function renderSchema(){
     </div>
 
     <div class="schema-actions">
-      <button class="btn" onclick="exportPDF()" title="Inclus dans l'export PDF complet">📄 Exporter PDF complet</button>
+      <button class="btn" onclick="exportPDF()">📄 Exporter PDF complet</button>
     </div>
 
-    <div class="schema-wrap" id="schemaWrap" data-title="PLAN — ${escapeHtml(CI.P||'Sans titre').toUpperCase()}  ·  ENEDIS → REMBT${CI.scope==='c1only'?'':' → CIBE'} → TABLEAU ABONNÉ  ·  ÉCH. SCHÉMATIQUE">`;
+    <div class="plan-paper" data-title="PLAN — ${escapeHtml(CI.P||'Sans titre').toUpperCase()} · BRANCHEMENT COLLECTIF NF C 14-100">`;
 
   if(CI.lgts.length === 0 || CI.rembts.length === 0){
-    h += `<div class="schema-empty">Aucun logement ou REMBT à représenter.<br>Renseignez d'abord vos logements dans l'onglet REMBT → CIBE.</div>`;
+    h += `<div class="schema-empty" style="color:#1a1a1a">Aucun logement ou REMBT à représenter.<br>Renseignez d'abord vos logements dans l'onglet REMBT → CIBE.</div>`;
   } else {
-    // Tri par bâtiment → niveau → lettrage
     const niveauxOrdre = ['SS','RDJ','RDC BAS','RDC','RDC HAUT','R+1','R+2','R+3','R+4','R+5','R+6','R+7','R+8','R+9','R+10','R+11','R+12'];
     function nivIdx(n){ const i = niveauxOrdre.indexOf(n); return i === -1 ? 999 : i; }
     function lgtsOf(rid){
@@ -1696,115 +1650,123 @@ function renderSchema(){
           return (a.l.lett||'').localeCompare(b.l.lett||'');
         });
     }
-    // Construction de l'arbre des REMBTs
     const byParent = new Map();
     CI.rembts.forEach(r => {
       const pid = r.parentId || '_root';
       if(!byParent.has(pid)) byParent.set(pid, []);
       byParent.get(pid).push(r);
     });
-    function renderRembt(r, isRoot){
+
+    // Pour chaque REMBT (en commençant par les racines)
+    function renderRembtPlan(r, indent){
       const plages = rembtPlages(r);
       const sugg = rembtSuggest(plages);
+      const sizeLbl = sugg == null ? '> 12p' : `${sugg}p`;
       const lgts = lgtsOf(r.id);
-      const tooMany = lgts.length > REMBT_MAX_LGTS;
-      const sizeClass = (sugg == null || tooMany) ? 'sz-bad' : (plages > sugg - 1 ? 'sz-warn' : 'sz-ok');
-      const sizeLbl = sugg == null
-        ? '> 12 plages — DIVISER'
-        : tooMany
-          ? `⚠ ${lgts.length} > ${REMBT_MAX_LGTS} lgts — DIVISER`
-          : `${plages}/${sugg}p → REMBT ${sugg===6?'300':sugg===9?'450':'600'}`;
-      const modChips = MODULES
-        .filter(m => (r.dim[m.k] || 0) > 0)
-        .map(m => `<span class="schema-mod-chip">${m.k}×${r.dim[m.k]}</span>`)
-        .join('');
+      const cf = r.parentId == null && r.cf && r.cf.active ? cfChute(r) : null;
 
-      let block = `<div class="schema-rembt-branch">`;
-      // Coffret de façade (uniquement pour les REMBT racines avec CF actif)
-      if(isRoot && r.cf && r.cf.active){
-        const c = cfChute(r);
-        const cls = c == null ? '' : (c.pc > CI.limT ? 'bad' : (c.pc > CI.limT*0.8 ? 'warn' : 'ok'));
-        const cal = (c && c.calibre) || rembtAutoCalibre(r.id).cal || 30;
-        block += `<div class="schema-cf">
-          <div class="schema-cf-box">
-            <div class="schema-cf-name">🏠 ${escapeHtml(r.cf.name || 'CF')} — Coffret de façade</div>
-            <div class="schema-cf-meta">Disj. ${cal} A · Tri 400 V <span style="opacity:0.55">(auto)</span></div>
-            ${c ? `<div class="schema-cf-chute ${cls}">ΔU = ${c.vu.toFixed(2)} V · ${c.pc.toFixed(3)} %</div>` : ''}
-          </div>
-          <div class="schema-cable-lbl">⬇ Câble ALU : L = ${r.cf.long || '?'} m · S = ${r.cf.section || '?'} mm²</div>
-          <div class="schema-line short"></div>
+      let block = `<div class="plan-rembt-section" style="${indent?'margin-left:60px;border-left:2px dashed #1f3864;padding-left:30px':''}">
+        <div class="plan-rembt-title">${escapeHtml(r.name)} — ${sugg ? 'REMBT '+(sugg===6?'300':sugg===9?'450':'600') : 'à diviser'} (${plages}/${sizeLbl})${r.parentId ? ' · cascade depuis ' + escapeHtml((CI.rembts.find(x=>x.id===r.parentId)||{}).name||'—') : ''}</div>`;
+
+      // Ligne principale horizontale
+      block += `<div class="plan-line">`;
+      // Source RÉSEAU
+      block += `<div class="plan-block plan-block-source">Réseau<br>ENEDIS</div>`;
+      // Segment : réseau → CCU (ou directement REMBT si pas de CCU)
+      if(cf){
+        block += `<div class="plan-segment">
+          <div class="plan-seg-line"></div>
+          <div class="plan-seg-lbl">liaison réseau<br>L = ${cf.calibre ? '?' : '?'} m</div>
+          <div class="plan-dot dot-green" title="Point de raccordement réseau"></div>
+        </div>
+        <div class="plan-block">CCU<br>${cf.calibre} A tri</div>
+        <div class="plan-segment">
+          <div class="plan-seg-line"></div>
+          <div class="plan-seg-lbl">L = ${r.cf.long||'?'} m · ${r.cf.section||'?'} mm²<br>ΔU = ${cf.pc.toFixed(3)} %</div>
+          <div class="plan-dot dot-green"></div>
+        </div>`;
+      } else {
+        block += `<div class="plan-segment">
+          <div class="plan-seg-line"></div>
+          <div class="plan-seg-lbl">liaison<br>au réseau</div>
+          <div class="plan-dot dot-green" title="Point de raccordement réseau"></div>
         </div>`;
       }
-      block += `<div class="schema-rembt ${sizeClass}">
-        <div class="schema-rembt-h">
-          <span class="schema-rembt-name">${escapeHtml(r.name)}</span>
-          <span class="schema-rembt-size">${sizeLbl}</span>
-        </div>
-        <div class="schema-rembt-row"><span>Logements rattachés</span><span>${lgts.length}</span></div>
-        <div class="schema-rembt-row"><span>Plages occupées</span><span>${plages}</span></div>
-        ${modChips ? `<div class="schema-rembt-modules">${modChips}</div>` : '<div class="schema-rembt-row" style="color:rgba(255,184,108,0.70);font-style:italic">Aucun module — cliquez « ⚡ Calcul auto » dans l\'onglet Dimensionnement</div>'}
-        ${r.notes && r.notes.trim() ? `<div class="schema-rembt-notes">📝 ${escapeHtml(r.notes)}</div>` : ''}
+      // REMBT
+      block += `<div class="plan-block">${escapeHtml(r.name)}<br>REMBT ${sugg===6?'300':sugg===9?'450':'600'}</div>`;
+      // Vers CIBE
+      block += `<div class="plan-segment">
+        <div class="plan-seg-line"></div>
+        <div class="plan-seg-lbl">colonne<br>montante</div>
+        <div class="plan-dot dot-green"></div>
       </div>`;
+      // CIBE (point de répartition vers les logements)
+      block += `<div class="plan-block">CIBE</div>`;
+      block += `</div>`;
 
-      // Logements rattachés
+      // Dérivations logements
       if(lgts.length > 0){
-        block += `<div class="schema-lgts">`;
-        lgts.forEach(({l,i}) => {
-          const a = compute(l,'rc'), b = compute(l,'ct');
-          const tot = (a.pc != null && b.pc != null) ? a.pc + b.pc : null;
+        block += `<div class="plan-derivations">
+          <div class="plan-deriv-h">DÉRIVATIONS INDIVIDUELLES (${lgts.length} logement${lgts.length>1?'s':''})</div>`;
+        lgts.forEach(({l, i}) => {
+          const a = compute(l, 'rc'), b = compute(l, 'ct');
+          const tot = (a.pc != null && b.pc != null) ? a.pc + b.pc : (b.pc != null ? b.pc : null);
           const cls = tot == null ? '' : (tot > CI.limTot ? 'bad' : (tot > CI.limTot*0.85 ? 'warn' : 'ok'));
           const id = (l.bat||'?') + '-' + (l.lett||'?');
-          const niv = l.niv ? `${l.niv} · ` : '';
-          const meta = `${niv}${l.type||'—'} · ${l.S===''?'?':l.S} m²`;
-          block += `<div class="schema-lgt ${cls}">
-            <div class="schema-lgt-id">${escapeHtml(id)}</div>
-            <div class="schema-lgt-mid">
-              <div>${escapeHtml(meta)}</div>
-              <div class="schema-lgt-meta">
-                <span><b>${a.p ?? '—'}</b> kVA</span>
-                <span>${lgtPhase(l) === 'M' ? 'mono' : 'tri'}${l.kind==='compt'?' · TB':''}</span>
-                <span>L₁=<b>${l.rc.O||'—'}</b>m S=<b>${l.rc.P||'—'}</b></span>
-                <span>L₂=<b>${l.ct.O||'—'}</b>m S=<b>${l.ct.P||'—'}</b></span>
-              </div>
-            </div>
-            <div class="schema-lgt-chutes">
-              <div class="pcg">C2 ${a.pc==null?'—':fmt(a.pc,2)+'%'} · C1 ${b.pc==null?'—':fmt(b.pc,2)+'%'}</div>
-              <div class="tot">Σ ${tot==null?'—':fmt(tot,2)+'%'}</div>
+          const meta = `${l.niv||'?'} · ${l.type||'—'}${l.kind!=='compt' && l.S!=='' ? ' · '+l.S+' m²' : ''}`;
+          const phase = lgtPhase(l);
+          const kva = lgtKva(l);
+          block += `<div class="plan-deriv ${cls}">
+            <div class="plan-deriv-id">${escapeHtml(id)}</div>
+            <div class="plan-deriv-meta">${escapeHtml(meta)} · ${kva||'?'} kVA ${phase==='M'?'mono':'tri'}${l.kind==='compt'?' TB':''}</div>
+            <div class="plan-deriv-cable">L₂ = ${l.ct.O||'?'} m · ${l.ct.P||'?'} mm²</div>
+            <div class="plan-deriv-wh">Wh<br><small>${a.N||'?'} A</small></div>
+            <div class="plan-deriv-dot dot-orange" title="Point de liaison"></div>
+            <div class="plan-deriv-house">🏠 TA</div>
+            <div class="plan-deriv-pc">
+              ${c1only ? '' : `<span class="pc-c2">C2 ${a.pc==null?'—':a.pc.toFixed(2)+'%'}</span>`}
+              <span class="pc-c1">C1 ${b.pc==null?'—':b.pc.toFixed(2)+'%'}</span>
+              <span class="pc-tot">Σ ${tot==null?'—':tot.toFixed(2)+'%'}</span>
             </div>
           </div>`;
         });
         block += `</div>`;
       }
 
-      // Enfants cascadés
-      const children = byParent.get(r.id) || [];
-      if(children.length){
-        block += `<div class="schema-children">`;
-        block += `<div class="schema-children-row${children.length===1?' single':''}">`;
-        children.forEach(c => { block += renderRembt(c, false); });
-        block += `</div></div>`;
+      // Zones normatives (sous la ligne principale uniquement pour les racines)
+      if(!r.parentId){
+        block += `<div class="plan-zones">
+          <div class="plan-zone">RÉSEAU<br><small>NF C 11-201</small></div>
+          <div class="plan-zone plan-zone-wide">BRANCHEMENT COLLECTIF<br><small>NF C 14-100</small></div>
+          <div class="plan-zone">UTILISATEUR<br><small>NF C 15-100</small></div>
+        </div>`;
       }
+
+      // Notes
+      if(r.notes && r.notes.trim()){
+        block += `<div class="plan-notes">📝 ${escapeHtml(r.notes)}</div>`;
+      }
+
       block += `</div>`;
+
+      // Récursion sur les enfants en cascade
+      const children = byParent.get(r.id) || [];
+      children.forEach(c => { block += renderRembtPlan(c, true); });
+
       return block;
     }
 
     const roots = byParent.get('_root') || [];
-    h += `<div class="schema-tree">
-      <div class="schema-source">⚡ RÉSEAU ENEDIS
-        <span class="schema-source-sub">arrivée 230/400 V — chute totale max ≤ ${fmt(CI.limTot,2)} %</span>
-      </div>
-      <div class="schema-line med"></div>
-      <div class="schema-rembts-row${roots.length===1?' single':''}">
-        ${roots.map(r => renderRembt(r, true)).join('')}
-      </div>
-    </div>`;
+    roots.forEach(r => { h += renderRembtPlan(r, false); });
 
     // Légende
-    h += `<div class="schema-legend">
-      <div class="schema-leg-item"><span class="schema-leg-swatch ok"></span>Conforme (≤ ${fmt(CI.limTot*0.85,2)} %)</div>
-      <div class="schema-leg-item"><span class="schema-leg-swatch warn"></span>Proche limite (≤ ${fmt(CI.limTot,2)} %)</div>
-      <div class="schema-leg-item"><span class="schema-leg-swatch bad"></span>Hors limite (&gt; ${fmt(CI.limTot,2)} %)</div>
-      <div class="schema-leg-item">C2 = chute REMBT→CIBE · C1 = chute CIBE→TA · Σ = total</div>
+    h += `<div class="plan-legend">
+      <div class="plan-leg-item"><span class="plan-dot dot-green plan-dot-inline"></span>Point de raccordement réseau</div>
+      <div class="plan-leg-item"><span class="plan-dot dot-orange plan-dot-inline"></span>Point de liaison</div>
+      <div class="plan-leg-item"><span class="schema-leg-swatch ok"></span>Conforme (≤ ${fmt(CI.limTot*0.85,2)} %)</div>
+      <div class="plan-leg-item"><span class="schema-leg-swatch warn"></span>Proche limite</div>
+      <div class="plan-leg-item"><span class="schema-leg-swatch bad"></span>Hors limite (&gt; ${fmt(CI.limTot,2)} %)</div>
+      <div class="plan-leg-item">Wh = compteur · TA = tableau abonné · CCU = coffret coupure d'urgence</div>
     </div>`;
 
     // Cartouche pied de plan
@@ -1836,12 +1798,13 @@ function renderSchema(){
   h += `</div>
 
     <div class="formula-box">
-      <b>Comment lire ce plan</b> — Chaque bloc REMBT affiche son nombre de plages occupées, la taille standard suggérée (6/9/12), les modules installés et les notes saisies. Les logements rattachés à chaque REMBT sont listés dessous avec : repère bâtiment-lettrage, niveau, type, surface, puissance souscrite, mono/tri, longueurs L₁ (REMBT→CIBE) et L₂ (CIBE→TA), sections, puis chutes C2 / C1 / Σ totale.<br>
-      <b>Cascade</b> — Les REMBT alimentés par un autre REMBT sont dessinés directement sous leur REMBT parent.
+      <b>Comment lire ce plan</b> — Le plan suit la convention ENEDIS des branchements collectifs : <b>Réseau → CCU → REMBT → CIBE → dérivations individuelles (Wh + TA)</b>. La maison rouge pointillée matérialise la limite de l'installation utilisateur (NF C 15-100). Les annotations sous chaque tronçon donnent la longueur, la section ALU et le pourcentage de chute calculé.<br>
+      <b>Cascade</b> — Les REMBT alimentés par un autre REMBT sont dessinés indentés sous leur parent.
     </div>`;
 
   document.getElementById('sh-sch').innerHTML = h;
 }
+
 
 // ═══════════════════════════════════════════════════════════════════════
 // NEW / IMPORT / EXPORT

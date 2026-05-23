@@ -1685,66 +1685,62 @@ function renderSchema(){
     }
 
     // ── Construit un schéma unifilaire SVG pour un REMBT ──
+    // Amont vertical : Coffret façade → REMBT → CIBE, puis départs depuis le CIBE.
     function buildSvgPlan(r, lgts){
       const NAVY = '#1f3864', INK = '#1a1a1a';
       const n = Math.max(lgts.length, 1);
-      const colW = 160;
+      const colW = 150;
       const leftPad = 40;
-      const busStartX = leftPad + colW/2;
-      const svgW = Math.max(leftPad*2 + n*colW, 560);
-      const cx = i => busStartX + i*colW;
+      const depStartX = leftPad + colW/2;
+      const svgW = Math.max(leftPad*2 + n*colW, 520);
+      const cx = i => depStartX + i*colW;
+      const depX1 = cx(0), depX2 = cx(n-1);
+      const midX = (depX1 + depX2)/2;
 
       // Niveaux verticaux (y)
       let Y;
       if(!c1only){
-        Y = { cf:18, cfH:30, rembt:74, rembtH:26, bus:118, module:130, moduleH:18,
-              c2:185, cibe:216, cibeH:20, c1:280, wh:318, ta:350, taH:30, total:392 };
+        Y = { cf:18, cfH:30, rembt:80, rembtH:28, cibe:152, cibeH:28, bus:198,
+              c2:228, c1:268, ta:300, taH:34, total:346 };
       } else {
-        Y = { cibe:18, cibeH:26, bus:64, c1:118, wh:150, ta:182, taH:30, total:224 };
+        Y = { cibe:18, cibeH:28, bus:64, c1:110, ta:150, taH:34, total:196 };
       }
 
-      // Helpers SVG
       const esc = s => escapeHtml(String(s));
       const rect = (x,y,w,h,o={}) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${o.rx||0}" fill="${o.fill||'#fff'}" stroke="${o.stroke||NAVY}" stroke-width="${o.sw||1.5}"${o.dash?` stroke-dasharray="${o.dash}"`:''}/>`;
       const line = (x1,y1,x2,y2,o={}) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${o.stroke||INK}" stroke-width="${o.sw||2}"${o.dash?` stroke-dasharray="${o.dash}"`:''}/>`;
       const txt = (x,y,t,o={}) => `<text x="${x}" y="${y}" font-family="Helvetica,Arial,sans-serif" font-size="${o.size||10}" font-weight="${o.weight||400}" fill="${o.fill||INK}" text-anchor="${o.anchor||'middle'}"${o.ls?` letter-spacing="${o.ls}"`:''}>${esc(t)}</text>`;
-      const circ = (x,y,rr,o={}) => `<circle cx="${x}" cy="${y}" r="${rr}" fill="${o.fill||'#fff'}" stroke="${o.stroke||NAVY}" stroke-width="${o.sw||1.5}"/>`;
       const dot = (x,y,clr) => `<circle cx="${x}" cy="${y}" r="4.5" fill="${clr}" stroke="${INK}" stroke-width="1.2"/>`;
-
-      const busX1 = cx(0), busX2 = cx(n-1);
-      const midX = (busX1 + busX2)/2;
 
       let s = `<svg viewBox="0 0 ${svgW} ${Y.total}" width="${svgW}" height="${Y.total}" class="uni-svg" xmlns="http://www.w3.org/2000/svg">`;
 
+      // ── Amont vertical centré ──
       if(!c1only){
-        // Coffret de façade (si actif) centré au-dessus
         if(r.cf && r.cf.active){
-          const cfW = 100, cfX = midX - cfW/2;
-          s += rect(cfX, Y.cf, cfW, Y.cfH, {fill:'#fff'});
+          s += rect(midX-50, Y.cf, 100, Y.cfH, {fill:'#fff'});
           s += txt(midX, Y.cf+13, 'COFFRET', {size:9, weight:700, fill:NAVY, ls:1});
           s += txt(midX, Y.cf+24, 'DE FAÇADE', {size:9, weight:700, fill:NAVY, ls:1});
           s += line(midX, Y.cf+Y.cfH, midX, Y.rembt, {stroke:NAVY});
           s += txt(midX+7, (Y.cf+Y.cfH+Y.rembt)/2+3, `L=${r.cf.long||'?'}m·${r.cf.section||'?'}mm²`, {size:8, anchor:'start', fill:'#555'});
         }
-        // REMBT (boîte + jeu de barres)
         const sugg = rembtSuggest(rembtPlages(r));
-        const rW = 150, rX = midX - rW/2;
-        s += rect(rX, Y.rembt, rW, Y.rembtH, {fill:NAVY, stroke:NAVY});
-        s += txt(midX, Y.rembt+17, `${r.name} · REMBT ${sugg===6?'300':sugg===9?'450':'600'}`, {size:9.5, weight:700, fill:'#fff', ls:0.5});
-        s += line(midX, Y.rembt+Y.rembtH, midX, Y.bus, {stroke:NAVY});
-        // Jeu de barres
-        s += line(busX1-10, Y.bus, busX2+10, Y.bus, {stroke:NAVY, sw:4});
-        s += txt(busX1-16, Y.bus+4, 'JdB', {size:8, weight:700, fill:NAVY, anchor:'end'});
+        s += rect(midX-78, Y.rembt, 156, Y.rembtH, {fill:NAVY, stroke:NAVY});
+        s += txt(midX, Y.rembt+18, `${r.name} · REMBT ${sugg===6?'300':sugg===9?'450':'600'}`, {size:10, weight:700, fill:'#fff', ls:0.5});
+        s += line(midX, Y.rembt+Y.rembtH, midX, Y.cibe, {stroke:NAVY});
+        s += txt(midX+7, (Y.rembt+Y.rembtH+Y.cibe)/2+3, 'colonne montante', {size:8, anchor:'start', fill:'#555'});
+        s += rect(midX-60, Y.cibe, 120, Y.cibeH, {fill:NAVY, stroke:NAVY});
+        s += txt(midX, Y.cibe+18, 'COFFRET CIBE', {size:10, weight:700, fill:'#fff', ls:0.5});
       } else {
-        // Coffret CIBE centré au-dessus
-        const cW = 110, cX = midX - cW/2;
-        s += rect(cX, Y.cibe, cW, Y.cibeH, {fill:NAVY, stroke:NAVY});
-        s += txt(midX, Y.cibe+17, 'COFFRET CIBE', {size:9.5, weight:700, fill:'#fff', ls:0.5});
-        s += line(midX, Y.cibe+Y.cibeH, midX, Y.bus, {stroke:NAVY});
-        s += line(busX1-10, Y.bus, busX2+10, Y.bus, {stroke:NAVY, sw:4});
+        s += rect(midX-60, Y.cibe, 120, Y.cibeH, {fill:NAVY, stroke:NAVY});
+        s += txt(midX, Y.cibe+18, 'COFFRET CIBE', {size:10, weight:700, fill:'#fff', ls:0.5});
       }
 
-      // Départs individuels (un par logement)
+      // ── Distribution depuis le CIBE vers les départs ──
+      const yCibeBot = Y.cibe + Y.cibeH;
+      s += line(midX, yCibeBot, midX, Y.bus, {stroke:NAVY});
+      if(n > 1) s += line(depX1, Y.bus, depX2, Y.bus, {stroke:NAVY, sw:2.5});
+
+      // ── Départs individuels (depuis le CIBE) ──
       lgts.forEach(({l}, i) => {
         const x = cx(i);
         const a = compute(l,'rc'), b = compute(l,'ct');
@@ -1753,42 +1749,23 @@ function renderSchema(){
         const id = (l.bat||'?')+'-'+(l.lett||'?');
         const phase = lgtPhase(l), kva = lgtKva(l);
 
+        // descente depuis le bus de distribution jusqu'au TA
+        s += line(x, Y.bus, x, Y.ta, {stroke:INK});
+        // étiquette amont C2 (REMBT→CIBE) — mode complet seulement
         if(!c1only){
-          // Jdb → module (disjoncteur de départ)
-          s += line(x, Y.bus, x, Y.module, {stroke:NAVY});
-          const mW = 34;
-          s += rect(x-mW/2, Y.module, mW, Y.moduleH, {fill:'#fff'});
-          s += txt(x, Y.module+12, `${a.N||'?'}A`, {size:8, weight:700, fill:NAVY});
-          // Câble C2 (REMBT → CIBE)
-          s += line(x, Y.module+Y.moduleH, x, Y.cibe, {stroke:INK});
-          s += txt(x+6, Y.c2-3, `C2 · L₁=${l.rc.O||'?'}m`, {size:8, anchor:'start', fill:'#555'});
-          s += txt(x+6, Y.c2+7, `${l.rc.P||'?'}mm² · ${a.pc==null?'—':a.pc.toFixed(2)+'%'}`, {size:8, weight:700, anchor:'start', fill:pcColor(a.pc)});
-          // CIBE (nœud)
-          const ciW = 44;
-          s += rect(x-ciW/2, Y.cibe, ciW, Y.cibeH, {fill:'#fff'});
-          s += txt(x, Y.cibe+14, 'CIBE', {size:8, weight:700, fill:NAVY});
-          // Câble C1 (CIBE → TA) — trait direct, sans compteur
-          s += line(x, Y.cibe+Y.cibeH, x, Y.ta, {stroke:INK});
-          s += txt(x+6, Y.c1-3, `C1 · L₂=${l.ct.O||'?'}m`, {size:8, anchor:'start', fill:'#555'});
-          s += txt(x+6, Y.c1+7, `${l.ct.P||'?'}mm² · ${b.pc==null?'—':b.pc.toFixed(2)+'%'}`, {size:8, weight:700, anchor:'start', fill:pcColor(b.pc)});
-          // Point de liaison
-          s += dot(x, (Y.cibe+Y.cibeH+Y.ta)/2, '#e08a1f');
-          // Tableau abonné (limite utilisateur, pointillé)
-          const tW = 84, tX = x-tW/2;
-          s += rect(tX, Y.ta, tW, Y.taH, {fill:'#fff', stroke:tClr, sw:2, dash:'4 2'});
-          s += txt(x, Y.ta+13, id, {size:9.5, weight:700, fill:tClr});
-          s += txt(x, Y.ta+24, `${kva||'?'}kVA ${phase==='M'?'M':'T'} · Σ${tot==null?'—':tot.toFixed(2)+'%'}`, {size:8, weight:700, fill:tClr});
-        } else {
-          // Jdb → câble C1 → TA (sans compteur)
-          s += line(x, Y.bus, x, Y.ta, {stroke:INK});
-          s += txt(x+6, Y.c1-3, `C1 · L₂=${l.ct.O||'?'}m`, {size:8, anchor:'start', fill:'#555'});
-          s += txt(x+6, Y.c1+7, `${l.ct.P||'?'}mm² · ${b.pc==null?'—':b.pc.toFixed(2)+'%'}`, {size:8, weight:700, anchor:'start', fill:pcColor(b.pc)});
-          s += dot(x, (Y.bus+Y.ta)/2, '#e08a1f');
-          const tW = 84, tX = x-tW/2;
-          s += rect(tX, Y.ta, tW, Y.taH, {fill:'#fff', stroke:tClr, sw:2, dash:'4 2'});
-          s += txt(x, Y.ta+13, id, {size:9.5, weight:700, fill:tClr});
-          s += txt(x, Y.ta+24, `${kva||'?'}kVA ${phase==='M'?'M':'T'} · Σ${tot==null?'—':tot.toFixed(2)+'%'}`, {size:8, weight:700, fill:tClr});
+          s += txt(x+6, Y.c2-2, `C2 amont · L₁=${l.rc.O||'?'}m · ${l.rc.P||'?'}mm²`, {size:7.5, anchor:'start', fill:'#888'});
+          s += txt(x+6, Y.c2+7, `chute C2 ${a.pc==null?'—':a.pc.toFixed(2)+'%'}`, {size:7.5, weight:700, anchor:'start', fill:pcColor(a.pc)});
         }
+        // étiquette C1 (CIBE→TA)
+        s += txt(x+6, Y.c1-2, `C1 · L₂=${l.ct.O||'?'}m · ${l.ct.P||'?'}mm²`, {size:8, anchor:'start', fill:'#555'});
+        s += txt(x+6, Y.c1+8, `chute C1 ${b.pc==null?'—':b.pc.toFixed(2)+'%'}`, {size:8, weight:700, anchor:'start', fill:pcColor(b.pc)});
+        // point de liaison
+        s += dot(x, (Y.bus+Y.ta)/2, '#e08a1f');
+        // Tableau abonné (cadre pointillé = limite utilisateur)
+        const tW = 88, tX = x-tW/2;
+        s += rect(tX, Y.ta, tW, Y.taH, {fill:'#fff', stroke:tClr, sw:2, dash:'4 2'});
+        s += txt(x, Y.ta+13, id, {size:9.5, weight:700, fill:tClr});
+        s += txt(x, Y.ta+24, `${kva||'?'}kVA ${phase==='M'?'M':'T'} · Σ${tot==null?'—':tot.toFixed(2)+'%'}`, {size:8, weight:700, fill:tClr});
       });
 
       s += `</svg>`;

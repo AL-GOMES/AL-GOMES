@@ -6,7 +6,7 @@
 //   - AL_VERSION_TIME  : HH:MM      (heure de la MAJ — local Paris)
 //   - AL_VERSION_NOTE  : 1 phrase courte qui décrit le motif de la MAJ
 // =====================================================================
-window.AL_VERSION      = 'v1.76';
+window.AL_VERSION      = 'v1.77';
 window.AL_VERSION_DATE = '2026-05-24';
-window.AL_VERSION_TIME = '08:30';
-window.AL_VERSION_NOTE = 'Calculs individuels : désignation des câbles conforme au fichier d\'origine — Coffret de façade → REMBT et REMBT → CIBE en HN33S33, dérivation individuelle CIBE → TA en AR2V. Affiché sur le schéma unifilaire, dans les exports et en sous-titre de colonne section.';
+window.AL_VERSION_TIME = '09:00';
+window.AL_VERSION_NOTE = 'Calculs individuels : en mode « C1 seul (CIBE → TA) », plus aucune notion de REMBT — le schéma montre un seul coffret CIBE avec tous les logements en départ direct (web + PDF), et le PDF n\'inclut plus les pages REMBT→CIBE ni Dimensionnement REMBT.';

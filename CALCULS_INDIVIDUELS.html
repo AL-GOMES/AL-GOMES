@@ -67,11 +67,11 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .tab.active .tab-lbl small{color:rgba(200,186,216,0.65)}
 
 /* Toggle de mode (Calcul complet / C1 seul) */
-.scope-toggle{display:inline-flex;border:1px solid rgba(123,95,172,0.25);border-radius:7px;overflow:hidden;background:rgba(91,63,140,0.06)}
-.scope-btn{padding:6px 14px;font-family:'Segoe UI',system-ui,sans-serif;font-size:11.5px;font-weight:600;letter-spacing:0.5px;
-  background:none;border:none;color:rgba(180,165,200,0.65);cursor:pointer;transition:all 0.25s;font-family:inherit}
-.scope-btn:hover{color:rgba(220,210,235,0.85);background:rgba(91,63,140,0.10)}
-.scope-btn.on{background:rgba(91,63,140,0.30);color:#E8E0F2;font-weight:700;box-shadow:inset 0 0 0 1px rgba(123,95,172,0.35)}
+.scope-toggle{display:inline-flex;border:1px solid rgba(123,95,172,0.35);border-radius:8px;overflow:hidden;background:rgba(22,18,32,0.65)}
+.scope-btn{padding:7px 16px;font-family:'Segoe UI',system-ui,sans-serif;font-size:12px;font-weight:600;letter-spacing:0.4px;
+  background:none;border:none;color:rgba(180,165,200,0.65);cursor:pointer;transition:all 0.2s;font-family:inherit;white-space:nowrap}
+.scope-btn:hover{color:rgba(220,210,235,0.95);background:rgba(91,63,140,0.10)}
+.scope-btn.on{background:linear-gradient(180deg,rgba(123,95,172,0.40),rgba(91,63,140,0.25));color:#fff;font-weight:700;box-shadow:inset 0 0 0 1px rgba(155,125,197,0.50),0 2px 6px rgba(123,95,172,0.20)}
 
 /* Ligne comptage : couleur distinctive + cellule fusionnée */
 tr.row-compt td.bat,tr.row-compt td.fl{background:rgba(0,176,240,0.06)}
@@ -95,7 +95,14 @@ tr.row-compt td[colspan]{background:rgba(0,176,240,0.04)}
 .intro-txt code{background:rgba(91,63,140,0.18);padding:1px 7px;border-radius:4px;color:#D4B5FF;font-family:'Courier New',monospace;font-size:11px}
 .intro-h{font-family:'Segoe UI',system-ui,sans-serif;font-size:13.5px;font-weight:700;color:#E8E0F2;letter-spacing:0.4px;margin-bottom:4px}
 
-.content{position:relative;z-index:1;margin-top:114px;padding:20px 24px 60px}
+.content{position:relative;z-index:1;margin-top:160px;padding:20px 24px 60px}
+
+/* Barre de mode (sous les onglets) */
+.mode-bar{position:fixed;top:110px;left:0;right:0;z-index:98;display:flex;align-items:center;gap:14px;padding:10px 24px;flex-wrap:wrap;
+  background:linear-gradient(180deg,rgba(14,14,18,0.94),rgba(14,14,18,0.85));border-bottom:1px solid rgba(123,95,172,0.15);
+  backdrop-filter:blur(10px)}
+.mode-lbl{font-family:'Segoe UI',system-ui,sans-serif;font-size:12px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:rgba(155,125,197,0.75)}
+.mode-help{flex:1;font-size:11px;color:rgba(180,165,200,0.55);font-style:italic;letter-spacing:0.2px;min-width:200px}
 .sheet{display:none;animation:shIn .3s ease}.sheet.active{display:block}
 @keyframes shIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
@@ -498,10 +505,6 @@ label.rb-block-h{cursor:pointer}
       oninput="CI.P=this.value;save()">
   </div>
   <div class="topbar-center">
-    <div class="scope-toggle" title="Mode de calcul">
-      <button id="scope-full" class="scope-btn" onclick="setScope('full')">Calcul complet</button>
-      <button id="scope-c1" class="scope-btn" onclick="setScope('c1only')">C1 seul (CIBE→TA)</button>
-    </div>
     <button class="btn-top" onclick="newProject()">🗒️ Nouveau</button>
     <label class="btn-top" style="cursor:pointer">📤 Import<input type="file" accept=".xlsx" onchange="importXLS(this)" style="display:none"></label>
     <button class="btn-top" onclick="exportXLS()">📥 Excel</button>
@@ -521,6 +524,14 @@ label.rb-block-h{cursor:pointer}
   <button class="tab" data-sh="rc" onclick="goSheet('rc')"><span class="tab-num">2</span><span class="tab-ic">📏</span><span class="tab-lbl">Chutes REMBT → CIBE<br><small>%C2 par logement</small></span></button>
   <button class="tab" data-sh="ct" onclick="goSheet('ct')"><span class="tab-num">3</span><span class="tab-ic">📏</span><span class="tab-lbl">Chutes CIBE → TA<br><small>%C1 par logement</small></span></button>
   <button class="tab" data-sh="sch" onclick="goSheet('sch')"><span class="tab-num">4</span><span class="tab-ic">📐</span><span class="tab-lbl">Synthèse<br><small>schéma + exports</small></span></button>
+</div>
+<div class="mode-bar">
+  <span class="mode-lbl">⚙️ Mode de calcul :</span>
+  <div class="scope-toggle" title="Mode de calcul">
+    <button id="scope-full" class="scope-btn" onclick="setScope('full')">REMBT → CIBE → TA (calcul complet)</button>
+    <button id="scope-c1" class="scope-btn" onclick="setScope('c1only')">CIBE → TA uniquement (C1 seul)</button>
+  </div>
+  <span class="mode-help">Pour les dossiers où vous ne dimensionnez que le tronçon final, choisissez « C1 seul » : les étapes 1 et 2 seront masquées.</span>
 </div>
 <div class="content">
   <div class="sheet" id="sh-rc"></div>

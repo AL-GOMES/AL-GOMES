@@ -6,7 +6,7 @@
 //   - AL_VERSION_TIME  : HH:MM      (heure de la MAJ — local Paris)
 //   - AL_VERSION_NOTE  : 1 phrase courte qui décrit le motif de la MAJ
 // =====================================================================
-window.AL_VERSION      = 'v1.75';
+window.AL_VERSION      = 'v1.76';
 window.AL_VERSION_DATE = '2026-05-24';
-window.AL_VERSION_TIME = '08:15';
-window.AL_VERSION_NOTE = 'Calculs individuels : schéma — la liaison REMBT → CIBE (et Coffret façade → REMBT) affiche désormais la nature du câble (ALU), sa longueur et sa section au lieu du libellé « colonne montante ». Si les départs ont des longueurs/sections différentes, la mention « L/S par départ » renvoie au détail de chaque départ.';
+window.AL_VERSION_TIME = '08:30';
+window.AL_VERSION_NOTE = 'Calculs individuels : désignation des câbles conforme au fichier d\'origine — Coffret de façade → REMBT et REMBT → CIBE en HN33S33, dérivation individuelle CIBE → TA en AR2V. Affiché sur le schéma unifilaire, dans les exports et en sous-titre de colonne section.';

@@ -1595,26 +1595,28 @@ function renderSchema(){
     <div class="intro intro-compact">
       <div class="intro-num">${c1only?'2':'4'}</div>
       <div class="intro-txt">
-        <b>Étape ${c1only?'2':'4'} — Synthèse.</b> Plan horizontal type ENEDIS : Réseau → CCU → REMBT → CIBE → dérivations individuelles (Wh + logement). Toutes les chutes calculées sont reportées sur chaque tronçon.
+        <b>Étape ${c1only?'2':'4'} — Synthèse.</b> ${c1only
+          ? 'Mode C1 seul : plan CIBE → dérivations individuelles (Wh + tableau abonné). Seul le tronçon CIBE → TA est représenté.'
+          : 'Plan horizontal type ENEDIS : Coffret de façade → REMBT → CIBE → dérivations individuelles (Wh + tableau abonné). Toutes les chutes calculées sont reportées sur chaque tronçon.'}
       </div>
     </div>
 
-    <div class="schema-stats">
-      <div class="schema-stat">
+    <div class="schema-stats" style="${c1only?'grid-template-columns:repeat(3,1fr)':''}">
+      ${c1only ? '' : `<div class="schema-stat">
         <div class="schema-stat-lbl">REMBTs</div>
         <div class="schema-stat-val">${CI.rembts.length}</div>
         <div class="schema-stat-sub">${nbOversized > 0 ? `⚠ ${nbOversized} à diviser` : 'tailles ≤ 12 plages'}</div>
-      </div>
+      </div>`}
       <div class="schema-stat">
         <div class="schema-stat-lbl">Logements</div>
         <div class="schema-stat-val">${totLgts}</div>
         <div class="schema-stat-sub">${okLgts} OK · ${warnLgts} limite · ${badLgts} hors-norme</div>
       </div>
-      <div class="schema-stat">
+      ${c1only ? '' : `<div class="schema-stat">
         <div class="schema-stat-lbl">Plages cumulées</div>
         <div class="schema-stat-val">${totPlages}</div>
         <div class="schema-stat-sub">sur ${CI.rembts.length} REMBT(s)</div>
-      </div>
+      </div>`}
       <div class="schema-stat">
         <div class="schema-stat-lbl">Chute MAX${c1only?' C1':' C1+C2'}</div>
         <div class="schema-stat-val ${maxTotal>CI.limTot?'red':(maxTotal>CI.limTot*0.85?'orange':'green')}">${fmt(maxTotal,3)} %</div>
@@ -1631,10 +1633,10 @@ function renderSchema(){
       <button class="btn" onclick="exportPDF()">📄 Exporter PDF complet</button>
     </div>
 
-    <div class="plan-paper" data-title="PLAN — ${escapeHtml(CI.P||'Sans titre').toUpperCase()} · BRANCHEMENT COLLECTIF NF C 14-100">`;
+    <div class="plan-paper" data-title="PLAN — ${escapeHtml(CI.P||'Sans titre').toUpperCase()} · ${c1only?'DÉRIVATIONS INDIVIDUELLES CIBE → TA':'BRANCHEMENT COLLECTIF NF C 14-100'}">`;
 
   if(CI.lgts.length === 0 || CI.rembts.length === 0){
-    h += `<div class="schema-empty" style="color:#1a1a1a">Aucun logement ou REMBT à représenter.<br>Renseignez d'abord vos logements dans l'onglet REMBT → CIBE.</div>`;
+    h += `<div class="schema-empty" style="color:#1a1a1a">Aucun logement à représenter.<br>Renseignez d'abord vos logements dans l'onglet « Chutes CIBE → TA ».</div>`;
   } else {
     const niveauxOrdre = ['SS','RDJ','RDC BAS','RDC','RDC HAUT','R+1','R+2','R+3','R+4','R+5','R+6','R+7','R+8','R+9','R+10','R+11','R+12'];
     function nivIdx(n){ const i = niveauxOrdre.indexOf(n); return i === -1 ? 999 : i; }
@@ -1665,29 +1667,33 @@ function renderSchema(){
       const lgts = lgtsOf(r.id);
       const cf = r.parentId == null && r.cf && r.cf.active ? cfChute(r) : null;
 
+      // ── Titre de la section ──
+      const titleTxt = c1only
+        ? `${escapeHtml(r.name)} — Coffret CIBE → Tableaux d'abonné`
+        : `${escapeHtml(r.name)} — ${sugg ? 'REMBT '+(sugg===6?'300':sugg===9?'450':'600') : 'à diviser'} (${plages}/${sizeLbl})${r.parentId ? ' · cascade depuis ' + escapeHtml((CI.rembts.find(x=>x.id===r.parentId)||{}).name||'—') : ''}`;
       let block = `<div class="plan-rembt-section" style="${indent?'margin-left:60px;border-left:2px dashed #1f3864;padding-left:30px':''}">
-        <div class="plan-rembt-title">${escapeHtml(r.name)} — ${sugg ? 'REMBT '+(sugg===6?'300':sugg===9?'450':'600') : 'à diviser'} (${plages}/${sizeLbl})${r.parentId ? ' · cascade depuis ' + escapeHtml((CI.rembts.find(x=>x.id===r.parentId)||{}).name||'—') : ''}</div>`;
+        <div class="plan-rembt-title">${titleTxt}</div>`;
 
-      // Ligne principale horizontale (commence au Coffret de façade, pas au Réseau)
+      // ── Ligne principale horizontale ──
       block += `<div class="plan-line">`;
-      if(cf){
-        // Coffret de façade — libellé simple, sans calibre ni détails
-        block += `<div class="plan-block">Coffret<br>de façade</div>
-        <div class="plan-segment">
+      if(!c1only){
+        // Mode complet : Coffret de façade → REMBT → CIBE
+        if(cf){
+          block += `<div class="plan-block">Coffret<br>de façade</div>
+          <div class="plan-segment">
+            <div class="plan-seg-line"></div>
+            <div class="plan-seg-lbl">L = ${r.cf.long||'?'} m · ${r.cf.section||'?'} mm²</div>
+            <div class="plan-dot dot-green" title="Point de raccordement"></div>
+          </div>`;
+        }
+        block += `<div class="plan-block">${escapeHtml(r.name)}<br>REMBT ${sugg===6?'300':sugg===9?'450':'600'}</div>`;
+        block += `<div class="plan-segment">
           <div class="plan-seg-line"></div>
-          <div class="plan-seg-lbl">L = ${r.cf.long||'?'} m · ${r.cf.section||'?'} mm²</div>
-          <div class="plan-dot dot-green" title="Point de raccordement"></div>
+          <div class="plan-seg-lbl">colonne<br>montante</div>
+          <div class="plan-dot dot-green"></div>
         </div>`;
       }
-      // REMBT
-      block += `<div class="plan-block">${escapeHtml(r.name)}<br>REMBT ${sugg===6?'300':sugg===9?'450':'600'}</div>`;
-      // Vers CIBE
-      block += `<div class="plan-segment">
-        <div class="plan-seg-line"></div>
-        <div class="plan-seg-lbl">colonne<br>montante</div>
-        <div class="plan-dot dot-green"></div>
-      </div>`;
-      // CIBE (point de répartition vers les logements)
+      // CIBE (point de répartition vers les logements) — présent dans les 2 modes
       block += `<div class="plan-block">CIBE</div>`;
       block += `</div>`;
 
@@ -1722,10 +1728,15 @@ function renderSchema(){
 
       // Zones normatives (sous la ligne principale uniquement pour les racines)
       if(!r.parentId){
-        block += `<div class="plan-zones">
-          <div class="plan-zone plan-zone-wide">BRANCHEMENT COLLECTIF<br><small>NF C 14-100</small></div>
-          <div class="plan-zone">UTILISATEUR<br><small>NF C 15-100</small></div>
-        </div>`;
+        block += c1only
+          ? `<div class="plan-zones">
+              <div class="plan-zone plan-zone-wide">COLONNE / CIBE<br><small>NF C 14-100</small></div>
+              <div class="plan-zone">UTILISATEUR<br><small>NF C 15-100</small></div>
+            </div>`
+          : `<div class="plan-zones">
+              <div class="plan-zone plan-zone-wide">BRANCHEMENT COLLECTIF<br><small>NF C 14-100</small></div>
+              <div class="plan-zone">UTILISATEUR<br><small>NF C 15-100</small></div>
+            </div>`;
       }
 
       // Notes
@@ -2251,7 +2262,11 @@ async function exportPDF(){
   doc.setFontSize(15); doc.setTextColor(...white); doc.setFont('helvetica','bold');
   doc.text(pName + ' — SCHÉMA RÉCAPITULATIF', pageW/2, 12, {align:'center'});
   doc.setFontSize(9); doc.setTextColor(180,199,231);
-  doc.text(`Arborescence Coffret de façade → REMBT → logements  ·  ${CI.rembts.length} REMBT(s)  ·  ${CI.lgts.length} logement(s)`, pageW/2, 16, {align:'center'});
+  const c1onlyPDF = (CI.scope === 'c1only');
+  doc.text(c1onlyPDF
+    ? `Mode C1 seul — dérivations CIBE → Tableau abonné  ·  ${CI.lgts.length} logement(s)`
+    : `Arborescence Coffret de façade → REMBT → logements  ·  ${CI.rembts.length} REMBT(s)  ·  ${CI.lgts.length} logement(s)`,
+    pageW/2, 16, {align:'center'});
 
   // ── 1. Topologie graphique (REMBT boxes + lignes) ──────────
   // Démarre directement aux REMBT racines (pas de bloc Réseau ENEDIS en amont)
@@ -2364,7 +2379,7 @@ async function exportPDF(){
   // Plus de bloc Réseau ENEDIS — on démarre directement aux Coffrets de façade ou REMBT.
 
   // Dessine éventuellement les coffrets de façade et les liaisons CF→REMBT
-  if(hasAnyCF){
+  if(hasAnyCF && !c1onlyPDF){
     let rx = startX;
     rootsPDF.forEach(r => {
       const sw = subtreeWidth(r) * (boxW + hGap) - hGap;
@@ -2391,12 +2406,14 @@ async function exportPDF(){
     });
   }
 
-  // Dessine chaque racine
-  rootsPDF.forEach(r => {
-    const sw = subtreeWidth(r) * (boxW + hGap) - hGap;
-    drawTree(r, cx, sy);
-    cx += sw + hGap;
-  });
+  // Dessine chaque racine (topologie REMBT — uniquement en mode complet)
+  if(!c1onlyPDF){
+    rootsPDF.forEach(r => {
+      const sw = subtreeWidth(r) * (boxW + hGap) - hGap;
+      drawTree(r, cx, sy);
+      cx += sw + hGap;
+    });
+  }
 
   // Calcule la profondeur max pour savoir où placer le tableau
   function depth(r){
@@ -2405,7 +2422,7 @@ async function exportPDF(){
   }
   const maxDepth = rootsPDF.length ? Math.max(...rootsPDF.map(depth)) : 1;
   const treeBottom = sy + maxDepth * (boxH + vGap) - vGap + 4;
-  let ty = Math.max(treeBottom + 8, 90);
+  let ty = c1onlyPDF ? 26 : Math.max(treeBottom + 8, 90);
 
   // ── 2. Tableau récapitulatif complet ───────────────────────
   // Saut de page si manque de place

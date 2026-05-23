@@ -6,7 +6,7 @@
 //   - AL_VERSION_TIME  : HH:MM      (heure de la MAJ — local Paris)
 //   - AL_VERSION_NOTE  : 1 phrase courte qui décrit le motif de la MAJ
 // =====================================================================
-window.AL_VERSION      = 'v1.64';
+window.AL_VERSION      = 'v1.65';
 window.AL_VERSION_DATE = '2026-05-22';
-window.AL_VERSION_TIME = '09:15';
-window.AL_VERSION_NOTE = 'Calculs individuels : onglet Synthèse — le schéma adopte un style « plan technique » (cartouche en haut, fond blueprint à grille, boîtes rectangulaires nettes, typographie monospace, lignes câbles épurées). Plus proche d\'un plan d\'exécution électrique.';
+window.AL_VERSION_TIME = '09:45';
+window.AL_VERSION_NOTE = 'Calculs individuels : onglet Synthèse — le schéma adopte un véritable style « plan d\'architecte » (papier blanc cassé avec grille faible, boîtes blanches à bordures noires fines, headers navy, typographie Helvetica caps, cartouche en pied de plan avec Projet/Date/Échelle/N°).';

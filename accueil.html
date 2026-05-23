@@ -305,9 +305,18 @@ async function buildNavTabs() {
   ).join('');
 }
 
+// Cache-buster : ajoute ?v=<version> à l'URL de l'iframe pour forcer
+// le rechargement du HTML à chaque nouvelle version (évite que le
+// navigateur serve une ancienne page mise en cache).
+function withVersion(page){
+  const v = (typeof window.AL_VERSION === 'string' && window.AL_VERSION) ? window.AL_VERSION : '';
+  if(!v) return page;
+  return page + (page.indexOf('?') === -1 ? '?' : '&') + 'v=' + encodeURIComponent(v);
+}
+
 function navigateTo(page) {
   currentPage = page;
-  document.getElementById('contentFrame').src = page;
+  document.getElementById('contentFrame').src = withVersion(page);
 
   // Update active tab
   document.querySelectorAll('.nav-tab').forEach(tab => {

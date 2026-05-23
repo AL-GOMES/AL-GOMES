@@ -6,7 +6,7 @@
 //   - AL_VERSION_TIME  : HH:MM      (heure de la MAJ — local Paris)
 //   - AL_VERSION_NOTE  : 1 phrase courte qui décrit le motif de la MAJ
 // =====================================================================
-window.AL_VERSION      = 'v1.86';
+window.AL_VERSION      = 'v1.87';
 window.AL_VERSION_DATE = '2026-05-24';
-window.AL_VERSION_TIME = '12:30';
-window.AL_VERSION_NOTE = 'Calculs individuels : étape 1 (Installation) épurée — modules affichés en résumé compact (chips des modules posés + total/taille dans le titre), grille d\'édition repliable « ✏️ Ajuster les modules », notes repliables, chip CCU raccourci.';
+window.AL_VERSION_TIME = '13:00';
+window.AL_VERSION_NOTE = 'Calculs individuels : la taille du coffret est affichée en nombre de plages (ex. « 6/9/12 plages ») au lieu de la référence commerciale « REMBT 300/450/600 » — partout (étape 1, schéma, exports Excel/PDF). La référence Cahors reste mentionnée dans l\'aide.';

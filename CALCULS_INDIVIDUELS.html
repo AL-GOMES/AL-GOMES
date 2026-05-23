@@ -289,7 +289,22 @@ label.rb-block-h{cursor:pointer}
 .rb-chip.warn{background:rgba(255,159,67,0.12);color:#FFB86C;border-color:rgba(255,159,67,0.30)}
 .rb-chip.bad{background:rgba(255,85,85,0.14);color:#FF6B6B;border-color:rgba(255,85,85,0.35)}
 
-.rb-mods{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;margin-top:10px}
+/* Résumé compact des modules (chips) */
+.rb-h-ok{color:#5FE09A}.rb-h-warn{color:#FFB86C}.rb-h-bad{color:#FF6B6B}
+.rb-mod-sum{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.rb-modchip{font-family:'Courier New',monospace;font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:5px;
+  background:rgba(91,63,140,0.16);color:#D4B5FF;border:1px solid rgba(123,95,172,0.30);letter-spacing:0.3px}
+.rb-mod-empty{font-size:11px;color:rgba(255,184,108,0.75);font-style:italic;letter-spacing:0.2px}
+.rb-mod-edit{margin-top:10px}
+.rb-mod-edit > summary{cursor:pointer;font-size:11px;color:rgba(180,165,200,0.65);letter-spacing:0.4px;list-style:none;padding:4px 0;user-select:none}
+.rb-mod-edit > summary::-webkit-details-marker{display:none}
+.rb-mod-edit > summary:hover{color:#D4B5FF}
+.rb-notes-det{margin-top:14px}
+.rb-notes-det > summary{cursor:pointer;font-size:12.5px;font-weight:700;color:rgba(220,210,235,0.85);letter-spacing:0.3px;list-style:none;padding:4px 0;user-select:none}
+.rb-notes-det > summary::-webkit-details-marker{display:none}
+.rb-notes-det > summary:hover{color:#D4B5FF}
+
+.rb-mods{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:10px}
 .rb-mod{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:6px;background:rgba(14,14,16,0.55);border:1px solid rgba(123,95,172,0.10);transition:all 0.15s}
 .rb-mod.on{border-color:rgba(155,125,197,0.40);background:rgba(91,63,140,0.10)}
 .rb-mod-name{flex:1;font-size:11.5px;color:rgba(200,186,216,0.75);font-weight:600;font-family:'Courier New',monospace;letter-spacing:0.2px}
@@ -1268,7 +1283,7 @@ function renderDim(){
               const c = cfChute(r);
               if(!c) return '';
               const cls = c.pc > CI.limT ? 'bad' : (c.pc > CI.limT*0.8 ? 'warn' : 'ok');
-              return `<span class="rb-chip ${cls}" style="margin-left:auto">Disj. ${c.calibre} A tri · ΔU ${c.vu.toFixed(2)} V · ${c.pc.toFixed(3)} % <span style="opacity:0.55;font-size:9px">(auto)</span></span>`;
+              return `<span class="rb-chip ${cls}" style="margin-left:auto">Disj. ${c.calibre} A · ${c.pc.toFixed(2)} %</span>`;
             })() : ''}
           </label>
           ${r.cf && r.cf.active ? `
@@ -1288,36 +1303,38 @@ function renderDim(){
 
         <div class="rb-block">
           <div class="rb-block-h">
-            <span>📦 Modules sur le jeu de barres</span>
+            <span>📦 Modules — <b class="${stateCls==='state-bad'?'rb-h-bad':stateCls==='state-warn'?'rb-h-warn':'rb-h-ok'}">${plages}/${sugg||'>12'} plages → ${sizeLbl}</b></span>
             <button class="btn" style="padding:3px 11px;font-size:10.5px;margin-left:auto" onclick="autoFillRembt('${r.id}')">⚡ Calcul auto</button>
           </div>
-          <div class="rb-mods">`;
-
+          <div class="rb-mod-sum">`;
+    const usedMods = MODULES.filter(m => (r.dim[m.k]||0) > 0);
+    if(usedMods.length){
+      h += usedMods.map(m => `<span class="rb-modchip">${m.k} ×${r.dim[m.k]}</span>`).join('');
+    } else {
+      h += `<span class="rb-mod-empty">Aucun module — cliquez « ⚡ Calcul auto » ou ajustez ci-dessous</span>`;
+    }
+    h += `</div>
+          <details class="rb-mod-edit">
+            <summary>✏️ Ajuster les modules</summary>
+            <div class="rb-mods">`;
     MODULES.forEach(m => {
       const q = r.dim[m.k] || 0;
-      const p = q * m.p;
       h += `<div class="rb-mod${q>0?' on':''}">
-        <div class="rb-mod-name">${m.l}</div>
+        <div class="rb-mod-name">${m.k}</div>
         <div class="rb-mod-input">
           <input type="number" class="ws ns" min="0" value="${q}" onchange="updRembtDim('${r.id}','${m.k}',this.value)">
-          <span class="rb-mod-x">× ${m.p}p</span>
-          <span class="rb-mod-tot">= ${p}p</span>
+          <span class="rb-mod-x">×${m.p}p</span>
         </div>
       </div>`;
     });
-
     h += `</div>
-          <div class="rb-mods-tot">
-            <span>Total plages</span>
-            <span class="rb-tot-val ${stateCls}">${plages} / ${sugg ?? '>12'}</span>
-            <span class="rb-tot-suff">→ ${sizeLbl}</span>
-          </div>
+          </details>
         </div>
 
-        <div class="rb-block">
-          <div class="rb-block-h"><span>📝 Notes</span></div>
+        <details class="rb-notes-det">
+          <summary>📝 Notes / observations${r.notes && r.notes.trim()?' •':''}</summary>
           <textarea class="rb-notes" placeholder="Repérage, observations chantier, particularités…" onchange="setRembtNotes('${r.id}',this.value)">${(r.notes||'').replace(/</g,'&lt;')}</textarea>
-        </div>
+        </details>
       </div>
     </details>`;
   });

@@ -6,7 +6,7 @@
 //   - AL_VERSION_TIME  : HH:MM      (heure de la MAJ — local Paris)
 //   - AL_VERSION_NOTE  : 1 phrase courte qui décrit le motif de la MAJ
 // =====================================================================
-window.AL_VERSION      = 'v1.79';
+window.AL_VERSION      = 'v1.80';
 window.AL_VERSION_DATE = '2026-05-24';
-window.AL_VERSION_TIME = '09:30';
-window.AL_VERSION_NOTE = 'Calculs individuels : la section de câble est préfixée par le nombre de conducteurs sur le schéma — 4× pour le tri (3 phases + neutre) et 2× pour le mono (phase + neutre). Ex. « 4×35 mm² » / « 2×35 mm² ».';
+window.AL_VERSION_TIME = '09:45';
+window.AL_VERSION_NOTE = 'Calculs individuels : schéma allégé — suppression du bandeau des zones normatives (COLONNE/CIBE — UTILISATEUR) et de la légende sous le plan. Le cartouche projet (Projet / Date / Échelle / Plan n°) est conservé en pied.';

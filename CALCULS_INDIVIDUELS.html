@@ -51,7 +51,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .badge-purple{background:rgba(91,63,140,0.15);color:rgba(155,125,197,0.85);border:1px solid rgba(123,95,172,0.20)}
 .badge-count{background:rgba(91,63,140,0.25);color:rgba(200,186,216,0.90);border:1px solid rgba(123,95,172,0.30)}
 
-.tabs{position:fixed;top:48px;left:0;right:0;z-index:99;display:flex;gap:0;padding:0 12px;height:62px;align-items:stretch;
+.tabs{position:fixed;top:98px;left:0;right:0;z-index:99;display:flex;gap:0;padding:0 12px;height:62px;align-items:stretch;
   background:linear-gradient(180deg,rgba(14,14,16,0.92),rgba(14,14,16,0.88));border-bottom:1px solid rgba(123,95,172,0.18);
   backdrop-filter:blur(12px)}
 .tab{padding:0 18px;display:flex;align-items:center;gap:12px;font-size:12px;font-weight:600;letter-spacing:0.4px;
@@ -97,8 +97,8 @@ tr.row-compt td[colspan]{background:rgba(0,176,240,0.04)}
 
 .content{position:relative;z-index:1;margin-top:160px;padding:20px 24px 60px}
 
-/* Barre de mode (sous les onglets) */
-.mode-bar{position:fixed;top:110px;left:0;right:0;z-index:98;display:flex;align-items:center;gap:14px;padding:10px 24px;flex-wrap:wrap;
+/* Barre de mode (juste sous le bandeau du haut) */
+.mode-bar{position:fixed;top:48px;left:0;right:0;z-index:99;display:flex;align-items:center;gap:14px;padding:10px 24px;height:50px;flex-wrap:wrap;overflow:hidden;
   background:linear-gradient(180deg,rgba(14,14,18,0.94),rgba(14,14,18,0.85));border-bottom:1px solid rgba(123,95,172,0.15);
   backdrop-filter:blur(10px)}
 .mode-lbl{font-family:'Segoe UI',system-ui,sans-serif;font-size:12px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:rgba(155,125,197,0.75)}
@@ -511,12 +511,6 @@ label.rb-block-h{cursor:pointer}
     </div>
   </div>
 </div>
-<div class="tabs">
-  <button class="tab active" data-sh="dim" onclick="goSheet('dim')"><span class="tab-num">1</span><span class="tab-ic">🏗️</span><span class="tab-lbl">Installation<br><small>REMBTs + CCU</small></span></button>
-  <button class="tab" data-sh="rc" onclick="goSheet('rc')"><span class="tab-num">2</span><span class="tab-ic">📏</span><span class="tab-lbl">Chutes REMBT → CIBE<br><small>%C2 par logement</small></span></button>
-  <button class="tab" data-sh="ct" onclick="goSheet('ct')"><span class="tab-num">3</span><span class="tab-ic">📏</span><span class="tab-lbl">Chutes CIBE → TA<br><small>%C1 par logement</small></span></button>
-  <button class="tab" data-sh="sch" onclick="goSheet('sch')"><span class="tab-num">4</span><span class="tab-ic">📐</span><span class="tab-lbl">Synthèse<br><small>schéma + exports</small></span></button>
-</div>
 <div class="mode-bar">
   <span class="mode-lbl">⚙️ Mode de calcul :</span>
   <div class="scope-toggle" title="Mode de calcul">
@@ -524,6 +518,12 @@ label.rb-block-h{cursor:pointer}
     <button id="scope-c1" class="scope-btn" onclick="setScope('c1only')">CIBE → TA uniquement (C1 seul)</button>
   </div>
   <span class="mode-help">Pour les dossiers où vous ne dimensionnez que le tronçon final, choisissez « C1 seul » : les étapes 1 et 2 seront masquées.</span>
+</div>
+<div class="tabs">
+  <button class="tab active" data-sh="dim" onclick="goSheet('dim')"><span class="tab-num">1</span><span class="tab-ic">🏗️</span><span class="tab-lbl">Installation<br><small>REMBTs + CCU</small></span></button>
+  <button class="tab" data-sh="rc" onclick="goSheet('rc')"><span class="tab-num">2</span><span class="tab-ic">📏</span><span class="tab-lbl">Chutes REMBT → CIBE<br><small>%C2 par logement</small></span></button>
+  <button class="tab" data-sh="ct" onclick="goSheet('ct')"><span class="tab-num">3</span><span class="tab-ic">📏</span><span class="tab-lbl">Chutes CIBE → TA<br><small>%C1 par logement</small></span></button>
+  <button class="tab" data-sh="sch" onclick="goSheet('sch')"><span class="tab-num">4</span><span class="tab-ic">📐</span><span class="tab-lbl">Synthèse<br><small>schéma + exports</small></span></button>
 </div>
 <div class="content">
   <div class="sheet" id="sh-rc"></div>

@@ -1062,7 +1062,7 @@ function renderSide(side){
             <th class="col-h" title="Pour logement : surface en m². Pour comptage TB tri : kVA souscrits.">Surf. / kVA</th>
             <th>M/T</th>
             <th>Long. m</th>
-            <th>Section mm²</th>
+            <th>Section mm²<br><span style="font-size:9px;color:rgba(180,165,200,0.40)">${isRc?'HN33S33':'AR2V'}</span></th>
             <th class="col-h" title="Puissance kVA effective">Puiss. <br><span style="font-size:9px;color:rgba(180,165,200,0.40)">kVA</span></th>
             <th class="col-h" title="Disjoncteur EDF normalisé">Disj.</th>
             <th class="col-h" title="Calibre du disjoncteur (A)">N <br><span style="font-size:9px;color:rgba(180,165,200,0.40)">A</span></th>
@@ -1722,7 +1722,7 @@ function renderSchema(){
           s += txt(midX, Y.cf+24, 'DE FAÇADE', {size:9, weight:700, fill:NAVY, ls:1});
           s += line(midX, Y.cf+Y.cfH, midX, Y.rembt, {stroke:NAVY});
           const cfMid = (Y.cf+Y.cfH+Y.rembt)/2;
-          s += txt(midX+7, cfMid-3, `Câble ALU · L=${r.cf.long||'?'} m`, {size:8, anchor:'start', fill:'#555'});
+          s += txt(midX+7, cfMid-3, `HN33S33 · L=${r.cf.long||'?'} m`, {size:8, anchor:'start', fill:'#555'});
           s += txt(midX+7, cfMid+7, `${r.cf.section||'?'} mm²`, {size:8, weight:700, anchor:'start', fill:'#1a1a1a'});
         }
         const sugg = rembtSuggest(rembtPlages(r));
@@ -1734,10 +1734,10 @@ function renderSchema(){
         const rcPset = [...new Set(lgts.map(x => x.l.rc.P))];
         const rcMid = (Y.rembt+Y.rembtH+Y.cibe)/2;
         if(rcOset.length === 1 && rcPset.length === 1){
-          s += txt(midX+7, rcMid-3, `Câble ALU · L=${rcOset[0]||'?'} m`, {size:8, anchor:'start', fill:'#555'});
+          s += txt(midX+7, rcMid-3, `HN33S33 · L=${rcOset[0]||'?'} m`, {size:8, anchor:'start', fill:'#555'});
           s += txt(midX+7, rcMid+7, `${rcPset[0]||'?'} mm²`, {size:8, weight:700, anchor:'start', fill:'#1a1a1a'});
         } else {
-          s += txt(midX+7, rcMid-3, 'Câble ALU', {size:8, anchor:'start', fill:'#555'});
+          s += txt(midX+7, rcMid-3, 'HN33S33', {size:8, anchor:'start', fill:'#555'});
           s += txt(midX+7, rcMid+7, 'L/S par départ ↓', {size:8, weight:700, anchor:'start', fill:'#1a1a1a'});
         }
         s += rect(midX-60, Y.cibe, 120, Y.cibeH, {fill:NAVY, stroke:NAVY});
@@ -1765,11 +1765,11 @@ function renderSchema(){
         s += line(x, Y.bus, x, Y.ta, {stroke:INK});
         // étiquette amont C2 (REMBT→CIBE) — mode complet seulement
         if(!c1only){
-          s += txt(x+6, Y.c2-2, `C2 amont · L₁=${l.rc.O||'?'}m · ${l.rc.P||'?'}mm²`, {size:7.5, anchor:'start', fill:'#888'});
+          s += txt(x+6, Y.c2-2, `C2 · HN33S33 · L₁=${l.rc.O||'?'}m · ${l.rc.P||'?'}mm²`, {size:7.5, anchor:'start', fill:'#888'});
           s += txt(x+6, Y.c2+7, `chute C2 ${a.pc==null?'—':a.pc.toFixed(2)+'%'}`, {size:7.5, weight:700, anchor:'start', fill:pcColor(a.pc)});
         }
         // étiquette C1 (CIBE→TA)
-        s += txt(x+6, Y.c1-2, `C1 · L₂=${l.ct.O||'?'}m · ${l.ct.P||'?'}mm²`, {size:8, anchor:'start', fill:'#555'});
+        s += txt(x+6, Y.c1-2, `C1 · AR2V · L₂=${l.ct.O||'?'}m · ${l.ct.P||'?'}mm²`, {size:8, anchor:'start', fill:'#555'});
         s += txt(x+6, Y.c1+8, `chute C1 ${b.pc==null?'—':b.pc.toFixed(2)+'%'}`, {size:8, weight:700, anchor:'start', fill:pcColor(b.pc)});
         // point de liaison
         s += dot(x, (Y.bus+Y.ta)/2, '#e08a1f');
@@ -2470,7 +2470,7 @@ async function exportPDF(){
         doc.setDrawColor(31, 56, 100); doc.setLineWidth(0.5);
         doc.line(centerX, cfY + cfH, centerX, sy - vGap/2);
         doc.setFontSize(6); doc.setTextColor(60, 60, 60); doc.setFont('helvetica','italic');
-        doc.text(`L=${r.cf.long||'?'} m · S=${r.cf.section||'?'} mm² ALU`, centerX + 1, cfY + cfH + (sy - vGap/2 - cfY - cfH)/2, {baseline:'middle'});
+        doc.text(`HN33S33 · L=${r.cf.long||'?'} m · ${r.cf.section||'?'} mm²`, centerX + 1, cfY + cfH + (sy - vGap/2 - cfY - cfH)/2, {baseline:'middle'});
       }
       rx += sw + hGap;
     });

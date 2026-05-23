@@ -1810,19 +1810,6 @@ function renderSchema(){
         <div class="plan-rembt-title">${titleTxt}</div>
         <div class="uni-wrap">${lgts.length ? buildSvgPlan(r, lgts) : '<div style="padding:20px;color:#888;font-size:11px">Aucun logement rattaché à ce REMBT.</div>'}</div>`;
 
-      // Zones normatives (racines uniquement)
-      if(!r.parentId){
-        block += c1only
-          ? `<div class="plan-zones">
-              <div class="plan-zone plan-zone-wide">COLONNE / CIBE<br><small>NF C 14-100</small></div>
-              <div class="plan-zone">UTILISATEUR<br><small>NF C 15-100</small></div>
-            </div>`
-          : `<div class="plan-zones">
-              <div class="plan-zone plan-zone-wide">BRANCHEMENT COLLECTIF<br><small>NF C 14-100</small></div>
-              <div class="plan-zone">UTILISATEUR<br><small>NF C 15-100</small></div>
-            </div>`;
-      }
-
       if(r.notes && r.notes.trim()){
         block += `<div class="plan-notes">📝 ${escapeHtml(r.notes)}</div>`;
       }
@@ -1847,25 +1834,11 @@ function renderSchema(){
       h += `<div class="plan-rembt-section">
         <div class="plan-rembt-title">Coffret CIBE → Tableaux d'abonné</div>
         <div class="uni-wrap">${allLgts.length ? buildSvgPlan(null, allLgts) : '<div style="padding:20px;color:#888;font-size:11px">Aucun logement.</div>'}</div>
-        <div class="plan-zones">
-          <div class="plan-zone plan-zone-wide">COLONNE / CIBE<br><small>NF C 14-100</small></div>
-          <div class="plan-zone">UTILISATEUR<br><small>NF C 15-100</small></div>
-        </div>
       </div>`;
     } else {
       const roots = byParent.get('_root') || [];
       roots.forEach(r => { h += renderRembtPlan(r, false); });
     }
-
-    // Légende
-    h += `<div class="plan-legend">
-      <div class="plan-leg-item"><span class="plan-dot dot-green plan-dot-inline"></span>Point de raccordement réseau</div>
-      <div class="plan-leg-item"><span class="plan-dot dot-orange plan-dot-inline"></span>Point de liaison</div>
-      <div class="plan-leg-item"><span class="schema-leg-swatch ok"></span>Conforme (≤ ${fmt(CI.limTot*0.85,2)} %)</div>
-      <div class="plan-leg-item"><span class="schema-leg-swatch warn"></span>Proche limite</div>
-      <div class="plan-leg-item"><span class="schema-leg-swatch bad"></span>Hors limite (&gt; ${fmt(CI.limTot,2)} %)</div>
-      <div class="plan-leg-item">TA = tableau abonné · CIBE = coffret immeuble · disj. = disjoncteur de branchement</div>
-    </div>`;
 
     // Cartouche pied de plan
     const today = new Date();

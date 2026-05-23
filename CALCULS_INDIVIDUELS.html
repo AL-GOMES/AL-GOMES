@@ -1610,8 +1610,8 @@ function renderSchema(){
       <div class="intro-num">${c1only?'2':'4'}</div>
       <div class="intro-txt">
         <b>Étape ${c1only?'2':'4'} — Synthèse.</b> ${c1only
-          ? 'Schéma unifilaire : un seul coffret CIBE et un départ par logement (câble AR2V C1 → tableau abonné). Aucune notion de REMBT en mode C1 seul. Section, longueur et chute affichées sur chaque câble.'
-          : 'Schéma unifilaire : Coffret de façade → REMBT (jeu de barres) → un départ par logement (disjoncteur → câble C2 → CIBE → câble C1 → tableau abonné). Section, longueur et chute sur chaque tronçon.'}
+          ? 'Schéma unifilaire : un coffret CIBE par client (un CIBE = un seul client), puis câble AR2V (C1) → tableau abonné. Aucune notion de REMBT en mode C1 seul.'
+          : 'Schéma unifilaire : Coffret de façade → REMBT → un départ par client (câble C2 → son coffret CIBE → câble C1 → tableau abonné). Un CIBE = un seul client. Section, longueur et chute sur chaque tronçon.'}
       </div>
     </div>
 
@@ -1690,6 +1690,10 @@ function renderSchema(){
 
     // ── Construit un schéma unifilaire SVG pour un REMBT ──
     // Amont vertical : Coffret façade → REMBT → CIBE, puis départs depuis le CIBE.
+    // ── Schéma unifilaire SVG ──
+    // Architecture : un coffret CIBE par client (un CIBE = un seul client).
+    // Mode complet : Coffret façade → REMBT → (par client) C2 → CIBE → C1 → TA.
+    // Mode C1 seul : (par client) CIBE → C1 → TA.
     function buildSvgPlan(r, lgts){
       const NAVY = '#1f3864', INK = '#1a1a1a';
       const n = Math.max(lgts.length, 1);
@@ -1701,13 +1705,12 @@ function renderSchema(){
       const depX1 = cx(0), depX2 = cx(n-1);
       const midX = (depX1 + depX2)/2;
 
-      // Niveaux verticaux (y)
       let Y;
       if(!c1only){
-        Y = { cf:18, cfH:30, rembt:80, rembtH:28, cibe:152, cibeH:28, bus:198,
-              c2:228, c1:268, ta:300, taH:34, total:346 };
+        Y = { cf:16, cfH:28, rembt:74, rembtH:26, bus:120,
+              c2:152, cibe:184, cibeH:22, c1:230, ta:264, taH:34, total:310 };
       } else {
-        Y = { cibe:18, cibeH:28, bus:64, c1:110, ta:150, taH:34, total:196 };
+        Y = { note:14, cibe:26, cibeH:22, c1:78, ta:112, taH:34, total:158 };
       }
 
       const esc = s => escapeHtml(String(s));
@@ -1715,18 +1718,16 @@ function renderSchema(){
       const line = (x1,y1,x2,y2,o={}) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${o.stroke||INK}" stroke-width="${o.sw||2}"${o.dash?` stroke-dasharray="${o.dash}"`:''}/>`;
       const txt = (x,y,t,o={}) => `<text x="${x}" y="${y}" font-family="Helvetica,Arial,sans-serif" font-size="${o.size||10}" font-weight="${o.weight||400}" fill="${o.fill||INK}" text-anchor="${o.anchor||'middle'}"${o.ls?` letter-spacing="${o.ls}"`:''}>${esc(t)}</text>`;
       const dot = (x,y,clr) => `<circle cx="${x}" cy="${y}" r="4.5" fill="${clr}" stroke="${INK}" stroke-width="1.2"/>`;
+      const sect = (P, ph) => P ? `${ph==='M'?'2×':'4×'}${P} mm²` : '? mm²';
 
       let s = `<svg viewBox="0 0 ${svgW} ${Y.total}" width="${svgW}" height="${Y.total}" class="uni-svg" xmlns="http://www.w3.org/2000/svg">`;
 
-      // Nombre de conducteurs devant la section : mono = 2×, tri = 4×
-      const sect = (P, ph) => P ? `${ph==='M'?'2×':'4×'}${P} mm²` : '? mm²';
-
-      // ── Amont vertical centré ──
+      // ── Amont ──
       if(!c1only){
         if(r.cf && r.cf.active){
           s += rect(midX-50, Y.cf, 100, Y.cfH, {fill:'#fff'});
-          s += txt(midX, Y.cf+13, 'COFFRET', {size:9, weight:700, fill:NAVY, ls:1});
-          s += txt(midX, Y.cf+24, 'DE FAÇADE', {size:9, weight:700, fill:NAVY, ls:1});
+          s += txt(midX, Y.cf+12, 'COFFRET', {size:9, weight:700, fill:NAVY, ls:1});
+          s += txt(midX, Y.cf+22, 'DE FAÇADE', {size:9, weight:700, fill:NAVY, ls:1});
           s += line(midX, Y.cf+Y.cfH, midX, Y.rembt, {stroke:NAVY});
           const cfMid = (Y.cf+Y.cfH+Y.rembt)/2;
           s += txt(midX+7, cfMid-3, `HN33S33 · L=${r.cf.long||'?'} m`, {size:8, anchor:'start', fill:'#555'});
@@ -1735,32 +1736,14 @@ function renderSchema(){
         const sugg = rembtSuggest(rembtPlages(r));
         s += rect(midX-78, Y.rembt, 156, Y.rembtH, {fill:NAVY, stroke:NAVY});
         s += txt(midX, Y.rembt+18, `${r.name} · REMBT ${sugg===6?'300':sugg===9?'450':'600'}`, {size:10, weight:700, fill:'#fff', ls:0.5});
-        s += line(midX, Y.rembt+Y.rembtH, midX, Y.cibe, {stroke:NAVY});
-        // Câble REMBT → CIBE : nature + longueur + section (valeurs réelles)
-        const rcOset = [...new Set(lgts.map(x => x.l.rc.O))];
-        const rcPset = [...new Set(lgts.map(x => x.l.rc.P))];
-        const rcPhset = [...new Set(lgts.map(x => lgtPhase(x.l)))];
-        const rcMid = (Y.rembt+Y.rembtH+Y.cibe)/2;
-        if(rcOset.length === 1 && rcPset.length === 1){
-          s += txt(midX+7, rcMid-3, `HN33S33 · L=${rcOset[0]||'?'} m`, {size:8, anchor:'start', fill:'#555'});
-          s += txt(midX+7, rcMid+7, rcPhset.length===1 ? sect(rcPset[0], rcPhset[0]) : `${rcPset[0]||'?'} mm²`, {size:8, weight:700, anchor:'start', fill:'#1a1a1a'});
-        } else {
-          s += txt(midX+7, rcMid-3, 'HN33S33', {size:8, anchor:'start', fill:'#555'});
-          s += txt(midX+7, rcMid+7, 'L/S par départ ↓', {size:8, weight:700, anchor:'start', fill:'#1a1a1a'});
-        }
-        s += rect(midX-60, Y.cibe, 120, Y.cibeH, {fill:NAVY, stroke:NAVY});
-        s += txt(midX, Y.cibe+18, 'COFFRET CIBE', {size:10, weight:700, fill:'#fff', ls:0.5});
+        // Répartition vers les départs
+        s += line(midX, Y.rembt+Y.rembtH, midX, Y.bus, {stroke:NAVY});
+        if(n > 1) s += line(depX1, Y.bus, depX2, Y.bus, {stroke:NAVY, sw:2.5});
       } else {
-        s += rect(midX-60, Y.cibe, 120, Y.cibeH, {fill:NAVY, stroke:NAVY});
-        s += txt(midX, Y.cibe+18, 'COFFRET CIBE', {size:10, weight:700, fill:'#fff', ls:0.5});
+        s += txt(midX, Y.note, 'Colonne montante — un coffret CIBE par client', {size:8.5, fill:'#888', weight:700, ls:0.5});
       }
 
-      // ── Distribution depuis le CIBE vers les départs ──
-      const yCibeBot = Y.cibe + Y.cibeH;
-      s += line(midX, yCibeBot, midX, Y.bus, {stroke:NAVY});
-      if(n > 1) s += line(depX1, Y.bus, depX2, Y.bus, {stroke:NAVY, sw:2.5});
-
-      // ── Départs individuels (depuis le CIBE) ──
+      // ── Départs : un CIBE par client ──
       lgts.forEach(({l}, i) => {
         const x = cx(i);
         const a = compute(l,'rc'), b = compute(l,'ct');
@@ -1769,23 +1752,31 @@ function renderSchema(){
         const id = (l.bat||'?')+'-'+(l.lett||'?');
         const phase = lgtPhase(l), kva = lgtKva(l);
 
-        // descente depuis le bus de distribution jusqu'au TA
-        s += line(x, Y.bus, x, Y.ta, {stroke:INK});
-        // étiquette amont C2 (REMBT→CIBE) — mode complet seulement
         if(!c1only){
+          // Répartition → câble C2 (REMBT → CIBE)
+          s += line(x, Y.bus, x, Y.cibe, {stroke:INK});
           s += txt(x+6, Y.c2-2, `C2 · HN33S33 · L₁=${l.rc.O||'?'}m · ${sect(l.rc.P, phase)}`, {size:7.5, anchor:'start', fill:'#888'});
           s += txt(x+6, Y.c2+7, `chute C2 ${a.pc==null?'—':a.pc.toFixed(2)+'%'}`, {size:7.5, weight:700, anchor:'start', fill:pcColor(a.pc)});
+        } else {
+          // C1 seul : note d'arrivée colonne au-dessus du CIBE
+          s += line(x, Y.note+6, x, Y.cibe, {stroke:NAVY, dash:'3 2'});
         }
-        // étiquette C1 (CIBE→TA)
+
+        // Coffret CIBE individuel (un par client)
+        const ciW = 80;
+        s += rect(x-ciW/2, Y.cibe, ciW, Y.cibeH, {fill:'#fff'});
+        s += txt(x, Y.cibe+14, 'CIBE', {size:9, weight:700, fill:NAVY, ls:1});
+
+        // Câble C1 (CIBE → TA)
+        s += line(x, Y.cibe+Y.cibeH, x, Y.ta, {stroke:INK});
         s += txt(x+6, Y.c1-2, `C1 · AR2V · L₂=${l.ct.O||'?'}m · ${sect(l.ct.P, phase)}`, {size:8, anchor:'start', fill:'#555'});
         s += txt(x+6, Y.c1+8, `chute C1 ${b.pc==null?'—':b.pc.toFixed(2)+'%'}`, {size:8, weight:700, anchor:'start', fill:pcColor(b.pc)});
-        // point de liaison
-        s += dot(x, (Y.bus+Y.ta)/2, '#e08a1f');
-        // Tableau abonné (cadre pointillé = limite utilisateur)
+        s += dot(x, (Y.cibe+Y.cibeH+Y.ta)/2, '#e08a1f');
+
+        // Tableau abonné (limite utilisateur, cadre pointillé)
         const tW = 88, tX = x-tW/2;
         s += rect(tX, Y.ta, tW, Y.taH, {fill:'#fff', stroke:tClr, sw:2, dash:'4 2'});
         s += txt(x, Y.ta+13, id, {size:9.5, weight:700, fill:tClr});
-        // En C1 seul : pas de "Σ" (une seule chute, déjà sur le câble). En complet : total C1+C2.
         s += txt(x, Y.ta+24, c1only
           ? `${kva||'?'} kVA ${phase==='M'?'mono':'tri'}`
           : `${kva||'?'}kVA ${phase==='M'?'M':'T'} · Σ${tot==null?'—':tot.toFixed(2)+'%'}`,
@@ -1803,7 +1794,7 @@ function renderSchema(){
       const sugg = rembtSuggest(plages);
       const sizeLbl = sugg == null ? '> 12p' : `${sugg}p`;
       const titleTxt = c1only
-        ? `${escapeHtml(r.name)} — Coffret CIBE → Tableaux d'abonné`
+        ? `${escapeHtml(r.name)} — Dérivations individuelles CIBE → Tableaux d'abonné`
         : `${escapeHtml(r.name)} — ${sugg ? 'REMBT '+(sugg===6?'300':sugg===9?'450':'600') : 'à diviser'} (${plages}/${sizeLbl})${r.parentId ? ' · cascade depuis ' + escapeHtml((CI.rembts.find(x=>x.id===r.parentId)||{}).name||'—') : ''}`;
 
       let block = `<div class="plan-rembt-section" style="${indent?'margin-left:40px;border-left:2px dashed #1f3864;padding-left:24px':''}">
@@ -1832,7 +1823,7 @@ function renderSchema(){
         return (a.l.lett||'').localeCompare(b.l.lett||'');
       });
       h += `<div class="plan-rembt-section">
-        <div class="plan-rembt-title">Coffret CIBE → Tableaux d'abonné</div>
+        <div class="plan-rembt-title">Dérivations individuelles CIBE → Tableaux d'abonné</div>
         <div class="uni-wrap">${allLgts.length ? buildSvgPlan(null, allLgts) : '<div style="padding:20px;color:#888;font-size:11px">Aucun logement.</div>'}</div>
       </div>`;
     } else {

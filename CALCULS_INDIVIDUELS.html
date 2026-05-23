@@ -1668,28 +1668,15 @@ function renderSchema(){
       let block = `<div class="plan-rembt-section" style="${indent?'margin-left:60px;border-left:2px dashed #1f3864;padding-left:30px':''}">
         <div class="plan-rembt-title">${escapeHtml(r.name)} — ${sugg ? 'REMBT '+(sugg===6?'300':sugg===9?'450':'600') : 'à diviser'} (${plages}/${sizeLbl})${r.parentId ? ' · cascade depuis ' + escapeHtml((CI.rembts.find(x=>x.id===r.parentId)||{}).name||'—') : ''}</div>`;
 
-      // Ligne principale horizontale
+      // Ligne principale horizontale (commence au Coffret de façade, pas au Réseau)
       block += `<div class="plan-line">`;
-      // Source RÉSEAU
-      block += `<div class="plan-block plan-block-source">Réseau<br>ENEDIS</div>`;
-      // Segment : réseau → CCU (ou directement REMBT si pas de CCU)
       if(cf){
-        block += `<div class="plan-segment">
-          <div class="plan-seg-line"></div>
-          <div class="plan-seg-lbl">liaison réseau<br>L = ${cf.calibre ? '?' : '?'} m</div>
-          <div class="plan-dot dot-green" title="Point de raccordement réseau"></div>
-        </div>
-        <div class="plan-block">CCU<br>${cf.calibre} A tri</div>
+        // Coffret de façade — libellé simple, sans calibre ni détails
+        block += `<div class="plan-block">Coffret<br>de façade</div>
         <div class="plan-segment">
           <div class="plan-seg-line"></div>
-          <div class="plan-seg-lbl">L = ${r.cf.long||'?'} m · ${r.cf.section||'?'} mm²<br>ΔU = ${cf.pc.toFixed(3)} %</div>
-          <div class="plan-dot dot-green"></div>
-        </div>`;
-      } else {
-        block += `<div class="plan-segment">
-          <div class="plan-seg-line"></div>
-          <div class="plan-seg-lbl">liaison<br>au réseau</div>
-          <div class="plan-dot dot-green" title="Point de raccordement réseau"></div>
+          <div class="plan-seg-lbl">L = ${r.cf.long||'?'} m · ${r.cf.section||'?'} mm²</div>
+          <div class="plan-dot dot-green" title="Point de raccordement"></div>
         </div>`;
       }
       // REMBT
@@ -1736,7 +1723,6 @@ function renderSchema(){
       // Zones normatives (sous la ligne principale uniquement pour les racines)
       if(!r.parentId){
         block += `<div class="plan-zones">
-          <div class="plan-zone">RÉSEAU<br><small>NF C 11-201</small></div>
           <div class="plan-zone plan-zone-wide">BRANCHEMENT COLLECTIF<br><small>NF C 14-100</small></div>
           <div class="plan-zone">UTILISATEUR<br><small>NF C 15-100</small></div>
         </div>`;
@@ -2265,17 +2251,11 @@ async function exportPDF(){
   doc.setFontSize(15); doc.setTextColor(...white); doc.setFont('helvetica','bold');
   doc.text(pName + ' — SCHÉMA RÉCAPITULATIF', pageW/2, 12, {align:'center'});
   doc.setFontSize(9); doc.setTextColor(180,199,231);
-  doc.text(`Arborescence ENEDIS → REMBT → logements  ·  ${CI.rembts.length} REMBT(s)  ·  ${CI.lgts.length} logement(s)`, pageW/2, 16, {align:'center'});
+  doc.text(`Arborescence Coffret de façade → REMBT → logements  ·  ${CI.rembts.length} REMBT(s)  ·  ${CI.lgts.length} logement(s)`, pageW/2, 16, {align:'center'});
 
   // ── 1. Topologie graphique (REMBT boxes + lignes) ──────────
-  let sy = 24;
-  // Bandeau ENEDIS centré
-  const enedisW = 80, enedisX = (pageW - enedisW)/2;
-  doc.setFillColor(0, 176, 240);
-  doc.roundedRect(enedisX, sy, enedisW, 10, 2, 2, 'F');
-  doc.setFontSize(11); doc.setTextColor(...white); doc.setFont('helvetica','bold');
-  doc.text('⚡  RÉSEAU ENEDIS', pageW/2, sy + 6.5, {align:'center'});
-  sy += 14;
+  // Démarre directement aux REMBT racines (pas de bloc Réseau ENEDIS en amont)
+  let sy = 28;
 
   // Préparer arbre REMBT
   const byParentPDF = new Map();
@@ -2381,23 +2361,7 @@ async function exportPDF(){
   if(hasAnyCF) sy = sy + cfH + cfGapBelow + 6; // décale les REMBTs vers le bas
 
   let cx = startX;
-  // Ligne ENEDIS → barre des racines
-  if(rootsPDF.length > 0){
-    doc.setDrawColor(120, 100, 160); doc.setLineWidth(0.4);
-    doc.line(pageW/2, sy0 - 4, pageW/2, sy0);
-    if(rootsPDF.length > 1){
-      // Barre horizontale au-dessus des racines
-      let firstC, lastC, rx = startX;
-      rootsPDF.forEach((r, ri) => {
-        const sw = subtreeWidth(r) * (boxW + hGap) - hGap;
-        const c = rx + sw/2;
-        if(ri === 0) firstC = c;
-        lastC = c;
-        rx += sw + hGap;
-      });
-      doc.line(firstC, sy0 - 4, lastC, sy0 - 4);
-    }
-  }
+  // Plus de bloc Réseau ENEDIS — on démarre directement aux Coffrets de façade ou REMBT.
 
   // Dessine éventuellement les coffrets de façade et les liaisons CF→REMBT
   if(hasAnyCF){
@@ -2406,36 +2370,22 @@ async function exportPDF(){
       const sw = subtreeWidth(r) * (boxW + hGap) - hGap;
       const centerX = rx + sw/2;
       if(r.cf && r.cf.active){
-        const c = cfChute(r);
-        const cal = (c && c.calibre) || rembtAutoCalibre(r.id).cal || 30;
-        const cfClr = c == null ? okPDF : (c.pc > CI.limT ? badPDF : (c.pc > CI.limT*0.8 ? warnPDF : okPDF));
         const cfW = 50;
         const cfX = centerX - cfW/2;
         const cfY = sy0;
-        // Boîte CF
-        doc.setFillColor(...cfClr);
-        doc.setDrawColor(0, 130, 200);
-        doc.setLineWidth(0.4);
-        doc.roundedRect(cfX, cfY, cfW, cfH, 1.5, 1.5, 'FD');
-        doc.setFontSize(8); doc.setTextColor(0, 60, 100); doc.setFont('helvetica','bold');
-        doc.text(`🏠 ${r.cf.name || 'CF'} — Coffret façade`, centerX, cfY + 4.5, {align:'center'});
-        doc.setFontSize(6.5); doc.setFont('helvetica','normal');
-        doc.text(`Disj. ${cal} A · tri (auto)`, centerX, cfY + 8, {align:'center'});
-        if(c){
-          doc.setFont('helvetica','bold'); doc.setTextColor(80, 40, 0);
-          doc.text(`ΔU = ${c.vu.toFixed(2)} V · ${c.pc.toFixed(3)} %`, centerX, cfY + 12, {align:'center'});
-        }
-        // Liaison ENEDIS → CF
-        doc.setDrawColor(120, 100, 160); doc.setLineWidth(0.4);
-        doc.line(centerX, sy0 - 4, centerX, cfY);
-        // Liaison CF → REMBT (avec étiquette câble)
+        // Boîte CF — libellé simple "Coffret de façade", pas de calibre
+        doc.setFillColor(255, 255, 255);
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.5);
+        doc.roundedRect(cfX, cfY, cfW, cfH, 1, 1, 'FD');
+        doc.setFontSize(8); doc.setTextColor(31, 56, 100); doc.setFont('helvetica','bold');
+        doc.text('Coffret de', centerX, cfY + 5.5, {align:'center'});
+        doc.text('façade', centerX, cfY + 10, {align:'center'});
+        // Liaison CF → REMBT (avec étiquette câble L/S)
+        doc.setDrawColor(31, 56, 100); doc.setLineWidth(0.5);
         doc.line(centerX, cfY + cfH, centerX, sy - vGap/2);
-        doc.setFontSize(6); doc.setTextColor(110, 100, 130); doc.setFont('helvetica','italic');
+        doc.setFontSize(6); doc.setTextColor(60, 60, 60); doc.setFont('helvetica','italic');
         doc.text(`L=${r.cf.long||'?'} m · S=${r.cf.section||'?'} mm² ALU`, centerX + 1, cfY + cfH + (sy - vGap/2 - cfY - cfH)/2, {baseline:'middle'});
-      } else {
-        // Sans CF, juste prolonger la ligne ENEDIS → REMBT
-        doc.setDrawColor(120, 100, 160); doc.setLineWidth(0.4);
-        doc.line(centerX, sy0 - 4, centerX, sy - vGap/2);
       }
       rx += sw + hGap;
     });

@@ -6,7 +6,7 @@
 //   - AL_VERSION_TIME  : HH:MM      (heure de la MAJ — local Paris)
 //   - AL_VERSION_NOTE  : 1 phrase courte qui décrit le motif de la MAJ
 // =====================================================================
-window.AL_VERSION      = 'v1.62';
+window.AL_VERSION      = 'v1.63';
 window.AL_VERSION_DATE = '2026-05-22';
-window.AL_VERSION_TIME = '08:00';
-window.AL_VERSION_NOTE = 'Calculs individuels : ligne comptage TB tri simplifiée — Type Log / Lettrage / HALL / Surface / M/T fusionnés en une seule cellule contenant un champ « Nom du comptage » + dropdown kVA + badge Tri 400 V, avec fond bleuté distinctif.';
+window.AL_VERSION_TIME = '08:30';
+window.AL_VERSION_NOTE = 'Calculs individuels : sélecteur de mode (REMBT→CIBE→TA complet OU CIBE→TA seul) déplacé dans une barre dédiée et visible en permanence sous les onglets — plus possible de le rater.';

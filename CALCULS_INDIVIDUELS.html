@@ -407,34 +407,33 @@ label.rb-block-h{cursor:pointer}
 .plan-segment > .plan-dot{position:absolute;right:-6.5px;top:50%;transform:translateY(-50%);z-index:2}
 .plan-dot-inline{vertical-align:middle;margin-right:4px}
 
-/* Dérivations individuelles (sous le CIBE, alignées à droite) */
-.plan-derivations{margin-top:8px;padding-left:60px;border-left:2px solid #1f3864;margin-left:60%}
-.plan-deriv-h{font-family:'Helvetica','Arial',sans-serif;font-size:9.5px;font-weight:700;color:#1f3864;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;padding:3px 8px;background:#fff;border:1px solid #1f3864;display:inline-block}
+/* Dérivations individuelles — chaque logement = ligne de câble horizontale */
+.plan-derivations{margin-top:14px}
+.plan-deriv-h{font-family:'Helvetica','Arial',sans-serif;font-size:9.5px;font-weight:700;color:#1f3864;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;padding:3px 8px;background:#fff;border:1px solid #1f3864;display:inline-block}
 
-.plan-deriv{display:flex;align-items:center;gap:8px;padding:7px 10px;margin-bottom:5px;background:#fff;border:1px solid #1a1a1a;border-radius:0;font-family:'Helvetica','Arial',sans-serif;font-size:11px;color:#1a1a1a;position:relative;min-width:fit-content}
-.plan-deriv::before{content:'';position:absolute;left:-62px;top:50%;width:60px;height:2px;background:#1f3864}
+.plan-deriv{display:flex;align-items:center;gap:0;padding:8px 12px;margin-bottom:6px;background:#fff;border:1px solid #1a1a1a;border-radius:0;font-family:'Helvetica','Arial',sans-serif;font-size:11px;color:#1a1a1a;position:relative;min-width:fit-content}
 .plan-deriv.ok    {border-left:5px solid #2e6b3e}
 .plan-deriv.warn  {border-left:5px solid #b26d24}
 .plan-deriv.bad   {border-left:5px solid #a83232;background:#fdeaea}
-.plan-deriv-id{font-weight:700;color:#1f3864;font-size:11.5px;letter-spacing:0.6px;min-width:72px;text-transform:uppercase}
-.plan-deriv-meta{min-width:120px;font-size:10px;color:#555;letter-spacing:0.2px;line-height:1.3}
-/* Segment de câble (REMBT→CIBE ou CIBE→TA) sur la dérivation */
-.plan-deriv-seg{display:flex;flex-direction:column;align-items:center;gap:1px;position:relative;padding:3px 10px;min-width:108px;
-  background:#faf7ee;border:1px solid #1f3864;border-radius:0}
-.plan-deriv-seg::before{content:'';position:absolute;left:-11px;top:50%;width:10px;height:2px;background:#1f3864;transform:translateY(-50%)}
-.plan-deriv-seg::after{content:'';position:absolute;right:-11px;top:50%;width:10px;height:2px;background:#1f3864;transform:translateY(-50%)}
-.plan-deriv-seg .seg-lbl{font-size:8px;font-weight:700;letter-spacing:0.8px;color:#1f3864;text-transform:uppercase}
-.plan-deriv-seg .seg-val{font-size:10px;font-weight:700;color:#1a1a1a;letter-spacing:0.2px;white-space:nowrap}
-.plan-deriv-seg .seg-pc{font-size:9px;font-weight:700;letter-spacing:0.2px}
-.plan-deriv-seg .seg-pc.ok{color:#2e6b3e}.plan-deriv-seg .seg-pc.warn{color:#b26d24}.plan-deriv-seg .seg-pc.bad{color:#a83232}.plan-deriv-seg .seg-pc.vu{color:#666}
-.plan-deriv-wh{background:#fff;border:1.5px solid #1f3864;padding:4px 9px;font-size:10px;font-weight:700;letter-spacing:1px;color:#1f3864;text-transform:uppercase;text-align:center;line-height:1.2;flex-shrink:0;
+.plan-deriv-id{font-weight:700;color:#1f3864;font-size:12px;letter-spacing:0.6px;min-width:130px;text-transform:uppercase;padding-right:10px}
+.plan-deriv-kva{font-size:9.5px;font-weight:500;color:#555;letter-spacing:0.2px;text-transform:none;margin-top:2px}
+/* Tronçon de câble dans une dérivation (réutilise plan-segment) */
+.plan-seg-deriv{min-width:150px;height:46px}
+.plan-block-sm{min-width:54px;padding:7px 8px;font-size:9.5px;box-shadow:inset 0 0 0 1.5px #fff,inset 0 0 0 3px #1f3864}
+.plan-deriv-wh{background:#fff;border:1.5px solid #1f3864;padding:4px 9px;font-size:10px;font-weight:700;letter-spacing:1px;color:#1f3864;text-transform:uppercase;text-align:center;line-height:1.2;flex-shrink:0;margin-left:2px;
   box-shadow:inset 0 0 0 1px #fff,inset 0 0 0 2px #1f3864}
 .plan-deriv-wh small{font-size:9px;font-weight:600;color:#666;letter-spacing:0.3px}
-.plan-deriv-dot{width:11px;height:11px;border-radius:50%;border:1.5px solid #1a1a1a;flex-shrink:0}
-.plan-deriv-dot.dot-orange{background:#e08a1f}
-.plan-deriv-house{padding:6px 12px;border:2px dashed #c00;color:#c00;font-weight:700;font-size:10.5px;letter-spacing:1px;text-transform:uppercase;background:#fff5f5;white-space:nowrap}
-.plan-deriv-pc{display:flex;flex-direction:column;align-items:flex-end;gap:1px;font-family:'Helvetica','Arial',sans-serif;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:0.2px;min-width:64px;text-align:right;margin-left:auto;padding-left:8px}
-.plan-deriv-pc .pc-tot{color:#1a1a1a;font-size:13px}
+.plan-deriv-house{padding:6px 12px;border:2px dashed #c00;color:#c00;font-weight:700;font-size:10.5px;letter-spacing:1px;text-transform:uppercase;background:#fff5f5;white-space:nowrap;margin-left:6px}
+.plan-deriv-pc{display:flex;flex-direction:column;align-items:flex-end;gap:1px;font-family:'Helvetica','Arial',sans-serif;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:0.2px;min-width:74px;text-align:right;margin-left:auto;padding-left:10px}
+.plan-deriv-pc .pc-tot{color:#1a1a1a;font-size:14px}
+.plan-deriv.ok   .plan-deriv-pc .pc-tot{color:#2e6b3e}
+.plan-deriv.warn .plan-deriv-pc .pc-tot{color:#b26d24}
+.plan-deriv.bad  .plan-deriv-pc .pc-tot{color:#a83232}
+/* couleurs des % de chute dans les étiquettes de segment */
+.plan-seg-lbl .seg-pc.ok{color:#2e6b3e}
+.plan-seg-lbl .seg-pc.warn{color:#b26d24}
+.plan-seg-lbl .seg-pc.bad{color:#a83232}
+.plan-seg-lbl .seg-pc.vu{color:#666}
 .plan-deriv.ok   .plan-deriv-pc .pc-tot{color:#2e6b3e}
 .plan-deriv.warn .plan-deriv-pc .pc-tot{color:#b26d24}
 .plan-deriv.bad  .plan-deriv-pc .pc-tot{color:#a83232}
@@ -1681,10 +1680,9 @@ function renderSchema(){
       let block = `<div class="plan-rembt-section" style="${indent?'margin-left:60px;border-left:2px dashed #1f3864;padding-left:30px':''}">
         <div class="plan-rembt-title">${titleTxt}</div>`;
 
-      // ── Ligne principale horizontale ──
+      // ── Ligne principale horizontale (amont) ──
       block += `<div class="plan-line">`;
       if(!c1only){
-        // Mode complet : Coffret de façade → REMBT → CIBE
         if(cf){
           block += `<div class="plan-block">Coffret<br>de façade</div>
           <div class="plan-segment">
@@ -1694,45 +1692,42 @@ function renderSchema(){
           </div>`;
         }
         block += `<div class="plan-block">${escapeHtml(r.name)}<br>REMBT ${sugg===6?'300':sugg===9?'450':'600'}</div>`;
-        block += `<div class="plan-segment">
-          <div class="plan-seg-line"></div>
-          <div class="plan-seg-lbl">colonne<br>montante</div>
-          <div class="plan-dot dot-green"></div>
-        </div>`;
+      } else {
+        block += `<div class="plan-block">Coffret<br>CIBE</div>`;
       }
-      // CIBE (point de répartition vers les logements) — présent dans les 2 modes
-      block += `<div class="plan-block">CIBE</div>`;
       block += `</div>`;
 
-      // Dérivations logements
+      // ── Dérivations : chaque logement = ligne de câble horizontale complète ──
       if(lgts.length > 0){
         block += `<div class="plan-derivations">
-          <div class="plan-deriv-h">DÉRIVATIONS INDIVIDUELLES (${lgts.length} logement${lgts.length>1?'s':''})</div>`;
+          <div class="plan-deriv-h">${c1only?'DÉRIVATIONS CIBE → TABLEAU ABONNÉ':'DÉPARTS INDIVIDUELS (REMBT → CIBE → TABLEAU ABONNÉ)'} — ${lgts.length} logement${lgts.length>1?'s':''}</div>`;
         lgts.forEach(({l, i}) => {
           const a = compute(l, 'rc'), b = compute(l, 'ct');
           const tot = (a.pc != null && b.pc != null) ? a.pc + b.pc : (b.pc != null ? b.pc : null);
           const cls = tot == null ? '' : (tot > CI.limTot ? 'bad' : (tot > CI.limTot*0.85 ? 'warn' : 'ok'));
           const id = (l.bat||'?') + '-' + (l.lett||'?');
-          const meta = `${l.niv||'?'} · ${l.type||'—'}${l.kind!=='compt' && l.S!=='' ? ' · '+l.S+' m²' : ''}`;
           const phase = lgtPhase(l);
           const kva = lgtKva(l);
+          const sub = (l.niv||'?') + ' · ' + (l.type||'—') + (l.kind!=='compt' && l.S!=='' ? ' · '+l.S+' m²' : '') + ' · ' + (kva||'?') + ' kVA ' + (phase==='M'?'mono':'tri') + (l.kind==='compt'?' TB':'');
           block += `<div class="plan-deriv ${cls}">
-            <div class="plan-deriv-id">${escapeHtml(id)}</div>
-            <div class="plan-deriv-meta">${escapeHtml(meta)}<br>${kva||'?'} kVA ${phase==='M'?'mono':'tri'}${l.kind==='compt'?' TB':''}</div>
-            ${c1only ? '' : `<div class="plan-deriv-seg" title="Câble REMBT → CIBE">
-              <span class="seg-lbl">REMBT→CIBE</span>
-              <span class="seg-val">L₁ ${l.rc.O||'?'}m · ${l.rc.P||'?'}mm²</span>
-              <span class="seg-pc ${tdHl(a.pc)}">C2 ${a.pc==null?'—':a.pc.toFixed(2)+'%'}</span>
-            </div>`}
-            <div class="plan-deriv-wh">Wh<br><small>${a.N||'?'} A</small></div>
-            <div class="plan-deriv-seg" title="Câble CIBE → Tableau abonné">
-              <span class="seg-lbl">CIBE→TA</span>
-              <span class="seg-val">L₂ ${l.ct.O||'?'}m · ${l.ct.P||'?'}mm²</span>
-              <span class="seg-pc ${tdHl(b.pc)}">C1 ${b.pc==null?'—':b.pc.toFixed(2)+'%'}</span>
+            <div class="plan-deriv-id">${escapeHtml(id)}<div class="plan-deriv-kva">${escapeHtml(sub)}</div></div>`;
+          // Tronçon REMBT → CIBE (uniquement mode complet)
+          if(!c1only){
+            block += `<div class="plan-segment plan-seg-deriv" title="Câble REMBT → CIBE (C2)">
+              <div class="plan-seg-line"></div>
+              <div class="plan-seg-lbl">REMBT→CIBE · L₁ ${l.rc.O||'?'} m · ${l.rc.P||'?'} mm²<br><b class="seg-pc ${tdHl(a.pc)}">C2 = ${a.pc==null?'—':a.pc.toFixed(2)+' %'}</b></div>
             </div>
-            <div class="plan-deriv-dot dot-orange" title="Point de liaison"></div>
+            <div class="plan-block plan-block-sm">CIBE</div>`;
+          }
+          // Tronçon CIBE → TA
+          block += `<div class="plan-segment plan-seg-deriv" title="Câble CIBE → Tableau abonné (C1)">
+              <div class="plan-seg-line"></div>
+              <div class="plan-seg-lbl">CIBE→TA · L₂ ${l.ct.O||'?'} m · ${l.ct.P||'?'} mm²<br><b class="seg-pc ${tdHl(b.pc)}">C1 = ${b.pc==null?'—':b.pc.toFixed(2)+' %'}</b></div>
+              <div class="plan-dot dot-orange" title="Point de liaison"></div>
+            </div>
+            <div class="plan-deriv-wh">Wh<br><small>${a.N||'?'} A</small></div>
             <div class="plan-deriv-house">🏠 TA</div>
-            <div class="plan-deriv-pc"><span class="pc-tot">Σ ${tot==null?'—':tot.toFixed(2)+'%'}</span></div>
+            <div class="plan-deriv-pc"><span class="pc-tot">Σ ${tot==null?'—':tot.toFixed(2)+' %'}</span></div>
           </div>`;
         });
         block += `</div>`;

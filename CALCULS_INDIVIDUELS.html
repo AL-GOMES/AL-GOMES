@@ -585,6 +585,8 @@ tk();setInterval(tk,1000);
 // Plus un compteur de modules pour le dimensionnement REMBT.
 // ═══════════════════════════════════════════════════════════════════════
 const SECTIONS = [10, 16, 25, 35, 50, 70, 95, 120, 150];
+const SECTIONS_CT = [10, 16, 25, 35];   // CIBE → TA (AR2V) : plafonné à 35 mm²
+const SECT_MAX_CT = 35;
 const PHASES = ['M','T'];
 
 const MODULES = [
@@ -778,7 +780,7 @@ function normLgt(x, defaultRembtId){
     kind: x.kind === 'compt' ? 'compt' : 'lgt',
     kva:  x.kva === '' || x.kva == null ? '' : Number(x.kva),
     rc:   { O: (x.rc && x.rc.O!=null) ? Number(x.rc.O) : 5,  P: (x.rc && x.rc.P) ? Number(x.rc.P) : 35 },
-    ct:   { O: (x.ct && x.ct.O!=null) ? Number(x.ct.O) : 5,  P: (x.ct && x.ct.P) ? Number(x.ct.P) : 35 },
+    ct:   { O: (x.ct && x.ct.O!=null) ? Number(x.ct.O) : 5,  P: Math.min((x.ct && x.ct.P) ? Number(x.ct.P) : 35, 35) },
     rembtId: x.rembtId || defaultRembtId || null
   };
 }
@@ -859,11 +861,12 @@ function chutePc(vu){ return vu == null ? null : vu / 2.3; }
 // Section recommandée — chute en ALU réel (0,036 / 2,3) ≤ limite par tronçon
 // configurable (CI.limT, défaut 1 % NF C 14-100). Pour disj. 30/60 (12 kVA)
 // la section 10 mm² est exclue (HN33S33).
-function sectionMin(K, O, N, p){
+function sectionMin(K, O, N, p, maxSect){
   O = parseFloat(O); N = parseFloat(N);
   if(!O || !N) return null;
   const has12 = (p === 12);
-  const cands = has12 ? [16,25,35,50] : [10,16,25,35,50];
+  let cands = has12 ? [16,25,35,50] : [10,16,25,35,50];
+  if(maxSect) cands = cands.filter(s => s <= maxSect);
   for(const s of cands){
     const vu = K === 'M' ? (0.036 * 2 * O * N) / s : (0.036 * O * N) / s;
     const pc = vu / 2.3;
@@ -910,7 +913,8 @@ function compute(l, side){
   const K = lgtPhase(l);
   const VU = chuteVU(K, sub.O, N, sub.P);
   const pc = chutePc(VU);
-  const rec = sectionMin(K, sub.O, N, p);
+  // CIBE → TA (side ct) : section recommandée plafonnée à 35 mm²
+  const rec = sectionMin(K, sub.O, N, p, side === 'ct' ? SECT_MAX_CT : null);
   return { p, M, N, VU, pc, rec };
 }
 
@@ -1084,7 +1088,9 @@ function renderSide(side){
       const sub = l[side];
       // Préfixe conducteurs (cohérent avec le schéma) : mono = 2×, tri = 4×
       const cond = lgtPhase(l) === 'M' ? '2×' : '4×';
-      const sectOptions = SECTIONS.map(s => `<option value="${s}"${sub.P==s?' selected':''}>${cond}${s}</option>`).join('');
+      // CIBE → TA limité à 35 mm² (AR2V)
+      const sectList = side === 'ct' ? SECTIONS_CT : SECTIONS;
+      const sectOptions = sectList.map(s => `<option value="${s}"${sub.P==s?' selected':''}>${cond}${s}</option>`).join('');
       const phaseOptions = PHASES.map(p => `<option value="${p}"${l.K==p?' selected':''}>${p==='M'?'Mono':'Tri'}</option>`).join('');
 
       const isCompt = l.kind === 'compt';
@@ -2205,7 +2211,7 @@ async function exportPDF(){
     doc.setFontSize(9); doc.setTextColor(180,199,231);
     doc.text('Câble ALU  ρ = 0,036 Ω·mm²/m  ·  limite tronçon = '+CI.limT.toFixed(2)+' %  ·  limite C1+C2 = '+CI.limTot.toFixed(2)+' %', pageW/2, 16, {align:'center'});
 
-    const head = [['REMBT','Niv','Type','Lettr.','HALL','S/kVA','M/T','L (m)','S mm²','kVA','Disj.','I (A)','VU (V)','%ΔU '+(side==='rc'?'C2':'C1'),'% C1+C2','Reco']];
+    const head = [['REMBT','Niv','Type','Lettr.','HALL','S/kVA','M/T','L (m)','S mm²','kVA','Disj.','I (A)','VU (V)','%ΔU '+(side==='rc'?'C2':'C1'),'% C1+C2']];
     const body = CI.lgts.map(l=>{
       const r = compute(l, side);
       const o = compute(l, side==='rc'?'ct':'rc');
@@ -2225,8 +2231,7 @@ async function exportPDF(){
         r.p ?? '', r.M || '', r.N ?? '',
         r.VU == null ? '' : r.VU.toFixed(2),
         pcCell(r.pc, CI.limT),
-        pcCell(tot, CI.limTot),
-        r.rec == null ? '' : condP+r.rec
+        pcCell(tot, CI.limTot)
       ];
     });
     doc.autoTable({

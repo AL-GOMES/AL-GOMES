@@ -341,107 +341,129 @@ label.rb-block-h{cursor:pointer}
 .cf-auto-row.hl{margin-top:5px;padding-top:6px;border-top:1px solid rgba(123,95,172,0.20);color:#D4B5FF;font-weight:600}
 .cf-auto-row.hl b.cf-cal{color:#00B0F0;background:rgba(0,176,240,0.12);border:1px solid rgba(0,176,240,0.30);padding:2px 9px;border-radius:5px;font-size:12px}
 
-/* ═══ CF box dans le schéma ═══ */
+/* ═══ CF box dans le schéma — style plan technique ═══ */
 .schema-cf{display:flex;flex-direction:column;align-items:center;gap:0;margin-top:0}
-.schema-cf-box{background:linear-gradient(135deg,rgba(0,176,240,0.18) 0%,rgba(0,120,168,0.12) 100%);
-  border:2px solid rgba(0,176,240,0.55);border-radius:8px;padding:8px 14px;text-align:center;min-width:200px;max-width:280px;
-  box-shadow:0 4px 10px rgba(0,176,240,0.10)}
-.schema-cf-name{font-family:'Segoe UI',system-ui,sans-serif;font-size:12px;font-weight:700;color:#7BC8FF;letter-spacing:0.5px;margin-bottom:3px}
-.schema-cf-meta{font-family:'Courier New',monospace;font-size:10px;color:rgba(180,210,235,0.70);letter-spacing:0.3px}
+.schema-cf-box{background:rgba(15,30,50,0.85);
+  border:1.5px solid rgba(100,180,225,0.65);border-radius:2px;padding:7px 14px;text-align:center;min-width:200px;max-width:280px;
+  font-family:'Courier New',monospace}
+.schema-cf-name{font-family:'Courier New',monospace;font-size:11.5px;font-weight:700;color:#7BC8FF;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px}
+.schema-cf-meta{font-family:'Courier New',monospace;font-size:10px;color:rgba(184,222,238,0.70);letter-spacing:0.3px}
 .schema-cf-chute{margin-top:3px;font-family:'Courier New',monospace;font-size:10.5px;font-weight:700;letter-spacing:0.3px}
 .schema-cf-chute.ok{color:#5FE09A}.schema-cf-chute.warn{color:#FFB86C}.schema-cf-chute.bad{color:#FF6B6B}
-.schema-cable-lbl{font-family:'Courier New',monospace;font-size:9.5px;color:rgba(180,165,200,0.65);background:rgba(22,18,32,0.85);padding:2px 8px;border-radius:4px;margin:2px 0;letter-spacing:0.3px;border:1px solid rgba(123,95,172,0.18)}
+.schema-cable-lbl{font-family:'Courier New',monospace;font-size:9.5px;color:rgba(184,222,238,0.85);
+  background:rgba(15,25,40,0.85);padding:2px 8px;border-radius:2px;margin:2px 0;letter-spacing:0.5px;border:1px solid rgba(140,190,225,0.30);text-transform:uppercase}
 
-/* ═══ SCHÉMA RÉCAPITULATIF ═══ */
+/* ═══ SCHÉMA RÉCAPITULATIF — style « PLAN TECHNIQUE » ═══ */
 .schema-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px}
 @media(max-width:900px){.schema-stats{grid-template-columns:repeat(2,1fr)}}
-.schema-stat{background:rgba(22,18,32,0.6);border:1px solid rgba(123,95,172,0.18);border-radius:8px;padding:14px 16px;text-align:center}
+.schema-stat{background:rgba(22,18,32,0.6);border:1px solid rgba(123,95,172,0.18);border-radius:6px;padding:14px 16px;text-align:center}
 .schema-stat-lbl{font-size:10px;color:rgba(180,165,200,0.55);letter-spacing:1.2px;text-transform:uppercase;font-weight:700;margin-bottom:6px}
-.schema-stat-val{font-family:'Segoe UI',system-ui,sans-serif;font-size:22px;font-weight:700;color:#E8E0F2;letter-spacing:0.5px;font-variant-numeric:tabular-nums}
+.schema-stat-val{font-family:'Courier New',monospace;font-size:22px;font-weight:700;color:#E8E0F2;letter-spacing:0.5px;font-variant-numeric:tabular-nums}
 .schema-stat-val.green{color:#5FE09A}.schema-stat-val.orange{color:#FFB86C}.schema-stat-val.red{color:#FF6B6B}
 .schema-stat-sub{font-size:10px;color:rgba(180,165,200,0.40);margin-top:3px;letter-spacing:0.3px}
 
-.schema-wrap{background:linear-gradient(165deg,rgba(22,18,32,0.85) 0%,rgba(14,14,16,0.95) 100%);border:1px solid rgba(123,95,172,0.15);border-radius:12px;padding:30px 24px;margin-bottom:18px;overflow-x:auto;position:relative}
-.schema-tree{display:flex;flex-direction:column;align-items:center;gap:0;min-width:fit-content}
+/* Cartouche "papier plan" — fond grille blueprint */
+.schema-wrap{
+  background:
+    linear-gradient(0deg,rgba(10,18,30,0.95),rgba(15,25,40,0.92)),
+    repeating-linear-gradient(0deg,transparent 0,transparent 19px,rgba(110,170,220,0.06) 19px,rgba(110,170,220,0.06) 20px),
+    repeating-linear-gradient(90deg,transparent 0,transparent 19px,rgba(110,170,220,0.06) 19px,rgba(110,170,220,0.06) 20px);
+  border:1px solid rgba(120,180,220,0.30);border-radius:4px;padding:40px 30px 30px;margin-bottom:18px;
+  overflow-x:auto;position:relative;
+  box-shadow:inset 0 0 0 1px rgba(20,35,55,0.85)}
+/* Bandeau de titre type cartouche */
+.schema-wrap::before{
+  content:attr(data-title);
+  position:absolute;top:0;left:0;right:0;
+  background:linear-gradient(180deg,rgba(35,60,90,0.85),rgba(20,35,55,0.92));
+  color:#B8DEEE;font-family:'Courier New',monospace;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;
+  padding:7px 18px;border-bottom:1px solid rgba(120,180,220,0.35);
+  text-align:center}
+.schema-tree{display:flex;flex-direction:column;align-items:center;gap:0;min-width:fit-content;font-family:'Courier New','IBM Plex Mono',monospace}
 
-/* Bloc source ENEDIS */
-.schema-source{background:linear-gradient(135deg,#00B0F0 0%,#0078A8 100%);color:#fff;padding:14px 36px;border-radius:8px;
-  font-family:'Segoe UI',system-ui,sans-serif;font-weight:700;font-size:14px;letter-spacing:2px;text-transform:uppercase;
-  box-shadow:0 6px 18px rgba(0,176,240,0.25);border:1px solid rgba(255,255,255,0.15);text-align:center;min-width:240px;display:flex;flex-direction:column;align-items:center;gap:4px}
-.schema-source-sub{font-size:10px;font-weight:500;color:rgba(255,255,255,0.75);letter-spacing:1px;text-transform:none}
+/* Bloc source ENEDIS (symbole tension réseau) */
+.schema-source{background:rgba(15,30,50,0.85);color:#B8DEEE;padding:10px 28px;border-radius:3px;
+  font-family:'Courier New',monospace;font-weight:700;font-size:13px;letter-spacing:2px;text-transform:uppercase;
+  border:1.5px solid rgba(120,180,220,0.55);text-align:center;min-width:240px;display:flex;flex-direction:column;align-items:center;gap:4px;
+  box-shadow:inset 0 0 0 1px rgba(120,180,220,0.15)}
+.schema-source-sub{font-size:10px;font-weight:500;color:rgba(184,222,238,0.65);letter-spacing:1px;text-transform:none}
 
-/* Lignes verticales/horizontales */
-.schema-line{width:2px;background:rgba(123,95,172,0.45);flex:none}
+/* Lignes câbles : trait fin et propre, couleur cyan blueprint */
+.schema-line{width:1.5px;background:rgba(140,190,225,0.55);flex:none;position:relative}
 .schema-line.short{height:18px}
 .schema-line.med{height:24px}
 .schema-line.long{height:32px}
-.schema-hline{height:2px;background:rgba(123,95,172,0.45)}
 
-/* Niveau REMBT racines (en row) */
+/* Rangée REMBT racines */
 .schema-rembts-row{display:flex;align-items:flex-start;gap:36px;position:relative;padding-top:14px}
-.schema-rembts-row::before{content:'';position:absolute;top:0;left:50%;right:50%;height:2px;background:rgba(123,95,172,0.45)}
+.schema-rembts-row::before{content:'';position:absolute;top:0;left:50%;right:50%;height:1.5px;background:rgba(140,190,225,0.55)}
 .schema-rembts-row.single::before{display:none}
 .schema-rembts-row > .schema-rembt-branch{position:relative}
-.schema-rembts-row > .schema-rembt-branch::before{content:'';position:absolute;top:-14px;left:50%;width:2px;height:14px;background:rgba(123,95,172,0.45);transform:translateX(-50%)}
+.schema-rembts-row > .schema-rembt-branch::before{content:'';position:absolute;top:-14px;left:50%;width:1.5px;height:14px;background:rgba(140,190,225,0.55);transform:translateX(-50%)}
 
-/* Branche REMBT (verticale REMBT + children + logements) */
 .schema-rembt-branch{display:flex;flex-direction:column;align-items:center;gap:0}
 
-/* Boîte REMBT */
-.schema-rembt{background:linear-gradient(160deg,rgba(91,63,140,0.30) 0%,rgba(60,40,100,0.45) 100%);
-  border:2px solid rgba(155,125,197,0.55);border-radius:10px;padding:14px 18px;min-width:280px;max-width:340px;
-  box-shadow:0 6px 14px rgba(91,63,140,0.20);position:relative}
-.schema-rembt.sz-ok    {border-color:rgba(95,224,154,0.60);background:linear-gradient(160deg,rgba(46,213,115,0.18) 0%,rgba(91,63,140,0.30) 100%)}
-.schema-rembt.sz-warn  {border-color:rgba(255,184,108,0.60);background:linear-gradient(160deg,rgba(255,159,67,0.18) 0%,rgba(91,63,140,0.30) 100%)}
-.schema-rembt.sz-bad   {border-color:rgba(255,107,107,0.60);background:linear-gradient(160deg,rgba(255,85,85,0.20) 0%,rgba(91,63,140,0.30) 100%)}
+/* Boîte REMBT type "armoire" — rectangle net, fond technique */
+.schema-rembt{background:rgba(15,30,50,0.80);
+  border:1.5px solid rgba(140,190,225,0.55);border-radius:2px;padding:0;min-width:280px;max-width:340px;
+  position:relative;overflow:hidden;font-family:'Courier New',monospace}
+.schema-rembt.sz-ok    {border-color:rgba(95,224,154,0.65);box-shadow:inset 0 0 0 1px rgba(95,224,154,0.15)}
+.schema-rembt.sz-warn  {border-color:rgba(255,184,108,0.65);box-shadow:inset 0 0 0 1px rgba(255,184,108,0.15)}
+.schema-rembt.sz-bad   {border-color:rgba(255,107,107,0.65);box-shadow:inset 0 0 0 1px rgba(255,107,107,0.15)}
 
-.schema-rembt-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid rgba(155,125,197,0.25)}
-.schema-rembt-name{font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;font-weight:700;color:#E8E0F2;letter-spacing:0.5px}
-.schema-rembt-size{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:rgba(155,125,197,0.20);border:1px solid rgba(155,125,197,0.40);border-radius:5px;
-  font-family:'Courier New',monospace;font-size:12px;font-weight:700;color:#D4B5FF;white-space:nowrap}
-.schema-rembt.sz-ok   .schema-rembt-size{background:rgba(46,213,115,0.18);border-color:rgba(46,213,115,0.40);color:#5FE09A}
-.schema-rembt.sz-warn .schema-rembt-size{background:rgba(255,159,67,0.18);border-color:rgba(255,159,67,0.40);color:#FFB86C}
-.schema-rembt.sz-bad  .schema-rembt-size{background:rgba(255,85,85,0.20);border-color:rgba(255,85,85,0.40);color:#FF6B6B}
+.schema-rembt-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 12px;
+  background:linear-gradient(180deg,rgba(35,60,90,0.95),rgba(20,40,65,0.85));border-bottom:1.5px solid rgba(140,190,225,0.40)}
+.schema-rembt.sz-ok   .schema-rembt-h{background:linear-gradient(180deg,rgba(46,100,70,0.55),rgba(20,40,65,0.85))}
+.schema-rembt.sz-warn .schema-rembt-h{background:linear-gradient(180deg,rgba(140,90,40,0.55),rgba(20,40,65,0.85))}
+.schema-rembt.sz-bad  .schema-rembt-h{background:linear-gradient(180deg,rgba(130,50,50,0.65),rgba(20,40,65,0.85))}
+.schema-rembt-name{font-family:'Courier New',monospace;font-size:12.5px;font-weight:700;color:#fff;letter-spacing:1.5px;text-transform:uppercase}
+.schema-rembt-size{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:rgba(15,25,40,0.50);border:1px solid rgba(140,190,225,0.40);border-radius:2px;
+  font-family:'Courier New',monospace;font-size:11px;font-weight:700;color:#B8DEEE;white-space:nowrap}
+.schema-rembt.sz-ok   .schema-rembt-size{color:#5FE09A;border-color:rgba(95,224,154,0.50)}
+.schema-rembt.sz-warn .schema-rembt-size{color:#FFB86C;border-color:rgba(255,184,108,0.50)}
+.schema-rembt.sz-bad  .schema-rembt-size{color:#FF6B6B;border-color:rgba(255,107,107,0.50)}
 
-.schema-rembt-row{display:flex;justify-content:space-between;font-size:11px;color:rgba(200,186,216,0.65);padding:2px 0;letter-spacing:0.3px}
-.schema-rembt-row span:last-child{font-weight:600;color:rgba(220,210,235,0.90);font-family:'Courier New',monospace;font-variant-numeric:tabular-nums}
-.schema-rembt-modules{margin-top:6px;display:flex;flex-wrap:wrap;gap:4px}
-.schema-mod-chip{font-family:'Courier New',monospace;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;
-  background:rgba(155,125,197,0.18);color:#D4B5FF;border:1px solid rgba(155,125,197,0.25);letter-spacing:0.3px}
-.schema-rembt-notes{margin-top:8px;padding:6px 10px;background:rgba(255,242,204,0.06);border-left:2px solid rgba(255,235,156,0.45);
-  border-radius:0 4px 4px 0;font-size:10.5px;font-style:italic;color:rgba(255,235,156,0.85);line-height:1.5}
+.schema-rembt-row{display:flex;justify-content:space-between;font-size:11px;color:rgba(184,222,238,0.70);padding:3px 12px;letter-spacing:0.3px;font-family:'Courier New',monospace}
+.schema-rembt-row span:last-child{font-weight:700;color:rgba(220,235,245,0.95);font-variant-numeric:tabular-nums}
+.schema-rembt-row:first-of-type{padding-top:6px}
+.schema-rembt-modules{padding:6px 12px;display:flex;flex-wrap:wrap;gap:4px;border-top:1px dashed rgba(140,190,225,0.15);margin-top:4px}
+.schema-mod-chip{font-family:'Courier New',monospace;font-size:10px;font-weight:700;padding:2px 7px;border-radius:2px;
+  background:rgba(35,55,80,0.85);color:#B8DEEE;border:1px solid rgba(140,190,225,0.30);letter-spacing:0.3px}
+.schema-rembt-notes{padding:6px 12px;border-top:1px dashed rgba(140,190,225,0.15);
+  font-size:10.5px;font-style:italic;color:rgba(255,235,156,0.80);line-height:1.5;font-family:'Courier New',monospace}
 
 /* Liste logements sous chaque REMBT */
-.schema-lgts{display:flex;flex-direction:column;gap:5px;margin-top:14px;align-items:stretch;width:100%;max-width:340px}
-.schema-lgts::before{content:'';width:2px;height:16px;background:rgba(123,95,172,0.45);align-self:center;margin-bottom:4px}
-.schema-lgt{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:6px;padding:6px 10px;
-  background:rgba(22,18,32,0.75);border:1px solid rgba(123,95,172,0.18);border-radius:6px;font-size:11px}
+.schema-lgts{display:flex;flex-direction:column;gap:3px;margin-top:14px;align-items:stretch;width:100%;max-width:340px}
+.schema-lgts::before{content:'';width:1.5px;height:16px;background:rgba(140,190,225,0.55);align-self:center;margin-bottom:4px}
+.schema-lgt{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:6px;padding:5px 10px;
+  background:rgba(15,30,50,0.65);border:1px solid rgba(140,190,225,0.30);border-radius:2px;font-size:11px;font-family:'Courier New',monospace}
 .schema-lgt.ok     {border-left:3px solid #5FE09A}
 .schema-lgt.warn   {border-left:3px solid #FFB86C}
-.schema-lgt.bad    {border-left:3px solid #FF6B6B;background:rgba(255,85,85,0.06)}
-.schema-lgt-id{font-family:'Courier New',monospace;font-weight:700;color:#D4B5FF;font-size:11px;letter-spacing:0.3px;min-width:78px}
-.schema-lgt-mid{display:flex;flex-direction:column;gap:1px;font-size:10px;color:rgba(180,165,200,0.65)}
-.schema-lgt-meta{display:flex;gap:8px;color:rgba(180,165,200,0.60);font-family:'Courier New',monospace}
-.schema-lgt-meta b{color:rgba(220,210,235,0.85);font-weight:700}
+.schema-lgt.bad    {border-left:3px solid #FF6B6B;background:rgba(60,20,20,0.45)}
+.schema-lgt-id{font-family:'Courier New',monospace;font-weight:700;color:#B8DEEE;font-size:11px;letter-spacing:0.5px;min-width:78px;text-transform:uppercase}
+.schema-lgt-mid{display:flex;flex-direction:column;gap:1px;font-size:10px;color:rgba(184,222,238,0.65);font-family:'Courier New',monospace}
+.schema-lgt-meta{display:flex;gap:8px;color:rgba(184,222,238,0.60);font-family:'Courier New',monospace}
+.schema-lgt-meta b{color:rgba(220,235,245,0.92);font-weight:700}
 .schema-lgt-chutes{display:flex;flex-direction:column;align-items:flex-end;gap:1px;font-family:'Courier New',monospace;font-size:10.5px;font-weight:700;font-variant-numeric:tabular-nums}
-.schema-lgt-chutes .pcg{color:rgba(200,186,216,0.65);font-size:9.5px}
-.schema-lgt-chutes .tot{color:#E8E0F2;font-size:11.5px}
+.schema-lgt-chutes .pcg{color:rgba(184,222,238,0.60);font-size:9.5px;letter-spacing:0.3px}
+.schema-lgt-chutes .tot{color:#fff;font-size:11.5px}
 .schema-lgt.ok   .schema-lgt-chutes .tot{color:#5FE09A}
 .schema-lgt.warn .schema-lgt-chutes .tot{color:#FFB86C}
 .schema-lgt.bad  .schema-lgt-chutes .tot{color:#FF6B6B}
 
 /* Liste enfants REMBT cascadés */
 .schema-children{display:flex;flex-direction:column;align-items:center;gap:0;margin-top:16px;width:100%}
-.schema-children::before{content:'';width:2px;height:18px;background:rgba(123,95,172,0.45);align-self:center}
+.schema-children::before{content:'';width:1.5px;height:18px;background:rgba(140,190,225,0.55);align-self:center}
 .schema-children-row{display:flex;align-items:flex-start;gap:24px;position:relative;padding-top:14px}
 .schema-children-row.single::before{display:none}
-.schema-children-row::before{content:'';position:absolute;top:0;left:50%;right:50%;height:2px;background:rgba(123,95,172,0.45)}
+.schema-children-row::before{content:'';position:absolute;top:0;left:50%;right:50%;height:1.5px;background:rgba(140,190,225,0.55)}
 .schema-children-row > .schema-rembt-branch{position:relative}
-.schema-children-row > .schema-rembt-branch::before{content:'';position:absolute;top:-14px;left:50%;width:2px;height:14px;background:rgba(123,95,172,0.45);transform:translateX(-50%)}
+.schema-children-row > .schema-rembt-branch::before{content:'';position:absolute;top:-14px;left:50%;width:1.5px;height:14px;background:rgba(140,190,225,0.55);transform:translateX(-50%)}
 
-/* Légende */
-.schema-legend{display:flex;flex-wrap:wrap;justify-content:center;gap:20px;padding:12px 20px;margin-top:14px;border-top:1px dashed rgba(123,95,172,0.20)}
-.schema-leg-item{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:rgba(200,186,216,0.65);letter-spacing:0.3px}
+/* Légende type cartouche bas de plan */
+.schema-legend{display:flex;flex-wrap:wrap;justify-content:center;gap:20px;padding:10px 20px;margin-top:14px;
+  border-top:1px dashed rgba(140,190,225,0.30);background:rgba(20,35,55,0.50);font-family:'Courier New',monospace}
+.schema-leg-item{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:rgba(184,222,238,0.75);letter-spacing:0.3px}
 .schema-leg-swatch{width:14px;height:14px;border-radius:3px;border:1px solid rgba(123,95,172,0.30)}
 .schema-leg-swatch.ok{background:#5FE09A;border-color:rgba(95,224,154,0.50)}
 .schema-leg-swatch.warn{background:#FFB86C;border-color:rgba(255,184,108,0.50)}
@@ -1649,7 +1671,7 @@ function renderSchema(){
       <button class="btn" onclick="exportPDF()" title="Inclus dans l'export PDF complet">📄 Exporter PDF complet</button>
     </div>
 
-    <div class="schema-wrap" id="schemaWrap">`;
+    <div class="schema-wrap" id="schemaWrap" data-title="PLAN — ${escapeHtml(CI.P||'Sans titre').toUpperCase()}  ·  ENEDIS → REMBT${CI.scope==='c1only'?'':' → CIBE'} → TABLEAU ABONNÉ  ·  ÉCH. SCHÉMATIQUE">`;
 
   if(CI.lgts.length === 0 || CI.rembts.length === 0){
     h += `<div class="schema-empty">Aucun logement ou REMBT à représenter.<br>Renseignez d'abord vos logements dans l'onglet REMBT → CIBE.</div>`;

@@ -6,7 +6,7 @@
 //   - AL_VERSION_TIME  : HH:MM      (heure de la MAJ — local Paris)
 //   - AL_VERSION_NOTE  : 1 phrase courte qui décrit le motif de la MAJ
 // =====================================================================
-window.AL_VERSION      = 'v1.67';
+window.AL_VERSION      = 'v1.68';
 window.AL_VERSION_DATE = '2026-05-23';
-window.AL_VERSION_TIME = '21:30';
-window.AL_VERSION_NOTE = 'Calculs individuels : schéma Synthèse — suppression du bloc « Réseau ENEDIS » en amont, le plan démarre directement au Coffret de façade. Le bloc CCU porte uniquement « Coffret de façade » (plus de calibre A ni mention Tri 400V). Zones normatives en bas : Branchement collectif + Utilisateur (Réseau retiré).';
+window.AL_VERSION_TIME = '22:00';
+window.AL_VERSION_NOTE = 'Calculs individuels : le schéma de Synthèse s\'adapte au mode de calcul. En mode « C1 seul », le coffret de façade et le REMBT disparaissent du plan (web + PDF) — il ne reste que CIBE → dérivations individuelles, avec stats et zones normatives ajustées (CIBE / Utilisateur).';

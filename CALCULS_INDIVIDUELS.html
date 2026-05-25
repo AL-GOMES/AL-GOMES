@@ -137,6 +137,10 @@ td.warn{color:#FFB86C;font-weight:600}
 td.bad{color:#FF6B6B;font-weight:700}
 tr.tot td{background:rgba(91,63,140,0.10);border-top:1px solid rgba(123,95,172,0.20);font-weight:700;color:rgba(232,224,242,0.95)}
 tr.fsep td{border-top:2px solid rgba(123,95,172,0.35);padding-top:9px}
+/* Bandes par REMBT (étapes 2 & 3) : couleur alternée + séparateur de groupe */
+tr.rb-grp-b td{background:rgba(91,63,140,0.10)}
+tr.rb-grp-b:hover td{background:rgba(91,63,140,0.14)}
+tr.rb-start td{border-top:3px solid rgba(168,114,221,0.60)}
 
 input[type="number"],input[type="text"]{background:rgba(22,18,32,0.80);border:1px solid rgba(123,95,172,0.18);color:rgba(220,210,235,0.90);
   font-family:inherit;font-size:12px;padding:4px 6px;border-radius:5px;text-align:center;transition:all .25s;font-variant-numeric:tabular-nums}
@@ -1103,11 +1107,15 @@ function renderSide(side){
             <th class="col-h" title="Section minimale recommandée (chute Al ≤ limite tronçon)">Reco</th>
           </tr>`;
 
-  let prevKey = '';
+  let prevRembtId = null, shownRows = 0;
   Object.keys(grp).forEach(k=>{
     grp[k].forEach((entry, idx)=>{
       const l = entry.l, i = entry.i;
       const first = (idx === 0);
+      // Bandes par REMBT : couleur alternée + séparateur au changement de REMBT
+      const ri = showREMBT ? CI.rembts.findIndex(r => r.id === l.rembtId) : -1;
+      const bandCls = (ri % 2 === 1) ? ' rb-grp-b' : '';
+      const sepCls = (showREMBT && shownRows > 0 && l.rembtId !== prevRembtId) ? ' rb-start' : '';
       // Compute for both sides
       const rThis = compute(l, side);
       const rOther = compute(l, side === 'rc' ? 'ct' : 'rc');
@@ -1125,7 +1133,7 @@ function renderSide(side){
       const phaseOpts = isCompt
         ? '<option value="T" selected>Tri</option>'
         : PHASES.map(p => `<option value="${p}"${l.K==p?' selected':''}>${p==='M'?'Mono':'Tri'}</option>`).join('');
-      h += `<tr class="${first?'fsep':''}${isCompt?' row-compt':''}">`;
+      h += `<tr class="${first?'fsep':''}${isCompt?' row-compt':''}${bandCls}${sepCls}">`;
       h += `<td><button class="rd" onclick="delLgt(${i})">✕</button></td>`;
       // REMBT (par logement) — caché en C1-only
       if(showREMBT){
@@ -1183,6 +1191,8 @@ function renderSide(side){
       // Reco (section minimale, avec préfixe conducteurs)
       h += `<td class="sx">${reco == null ? '—' : cond+reco}</td>`;
       h += `</tr>`;
+      prevRembtId = l.rembtId;
+      shownRows++;
     });
   });
 

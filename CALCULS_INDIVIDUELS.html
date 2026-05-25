@@ -623,12 +623,13 @@ function maxSection(l, side){
 const PHASES = ['M','T'];
 
 const MODULES = [
-  { k:'RA240',  l:'MODULE RA240 (3Ph+1N)',  p:2 },
-  { k:'RAC150', l:'MODULE RAC150 (3Ph+1N)', p:2 },
-  { k:'RAC35',  l:'MODULE RAC 35 (3Ph+1N)', p:1 },
-  { k:'BR60T',  l:'MODULE BR60T (3Ph+1N)',  p:1 },
-  { k:'BR60M',  l:'BR60M (1Ph+1N)',         p:1 },
-  { k:'RCP400', l:'MODULE RCP400',          p:4 },
+  { k:'RAC240',  n:'RAC 240',        l:'Module RAC 240 (3Ph+1N) — arrivée réseau 240² / N 150²  ·  ENEDIS 67.71.700', p:2 },
+  { k:'RAC150',  n:'RAC 150 (150²)', l:'Module RAC 150 (3Ph+1N) — câble 150²  ·  ENEDIS 67.71.702',                 p:2 },
+  { k:'RAC150b', n:'RAC 150 (≤95²)', l:'Module RAC 150 (3Ph+1N) — câble 50 à 95²  ·  ENEDIS 67.71.702',             p:1 },
+  { k:'RAC35',   n:'RAC 35',         l:'Module RAC 35 (3Ph+1N) — 3 départs tri, câble 10 à 35²  ·  ENEDIS 67.71.704', p:1 },
+  { k:'BR60T',   n:'BR 60T',         l:'Module BR 60T (3Ph+1N) — départ tri protégé 60 A  ·  ENEDIS 67.71.708',     p:1 },
+  { k:'BR60M',   n:'BR 60M',         l:'Module BR 60M (1Ph+1N) — départ mono protégé 60 A  ·  ENEDIS 67.71.706',    p:1 },
+  { k:'RCP400',  n:'RCP 400',        l:'Module RCP 400 — coupure 400 A / protection 200 A  ·  réf 0540879',          p:4 },
 ];
 
 function defaultLgts(){
@@ -646,10 +647,10 @@ function emptyDim(){
 }
 
 // ─── REMBT helpers ───────────────────────────────────────────────
-// Tailles standard de REMBT G3 (nombre de plages du jeu de barres)
-//   REMBT 300 → JDB 300 →  6 plages
-//   REMBT 450 → JDB 450 →  9 plages
-//   REMBT 600 → JDB 600 → 12 plages  (livré avec module RRCP 400A/200A)
+// Tailles standard de support G3 REMMO/REMBT (plages, entre-axe 50 mm)
+//   REMMO 300 →  6 plages (ENEDIS 67.70.112)
+//   REMMO 450 →  9 plages (ENEDIS 67.70.122)
+//   REMMO 600 → 12 plages (ENEDIS 67.70.132) — option module RCP 400 (réf 0540879)
 // Règle « petit collectif » NF C 14-100 §10 : 6 dérivations maxi par REMBT.
 // Au-delà → grand collectif → diviser en plusieurs REMBT (ou utiliser RCP400).
 const REMBT_SIZES = [6, 9, 12];
@@ -748,7 +749,7 @@ function rembtSuggest(plages){
   return null;
 }
 // Compte modules suggérés par les logements assignés à ce REMBT.
-//  - 1× RA240 (arrivée) si au moins 1 logement → 2 plages
+//  - 1× RAC 240 (arrivée réseau) si au moins 1 logement → 2 plages
 //  - 1× BR60M par logement mono
 //  - 1× BR60T par logement tri
 // (l'utilisateur peut compléter avec RAC150 / RAC35 / RCP400 manuellement)
@@ -757,7 +758,7 @@ function autoModules(rembtId){
   const mono = lgts.filter(l => lgtPhase(l) === 'M').length;
   const tri  = lgts.filter(l => lgtPhase(l) === 'T').length;
   const dim = emptyDim();
-  if(lgts.length > 0) dim.RA240 = 1;
+  if(lgts.length > 0) dim.RAC240 = 1;
   dim.BR60M = mono;
   dim.BR60T = tri;
   return dim;
@@ -835,12 +836,15 @@ function normLgt(x, defaultRembtId){
   };
 }
 function normRembt(x){
+  // Migration : ancienne clé 'RA240' → 'RAC240' (renommage conforme catalogue)
+  const dimSrc = Object.assign({}, x.dim || {});
+  if(dimSrc.RA240 != null){ dimSrc.RAC240 = (dimSrc.RAC240 || 0) + dimSrc.RA240; delete dimSrc.RA240; }
   return {
     id: x.id || 'r1',
     name: x.name || 'REMBT',
     notes: x.notes || '',
     parentId: x.parentId || null,
-    dim: Object.assign(emptyDim(), x.dim || {}),
+    dim: Object.assign(emptyDim(), dimSrc),
     cf: Object.assign(defaultCF(), x.cf || {}),
     manual: !!x.manual
   };
@@ -1465,7 +1469,7 @@ function renderDim(){
           <div class="rb-mod-sum">`;
     const usedMods = MODULES.filter(m => (r.dim[m.k]||0) > 0);
     if(usedMods.length){
-      h += usedMods.map(m => `<span class="rb-modchip">${m.k} ×${r.dim[m.k]}</span>`).join('');
+      h += usedMods.map(m => `<span class="rb-modchip">${m.n} ×${r.dim[m.k]}</span>`).join('');
     } else {
       h += `<span class="rb-mod-empty">Aucun module — cliquez « ⚡ Calcul auto » ou ajustez ci-dessous</span>`;
     }
@@ -1476,7 +1480,7 @@ function renderDim(){
     MODULES.forEach(m => {
       const q = r.dim[m.k] || 0;
       h += `<div class="rb-mod${q>0?' on':''}">
-        <div class="rb-mod-name">${m.k}</div>
+        <div class="rb-mod-name">${m.n}</div>
         <div class="rb-mod-input">
           <input type="number" class="ws ns" min="0" value="${q}" onchange="updRembtDim('${r.id}','${m.k}',this.value)">
           <span class="rb-mod-x">×${m.p}p</span>
@@ -1501,13 +1505,13 @@ function renderDim(){
       <summary>💡 Aide — modules Cahors G3 et règle « petit collectif »</summary>
       <div class="rembt-help-body">
         <table class="rb-ref">
-          <tr><th>Module</th><th>Description</th><th>Plages</th></tr>
-          <tr><td class="fl L">RA240</td><td class="L">3 Ph + 1 N — 240 mm² (arrivée)</td><td>2</td></tr>
-          <tr><td class="fl L">RAC150</td><td class="L">3 Ph + 1 N — 150 mm²</td><td>2</td></tr>
-          <tr><td class="fl L">RAC 35</td><td class="L">3 Ph + 1 N — 35 mm²</td><td>1</td></tr>
-          <tr><td class="fl L">BR60T</td><td class="L">3 Ph + 1 N — 60 A tri (départ logement)</td><td>1</td></tr>
-          <tr><td class="fl L">BR60M</td><td class="L">1 Ph + 1 N — 60 A mono (départ logement)</td><td>1</td></tr>
-          <tr><td class="fl L">RCP400</td><td class="L">Coffret répartition 400 A</td><td>4</td></tr>
+          <tr><th>Module</th><th>Description</th><th>ENEDIS</th><th>Plages</th></tr>
+          <tr><td class="fl L">RAC 240</td><td class="L">3 Ph + 1 N — arrivée réseau 240² / N 150²</td><td>67.71.700</td><td>2</td></tr>
+          <tr><td class="fl L">RAC 150</td><td class="L">3 Ph + 1 N — câble 150² (2 pl.) ou 50–95² (1 pl.)</td><td>67.71.702</td><td>1–2</td></tr>
+          <tr><td class="fl L">RAC 35</td><td class="L">3 Ph + 1 N — 3 départs tri, câble 10–35²</td><td>67.71.704</td><td>1</td></tr>
+          <tr><td class="fl L">BR 60T</td><td class="L">3 Ph + 1 N — départ tri protégé 60 A</td><td>67.71.708</td><td>1</td></tr>
+          <tr><td class="fl L">BR 60M</td><td class="L">1 Ph + 1 N — départ mono protégé 60 A</td><td>67.71.706</td><td>1</td></tr>
+          <tr><td class="fl L">RCP 400</td><td class="L">Coupure 400 A / protection 200 A (réf. 0540879)</td><td>—</td><td>4</td></tr>
         </table>
         <p class="rb-help-p"><b>Tailles standard</b> · coffrets de <code>6</code>, <code>9</code> ou <code>12</code> plages (réf. Cahors G3 : 300 / 450 / 600).</p>
         <p class="rb-help-p"><b>Petit collectif</b> NF C 14-100 §10 : max <code>${REMBT_MAX_LGTS}</code> logements par REMBT. La répartition des logements et le chaînage en cascade des REMBTs sont <b>automatiques</b> — ajoutez ou supprimez simplement des logements.</p>
@@ -1650,8 +1654,8 @@ function updRembtDim(id, k, v){
 function autoFillRembt(id){
   const r = CI.rembts.find(x => x.id === id); if(!r) return;
   const suggested = autoModules(id);
-  // Conserve RAC150/RAC35/RCP400 saisis manuellement, écrase RA240/BR60M/BR60T
-  r.dim.RA240 = suggested.RA240;
+  // Conserve RAC150/RAC35/RCP400 saisis manuellement, écrase RAC240/BR60M/BR60T
+  r.dim.RAC240 = suggested.RAC240;
   r.dim.BR60M = suggested.BR60M;
   r.dim.BR60T = suggested.BR60T;
   save(); R();
@@ -2690,7 +2694,7 @@ async function exportPDF(){
     // Stats
     doc.text(`${nLgts} logement(s)`, x + boxW/2, y + 14.5, {align:'center'});
     // Modules
-    const mods = MODULES.filter(m => (r.dim[m.k]||0) > 0).map(m => `${m.k}×${r.dim[m.k]}`).join('  ');
+    const mods = MODULES.filter(m => (r.dim[m.k]||0) > 0).map(m => `${m.n}×${r.dim[m.k]}`).join('  ');
     doc.setFontSize(6); doc.setTextColor(60, 50, 80);
     doc.text(mods || '(aucun module)', x + boxW/2, y + 19, {align:'center'});
     // Notes si présentes

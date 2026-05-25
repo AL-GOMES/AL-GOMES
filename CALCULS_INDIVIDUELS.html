@@ -2541,11 +2541,12 @@ async function exportPDF(){
 
     h2(y, '1.  Chutes de tension maximales admissibles'); y += 3;
     y = tbl(y, ['Tronçon','Chute max','Référence'], [
+      ['Coffret de façade (CCU) → REMBT (liaison amont)', '≤ '+limT.toFixed(2)+' %', 'NF C 14-100'],
       ['Étape 2 — REMBT → CIBE (tronçon C2)', '≤ '+limT.toFixed(2)+' %', 'NF C 14-100'],
       ['Étape 3 — CIBE → tableau abonné (tronçon C1)', '≤ '+limT.toFixed(2)+' %', 'NF C 14-100'],
       ['Total branchement (C1 + C2)', '≤ '+limTot.toFixed(2)+' %', 'NF C 14-100'],
     ], 150) + 4;
-    note(y, 'Valeurs configurées dans le dossier. NF C 14-100 (branchement collectif) : par défaut 1 % par tronçon et 2 % au total.'); y += 9;
+    note(y, 'Valeurs configurées dans le dossier. NF C 14-100 (branchement collectif) : par défaut 1 % par tronçon et 2 % au total. La liaison coffret de façade → REMBT ne s\'applique que si un CCU est présent.'); y += 9;
 
     h2(y, '2.  Nombre maximal de logements par REMBT'); y += 3;
     y = tbl(y, ['Règle','Valeur','Référence'], [

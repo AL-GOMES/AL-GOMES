@@ -137,10 +137,16 @@ td.warn{color:#FFB86C;font-weight:600}
 td.bad{color:#FF6B6B;font-weight:700}
 tr.tot td{background:rgba(91,63,140,0.10);border-top:1px solid rgba(123,95,172,0.20);font-weight:700;color:rgba(232,224,242,0.95)}
 tr.fsep td{border-top:2px solid rgba(123,95,172,0.35);padding-top:9px}
-/* Bandes par REMBT (étapes 2 & 3) : couleur alternée + séparateur de groupe */
-tr.rb-grp-b td{background:rgba(91,63,140,0.10)}
-tr.rb-grp-b:hover td{background:rgba(91,63,140,0.14)}
-tr.rb-start td{border-top:3px solid rgba(168,114,221,0.60)}
+/* Couleur de fond propre à chaque REMBT (étapes 2 & 3) + séparateur de groupe */
+tr.rb-start td{border-top:3px solid rgba(168,114,221,0.65)}
+tr.rb-c0 td{background:rgba(123,95,172,0.16)}  tr.rb-c0:hover td{background:rgba(123,95,172,0.22)}
+tr.rb-c1 td{background:rgba(0,176,240,0.13)}   tr.rb-c1:hover td{background:rgba(0,176,240,0.19)}
+tr.rb-c2 td{background:rgba(46,213,115,0.12)}  tr.rb-c2:hover td{background:rgba(46,213,115,0.18)}
+tr.rb-c3 td{background:rgba(255,159,67,0.12)}  tr.rb-c3:hover td{background:rgba(255,159,67,0.18)}
+tr.rb-c4 td{background:rgba(255,107,170,0.13)} tr.rb-c4:hover td{background:rgba(255,107,170,0.19)}
+tr.rb-c5 td{background:rgba(91,130,230,0.15)}  tr.rb-c5:hover td{background:rgba(91,130,230,0.21)}
+tr.rb-c6 td{background:rgba(0,200,180,0.12)}   tr.rb-c6:hover td{background:rgba(0,200,180,0.18)}
+tr.rb-c7 td{background:rgba(230,200,80,0.11)}  tr.rb-c7:hover td{background:rgba(230,200,80,0.17)}
 
 input[type="number"],input[type="text"]{background:rgba(22,18,32,0.80);border:1px solid rgba(123,95,172,0.18);color:rgba(220,210,235,0.90);
   font-family:inherit;font-size:12px;padding:4px 6px;border-radius:5px;text-align:center;transition:all .25s;font-variant-numeric:tabular-nums}
@@ -765,6 +771,9 @@ let CI = (function(){
 })();
 
 let active = 'dim';
+// Regroupement des lignes dans les tableaux de chutes : 'niv' (niveau) ou 'rembt'
+let grpBy = 'niv';
+function setGrpBy(m){ grpBy = (m === 'rembt') ? 'rembt' : 'niv'; R(); }
 
 // ═══════════════════════════════════════════════════════════════════════
 // PERSISTENCE — localStorage (key = "algomes_calculs_individuels_v1")
@@ -996,12 +1005,17 @@ function renderSide(side){
            Mêmes entrées que l'étape 2 — ajoutez la <b>Longueur</b> et la <b>Section</b> du câble CIBE → TA.<br>
            La colonne <code>%C1+C2</code> additionne la chute des deux tronçons et doit rester sous la <b>limite totale</b> (par défaut 2 % — NF C 14-100).`);
 
-  // Group by bâtiment then niveau
+  // Regroupement des lignes : par REMBT (si demandé, mode complet) ou par niveau
+  const byRembt = CI.scope !== 'c1only' && grpBy === 'rembt';
   const grp = {};
   CI.lgts.forEach((l,i)=>{
-    const k = (l.niv||'?');
+    const k = byRembt ? (l.rembtId || '?') : (l.niv||'?');
     (grp[k] = grp[k] || []).push({l,i});
   });
+  // Ordre des groupes : ordre des REMBT en mode REMBT, sinon ordre d'apparition
+  const grpKeys = byRembt
+    ? CI.rembts.map(r => r.id).filter(id => grp[id])
+    : Object.keys(grp);
 
   // Aggregates
   let nbOk = 0, nbWarn = 0, nbBad = 0, maxPc = 0, sumPc = 0;
@@ -1081,6 +1095,7 @@ function renderSide(side){
         <span>${label}</span>
         <span style="color:rgba(180,165,200,0.45);font-weight:500;text-transform:none;letter-spacing:0.4px;margin-left:8px;font-size:11px">— ${subL}</span>
         <div class="rt">
+          ${showREMBT ? `<button class="btn${grpBy==='rembt'?' ba':''}" onclick="setGrpBy('${grpBy==='rembt'?'niv':'rembt'}')" title="Regrouper les lignes par REMBT, ou revenir au tri par niveau">⇅ ${grpBy==='rembt'?'Par niveau':'Reclasser par REMBT'}</button>` : ''}
           <button class="btn" onclick="addCompt()" title="Ajouter un comptage TB tri (commercial, jusqu'à 36 kVA)">＋ Comptage TB tri</button>
           <button class="btn ba" onclick="addLgt()">＋ Logement</button>
         </div>
@@ -1110,13 +1125,13 @@ function renderSide(side){
           </tr>`;
 
   let prevRembtId = null, shownRows = 0;
-  Object.keys(grp).forEach(k=>{
+  grpKeys.forEach(k=>{
     grp[k].forEach((entry, idx)=>{
       const l = entry.l, i = entry.i;
       const first = (idx === 0);
-      // Bandes par REMBT : couleur alternée + séparateur au changement de REMBT
+      // Couleur de fond propre à chaque REMBT + séparateur au changement de REMBT
       const ri = showREMBT ? CI.rembts.findIndex(r => r.id === l.rembtId) : -1;
-      const bandCls = (ri % 2 === 1) ? ' rb-grp-b' : '';
+      const colorCls = (ri >= 0) ? ` rb-c${ri % 8}` : '';
       const sepCls = (showREMBT && shownRows > 0 && l.rembtId !== prevRembtId) ? ' rb-start' : '';
       // Compute for both sides
       const rThis = compute(l, side);
@@ -1135,7 +1150,7 @@ function renderSide(side){
       const phaseOpts = isCompt
         ? '<option value="T" selected>Tri</option>'
         : PHASES.map(p => `<option value="${p}"${l.K==p?' selected':''}>${p==='M'?'Mono':'Tri'}</option>`).join('');
-      h += `<tr class="${first?'fsep':''}${isCompt?' row-compt':''}${bandCls}${sepCls}">`;
+      h += `<tr class="${(!byRembt && first)?'fsep':''}${isCompt?' row-compt':''}${colorCls}${sepCls}">`;
       h += `<td><button class="rd" onclick="delLgt(${i})">✕</button></td>`;
       // REMBT (par logement) — caché en C1-only
       if(showREMBT){
@@ -1145,9 +1160,9 @@ function renderSide(side){
         const pinTitle = pinned ? 'Affecté manuellement (épinglé) — « ↺ Auto » pour relâcher' : 'Affectation automatique — choisir un REMBT pour le forcer';
         h += `<td><select class="sel rembt-sel${pinned?' rembt-pinned':''}" title="${pinTitle}" onchange="updRembt(${i},this.value)">${rOpts}</select></td>`;
       }
-      h += first
-        ? `<td class="fl" rowspan="${grp[k].length}">${l.niv||'—'}</td>`
-        : '';
+      h += byRembt
+        ? `<td class="fl">${l.niv||'—'}</td>`
+        : (first ? `<td class="fl" rowspan="${grp[k].length}">${l.niv||'—'}</td>` : '');
       // KIND (Logement vs Comptage TB)
       h += `<td><select class="sel" style="min-width:88px" onchange="setKind(${i},this.value)">
         <option value="lgt"${l.kind!=='compt'?' selected':''}>Logement</option>

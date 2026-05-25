@@ -253,6 +253,37 @@ button.btn[disabled]{opacity:0.4;cursor:not-allowed}
 .dim-stat b{color:#E8E0F2;font-weight:700;font-size:15px}
 .dim-sep{color:rgba(123,95,172,0.40)}
 
+/* ═══ Assistant de configuration (Étape 1) ═══ */
+.wz-card{margin-bottom:18px;padding:20px 22px;border-radius:12px;
+  border:1px solid rgba(123,95,172,0.45);background:linear-gradient(165deg,rgba(36,28,54,0.92) 0%,rgba(18,16,24,0.95) 100%);
+  box-shadow:0 6px 22px rgba(91,63,140,0.18)}
+.wz-head{display:flex;align-items:center;gap:14px;margin-bottom:6px}
+.wz-head-ic{flex-shrink:0;width:42px;height:42px;border-radius:50%;background:#7B5DA8;color:#fff;display:flex;align-items:center;justify-content:center;font-size:21px}
+.wz-title{font-size:16px;font-weight:700;color:#E8E0F2;letter-spacing:0.3px}
+.wz-sub{font-size:12px;color:rgba(200,186,216,0.70);margin-top:2px}
+.wz-q{margin-top:18px}
+.wz-q-lbl{font-size:13px;font-weight:700;color:#D4B5FF;letter-spacing:0.3px;margin-bottom:9px}
+.wz-opts{display:flex;gap:12px;flex-wrap:wrap}
+.wz-opt{flex:1;min-width:220px;cursor:pointer}
+.wz-opt input{position:absolute;opacity:0;pointer-events:none}
+.wz-opt-box{display:flex;flex-direction:column;gap:3px;padding:12px 15px;border-radius:9px;
+  border:1.5px solid rgba(123,95,172,0.22);background:rgba(22,18,32,0.55);transition:border-color 0.15s,background 0.15s}
+.wz-opt-box b{font-size:13.5px;color:#E8E0F2;font-weight:700}
+.wz-opt-box small{font-size:11px;color:rgba(200,186,216,0.62);line-height:1.35}
+.wz-opt:hover .wz-opt-box{border-color:rgba(155,125,197,0.45);background:rgba(91,63,140,0.10)}
+.wz-opt input:checked + .wz-opt-box{border-color:#9B7DC5;background:linear-gradient(180deg,rgba(123,95,172,0.32),rgba(91,63,140,0.18));
+  box-shadow:inset 0 0 0 1px rgba(155,125,197,0.40)}
+.wz-opt input:focus-visible + .wz-opt-box{outline:2px solid #9B7DC5;outline-offset:2px}
+.wz-grid{display:flex;gap:12px;flex-wrap:wrap}
+.wz-grid .rb-field{flex:1;min-width:150px}
+.wz-hint{margin-top:8px;font-size:11.5px;color:rgba(168,114,221,0.85);min-height:14px}
+.wz-actions{display:flex;gap:10px;align-items:center;margin-top:22px;padding-top:16px;border-top:1px solid rgba(123,95,172,0.18)}
+.wz-done{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;padding:10px 16px;border-radius:9px;
+  border:1px solid rgba(123,95,172,0.22);background:rgba(22,18,32,0.45);font-size:12.5px;color:rgba(200,186,216,0.82)}
+.wz-done b{color:#D4B5FF;font-weight:700}
+.wz-done-ic{font-size:16px}
+.wz-done .btn{margin-left:auto}
+
 details.rembt-card{margin-bottom:10px;border:1px solid rgba(123,95,172,0.18);border-radius:10px;background:rgba(22,18,32,0.65);overflow:hidden;transition:border-color 0.2s,background 0.2s}
 details.rembt-card[open]{border-color:rgba(123,95,172,0.40);background:linear-gradient(165deg,rgba(22,18,32,0.85) 0%,rgba(14,14,16,0.92) 100%);box-shadow:0 4px 14px rgba(91,63,140,0.10)}
 .rembt-sum{display:flex;align-items:center;gap:10px;padding:11px 16px;cursor:pointer;list-style:none;font-family:inherit;flex-wrap:wrap;user-select:none}
@@ -627,6 +658,27 @@ function newRembt(name, existing){
 function defaultCF(){
   return { active:false, name:'CF', long:5, section:35 };
 }
+// Configuration issue de l'assistant (Étape 1). Ne génère rien : fournit
+// seulement les valeurs par défaut appliquées aux nouveaux logements.
+function defaultSetup(){
+  return { done:false, defPhase:'M', defType:'', defS:'', defRc:5, defCt:5,
+           hasCommerce:false, defKva:12, plannedLgts:'' };
+}
+function normSetup(x){
+  const d = defaultSetup();
+  if(!x || typeof x !== 'object') return d;
+  return {
+    done: !!x.done,
+    defPhase: x.defPhase === 'T' ? 'T' : 'M',
+    defType: typeof x.defType === 'string' ? x.defType : '',
+    defS: (x.defS === '' || x.defS == null || isNaN(Number(x.defS))) ? '' : Number(x.defS),
+    defRc: (x.defRc == null || isNaN(Number(x.defRc))) ? 5 : Number(x.defRc),
+    defCt: (x.defCt == null || isNaN(Number(x.defCt))) ? 5 : Number(x.defCt),
+    hasCommerce: !!x.hasCommerce,
+    defKva: (x.defKva == null || isNaN(Number(x.defKva))) ? 12 : Number(x.defKva),
+    plannedLgts: (x.plannedLgts === '' || x.plannedLgts == null || isNaN(Number(x.plannedLgts))) ? '' : Number(x.plannedLgts)
+  };
+}
 
 // Coefficients de foisonnement NF C 14-100 (puissance simultanée)
 const FOIS = [
@@ -713,6 +765,7 @@ let CI = (function(){
     limT: 1,    // limite par tronçon (%) — NF C 14-100 défaut 1 %, Excel d'origine 1,15 %
     limTot: 2,  // limite totale C1+C2 (%) — NF C 14-100
     scope: 'full', // 'full' = REMBT→CIBE→TA  ·  'c1only' = CIBE→TA seul
+    setup: defaultSetup(),
     ts: 0
   };
 })();
@@ -744,6 +797,7 @@ function load(){
       CI.limT = m.limT;
       CI.limTot = m.limTot;
       CI.scope = m.scope;
+      CI.setup = m.setup;
       CI.ts = m.ts;
       return true;
     }
@@ -783,6 +837,9 @@ function migrate(d){
     limT:   (typeof d.limT   === 'number' && d.limT   > 0) ? d.limT   : 1,
     limTot: (typeof d.limTot === 'number' && d.limTot > 0) ? d.limTot : 2,
     scope: d.scope === 'c1only' ? 'c1only' : 'full',
+    // Projet existant sans config d'assistant → considéré déjà configuré
+    // (on n'affiche pas l'assistant aux dossiers déjà saisis).
+    setup: d.setup ? normSetup(d.setup) : Object.assign(defaultSetup(), { done:true }),
     ts: d.ts || 0
   };
   if(Array.isArray(d.rembts) && d.rembts.length){
@@ -1153,9 +1210,159 @@ function renderSide(side){
   document.getElementById(elId).innerHTML = h;
 }
 
+// ─── Assistant de configuration (Étape 1) ────────────────────────
+function renderSetupWizard(){
+  const s = CI.setup || defaultSetup();
+  const full = CI.scope !== 'c1only';
+  const root = CI.rembts.find(r => r.parentId == null) || CI.rembts[0];
+  const ccu = !!(root && root.cf && root.cf.active);
+  const nb = (s.plannedLgts === '' || s.plannedLgts == null) ? 0 : Number(s.plannedLgts);
+  const planTxt = nb > 0 ? `≈ ${Math.ceil(nb / REMBT_MAX_LGTS)} REMBT en cascade (max ${REMBT_MAX_LGTS} logements chacun).` : '';
+  const opt = (name, val, checked, title, sub) =>
+    `<label class="wz-opt"><input type="radio" name="${name}" value="${val}"${checked?' checked':''}>
+       <span class="wz-opt-box"><b>${title}</b><small>${sub}</small></span></label>`;
+  return `
+  <div class="wz-card">
+    <div class="wz-head">
+      <div class="wz-head-ic">🧭</div>
+      <div>
+        <div class="wz-title">Assistant de configuration</div>
+        <div class="wz-sub">Quelques questions simples pour préparer votre projet. Vous pourrez tout ajuster ensuite — rien n'est figé.</div>
+      </div>
+    </div>
+
+    <div class="wz-q">
+      <div class="wz-q-lbl">1 · Que voulez-vous calculer ?</div>
+      <div class="wz-opts">
+        ${opt('wz-perim','full',full,'Installation complète','Du REMBT jusqu\'au tableau d\'abonné (REMBT → CIBE → TA)')}
+        ${opt('wz-perim','c1only',!full,'Tronçon final seulement','Du coffret CIBE au tableau d\'abonné (C1 seul)')}
+      </div>
+    </div>
+
+    <div class="wz-q">
+      <div class="wz-q-lbl">2 · Y a-t-il un coffret de façade (CCU) ?</div>
+      <div class="wz-opts">
+        ${opt('wz-ccu','oui',ccu,'Oui','Un coffret entre le réseau ENEDIS et le 1ᵉʳ REMBT')}
+        ${opt('wz-ccu','non',!ccu,'Non','Raccordement direct sur le REMBT')}
+      </div>
+    </div>
+
+    <div class="wz-q">
+      <div class="wz-q-lbl">3 · Vos logements sont plutôt…</div>
+      <div class="wz-opts">
+        ${opt('wz-phase','M',s.defPhase!=='T','Monophasés','Le cas le plus courant')}
+        ${opt('wz-phase','T',s.defPhase==='T','Triphasés','Grands logements / forte puissance')}
+      </div>
+    </div>
+
+    <div class="wz-q">
+      <div class="wz-q-lbl">4 · Votre projet — valeurs par défaut des logements</div>
+      <div class="wz-grid">
+        <label class="rb-field"><span>Nb de logements prévus</span><input type="number" id="wz-nb" class="ns" min="0" step="1" value="${nb||''}" oninput="wzPlanHint()" placeholder="ex : 8"></label>
+        <label class="rb-field"><span>Type courant</span><input type="text" id="wz-type" value="${(s.defType||'').replace(/"/g,'&quot;')}" placeholder="ex : T3, 2P…"></label>
+        <label class="rb-field"><span>Surface type (m²)</span><input type="number" id="wz-surf" class="ns" min="0" step="0.01" value="${s.defS===''||s.defS==null?'':s.defS}" placeholder="ex : 65"></label>
+      </div>
+      <div class="wz-hint" id="wz-plan-hint">${planTxt}</div>
+    </div>
+
+    <div class="wz-q">
+      <div class="wz-q-lbl">5 · Longueurs de câble par défaut (m)</div>
+      <div class="wz-grid">
+        <label class="rb-field"><span>REMBT → CIBE</span><input type="number" id="wz-rc" class="ns" min="0" step="0.5" value="${s.defRc==null?5:s.defRc}"></label>
+        <label class="rb-field"><span>CIBE → tableau d'abonné</span><input type="number" id="wz-ct" class="ns" min="0" step="0.5" value="${s.defCt==null?5:s.defCt}"></label>
+      </div>
+    </div>
+
+    <div class="wz-q">
+      <div class="wz-q-lbl">6 · Des locaux commerciaux (comptage tri) ?</div>
+      <div class="wz-opts">
+        ${opt('wz-com','oui',s.hasCommerce,'Oui','Boulangerie, local commercial… (en plus des logements)')}
+        ${opt('wz-com','non',!s.hasCommerce,'Non','Uniquement des logements')}
+      </div>
+    </div>
+
+    <div class="wz-actions">
+      <button class="btn ba" onclick="applySetupWizard()">✓ Appliquer la configuration</button>
+      <button class="btn" onclick="skipSetupWizard()">Passer l'assistant</button>
+    </div>
+  </div>`;
+}
+
+function wzPlanHint(){
+  const el = document.getElementById('wz-plan-hint'); if(!el) return;
+  const nbEl = document.getElementById('wz-nb');
+  const n = nbEl ? parseInt(nbEl.value, 10) : 0;
+  el.textContent = (n > 0)
+    ? `≈ ${Math.ceil(n / REMBT_MAX_LGTS)} REMBT en cascade (max ${REMBT_MAX_LGTS} logements chacun).`
+    : '';
+}
+
+function applySetupWizard(){
+  const radio = name => { const el = document.querySelector(`input[name="${name}"]:checked`); return el ? el.value : null; };
+  const numOr = (id, dflt) => { const el = document.getElementById(id); const v = el ? parseFloat(el.value) : NaN; return isNaN(v) ? dflt : v; };
+  const perim = radio('wz-perim') === 'c1only' ? 'c1only' : 'full';
+  const ccu = radio('wz-ccu') === 'oui';
+  const typeEl = document.getElementById('wz-type');
+  CI.setup = {
+    done: true,
+    defPhase: radio('wz-phase') === 'T' ? 'T' : 'M',
+    defType: typeEl ? (typeEl.value || '').trim() : '',
+    defS: numOr('wz-surf', ''),
+    defRc: numOr('wz-rc', 5),
+    defCt: numOr('wz-ct', 5),
+    hasCommerce: radio('wz-com') === 'oui',
+    defKva: 12,
+    plannedLgts: numOr('wz-nb', '')
+  };
+  CI.scope = perim;
+  const root = CI.rembts.find(r => r.parentId == null) || CI.rembts[0];
+  if(root){ if(!root.cf) root.cf = defaultCF(); root.cf.active = ccu; }
+  save(); R();
+}
+
+function skipSetupWizard(){
+  CI.setup = Object.assign(defaultSetup(), CI.setup || {}, { done:true });
+  save(); R();
+}
+
+function reopenSetupWizard(){
+  if(!CI.setup) CI.setup = defaultSetup();
+  CI.setup.done = false;
+  active = 'dim';
+  save(); R();
+}
+
+function setupSummaryBar(){
+  const s = CI.setup || defaultSetup();
+  const root = CI.rembts.find(r => r.parentId == null) || CI.rembts[0];
+  const ccu = !!(root && root.cf && root.cf.active);
+  const bits = [
+    `<b>${CI.scope === 'c1only' ? 'CIBE → TA seul' : 'Installation complète'}</b>`,
+    `CCU <b>${ccu ? 'oui' : 'non'}</b>`,
+    `logements <b>${s.defPhase === 'T' ? 'tri' : 'mono'}</b>`,
+    `défauts <b>${Number(s.defRc)||5}/${Number(s.defCt)||5} m</b>`
+  ];
+  if(s.hasCommerce) bits.push('+ locaux commerciaux');
+  return `<div class="wz-done">
+    <span class="wz-done-ic">🧭</span>
+    <span>Configuration : ${bits.join(' · ')}</span>
+    <button class="btn" onclick="reopenSetupWizard()">⚙️ Modifier</button>
+  </div>`;
+}
+
 function renderDim(){
+  if(!CI.setup) CI.setup = defaultSetup();
   const totGlobal = CI.rembts.reduce((s,r)=>s+rembtPlages(r),0);
-  let h = `
+  let h = '';
+
+  // Assistant de configuration (questionnaire) ou bandeau récapitulatif
+  if(!CI.setup.done){
+    document.getElementById('sh-dim').innerHTML = renderSetupWizard();
+    return;
+  }
+  h += setupSummaryBar();
+
+  h += `
     <div class="intro intro-compact">
       <div class="intro-num">1</div>
       <div class="intro-txt">
@@ -1350,25 +1557,27 @@ function setPreset(tronc, total){
   save(); R();
 }
 function addLgt(){
-  const last = CI.lgts[CI.lgts.length-1] || { bat:'A', niv:'RDC', rc:{O:5,P:35}, ct:{O:5,P:35}, rembtId: CI.rembts[0].id };
+  const s = CI.setup || defaultSetup();
+  const last = CI.lgts[CI.lgts.length-1] || { bat:'A', niv:'RDC', rembtId: CI.rembts[0].id };
   CI.lgts.push({
     bat: last.bat || 'A',
     niv: last.niv || 'RDC',
-    type: '',
+    type: s.defType || '',
     lett: '',
     hall: '',
-    S: '',
-    K: 'M',
+    S: (s.defS === '' || s.defS == null) ? '' : Number(s.defS),
+    K: s.defPhase === 'T' ? 'T' : 'M',
     kind: 'lgt',
     kva: '',
-    rc: { O: (last.rc && last.rc.O) || 5, P: (last.rc && last.rc.P) || 35 },
-    ct: { O: (last.ct && last.ct.O) || 5, P: (last.ct && last.ct.P) || 35 },
+    rc: { O: Number(s.defRc) || 5, P: 35 },
+    ct: { O: Number(s.defCt) || 5, P: 35 },
     rembtId: last.rembtId || CI.rembts[0].id
   });
   save(); R();
 }
 function addCompt(){
-  const last = CI.lgts[CI.lgts.length-1] || { bat:'A', niv:'RDC', rc:{O:5,P:35}, ct:{O:5,P:35}, rembtId: CI.rembts[0].id };
+  const s = CI.setup || defaultSetup();
+  const last = CI.lgts[CI.lgts.length-1] || { bat:'A', niv:'RDC', rembtId: CI.rembts[0].id };
   CI.lgts.push({
     bat: last.bat || 'A',
     niv: last.niv || 'RDC',
@@ -1378,9 +1587,9 @@ function addCompt(){
     S: '',
     K: 'T',
     kind: 'compt',
-    kva: 12,
-    rc: { O: (last.rc && last.rc.O) || 5, P: (last.rc && last.rc.P) || 35 },
-    ct: { O: (last.ct && last.ct.O) || 5, P: (last.ct && last.ct.P) || 35 },
+    kva: Number(s.defKva) || 12,
+    rc: { O: Number(s.defRc) || 5, P: 35 },
+    ct: { O: Number(s.defCt) || 5, P: 35 },
     rembtId: last.rembtId || CI.rembts[0].id
   });
   save(); R();
@@ -1833,7 +2042,7 @@ function newProject(){
   const r = defaultRembts();
   CI = {
     P:'', lgts: defaultLgts().map(l => ({...l, rembtId: r[0].id})),
-    rembts: r, limT:1, limTot:2, ts:0
+    rembts: r, limT:1, limTot:2, scope:'full', setup: defaultSetup(), ts:0
   };
   save(); R();
 }
@@ -2125,7 +2334,8 @@ async function importXLS(input){
         if(d && typeof d === 'object'){
           const m = migrate(d);
           CI.P = m.P; CI.lgts = m.lgts; CI.rembts = m.rembts;
-          CI.limT = m.limT; CI.limTot = m.limTot; CI.ts = m.ts;
+          CI.limT = m.limT; CI.limTot = m.limTot; CI.scope = m.scope;
+          CI.setup = m.setup; CI.ts = m.ts;
           save(); R(); input.value=''; return;
         }
       }

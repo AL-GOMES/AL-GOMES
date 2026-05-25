@@ -551,37 +551,6 @@ label.rb-block-h{cursor:pointer}
   <div class="sheet" id="sh-sch"></div>
 </div>
 
-<!-- HELP MODAL -->
-<div class="mo" id="moHelp">
-  <div class="ml">
-    <h3>📐 Formules — Chute de tension</h3>
-    <p><b style="color:#B89AE0">Puissance par logement</b> (selon surface F en m²) :</p>
-    <ul>
-      <li>F &lt; 35 m² → <code>6 kVA</code> (disjoncteur 15/45, calibre 45A)</li>
-      <li>35 ≤ F &lt; 100 m² → <code>9 kVA</code> (disjoncteur 15/45, calibre 45A)</li>
-      <li>F ≥ 100 m² → <code>12 kVA</code> (disjoncteur 30/60, calibre 60A)</li>
-    </ul>
-    <p><b style="color:#B89AE0">Chute de tension (V) — câble ALU dérivation</b> :</p>
-    <ul>
-      <li>Mono : <code>ΔU = (0.036 × 2 × L × I) / S</code></li>
-      <li>Tri : <code>ΔU = (0.036 × L × I) / S</code></li>
-    </ul>
-    <p style="font-size:11px;color:rgba(180,165,200,0.55)">avec ρ<sub>Alu</sub> = 0,036 Ω·mm²/m (à 90°C), L = longueur (m), I = calibre disjoncteur (A), S = section (mm²)</p>
-    <p><b style="color:#B89AE0">Pourcentage de chute</b> : <code>%ΔU = ΔU / 2,3</code></p>
-    <p><b style="color:#B89AE0">Total C1+C2</b> : somme des chutes REMBT→CIBE et CIBE→TA pour le même logement.</p>
-    <p style="margin-top:14px"><b style="color:#FFB86C">Section recommandée</b> : on cherche la section minimale parmi <code>10, 16, 25, 35, 50 mm²</code> (Al) telle que <code>%ΔU ≤ limite tronçon</code> configurée (champ en haut de l'onglet) :</p>
-    <ul>
-      <li>Mono : <code>%ΔU = (0,036 × 2 × L × I) / S / 2,3</code></li>
-      <li>Tri : <code>%ΔU = (0,036 × L × I) / S / 2,3</code></li>
-    </ul>
-    <p style="font-size:11px;color:rgba(180,165,200,0.55)">Section 10 mm² exclue si disjoncteur 30/60 (12 kVA), conformément à HN33S33.<br>
-    Note : ceci corrige le calcul d'origine de l'Excel qui utilisait par erreur ρ_Cu = 0,0225 au lieu de ρ_Al = 0,036 pour la section possible.</p>
-    <div style="text-align:right;margin-top:18px">
-      <button class="btn" onclick="document.getElementById('moHelp').classList.remove('open')">Fermer</button>
-    </div>
-  </div>
-</div>
-
 <script>
 // ═══════════════════════════════════════════════════════════════════════
 // CLOCK
@@ -1059,7 +1028,6 @@ function renderSide(side){
         <span>${label}</span>
         <span style="color:rgba(180,165,200,0.45);font-weight:500;text-transform:none;letter-spacing:0.4px;margin-left:8px;font-size:11px">— ${subL}</span>
         <div class="rt">
-          <button class="help-link" title="Formules" onclick="document.getElementById('moHelp').classList.add('open')">ⓘ</button>
           <button class="btn" onclick="addCompt()" title="Ajouter un comptage TB tri (commercial, jusqu'à 36 kVA)">＋ Comptage TB tri</button>
           <button class="btn ba" onclick="addLgt()">＋ Logement</button>
         </div>
@@ -1181,14 +1149,6 @@ function renderSide(side){
   } else if(CI.lgts.length > 0){
     h += `<div class="ban ban-ok">✅ Toutes les chutes sont conformes (≤ ${fmt(CI.limT,2)} %)</div>`;
   }
-
-  // Notice
-  h += `<div class="formula-box">
-    <b>Formules appliquées</b> — câble en aluminium (ρ = 0,036 Ω·mm²/m à 90°C)<br>
-    Mono : <code>ΔU = (0,036 × 2 × L × I) / S</code> &nbsp;·&nbsp; Tri : <code>ΔU = (0,036 × L × I) / S</code><br>
-    <code>%ΔU = ΔU / 2,3</code> &nbsp;·&nbsp; Total : <code>%ΔU<sub>C1+C2</sub> = %ΔU<sub>REMBT-CIBE</sub> + %ΔU<sub>CIBE-TA</sub></code><br>
-    <b>Section recommandée</b> : section minimale parmi 10, 16, 25, 35, 50 mm² (Al) donnant <code>%ΔU ≤ ${fmt(CI.limT,2)} %</code> (limite tronçon configurée).
-  </div>`;
 
   document.getElementById(elId).innerHTML = h;
 }

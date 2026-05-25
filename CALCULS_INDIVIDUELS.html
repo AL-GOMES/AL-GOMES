@@ -2399,6 +2399,64 @@ async function exportPDF(){
   const navy=[31,56,100], white=[255,255,255], greyL=[242,242,242], blueA=[68,114,196];
   const okC=[198,239,206], warnC=[255,235,156], badC=[255,199,206];
 
+  // La police PDF par défaut (Helvetica/WinAnsi) ne gère pas les symboles
+  // → ≤ Ω ρ √ ni les emojis : on remplace/retire pour éviter les caractères
+  // parasites. On intercepte tous les doc.text (y compris ceux d'autoTable).
+  function pdfSafe(s){
+    return String(s)
+      .replace(/→|↗/g,'->').replace(/←/g,'<-').replace(/↑/g,'^').replace(/↓/g,'v')
+      .replace(/≤/g,'<=').replace(/≥/g,'>=').replace(/≈/g,'~')
+      .replace(/Ω/g,'Ohm').replace(/ρ/g,'rho').replace(/√/g,'V').replace(/Δ/g,'D').replace(/Σ/g,'Somme').replace(/Φ/g,'Ph')
+      .replace(/[₀₁₂₃₄₅₆₇₈₉]/g, c => '₀₁₂₃₄₅₆₇₈₉'.indexOf(c).toString())
+      .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2300}-\u{23FF}\u{2500}-\u{257F}\u{2B00}-\u{2BFF}\u{FE00}-\u{FE0F}]/gu,'')
+      .replace(/[ \t]{3,}/g,'  ');
+  }
+  const _docText = doc.text.bind(doc);
+  doc.text = function(txt, ...rest){
+    if(typeof txt === 'string') txt = pdfSafe(txt);
+    else if(Array.isArray(txt)) txt = txt.map(t => typeof t === 'string' ? pdfSafe(t) : t);
+    return _docText(txt, ...rest);
+  };
+  // autoTable : nettoie le texte de chaque cellule à l'analyse (largeur + rendu)
+  if(typeof doc.autoTable === 'function'){
+    const _autoTable = doc.autoTable.bind(doc);
+    doc.autoTable = function(opts){
+      const userParse = opts && opts.didParseCell;
+      const o = Object.assign({}, opts, { didParseCell: data => {
+        if(data.cell && Array.isArray(data.cell.text)) data.cell.text = data.cell.text.map(pdfSafe);
+        if(typeof userParse === 'function') userParse(data);
+      }});
+      return _autoTable(o);
+    };
+  }
+
+  // Logo AL GOMES → dataURL (échoue silencieusement si indisponible)
+  let logo = null;
+  try{
+    logo = await new Promise(res => {
+      const img = new Image(); img.crossOrigin = 'anonymous';
+      img.onload = () => { try{ const cv = document.createElement('canvas'); cv.width = img.naturalWidth; cv.height = img.naturalHeight; cv.getContext('2d').drawImage(img,0,0); res({ data: cv.toDataURL('image/png'), ratio: img.naturalWidth / img.naturalHeight }); }catch(e){ res(null); } };
+      img.onerror = () => res(null);
+      img.src = 'assets/img/algomes-logo.png';
+    });
+  }catch(e){ logo = null; }
+
+  // En-tête unifié (bandeau marine + logo + titre + sous-titre)
+  function header(title, subtitle){
+    doc.setFillColor(...navy); doc.rect(0,0,pageW,18,'F');
+    if(logo){
+      const hh = 12, ww = hh * logo.ratio;
+      doc.setFillColor(255,255,255); doc.roundedRect(5, 2.6, ww + 4, hh + 2.2, 1.6, 1.6, 'F');
+      try{ doc.addImage(logo.data, 'PNG', 7, 3.7, ww, hh); }catch(e){}
+    }
+    doc.setFont('helvetica','bold'); doc.setTextColor(...white);
+    doc.setFontSize(14); doc.text(title, pageW/2, subtitle ? 9 : 11, {align:'center'});
+    if(subtitle){
+      doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(180,199,231);
+      doc.text(subtitle, pageW/2, 14.5, {align:'center'});
+    }
+  }
+
   function footer(){
     doc.setFontSize(7); doc.setTextColor(160,160,160);
     doc.text('AL GOMES — Bureau d\'Études Techniques Électricité',14,pageH-6);
@@ -2409,11 +2467,8 @@ async function exportPDF(){
   const rembtByIdPDF = Object.fromEntries(CI.rembts.map(r => [r.id, r]));
 
   function addSidePage(title, side){
-    doc.setFillColor(...navy); doc.rect(0,0,pageW,18,'F');
-    doc.setFontSize(15); doc.setTextColor(...white); doc.setFont('helvetica','bold');
-    doc.text(pName + ' — ' + title, pageW/2, 11, {align:'center'});
-    doc.setFontSize(9); doc.setTextColor(180,199,231);
-    doc.text('Câble ALU  ρ = 0,036 Ω·mm²/m  ·  limite tronçon = '+CI.limT.toFixed(2)+' %  ·  limite C1+C2 = '+CI.limTot.toFixed(2)+' %', pageW/2, 16, {align:'center'});
+    header(pName + ' — ' + title,
+      'Câble ALU  ρ = 0,036 Ω·mm²/m   ·   limite tronçon = '+CI.limT.toFixed(2)+' %   ·   limite C1+C2 = '+CI.limTot.toFixed(2)+' %');
 
     const head = [['REMBT','Niv','Type','Lettr.','HALL','S/kVA','M/T','L (m)','S mm²','kVA','Disj.','I (A)','VU (V)','%ΔU '+(side==='rc'?'C2':'C1'),'% C1+C2']];
     const body = CI.lgts.map(l=>{
@@ -2449,8 +2504,55 @@ async function exportPDF(){
     footer();
   }
 
+  // ── Page « Cadre normatif » : chutes max, max logements/REMBT, longueurs max
+  function addNormPage(){
+    header('CADRE NORMATIF & LIMITES', pName);
+    const limT = CI.limT, limTot = CI.limTot;
+    const tbl = (startY, head, body, col0w) => { doc.autoTable({
+      startY, head:[head], body, theme:'grid', margin:{left:14, right:14},
+      headStyles:{fillColor:navy, textColor:white, fontStyle:'bold', fontSize:9, halign:'center'},
+      bodyStyles:{fontSize:9, halign:'center'},
+      columnStyles:{0:{halign:'left', cellWidth:col0w, fontStyle:'bold'}},
+      styles:{cellPadding:2.2, lineColor:[180,180,180], lineWidth:0.2}
+    }); return doc.lastAutoTable.finalY; };
+    const note = (y, t) => { doc.setFont('helvetica','italic'); doc.setFontSize(7.5); doc.setTextColor(110,110,110);
+      doc.text(t, 14, y, {maxWidth: pageW-28}); };
+    const h2 = (y, t) => { doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(...navy); doc.text(t, 14, y); };
+
+    let y = 25;
+    doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(90,90,90);
+    doc.text('Synthèse des règles appliquées dans ce dossier. Les textes officiels (NF C 14-100, NF C 15-100) étant protégés, les exigences sont reformulées avec la clause de référence.', 14, y, {maxWidth: pageW-28});
+    y += 11;
+
+    h2(y, '1.  Chutes de tension maximales admissibles'); y += 3;
+    y = tbl(y, ['Tronçon','Chute max','Référence'], [
+      ['Étape 2 — REMBT → CIBE (tronçon C2)', '≤ '+limT.toFixed(2)+' %', 'NF C 14-100'],
+      ['Étape 3 — CIBE → tableau abonné (tronçon C1)', '≤ '+limT.toFixed(2)+' %', 'NF C 14-100'],
+      ['Total branchement (C1 + C2)', '≤ '+limTot.toFixed(2)+' %', 'NF C 14-100'],
+    ], 150) + 4;
+    note(y, 'Valeurs configurées dans le dossier. NF C 14-100 (branchement collectif) : par défaut 1 % par tronçon et 2 % au total.'); y += 9;
+
+    h2(y, '2.  Nombre maximal de logements par REMBT'); y += 3;
+    y = tbl(y, ['Règle','Valeur','Référence'], [
+      ['Dérivations individuelles par REMBT (petit collectif)', REMBT_MAX_LGTS+' maxi', 'NF C 14-100 §10'],
+    ], 150) + 4;
+    note(y, 'Au-delà de '+REMBT_MAX_LGTS+' logements : grand collectif → cascade de plusieurs REMBT ou répartiteur RCP400.'); y += 9;
+
+    h2(y, '3.  Longueurs maximales admissibles du conducteur (limite de '+limT.toFixed(2)+' %)'); y += 3;
+    const lmax = (S,I,k) => (limT * 2.3 * S) / (0.036 * k * I);
+    const secs = [10,16,25,35,50];
+    y = tbl(y, ['Section ALU (mm²)','Mono 45 A (m)','Mono 60 A (m)','Tri 60 A (m)'],
+      secs.map(S => [String(S), lmax(S,45,2).toFixed(1), lmax(S,60,2).toFixed(1), lmax(S,60,1).toFixed(1)]), 50) + 4;
+    note(y, 'Longueur maxi pour rester sous la limite. Formule : L = %lim × 2,3 × S / (k × ρ × I), avec ρ = 0,036 Ω·mm²/m, k = 2 (mono) ou 1 (tri), I = calibre disjoncteur. Tronçon CIBE → TA limité à 35 mm² (AR2V).');
+    footer();
+  }
+
   const okPDF = [198,239,206], warnPDF = [255,235,156], badPDF = [255,199,206];
   const c1onlyExport = (CI.scope === 'c1only');
+
+  // Page 1 : cadre normatif
+  addNormPage();
+  doc.addPage();
 
   // En mode complet : page des chutes REMBT → CIBE (C2). Masquée en C1 seul.
   if(!c1onlyExport){
@@ -2462,11 +2564,8 @@ async function exportPDF(){
   // ── Dimensionnement REMBT (un bloc par REMBT) — masqué en C1 seul ──
   if(!c1onlyExport){
   doc.addPage();
-  doc.setFillColor(...navy); doc.rect(0,0,pageW,18,'F');
-  doc.setFontSize(15); doc.setTextColor(...white); doc.setFont('helvetica','bold');
-  doc.text(pName + ' — DIMENSIONNEMENT REMBT', pageW/2, 12, {align:'center'});
-  doc.setFontSize(9); doc.setTextColor(180,199,231);
-  doc.text(`${CI.rembts.length} REMBT(s)  ·  ${CI.lgts.length} logement(s)  ·  ${CI.rembts.reduce((s,r)=>s+rembtPlages(r),0)} plages au total`, pageW/2, 16, {align:'center'});
+  header(pName + ' — DIMENSIONNEMENT REMBT',
+    `${CI.rembts.length} REMBT(s)  ·  ${CI.lgts.length} logement(s)  ·  ${CI.rembts.reduce((s,r)=>s+rembtPlages(r),0)} plages au total`);
 
   let yPos = 24;
 
@@ -2480,9 +2579,7 @@ async function exportPDF(){
     if(yPos > pageH - 70){
       footer();
       doc.addPage();
-      doc.setFillColor(...navy); doc.rect(0,0,pageW,18,'F');
-      doc.setFontSize(15); doc.setTextColor(...white); doc.setFont('helvetica','bold');
-      doc.text(pName + ' — DIMENSIONNEMENT REMBT (suite)', pageW/2, 12, {align:'center'});
+      header(pName + ' — DIMENSIONNEMENT REMBT (suite)', '');
       yPos = 24;
     }
 
@@ -2536,15 +2633,10 @@ async function exportPDF(){
   // ── SCHÉMA RÉCAPITULATIF (topologie + tableau complet) ──────
   // ─────────────────────────────────────────────────────────────
   doc.addPage();
-  doc.setFillColor(...navy); doc.rect(0,0,pageW,18,'F');
-  doc.setFontSize(15); doc.setTextColor(...white); doc.setFont('helvetica','bold');
-  doc.text(pName + ' — SCHÉMA RÉCAPITULATIF', pageW/2, 12, {align:'center'});
-  doc.setFontSize(9); doc.setTextColor(180,199,231);
   const c1onlyPDF = c1onlyExport;
-  doc.text(c1onlyPDF
+  header(pName + ' — SCHÉMA RÉCAPITULATIF', c1onlyPDF
     ? `Mode C1 seul — dérivations CIBE → Tableau abonné  ·  ${CI.lgts.length} logement(s)`
-    : `Arborescence Coffret de façade → REMBT → logements  ·  ${CI.rembts.length} REMBT(s)  ·  ${CI.lgts.length} logement(s)`,
-    pageW/2, 16, {align:'center'});
+    : `Arborescence Coffret de façade → REMBT → logements  ·  ${CI.rembts.length} REMBT(s)  ·  ${CI.lgts.length} logement(s)`);
 
   // ── 1. Topologie graphique (REMBT boxes + lignes) ──────────
   // Démarre directement aux REMBT racines (pas de bloc Réseau ENEDIS en amont)
@@ -2707,9 +2799,7 @@ async function exportPDF(){
   if(ty > pageH - 40){
     footer();
     doc.addPage();
-    doc.setFillColor(...navy); doc.rect(0,0,pageW,18,'F');
-    doc.setFontSize(15); doc.setTextColor(...white); doc.setFont('helvetica','bold');
-    doc.text(pName + ' — SCHÉMA RÉCAPITULATIF (suite)', pageW/2, 12, {align:'center'});
+    header(pName + ' — SCHÉMA RÉCAPITULATIF (suite)', '');
     ty = 24;
   }
 

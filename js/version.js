@@ -6,7 +6,7 @@
 //   - AL_VERSION_TIME  : HH:MM      (heure de la MAJ — local Paris)
 //   - AL_VERSION_NOTE  : 1 phrase courte qui décrit le motif de la MAJ
 // =====================================================================
-window.AL_VERSION      = 'v1.94';
+window.AL_VERSION      = 'v1.95';
 window.AL_VERSION_DATE = '2026-05-25';
-window.AL_VERSION_TIME = '15:45';
-window.AL_VERSION_NOTE = 'Calculs individuels : dans les tableaux de chutes (étapes 2/3), chaque REMBT a désormais sa propre couleur de fond (au lieu de bandes alternées), et un bouton « Reclasser par REMBT » regroupe les lignes par REMBT à tout moment (bascule avec le tri par niveau).';
+window.AL_VERSION_TIME = '16:30';
+window.AL_VERSION_NOTE = 'Calculs individuels — refonte du PDF : correction des caractères parasites (symboles → ≤ Ω ρ, indices, emojis désormais nettoyés), logo AL GOMES dans l\'en-tête de chaque page, et nouvelle page « Cadre normatif » (chutes de tension max par étape, max 6 logements/REMBT, tableau des longueurs maximales admissibles, références NF C 14-100 / 15-100).';

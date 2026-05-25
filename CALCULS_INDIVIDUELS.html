@@ -237,8 +237,8 @@ tr:hover .rd{opacity:1}.rd:hover{color:#FF6B6B}
   color:rgba(220,210,235,0.90);font-family:inherit;font-size:12.5px;border-radius:6px;resize:vertical;transition:all .25s;line-height:1.5}
 .rembt-notes:focus{outline:none;border-color:rgba(123,95,172,0.50);background:rgba(32,24,50,0.90);box-shadow:0 0 0 3px rgba(91,63,140,0.12)}
 .rembt-notes::placeholder{color:rgba(180,165,200,0.35)}
-.rembt-auto{display:inline-block;min-width:72px;padding:3px 9px;border-radius:5px;font-size:10.5px;font-weight:600;letter-spacing:0.3px;
-  background:rgba(168,114,221,0.10);color:#D0A8F0;border:1px solid rgba(168,114,221,0.22);white-space:nowrap}
+.rembt-sel{min-width:96px;font-size:10.5px}
+.rembt-sel.rembt-pinned{border-color:rgba(168,114,221,0.70);background:rgba(168,114,221,0.16);color:#E2C8FF;font-weight:700;box-shadow:inset 0 0 0 1px rgba(168,114,221,0.45)}
 .rb-auto-tag{display:inline-flex;align-items:center;gap:6px;padding:6px 13px;border-radius:7px;font-size:12px;font-weight:600;letter-spacing:0.3px;
   background:rgba(168,114,221,0.10);color:#D0A8F0;border:1px solid rgba(168,114,221,0.25)}
 .rb-static{background:rgba(180,165,200,0.06)!important;color:rgba(200,186,216,0.70)!important;cursor:default;border-style:dashed!important}
@@ -650,7 +650,7 @@ function newRembtId(existing){
 function newRembt(name, existing){
   const id = newRembtId(existing);
   return { id, name: name || ('REMBT '+id.slice(1)), notes:'', parentId:null, dim:emptyDim(),
-           cf: defaultCF() };
+           cf: defaultCF(), manual:false };
 }
 // Coffret de façade (CCU) — entre ENEDIS et un REMBT racine.
 // Inactif par défaut pour préserver la compat ascendante.
@@ -811,7 +811,8 @@ function normLgt(x, defaultRembtId){
     kva:  x.kva === '' || x.kva == null ? '' : Number(x.kva),
     rc:   { O: (x.rc && x.rc.O!=null) ? Number(x.rc.O) : 5,  P: (x.rc && x.rc.P) ? Number(x.rc.P) : 35 },
     ct:   { O: (x.ct && x.ct.O!=null) ? Number(x.ct.O) : 5,  P: Math.min((x.ct && x.ct.P) ? Number(x.ct.P) : 35, 35) },
-    rembtId: x.rembtId || defaultRembtId || null
+    rembtId: x.rembtId || defaultRembtId || null,
+    rembtPin: !!x.rembtPin
   };
 }
 function normRembt(x){
@@ -821,7 +822,8 @@ function normRembt(x){
     notes: x.notes || '',
     parentId: x.parentId || null,
     dim: Object.assign(emptyDim(), x.dim || {}),
-    cf: Object.assign(defaultCF(), x.cf || {})
+    cf: Object.assign(defaultCF(), x.cf || {}),
+    manual: !!x.manual
   };
 }
 // Migration : ancien format {P, lgts, dim, limT, limTot} → {P, lgts(+rembtId), rembts[], …}
@@ -1137,8 +1139,11 @@ function renderSide(side){
       h += `<td><button class="rd" onclick="delLgt(${i})">✕</button></td>`;
       // REMBT (par logement) — caché en C1-only
       if(showREMBT){
-        const rb = CI.rembts.find(r => r.id === l.rembtId);
-        h += `<td><span class="rembt-auto" title="Affectation automatique (max ${REMBT_MAX_LGTS} logements/REMBT)">${escapeHtml(rb ? rb.name : '—')}</span></td>`;
+        const pinned = !!l.rembtPin;
+        const rOpts = CI.rembts.map(r => `<option value="${r.id}"${l.rembtId===r.id?' selected':''}>${escapeHtml(r.name)}</option>`).join('')
+          + `<option value="__auto">↺ Auto</option>`;
+        const pinTitle = pinned ? 'Affecté manuellement (épinglé) — « ↺ Auto » pour relâcher' : 'Affectation automatique — choisir un REMBT pour le forcer';
+        h += `<td><select class="sel rembt-sel${pinned?' rembt-pinned':''}" title="${pinTitle}" onchange="updRembt(${i},this.value)">${rOpts}</select></td>`;
       }
       h += first
         ? `<td class="fl" rowspan="${grp[k].length}">${l.niv||'—'}</td>`
@@ -1326,7 +1331,7 @@ function renderDim(){
     <div class="intro intro-compact">
       <div class="intro-num">1</div>
       <div class="intro-txt">
-        <b>Étape 1 — Installation.</b> Les REMBTs sont créés et remplis automatiquement : les logements sont répartis par paquets de ${REMBT_MAX_LGTS} maxi (NF C 14-100 §10) et les REMBTs chaînés en cascade. La taille standard (6/9/12 plages) et le calibre CCU sont calculés automatiquement.
+        <b>Étape 1 — Installation.</b> Les REMBTs sont créés et remplis automatiquement (6 logements maxi par REMBT, NF C 14-100 §10, chaînés en cascade). Vous pouvez ajouter un REMBT et forcer un logement vers un REMBT précis (menu de la colonne REMBT, étapes 2/3) : ces choix manuels sont conservés.
       </div>
     </div>
 
@@ -1338,7 +1343,10 @@ function renderDim(){
         <span class="dim-sep">·</span>
         <span class="dim-stat"><b>${totGlobal}</b> plage${totGlobal>1?'s':''}</span>
       </div>
-      <span class="rb-auto-tag" title="Les REMBTs sont gérés automatiquement à partir du nombre de logements (max ${REMBT_MAX_LGTS}/REMBT) et chaînés en cascade.">⚡ Répartition automatique · ${REMBT_MAX_LGTS} lgts/REMBT · cascade</span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="rb-auto-tag" title="REMBT auto (max ${REMBT_MAX_LGTS}/REMBT, cascade) — affectation manuelle possible par logement.">⚡ Auto · ${REMBT_MAX_LGTS} lgts/REMBT · cascade</span>
+        <button class="btn ba" onclick="addRembt()">＋ REMBT</button>
+      </div>
     </div>
 
     <div class="rembt-list">`;
@@ -1380,6 +1388,7 @@ function renderDim(){
         <span class="rb-pill ${stateCls}">${sizeLbl}</span>
         ${cfPill}
         <span class="rembt-sum-spacer"></span>
+        <button class="btn-icon-del" onclick="event.preventDefault();event.stopPropagation();delRembt('${r.id}')" ${CI.rembts.length<=1?'disabled':''} title="${CI.rembts.length<=1?'Au moins un REMBT requis':'Supprimer ce REMBT (logements réaffectés automatiquement)'}">✕</button>
       </summary>
 
       <div class="rembt-body">
@@ -1562,9 +1571,37 @@ function delLgt(i){
   save(); R();
 }
 // ─── REMBT CRUD ───────────────────────────────────────────────
-// Le nombre de REMBT, l'affectation des logements et le chaînage en cascade
-// sont gérés automatiquement par autoDistributeRembts() — pas d'ajout,
-// de suppression ni de réaffectation manuelle.
+// Le nombre de REMBT et la cascade sont calculés automatiquement
+// (autoDistributeRembts), mais l'utilisateur peut : ajouter un REMBT,
+// en supprimer un, et affecter manuellement un logement à un REMBT
+// (épinglage respecté par l'auto).
+function addRembt(){
+  const r = newRembt(null, CI.rembts);
+  r.manual = true;                       // créé à la main → conservé même vide
+  CI.rembts.push(r);
+  save(); R();
+}
+function delRembt(id){
+  if(CI.rembts.length <= 1){ alert('Au moins un REMBT est nécessaire.'); return; }
+  const r = CI.rembts.find(x => x.id === id); if(!r) return;
+  const assigned = CI.lgts.filter(l => l.rembtId === id).length;
+  if(assigned > 0 && !confirm(`Supprimer « ${r.name} » ? ${assigned} logement(s) seront réaffectés automatiquement.`)) return;
+  // Les logements de ce REMBT sont relâchés (l'auto les replacera)
+  CI.lgts.forEach(l => { if(l.rembtId === id){ l.rembtPin = false; } });
+  CI.rembts = CI.rembts.filter(x => x.id !== id);
+  save(); R();
+}
+// Affectation manuelle d'un logement à un REMBT ('' = retour en auto)
+function updRembt(i, rid){
+  const l = CI.lgts[i]; if(!l) return;
+  if(rid === '' || rid === '__auto'){
+    l.rembtPin = false;
+  } else if(CI.rembts.some(r => r.id === rid)){
+    l.rembtId = rid;
+    l.rembtPin = true;
+  }
+  save(); R();
+}
 function setRembtName(id, v){
   const r = CI.rembts.find(x => x.id === id); if(!r) return;
   r.name = (v || '').trim() || r.id.toUpperCase();
@@ -1634,23 +1671,50 @@ function setScope(s){
 
 // ─── Répartition automatique des REMBT ───────────────────────────
 // Règle « petit collectif » NF C 14-100 §10 : max REMBT_MAX_LGTS logements
-// par REMBT. La liste des logements est découpée séquentiellement en paquets
-// de 6, un REMBT par paquet, et les REMBT sont chaînés en cascade
-// (REMBT n alimenté par REMBT n-1). La config des REMBT existants (nom,
-// modules, CCU, notes) est conservée par ordre. Renvoie true si une
-// modification a eu lieu.
+// par REMBT. Auto + affectation manuelle :
+//   - un logement « épinglé » (l.rembtPin) reste sur le REMBT choisi par
+//     l'utilisateur, l'auto n'y touche pas ;
+//   - les logements non épinglés sont placés séquentiellement dans les
+//     REMBT ayant de la place (max 6) ;
+//   - le nb de REMBT et la cascade restent calculés automatiquement ; les
+//     REMBT créés manuellement (r.manual) sont conservés même vides, les
+//     REMBT auto vides en fin de liste sont retirés.
+// Renvoie true si une modification a eu lieu.
 function autoDistributeRembts(){
   let changed = false;
+  const idSet = new Set(CI.rembts.map(r => r.id));
+  // Épingles invalides (REMBT supprimé) → on relâche
+  CI.lgts.forEach(l => { if(l.rembtPin && !idSet.has(l.rembtId)){ l.rembtPin = false; changed = true; } });
+
+  // Nombre de REMBT nécessaire (au moins 1, au moins de quoi loger tout le monde)
   const need = Math.max(1, Math.ceil(CI.lgts.length / REMBT_MAX_LGTS));
   while(CI.rembts.length < need){ CI.rembts.push(newRembt(null, CI.rembts)); changed = true; }
-  while(CI.rembts.length > need){
-    const removed = CI.rembts.pop(); changed = true;
-    CI.rembts.forEach(o => { if(o.parentId === removed.id) o.parentId = null; });
-  }
-  CI.lgts.forEach((l, idx) => {
-    const rid = CI.rembts[Math.floor(idx / REMBT_MAX_LGTS)].id;
+
+  // Places déjà prises par les logements épinglés
+  const fill = CI.rembts.map(() => 0);
+  CI.lgts.forEach(l => {
+    if(l.rembtPin){ const idx = CI.rembts.findIndex(r => r.id === l.rembtId); if(idx >= 0) fill[idx]++; }
+  });
+  // Placement séquentiel des logements non épinglés dans les REMBT ayant de la place
+  let cur = 0;
+  CI.lgts.forEach(l => {
+    if(l.rembtPin) return;
+    while(cur < CI.rembts.length && fill[cur] >= REMBT_MAX_LGTS) cur++;
+    if(cur >= CI.rembts.length){ CI.rembts.push(newRembt(null, CI.rembts)); fill.push(0); changed = true; }
+    const rid = CI.rembts[cur].id;
+    fill[cur]++;
     if(l.rembtId !== rid){ l.rembtId = rid; changed = true; }
   });
+
+  // Retire les REMBT auto vides en fin de liste (on garde les REMBT manuels et au moins 1)
+  for(let i = CI.rembts.length - 1; i >= 1; i--){
+    const r = CI.rembts[i];
+    const empty = !CI.lgts.some(l => l.rembtId === r.id);
+    if(empty && !r.manual){ CI.rembts.splice(i, 1); changed = true; }
+    else break;
+  }
+
+  // Chaîne en cascade : REMBT n alimenté par REMBT n-1
   CI.rembts.forEach((r, i) => {
     const pid = (i === 0) ? null : CI.rembts[i-1].id;
     if(r.parentId !== pid){ r.parentId = pid; changed = true; }

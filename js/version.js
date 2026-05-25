@@ -6,7 +6,7 @@
 //   - AL_VERSION_TIME  : HH:MM      (heure de la MAJ — local Paris)
 //   - AL_VERSION_NOTE  : 1 phrase courte qui décrit le motif de la MAJ
 // =====================================================================
-window.AL_VERSION      = 'v1.92';
+window.AL_VERSION      = 'v1.93';
 window.AL_VERSION_DATE = '2026-05-25';
-window.AL_VERSION_TIME = '14:15';
-window.AL_VERSION_NOTE = 'Calculs individuels : dans les tableaux de chutes (étapes 2 et 3), les logements sont visuellement regroupés par REMBT — couleur de fond alternée par REMBT et séparateur horizontal à chaque changement de REMBT (au-delà de 6 logements).';
+window.AL_VERSION_TIME = '15:10';
+window.AL_VERSION_NOTE = 'Calculs individuels : affectation manuelle des logements aux REMBT de retour. Le menu de la colonne REMBT (étapes 2/3) permet de forcer un logement vers un REMBT précis (« épinglé »), avec un bouton « + REMBT » et la suppression. La répartition automatique (6/REMBT, cascade) reste active et respecte les choix manuels.';

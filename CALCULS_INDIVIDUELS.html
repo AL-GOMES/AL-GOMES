@@ -613,6 +613,13 @@ tk();setInterval(tk,1000);
 const SECTIONS = [10, 16, 25, 35, 50, 70, 95, 120, 150];
 const SECTIONS_CT = [10, 16, 25, 35];   // CIBE → TA (AR2V) : plafonné à 35 mm²
 const SECT_MAX_CT = 35;
+// Section maxi retenue. Un LOGEMENT est plafonné à 35 mm² (HN33S33 / AR2V)
+// sur les deux tronçons — il n'y a rien au-dessus. Un comptage commercial :
+// ct plafonné à 35, rc (REMBT → CIBE) libre (puissances plus élevées).
+function maxSection(l, side){
+  if(!l || l.kind !== 'compt') return SECT_MAX_CT;
+  return side === 'ct' ? SECT_MAX_CT : null;
+}
 const PHASES = ['M','T'];
 
 const MODULES = [
@@ -808,6 +815,9 @@ function load(){
   return false;
 }
 function normLgt(x, defaultRembtId){
+  const isCompt = x.kind === 'compt';
+  // Logement : section plafonnée à 35 mm² sur les deux tronçons.
+  const capLgt = s => isCompt ? s : Math.min(s, 35);
   return {
     bat: x.bat || '',
     niv: x.niv || 'RDC',
@@ -816,9 +826,9 @@ function normLgt(x, defaultRembtId){
     hall: x.hall === '' || x.hall == null ? '' : Number(x.hall),
     S:    x.S    === '' || x.S    == null ? '' : Number(x.S),
     K:    x.K === 'T' ? 'T' : 'M',
-    kind: x.kind === 'compt' ? 'compt' : 'lgt',
+    kind: isCompt ? 'compt' : 'lgt',
     kva:  x.kva === '' || x.kva == null ? '' : Number(x.kva),
-    rc:   { O: (x.rc && x.rc.O!=null) ? Number(x.rc.O) : 5,  P: (x.rc && x.rc.P) ? Number(x.rc.P) : 35 },
+    rc:   { O: (x.rc && x.rc.O!=null) ? Number(x.rc.O) : 5,  P: capLgt((x.rc && x.rc.P) ? Number(x.rc.P) : 35) },
     ct:   { O: (x.ct && x.ct.O!=null) ? Number(x.ct.O) : 5,  P: Math.min((x.ct && x.ct.P) ? Number(x.ct.P) : 35, 35) },
     rembtId: x.rembtId || defaultRembtId || null,
     rembtPin: !!x.rembtPin
@@ -957,8 +967,8 @@ function compute(l, side){
   const K = lgtPhase(l);
   const VU = chuteVU(K, sub.O, N, sub.P);
   const pc = chutePc(VU);
-  // CIBE → TA (side ct) : section recommandée plafonnée à 35 mm²
-  const rec = sectionMin(K, sub.O, N, p, side === 'ct' ? SECT_MAX_CT : null);
+  // Section recommandée plafonnée selon le type d'entrée (logement = 35 mm² maxi)
+  const rec = sectionMin(K, sub.O, N, p, maxSection(l, side));
   return { p, M, N, VU, pc, rec };
 }
 
@@ -1141,8 +1151,9 @@ function renderSide(side){
       const sub = l[side];
       // Préfixe conducteurs (cohérent avec le schéma) : mono = 2×, tri = 4×
       const cond = lgtPhase(l) === 'M' ? '2×' : '4×';
-      // CIBE → TA limité à 35 mm² (AR2V)
-      const sectList = side === 'ct' ? SECTIONS_CT : SECTIONS;
+      // Sections proposées : logement plafonné à 35 mm² (les deux tronçons)
+      const _mx = maxSection(l, side);
+      const sectList = (side === 'ct' ? SECTIONS_CT : SECTIONS).filter(s => _mx == null || s <= _mx);
       const sectOptions = sectList.map(s => `<option value="${s}"${sub.P==s?' selected':''}>${cond}${s}</option>`).join('');
       const phaseOptions = PHASES.map(p => `<option value="${p}"${l.K==p?' selected':''}>${p==='M'?'Mono':'Tri'}</option>`).join('');
 
@@ -1522,6 +1533,10 @@ function setKind(i, kind){
   if(l.kind === 'compt'){
     l.K = 'T';                          // tri forcé
     if(!l.kva || isNaN(parseFloat(l.kva))) l.kva = 12;
+  } else {
+    // Logement : section plafonnée à 35 mm² sur les deux tronçons
+    if(l.rc && l.rc.P > 35) l.rc.P = 35;
+    if(l.ct && l.ct.P > 35) l.ct.P = 35;
   }
   save(); R();
 }
@@ -2540,10 +2555,10 @@ async function exportPDF(){
 
     h2(y, '3.  Longueurs maximales admissibles du conducteur (limite de '+limT.toFixed(2)+' %)'); y += 3;
     const lmax = (S,I,k) => (limT * 2.3 * S) / (0.036 * k * I);
-    const secs = [10,16,25,35,50];
+    const secs = [10,16,25,35];
     y = tbl(y, ['Section ALU (mm²)','Mono 45 A (m)','Mono 60 A (m)','Tri 60 A (m)'],
       secs.map(S => [String(S), lmax(S,45,2).toFixed(1), lmax(S,60,2).toFixed(1), lmax(S,60,1).toFixed(1)]), 50) + 4;
-    note(y, 'Longueur maxi pour rester sous la limite. Formule : L = %lim × 2,3 × S / (k × ρ × I), avec ρ = 0,036 Ω·mm²/m, k = 2 (mono) ou 1 (tri), I = calibre disjoncteur. Tronçon CIBE → TA limité à 35 mm² (AR2V).');
+    note(y, 'Longueur maxi pour rester sous la limite. Formule : L = %lim × 2,3 × S / (k × ρ × I), avec ρ = 0,036 Ω·mm²/m, k = 2 (mono) ou 1 (tri), I = calibre disjoncteur. Logement : section limitée à 35 mm² (HN33S33 / AR2V) sur les deux tronçons.');
     footer();
   }
 

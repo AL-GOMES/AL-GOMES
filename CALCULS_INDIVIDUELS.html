@@ -274,9 +274,6 @@ button.btn[disabled]{opacity:0.4;cursor:not-allowed}
 .wz-opt input:checked + .wz-opt-box{border-color:#9B7DC5;background:linear-gradient(180deg,rgba(123,95,172,0.32),rgba(91,63,140,0.18));
   box-shadow:inset 0 0 0 1px rgba(155,125,197,0.40)}
 .wz-opt input:focus-visible + .wz-opt-box{outline:2px solid #9B7DC5;outline-offset:2px}
-.wz-grid{display:flex;gap:12px;flex-wrap:wrap}
-.wz-grid .rb-field{flex:1;min-width:150px}
-.wz-hint{margin-top:8px;font-size:11.5px;color:rgba(168,114,221,0.85);min-height:14px}
 .wz-actions{display:flex;gap:10px;align-items:center;margin-top:22px;padding-top:16px;border-top:1px solid rgba(123,95,172,0.18)}
 .wz-done{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;padding:10px 16px;border-radius:9px;
   border:1px solid rgba(123,95,172,0.22);background:rgba(22,18,32,0.45);font-size:12.5px;color:rgba(200,186,216,0.82)}
@@ -658,25 +655,18 @@ function newRembt(name, existing){
 function defaultCF(){
   return { active:false, name:'CF', long:5, section:35 };
 }
-// Configuration issue de l'assistant (Étape 1). Ne génère rien : fournit
-// seulement les valeurs par défaut appliquées aux nouveaux logements.
+// Configuration issue de l'assistant (Étape 1) : réglages projet uniquement
+// (périmètre via CI.scope, CCU via le REMBT racine). Ne stocke ici que la
+// phase pré-sélectionnée des nouveaux logements et la présence de commerces.
 function defaultSetup(){
-  return { done:false, defPhase:'M', defType:'', defS:'', defRc:5, defCt:5,
-           hasCommerce:false, defKva:12, plannedLgts:'' };
+  return { done:false, defPhase:'M', hasCommerce:false };
 }
 function normSetup(x){
-  const d = defaultSetup();
-  if(!x || typeof x !== 'object') return d;
+  if(!x || typeof x !== 'object') return defaultSetup();
   return {
     done: !!x.done,
     defPhase: x.defPhase === 'T' ? 'T' : 'M',
-    defType: typeof x.defType === 'string' ? x.defType : '',
-    defS: (x.defS === '' || x.defS == null || isNaN(Number(x.defS))) ? '' : Number(x.defS),
-    defRc: (x.defRc == null || isNaN(Number(x.defRc))) ? 5 : Number(x.defRc),
-    defCt: (x.defCt == null || isNaN(Number(x.defCt))) ? 5 : Number(x.defCt),
-    hasCommerce: !!x.hasCommerce,
-    defKva: (x.defKva == null || isNaN(Number(x.defKva))) ? 12 : Number(x.defKva),
-    plannedLgts: (x.plannedLgts === '' || x.plannedLgts == null || isNaN(Number(x.plannedLgts))) ? '' : Number(x.plannedLgts)
+    hasCommerce: !!x.hasCommerce
   };
 }
 
@@ -1216,8 +1206,6 @@ function renderSetupWizard(){
   const full = CI.scope !== 'c1only';
   const root = CI.rembts.find(r => r.parentId == null) || CI.rembts[0];
   const ccu = !!(root && root.cf && root.cf.active);
-  const nb = (s.plannedLgts === '' || s.plannedLgts == null) ? 0 : Number(s.plannedLgts);
-  const planTxt = nb > 0 ? `≈ ${Math.ceil(nb / REMBT_MAX_LGTS)} REMBT en cascade (max ${REMBT_MAX_LGTS} logements chacun).` : '';
   const opt = (name, val, checked, title, sub) =>
     `<label class="wz-opt"><input type="radio" name="${name}" value="${val}"${checked?' checked':''}>
        <span class="wz-opt-box"><b>${title}</b><small>${sub}</small></span></label>`;
@@ -1227,7 +1215,7 @@ function renderSetupWizard(){
       <div class="wz-head-ic">🧭</div>
       <div>
         <div class="wz-title">Assistant de configuration</div>
-        <div class="wz-sub">Quelques questions simples pour préparer votre projet. Vous pourrez tout ajuster ensuite — rien n'est figé.</div>
+        <div class="wz-sub">Quelques réglages simples pour préparer votre projet. Les longueurs, surfaces et phases se saisissent ensuite logement par logement dans le tableau.</div>
       </div>
     </div>
 
@@ -1248,35 +1236,17 @@ function renderSetupWizard(){
     </div>
 
     <div class="wz-q">
-      <div class="wz-q-lbl">3 · Vos logements sont plutôt…</div>
+      <div class="wz-q-lbl">3 · Vos logements sont majoritairement…</div>
       <div class="wz-opts">
-        ${opt('wz-phase','M',s.defPhase!=='T','Monophasés','Le cas le plus courant')}
-        ${opt('wz-phase','T',s.defPhase==='T','Triphasés','Grands logements / forte puissance')}
+        ${opt('wz-phase','M',s.defPhase!=='T','Monophasés','Phase pré-sélectionnée pour les nouveaux logements (modifiable par ligne)')}
+        ${opt('wz-phase','T',s.defPhase==='T','Triphasés','Grands logements / forte puissance (modifiable par ligne)')}
       </div>
     </div>
 
     <div class="wz-q">
-      <div class="wz-q-lbl">4 · Votre projet — valeurs par défaut des logements</div>
-      <div class="wz-grid">
-        <label class="rb-field"><span>Nb de logements prévus</span><input type="number" id="wz-nb" class="ns" min="0" step="1" value="${nb||''}" oninput="wzPlanHint()" placeholder="ex : 8"></label>
-        <label class="rb-field"><span>Type courant</span><input type="text" id="wz-type" value="${(s.defType||'').replace(/"/g,'&quot;')}" placeholder="ex : T3, 2P…"></label>
-        <label class="rb-field"><span>Surface type (m²)</span><input type="number" id="wz-surf" class="ns" min="0" step="0.01" value="${s.defS===''||s.defS==null?'':s.defS}" placeholder="ex : 65"></label>
-      </div>
-      <div class="wz-hint" id="wz-plan-hint">${planTxt}</div>
-    </div>
-
-    <div class="wz-q">
-      <div class="wz-q-lbl">5 · Longueurs de câble par défaut (m)</div>
-      <div class="wz-grid">
-        <label class="rb-field"><span>REMBT → CIBE</span><input type="number" id="wz-rc" class="ns" min="0" step="0.5" value="${s.defRc==null?5:s.defRc}"></label>
-        <label class="rb-field"><span>CIBE → tableau d'abonné</span><input type="number" id="wz-ct" class="ns" min="0" step="0.5" value="${s.defCt==null?5:s.defCt}"></label>
-      </div>
-    </div>
-
-    <div class="wz-q">
-      <div class="wz-q-lbl">6 · Des locaux commerciaux (comptage tri) ?</div>
+      <div class="wz-q-lbl">4 · Des locaux commerciaux (comptage tri) ?</div>
       <div class="wz-opts">
-        ${opt('wz-com','oui',s.hasCommerce,'Oui','Boulangerie, local commercial… (en plus des logements)')}
+        ${opt('wz-com','oui',s.hasCommerce,'Oui','Boulangerie, local commercial… (bouton « + Comptage TB tri »)')}
         ${opt('wz-com','non',!s.hasCommerce,'Non','Uniquement des logements')}
       </div>
     </div>
@@ -1288,35 +1258,16 @@ function renderSetupWizard(){
   </div>`;
 }
 
-function wzPlanHint(){
-  const el = document.getElementById('wz-plan-hint'); if(!el) return;
-  const nbEl = document.getElementById('wz-nb');
-  const n = nbEl ? parseInt(nbEl.value, 10) : 0;
-  el.textContent = (n > 0)
-    ? `≈ ${Math.ceil(n / REMBT_MAX_LGTS)} REMBT en cascade (max ${REMBT_MAX_LGTS} logements chacun).`
-    : '';
-}
-
 function applySetupWizard(){
   const radio = name => { const el = document.querySelector(`input[name="${name}"]:checked`); return el ? el.value : null; };
-  const numOr = (id, dflt) => { const el = document.getElementById(id); const v = el ? parseFloat(el.value) : NaN; return isNaN(v) ? dflt : v; };
-  const perim = radio('wz-perim') === 'c1only' ? 'c1only' : 'full';
-  const ccu = radio('wz-ccu') === 'oui';
-  const typeEl = document.getElementById('wz-type');
   CI.setup = {
     done: true,
     defPhase: radio('wz-phase') === 'T' ? 'T' : 'M',
-    defType: typeEl ? (typeEl.value || '').trim() : '',
-    defS: numOr('wz-surf', ''),
-    defRc: numOr('wz-rc', 5),
-    defCt: numOr('wz-ct', 5),
-    hasCommerce: radio('wz-com') === 'oui',
-    defKva: 12,
-    plannedLgts: numOr('wz-nb', '')
+    hasCommerce: radio('wz-com') === 'oui'
   };
-  CI.scope = perim;
+  CI.scope = radio('wz-perim') === 'c1only' ? 'c1only' : 'full';
   const root = CI.rembts.find(r => r.parentId == null) || CI.rembts[0];
-  if(root){ if(!root.cf) root.cf = defaultCF(); root.cf.active = ccu; }
+  if(root){ if(!root.cf) root.cf = defaultCF(); root.cf.active = radio('wz-ccu') === 'oui'; }
   save(); R();
 }
 
@@ -1339,8 +1290,7 @@ function setupSummaryBar(){
   const bits = [
     `<b>${CI.scope === 'c1only' ? 'CIBE → TA seul' : 'Installation complète'}</b>`,
     `CCU <b>${ccu ? 'oui' : 'non'}</b>`,
-    `logements <b>${s.defPhase === 'T' ? 'tri' : 'mono'}</b>`,
-    `défauts <b>${Number(s.defRc)||5}/${Number(s.defCt)||5} m</b>`
+    `logements <b>${s.defPhase === 'T' ? 'tri' : 'mono'}</b>`
   ];
   if(s.hasCommerce) bits.push('+ locaux commerciaux');
   return `<div class="wz-done">
@@ -1558,26 +1508,25 @@ function setPreset(tronc, total){
 }
 function addLgt(){
   const s = CI.setup || defaultSetup();
-  const last = CI.lgts[CI.lgts.length-1] || { bat:'A', niv:'RDC', rembtId: CI.rembts[0].id };
+  const last = CI.lgts[CI.lgts.length-1] || { bat:'A', niv:'RDC', rc:{O:5,P:35}, ct:{O:5,P:35}, rembtId: CI.rembts[0].id };
   CI.lgts.push({
     bat: last.bat || 'A',
     niv: last.niv || 'RDC',
-    type: s.defType || '',
+    type: '',
     lett: '',
     hall: '',
-    S: (s.defS === '' || s.defS == null) ? '' : Number(s.defS),
+    S: '',
     K: s.defPhase === 'T' ? 'T' : 'M',
     kind: 'lgt',
     kva: '',
-    rc: { O: Number(s.defRc) || 5, P: 35 },
-    ct: { O: Number(s.defCt) || 5, P: 35 },
+    rc: { O: (last.rc && last.rc.O) || 5, P: (last.rc && last.rc.P) || 35 },
+    ct: { O: (last.ct && last.ct.O) || 5, P: (last.ct && last.ct.P) || 35 },
     rembtId: last.rembtId || CI.rembts[0].id
   });
   save(); R();
 }
 function addCompt(){
-  const s = CI.setup || defaultSetup();
-  const last = CI.lgts[CI.lgts.length-1] || { bat:'A', niv:'RDC', rembtId: CI.rembts[0].id };
+  const last = CI.lgts[CI.lgts.length-1] || { bat:'A', niv:'RDC', rc:{O:5,P:35}, ct:{O:5,P:35}, rembtId: CI.rembts[0].id };
   CI.lgts.push({
     bat: last.bat || 'A',
     niv: last.niv || 'RDC',
@@ -1587,9 +1536,9 @@ function addCompt(){
     S: '',
     K: 'T',
     kind: 'compt',
-    kva: Number(s.defKva) || 12,
-    rc: { O: Number(s.defRc) || 5, P: 35 },
-    ct: { O: Number(s.defCt) || 5, P: 35 },
+    kva: 12,
+    rc: { O: (last.rc && last.rc.O) || 5, P: (last.rc && last.rc.P) || 35 },
+    ct: { O: (last.ct && last.ct.O) || 5, P: (last.ct && last.ct.P) || 35 },
     rembtId: last.rembtId || CI.rembts[0].id
   });
   save(); R();

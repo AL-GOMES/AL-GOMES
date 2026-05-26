@@ -458,6 +458,9 @@ label.rb-block-h{cursor:pointer}
   padding:9px 18px;border-bottom:2.5px solid #1a1a1a;text-align:center}
 
 /* Bloc REMBT (une "ligne" complète Réseau→CIBE + dérivations) */
+.plan-cascade{display:inline-flex;align-items:center;gap:7px;margin:0 0 14px;padding:7px 13px;background:#fff;border:1.5px solid #1f3864;border-left:5px solid #1f3864;font-family:'Helvetica','Arial',sans-serif;font-size:11px;font-weight:600;color:#1f3864;letter-spacing:0.3px}
+.plan-cascade b{color:#1a1a1a}
+.plan-cascade b.ok{color:#2e6b3e}.plan-cascade b.warn{color:#b26d24}.plan-cascade b.bad{color:#a83232}
 .plan-rembt-section{margin-bottom:30px;padding-bottom:20px;border-bottom:1.5px dashed #c2b89a}
 .plan-rembt-section:last-of-type{border-bottom:none}
 .plan-rembt-title{font-family:'Helvetica','Arial',sans-serif;font-size:12px;font-weight:700;color:#1f3864;letter-spacing:2.5px;text-transform:uppercase;margin-bottom:18px;padding:6px 12px;background:#fff;border:1.5px solid #1f3864;display:inline-block}
@@ -2059,7 +2062,16 @@ function renderSchema(){
         ? `${escapeHtml(r.name)} — Dérivations individuelles CIBE → Tableaux d'abonné`
         : `${escapeHtml(r.name)} — ${sugg ? plages+'/'+sugg+' plages' : '> 12 plages (à diviser)'}${r.parentId ? ' · cascade depuis ' + escapeHtml((CI.rembts.find(x=>x.id===r.parentId)||{}).name||'—') : ''}`;
 
-      let block = `<div class="plan-rembt-section" style="${indent?'margin-left:40px;border-left:2px dashed #1f3864;padding-left:24px':''}">
+      let block = '';
+      // Câble de liaison cascade : raccordement REMBT parent → ce REMBT
+      if(r.parentId != null){
+        const par = (CI.rembts.find(x=>x.id===r.parentId)||{}).name || '—';
+        const lc = linkChute(r);
+        const lcc = lc ? (lc.pc > CI.limT ? 'bad' : (lc.pc > CI.limT*0.8 ? 'warn' : 'ok')) : '';
+        const chuteTxt = lc ? ` · ${lc.calibre} A · chute <b class="${lcc}">${lc.pc.toFixed(2)} %</b>` : '';
+        block += `<div class="plan-cascade" style="${indent?'margin-left:40px':''}">🔗 Câble cascade <b>${escapeHtml(par)} → ${escapeHtml(r.name)}</b> — ${(r.link&&r.link.section)||'?'} mm² ALU · L ${(r.link&&r.link.long)||'?'} m${chuteTxt}</div>`;
+      }
+      block += `<div class="plan-rembt-section" style="${indent?'margin-left:40px;border-left:2px dashed #1f3864;padding-left:24px':''}">
         <div class="plan-rembt-title">${titleTxt}</div>
         <div class="uni-wrap">${lgts.length ? buildSvgPlan(r, lgts) : '<div style="padding:20px;color:#888;font-size:11px">Aucun logement rattaché à ce REMBT.</div>'}</div>`;
 

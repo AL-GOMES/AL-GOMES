@@ -6,7 +6,7 @@
 //   - AL_VERSION_TIME  : HH:MM      (heure de la MAJ — local Paris)
 //   - AL_VERSION_NOTE  : 1 phrase courte qui décrit le motif de la MAJ
 // =====================================================================
-window.AL_VERSION      = 'v2.9';
+window.AL_VERSION      = 'v3.0';
 window.AL_VERSION_DATE = '2026-05-26';
-window.AL_VERSION_TIME = '12:30';
-window.AL_VERSION_NOTE = 'Calculs individuels — étape 1 épurée : suppression du bandeau « Configuration », de la légende Automatique/Manuel et de la note de parcours. Le bouton « Modifier la config » est déplacé tout à droite de la barre des étapes.';
+window.AL_VERSION_TIME = '12:55';
+window.AL_VERSION_NOTE = 'Calculs individuels — plan de synthèse : le câble de liaison cascade entre REMBT est désormais représenté (bandeau « Câble cascade REMBT X → REMBT Y » avec section ALU, longueur et chute de tension), pour visualiser le raccordement entre deux REMBT.';

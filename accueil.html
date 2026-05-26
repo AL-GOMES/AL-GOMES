@@ -22,19 +22,19 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
   *{margin:0;padding:0;box-sizing:border-box}
-  html,body{height:100%;overflow:hidden;background:#0a0a0f;font-family:'Rajdhani',sans-serif;color:#e0d8ff;display:flex;flex-direction:column}
+  html,body{height:100%;overflow:hidden;background:#14161e;font-family:'Rajdhani',sans-serif;color:#E6E9F5;display:flex;flex-direction:column}
 
   /* TOPBAR */
-  .topbar{height:50px;min-height:50px;background:rgba(10,10,18,.97);border-bottom:1px solid rgba(120,50,255,.15);display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:100;backdrop-filter:blur(16px)}
+  .topbar{height:50px;min-height:50px;background:rgba(20,22,30,.97);border-bottom:1px solid rgba(135,120,215,.15);display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:100;backdrop-filter:blur(16px)}
   .topbar-left{display:flex;align-items:center;gap:12px}
-  .topbar-logo{font-family:'Orbitron',sans-serif;font-size:16px;font-weight:900;letter-spacing:3px;background:linear-gradient(135deg,#fff,#b388ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;cursor:pointer}
-  .topbar-version{font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;color:rgba(180,165,200,.55);padding:2px 7px;border:1px solid rgba(120,50,255,.18);border-radius:4px;background:rgba(120,50,255,.05);text-transform:uppercase;transition:color .2s,border-color .2s;cursor:help;user-select:none}
-  .topbar-version:hover{color:rgba(220,210,235,.85);border-color:rgba(120,50,255,.35)}
-  .btn-admin-nav{display:none;align-items:center;gap:5px;padding:4px 12px;border:1px solid rgba(120,50,255,.25);border-radius:6px;background:rgba(120,50,255,.08);color:#b388ff;font-size:12px;font-weight:600;cursor:pointer;transition:all .3s;font-family:'Rajdhani',sans-serif;letter-spacing:1px}
-  .btn-admin-nav:hover{background:rgba(120,50,255,.2)}
+  .topbar-logo{font-family:'Orbitron',sans-serif;font-size:16px;font-weight:900;letter-spacing:3px;background:linear-gradient(135deg,#fff,#B0A8E8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;cursor:pointer}
+  .topbar-version{font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;color:rgba(190,199,219,.55);padding:2px 7px;border:1px solid rgba(135,120,215,.18);border-radius:4px;background:rgba(135,120,215,.05);text-transform:uppercase;transition:color .2s,border-color .2s;cursor:help;user-select:none}
+  .topbar-version:hover{color:rgba(236,239,246,.85);border-color:rgba(135,120,215,.35)}
+  .btn-admin-nav{display:none;align-items:center;gap:5px;padding:4px 12px;border:1px solid rgba(135,120,215,.25);border-radius:6px;background:rgba(135,120,215,.08);color:#B0A8E8;font-size:12px;font-weight:600;cursor:pointer;transition:all .3s;font-family:'Rajdhani',sans-serif;letter-spacing:1px}
+  .btn-admin-nav:hover{background:rgba(135,120,215,.2)}
   .btn-admin-nav svg{width:13px;height:13px}
   .topbar-center{display:flex;align-items:center;gap:16px}
-  .topbar-presence{display:flex;align-items:center;gap:8px;font-size:12px;color:rgba(180,165,200,.6)}
+  .topbar-presence{display:flex;align-items:center;gap:8px;font-size:12px;color:rgba(190,199,219,.6)}
   /* Compte à rebours d'accessibilité */
   .access-countdown{display:flex;align-items:center;gap:6px;padding:4px 12px;border-radius:6px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);color:#fbbf24;font-size:12px;font-weight:600;letter-spacing:.5px;font-family:'Rajdhani',sans-serif}
   .access-countdown .ac-icon{width:14px;height:14px;flex-shrink:0}
@@ -56,58 +56,58 @@
   @keyframes dotPulse{0%,100%{opacity:1}50%{opacity:.5}}
   .presence-avatars{display:flex;gap:4px}
   .p-avatar{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;text-transform:uppercase;cursor:default;position:relative}
-  .p-avatar:hover::after{content:attr(title);position:absolute;top:calc(100% + 4px);left:50%;transform:translateX(-50%);background:rgba(10,10,18,.95);border:1px solid rgba(120,50,255,.3);border-radius:5px;padding:3px 8px;font-size:10px;color:#e0d8ff;white-space:nowrap;z-index:200;text-transform:none;font-weight:500}
+  .p-avatar:hover::after{content:attr(title);position:absolute;top:calc(100% + 4px);left:50%;transform:translateX(-50%);background:rgba(20,22,30,.95);border:1px solid rgba(135,120,215,.3);border-radius:5px;padding:3px 8px;font-size:10px;color:#E6E9F5;white-space:nowrap;z-index:200;text-transform:none;font-weight:500}
   .topbar-right{display:flex;align-items:center;gap:12px}
-  .topbar-clock{display:flex;align-items:center;gap:12px;font-size:12px;color:rgba(180,165,200,.5)}
-  .topbar-time{font-size:14px;font-weight:600;color:rgba(220,210,235,.8);font-variant-numeric:tabular-nums;letter-spacing:1px}
-  .topbar-sep{width:1px;height:16px;background:rgba(120,50,255,.12)}
+  .topbar-clock{display:flex;align-items:center;gap:12px;font-size:12px;color:rgba(190,199,219,.5)}
+  .topbar-time{font-size:14px;font-weight:600;color:rgba(236,239,246,.8);font-variant-numeric:tabular-nums;letter-spacing:1px}
+  .topbar-sep{width:1px;height:16px;background:rgba(135,120,215,.12)}
   .btn-logout{display:flex;align-items:center;gap:5px;padding:5px 12px;border:1px solid rgba(239,68,68,.2);border-radius:6px;background:rgba(239,68,68,.06);color:rgba(248,113,113,.8);font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;letter-spacing:1px;cursor:pointer;transition:all .3s}
   .btn-logout:hover{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.4)}
   .btn-logout svg{width:14px;height:14px}
   /* Bouton "Ma signature" */
-  .btn-sig{display:flex;align-items:center;gap:5px;padding:5px 12px;border:1px solid rgba(120,50,255,.2);border-radius:6px;background:rgba(120,50,255,.06);color:rgba(200,170,255,.85);font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;letter-spacing:1px;cursor:pointer;transition:all .3s}
-  .btn-sig:hover{background:rgba(120,50,255,.15);border-color:rgba(120,50,255,.4);color:#d4b5ff}
+  .btn-sig{display:flex;align-items:center;gap:5px;padding:5px 12px;border:1px solid rgba(135,120,215,.2);border-radius:6px;background:rgba(135,120,215,.06);color:rgba(200,170,255,.85);font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;letter-spacing:1px;cursor:pointer;transition:all .3s}
+  .btn-sig:hover{background:rgba(135,120,215,.15);border-color:rgba(135,120,215,.4);color:#C7BEF6}
   .btn-sig svg{width:14px;height:14px}
   /* Modale signature */
   .sig-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(6px)}
   .sig-overlay.on{display:flex}
-  .sig-modal{background:#14141c;border:1px solid rgba(120,50,255,.25);border-radius:14px;padding:28px;width:480px;max-width:92vw;color:#e0d8ff;box-shadow:0 20px 60px rgba(0,0,0,.6)}
-  .sig-modal h3{font-family:'Orbitron',sans-serif;font-size:16px;letter-spacing:2px;color:#d4b5ff;margin-bottom:6px}
-  .sig-modal .sig-subtitle{font-size:12px;color:rgba(180,165,200,.55);margin-bottom:18px}
+  .sig-modal{background:#1d2130;border:1px solid rgba(135,120,215,.25);border-radius:14px;padding:28px;width:480px;max-width:92vw;color:#E6E9F5;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+  .sig-modal h3{font-family:'Orbitron',sans-serif;font-size:16px;letter-spacing:2px;color:#C7BEF6;margin-bottom:6px}
+  .sig-modal .sig-subtitle{font-size:12px;color:rgba(190,199,219,.55);margin-bottom:18px}
   .sig-current{background:#fff;border-radius:10px;min-height:130px;display:flex;align-items:center;justify-content:center;padding:12px;margin-bottom:14px}
   .sig-current img{max-width:100%;max-height:130px;object-fit:contain}
   .sig-current .sig-empty-state{color:#888;font-size:12px;font-style:italic}
-  .sig-dz{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;background:rgba(120,50,255,.07);border:1px dashed rgba(120,50,255,.35);border-radius:10px;cursor:pointer;transition:all .2s;font-size:13px;letter-spacing:.5px;color:rgba(200,180,230,.85);text-align:center}
-  .sig-dz:hover,.sig-dz.over{background:rgba(120,50,255,.15);border-color:rgba(120,50,255,.6);color:#d4b5ff}
+  .sig-dz{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;background:rgba(135,120,215,.07);border:1px dashed rgba(135,120,215,.35);border-radius:10px;cursor:pointer;transition:all .2s;font-size:13px;letter-spacing:.5px;color:rgba(200,180,230,.85);text-align:center}
+  .sig-dz:hover,.sig-dz.over{background:rgba(135,120,215,.15);border-color:rgba(135,120,215,.6);color:#C7BEF6}
   .sig-dz input{display:none}
-  .sig-info{font-size:11px;color:rgba(180,165,200,.5);margin-top:10px;line-height:1.5}
+  .sig-info{font-size:11px;color:rgba(190,199,219,.5);margin-top:10px;line-height:1.5}
   .sig-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
   .sig-btn{padding:8px 18px;font-family:'Rajdhani',sans-serif;font-size:12px;letter-spacing:1px;font-weight:700;border-radius:7px;cursor:pointer;transition:all .2s;border:1px solid transparent}
-  .sig-btn-primary{background:rgba(120,50,255,.15);color:#d4b5ff;border-color:rgba(120,50,255,.4)}
-  .sig-btn-primary:hover:not(:disabled){background:rgba(120,50,255,.3)}
+  .sig-btn-primary{background:rgba(135,120,215,.15);color:#C7BEF6;border-color:rgba(135,120,215,.4)}
+  .sig-btn-primary:hover:not(:disabled){background:rgba(135,120,215,.3)}
   .sig-btn-primary:disabled{opacity:.4;cursor:not-allowed}
   .sig-btn-danger{background:rgba(239,68,68,.12);color:#f87171;border-color:rgba(239,68,68,.3)}
   .sig-btn-danger:hover{background:rgba(239,68,68,.25)}
-  .sig-btn-ghost{background:transparent;color:rgba(200,180,230,.6);border-color:rgba(120,50,255,.15)}
-  .sig-btn-ghost:hover{color:#d4b5ff}
-  .sig-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(20,20,28,.96);border:1px solid rgba(120,50,255,.3);color:#d4b5ff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:600;opacity:0;transition:opacity .3s;pointer-events:none}
+  .sig-btn-ghost{background:transparent;color:rgba(200,180,230,.6);border-color:rgba(135,120,215,.15)}
+  .sig-btn-ghost:hover{color:#C7BEF6}
+  .sig-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(20,20,28,.96);border:1px solid rgba(135,120,215,.3);color:#C7BEF6;padding:10px 20px;border-radius:8px;font-size:13px;z-index:600;opacity:0;transition:opacity .3s;pointer-events:none}
   .sig-toast.on{opacity:1}
   .sig-toast.error{border-color:rgba(239,68,68,.4);color:#fca5a5}
   .sig-toast.success{border-color:rgba(34,197,94,.4);color:#86efac}
 
   /* NAV TABS */
-  .navbar{height:40px;min-height:40px;background:rgba(14,14,20,.95);border-bottom:1px solid rgba(120,50,255,.1);display:flex;align-items:center;padding:0 20px;gap:4px;z-index:99;overflow-x:auto;backdrop-filter:blur(12px)}
+  .navbar{height:40px;min-height:40px;background:rgba(14,14,20,.95);border-bottom:1px solid rgba(135,120,215,.1);display:flex;align-items:center;padding:0 20px;gap:4px;z-index:99;overflow-x:auto;backdrop-filter:blur(12px)}
   .navbar::-webkit-scrollbar{display:none}
-  .nav-tab{padding:8px 16px;font-size:13px;font-weight:600;color:rgba(180,165,200,.5);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;transition:all .3s;white-space:nowrap;font-family:'Rajdhani',sans-serif;letter-spacing:1px}
-  .nav-tab:hover{color:rgba(220,210,235,.8)}
-  .nav-tab.active{color:#b388ff;border-bottom-color:#7832ff}
+  .nav-tab{padding:8px 16px;font-size:13px;font-weight:600;color:rgba(190,199,219,.5);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;transition:all .3s;white-space:nowrap;font-family:'Rajdhani',sans-serif;letter-spacing:1px}
+  .nav-tab:hover{color:rgba(236,239,246,.8)}
+  .nav-tab.active{color:#B0A8E8;border-bottom-color:#8378d0}
 
   /* CONTENT IFRAME */
   .content-frame{flex:1;width:100%;border:none;margin:0;padding:0;display:block}
 
   /* LOADING */
-  .loading-screen{position:fixed;inset:0;z-index:9999;background:#0a0a0f;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px}
-  .spinner{width:48px;height:48px;border:3px solid rgba(120,50,255,.15);border-top-color:#7832ff;border-radius:50%;animation:spin .8s linear infinite}
+  .loading-screen{position:fixed;inset:0;z-index:9999;background:#14161e;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px}
+  .spinner{width:48px;height:48px;border:3px solid rgba(135,120,215,.15);border-top-color:#8378d0;border-radius:50%;animation:spin .8s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
   .loading-screen p{color:rgba(180,160,255,.5);font-size:14px;letter-spacing:2px}
 </style>
@@ -230,7 +230,7 @@ auth.onAuthStateChanged(async (user) => {
     // Check if banned
     if (userData.banned) {
       await auth.signOut();
-      document.getElementById('loadingScreen').innerHTML = '<div style="text-align:center;color:#ff4466;font-family:Rajdhani,sans-serif"><div style="font-size:24px;margin-bottom:12px">Accès bloqué</div><div style="font-size:14px;color:#888">Votre compte a été suspendu par l\'administrateur.</div><a href="index.html" style="color:#b388ff;margin-top:20px;display:inline-block">Retour</a></div>';
+      document.getElementById('loadingScreen').innerHTML = '<div style="text-align:center;color:#ff4466;font-family:Rajdhani,sans-serif"><div style="font-size:24px;margin-bottom:12px">Accès bloqué</div><div style="font-size:14px;color:#888">Votre compte a été suspendu par l\'administrateur.</div><a href="index.html" style="color:#B0A8E8;margin-top:20px;display:inline-block">Retour</a></div>';
       return;
     }
     
@@ -451,12 +451,12 @@ async function blockAccess(today, wasInside){
         : "Vous n'avez pas accès à l'application aujourd'hui.");
   // Remplacer le contenu par un écran de blocage
   document.body.innerHTML = `
-    <div style="position:fixed;inset:0;background:#0a0a0f;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px;padding:30px;text-align:center;font-family:'Rajdhani',sans-serif">
+    <div style="position:fixed;inset:0;background:#14161e;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px;padding:30px;text-align:center;font-family:'Rajdhani',sans-serif">
       <div style="font-size:56px;line-height:1">⏰</div>
       <div style="font-family:'Orbitron',sans-serif;font-size:22px;font-weight:700;color:#fbbf24;letter-spacing:3px">ACCÈS RESTREINT</div>
-      <div style="font-size:16px;color:#e0d8ff;max-width:520px;line-height:1.5">${msg}</div>
-      <div style="font-size:13px;color:rgba(180,165,200,.5);max-width:520px;line-height:1.5">Contactez l'administrateur si vous estimez devoir disposer d'un accès étendu.</div>
-      <a href="index.html" style="margin-top:20px;color:#b388ff;border:1px solid rgba(120,50,255,.3);padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:700;letter-spacing:2px;font-size:12px;text-transform:uppercase">Retour</a>
+      <div style="font-size:16px;color:#E6E9F5;max-width:520px;line-height:1.5">${msg}</div>
+      <div style="font-size:13px;color:rgba(190,199,219,.5);max-width:520px;line-height:1.5">Contactez l'administrateur si vous estimez devoir disposer d'un accès étendu.</div>
+      <a href="index.html" style="margin-top:20px;color:#B0A8E8;border:1px solid rgba(135,120,215,.3);padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:700;letter-spacing:2px;font-size:12px;text-transform:uppercase">Retour</a>
     </div>`;
   // Déconnecter après 1s pour laisser le temps de voir le message
   setTimeout(() => { try { auth.signOut(); } catch(e){} }, 1000);
@@ -658,7 +658,7 @@ function initPresence() {
 
       document.getElementById('presenceCount').textContent = online.length + ' en ligne';
       const escHtml = (s)=>String(s==null?'':s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-      const safeColor = (c)=>/^#[0-9a-fA-F]{3,8}$/.test(c||'') ? c : '#7c5fd6';
+      const safeColor = (c)=>/^#[0-9a-fA-F]{3,8}$/.test(c||'') ? c : '#8378d0';
       document.getElementById('presenceAvatars').innerHTML = online.map(u => {
         const initials = (u.name || u.login || '?').split(' ').map(w => w[0]||'').join('').substring(0, 2);
         const c = safeColor(getColor(u.role));

@@ -31,18 +31,18 @@ if(window.self!==window.top){
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
-  :root{--bg:#0a0a0f;--card:rgba(18,18,30,.95);--border:rgba(120,50,255,.18);--accent:#7832ff;--accent2:#5a1ecc;--text:#e0d8ff;--text2:rgba(180,160,255,.6);--radius:12px}
+  :root{--bg:#14161e;--card:rgba(18,18,30,.95);--border:rgba(135,120,215,.18);--accent:#8378d0;--accent2:#5a1ecc;--text:#EAEDF6;--text2:rgba(180,160,255,.6);--radius:12px}
   *{margin:0;padding:0;box-sizing:border-box}
   body{min-height:100vh;font-family:'Rajdhani',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
-  body::before{content:'';position:fixed;inset:0;background:repeating-conic-gradient(#111 0% 25%,#0d0d12 0% 50%) 0 0/4px 4px,radial-gradient(ellipse at 20% 10%,rgba(120,50,255,.06) 0%,transparent 50%);z-index:0;pointer-events:none}
-  .topbar{height:60px;background:rgba(10,10,18,.95);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 28px;z-index:100;backdrop-filter:blur(16px)}
+  body::before{content:'';position:fixed;inset:0;background:repeating-conic-gradient(#111 0% 25%,#14161e 0% 50%) 0 0/4px 4px,radial-gradient(ellipse at 20% 10%,rgba(135,120,215,.06) 0%,transparent 50%);z-index:0;pointer-events:none}
+  .topbar{height:60px;background:rgba(20,22,30,.95);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 28px;z-index:100;backdrop-filter:blur(16px)}
   .topbar-left{display:flex;align-items:center;gap:14px}
-  .topbar-logo{font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;letter-spacing:3px;background:linear-gradient(135deg,#fff,#b388ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-  .topbar-badge{padding:4px 12px;background:rgba(120,50,255,.15);border:1px solid rgba(120,50,255,.3);border-radius:6px;font-size:11px;font-weight:700;color:#b388ff;letter-spacing:2px;text-transform:uppercase}
+  .topbar-logo{font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;letter-spacing:3px;background:linear-gradient(135deg,#fff,#B0A8E8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .topbar-badge{padding:4px 12px;background:rgba(135,120,215,.15);border:1px solid rgba(135,120,215,.3);border-radius:6px;font-size:11px;font-weight:700;color:#B0A8E8;letter-spacing:2px;text-transform:uppercase}
   .topbar-right{display:flex;align-items:center;gap:16px}
   .topbar-user{font-size:14px;color:var(--text2);font-weight:500}
-  .btn-nav{padding:8px 16px;background:rgba(120,50,255,.12);border:1px solid rgba(120,50,255,.25);border-radius:8px;color:#b388ff;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:600;letter-spacing:1px;cursor:pointer;transition:all .3s;text-decoration:none}
-  .btn-nav:hover{background:rgba(120,50,255,.25)}
+  .btn-nav{padding:8px 16px;background:rgba(135,120,215,.12);border:1px solid rgba(135,120,215,.25);border-radius:8px;color:#B0A8E8;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:600;letter-spacing:1px;cursor:pointer;transition:all .3s;text-decoration:none}
+  .btn-nav:hover{background:rgba(135,120,215,.25)}
   .btn-logout{border-color:rgba(239,68,68,.3);color:#f87171;background:rgba(239,68,68,.08)}
   .btn-logout:hover{background:rgba(239,68,68,.2)}
   .main{position:relative;z-index:1;padding:80px 28px 40px;max-width:1200px;margin:0 auto}
@@ -52,8 +52,8 @@ if(window.self!==window.top){
   @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
   table{width:100%;border-collapse:collapse;font-size:13px}
   thead th{text-align:left;padding:10px 12px;font-size:11px;font-weight:700;color:var(--text2);letter-spacing:2px;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap}
-  tbody td{padding:10px 12px;border-bottom:1px solid rgba(120,50,255,.06);vertical-align:middle}
-  tbody tr:hover{background:rgba(120,50,255,.04)}
+  tbody td{padding:10px 12px;border-bottom:1px solid rgba(135,120,215,.06);vertical-align:middle}
+  tbody tr:hover{background:rgba(135,120,215,.04)}
   .role-badge{display:inline-block;padding:2px 8px;border-radius:5px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
   .form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
   .form-row.four{grid-template-columns:1fr 1fr 1fr 1fr}
@@ -62,18 +62,18 @@ if(window.self!==window.top){
   @media(max-width:500px){.form-row,.form-row.four,.form-row.three{grid-template-columns:1fr}}
   .form-group{display:flex;flex-direction:column;gap:6px}
   .form-group label{font-size:11px;font-weight:700;color:var(--text2);letter-spacing:2px;text-transform:uppercase}
-  .form-group input,.form-group select{padding:12px 14px;background:rgba(120,50,255,.06);border:1px solid rgba(120,50,255,.15);border-radius:8px;font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:500;color:var(--text);outline:none;transition:all .3s}
-  .form-group input:focus,.form-group select:focus{border-color:rgba(120,50,255,.5);background:rgba(120,50,255,.1)}
-  .form-group select option{background:#1a1a2e;color:#e0d8ff}
+  .form-group input,.form-group select{padding:12px 14px;background:rgba(135,120,215,.06);border:1px solid rgba(135,120,215,.15);border-radius:8px;font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:500;color:var(--text);outline:none;transition:all .3s}
+  .form-group input:focus,.form-group select:focus{border-color:rgba(135,120,215,.5);background:rgba(135,120,215,.1)}
+  .form-group select option{background:#1a1a2e;color:#EAEDF6}
   /* Schedule modal */
-  .sched-row{display:grid;grid-template-columns:40px 100px 1fr auto;gap:10px;align-items:center;padding:8px 10px;background:rgba(120,50,255,.04);border:1px solid rgba(120,50,255,.10);border-radius:7px}
+  .sched-row{display:grid;grid-template-columns:40px 100px 1fr auto;gap:10px;align-items:center;padding:8px 10px;background:rgba(135,120,215,.04);border:1px solid rgba(135,120,215,.10);border-radius:7px}
   .sched-row.active{background:rgba(245,158,11,.06);border-color:rgba(245,158,11,.25)}
   .sched-row input[type="checkbox"]{width:18px;height:18px;accent-color:#fbbf24;cursor:pointer}
   .sched-row .day-label{font-weight:700;font-size:13px;color:var(--text)}
   .sched-row.inactive .day-label{opacity:.4}
   .sched-row .time-inputs{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--text2)}
   .sched-row.inactive .time-inputs{opacity:.35}
-  .sched-row input[type="time"]{background:rgba(10,10,18,.6);border:1px solid rgba(120,50,255,.2);border-radius:5px;padding:5px 8px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;width:95px}
+  .sched-row input[type="time"]{background:rgba(20,22,30,.6);border:1px solid rgba(135,120,215,.2);border-radius:5px;padding:5px 8px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;width:95px}
   .sched-row input[type="time"]:focus{outline:none;border-color:#fbbf24}
   .sched-row input[type="time"]:disabled{opacity:.3;cursor:not-allowed}
   .sched-row .duration-badge{font-size:11px;font-weight:700;color:#fbbf24;background:rgba(245,158,11,.10);padding:3px 8px;border-radius:5px;border:1px solid rgba(245,158,11,.20)}
@@ -81,7 +81,7 @@ if(window.self!==window.top){
   .form-group input[type="color"]{padding:4px;width:50px;height:40px;cursor:pointer;border-radius:8px}
   .btn{padding:12px 24px;border:none;border-radius:8px;font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all .3s;text-transform:uppercase}
   .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff}
-  .btn-primary:hover{box-shadow:0 4px 20px rgba(120,50,255,.35);transform:translateY(-1px)}
+  .btn-primary:hover{box-shadow:0 4px 20px rgba(135,120,215,.35);transform:translateY(-1px)}
   .btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none!important}
   .btn-danger{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.25)}
   .btn-danger:hover{background:rgba(239,68,68,.3)}
@@ -93,13 +93,13 @@ if(window.self!==window.top){
   .btn-xs{padding:4px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:600;border-radius:6px}
   .actions{display:flex;gap:6px;flex-wrap:wrap}
   .roles-list{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px}
-  .role-chip{display:flex;align-items:center;gap:8px;padding:8px 14px;background:rgba(120,50,255,.04);border:1px solid var(--border);border-radius:10px}
-  .role-chip:hover{background:rgba(120,50,255,.08)}
+  .role-chip{display:flex;align-items:center;gap:8px;padding:8px 14px;background:rgba(135,120,215,.04);border:1px solid var(--border);border-radius:10px}
+  .role-chip:hover{background:rgba(135,120,215,.08)}
   .role-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
   .role-chip-name{font-weight:600;font-size:14px}
   .role-chip-id{font-size:11px;color:var(--text2)}
   .access-grid{display:grid;gap:8px}
-  .access-row{display:grid;align-items:center;padding:10px 0;border-bottom:1px solid rgba(120,50,255,.06);gap:8px}
+  .access-row{display:grid;align-items:center;padding:10px 0;border-bottom:1px solid rgba(135,120,215,.06);gap:8px}
   .access-row.header{border-bottom:1px solid var(--border)}
   .access-row.header span{font-size:11px;font-weight:700;color:var(--text2);letter-spacing:2px;text-transform:uppercase;text-align:center}
   .access-page{font-size:14px;font-weight:600}
@@ -117,12 +117,12 @@ if(window.self!==window.top){
     100% { stroke-opacity:1;   stroke-width:2.5; }
   }
   .ip-marker-online{ animation: ipPulse 1.6s ease-in-out infinite; }
-  .session-row{font-size:12px;padding:8px 12px;border-bottom:1px solid rgba(120,50,255,.04)}
-  .session-row:hover{background:rgba(120,50,255,.03)}
+  .session-row{font-size:12px;padding:8px 12px;border-bottom:1px solid rgba(135,120,215,.04)}
+  .session-row:hover{background:rgba(135,120,215,.03)}
   /* ═══ Signatures library ═══ */
   .sig-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-bottom:18px}
-  .sig-card{background:rgba(120,50,255,.04);border:1px solid var(--border);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px;transition:all .2s}
-  .sig-card:hover{border-color:rgba(120,50,255,.4);background:rgba(120,50,255,.08)}
+  .sig-card{background:rgba(135,120,215,.04);border:1px solid var(--border);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px;transition:all .2s}
+  .sig-card:hover{border-color:rgba(135,120,215,.4);background:rgba(135,120,215,.08)}
   .sig-preview{background:#fff;border-radius:8px;height:110px;display:flex;align-items:center;justify-content:center;padding:8px;overflow:hidden}
   .sig-preview img{max-width:100%;max-height:100%;object-fit:contain}
   .sig-meta{display:flex;flex-direction:column;gap:3px;min-height:42px}
@@ -131,10 +131,10 @@ if(window.self!==window.top){
   .sig-meta .sig-role{font-size:10px;letter-spacing:1px;text-transform:uppercase;font-weight:600;margin-top:2px}
   .sig-actions{display:flex;gap:6px;justify-content:flex-end}
   .sig-empty{text-align:center;color:var(--text2);padding:30px 20px;font-style:italic;border:1px dashed var(--border);border-radius:12px}
-  .sig-upload{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;padding:14px;background:rgba(120,50,255,.03);border:1px dashed rgba(120,50,255,.3);border-radius:12px}
+  .sig-upload{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;padding:14px;background:rgba(135,120,215,.03);border:1px dashed rgba(135,120,215,.3);border-radius:12px}
   .sig-upload .form-group{margin-bottom:0;flex:1;min-width:180px}
-  .sig-dropzone{display:flex;align-items:center;justify-content:center;min-width:180px;height:48px;padding:0 16px;background:rgba(120,50,255,.08);border:1px dashed rgba(120,50,255,.4);border-radius:8px;color:var(--text2);font-size:12px;letter-spacing:1px;cursor:pointer;transition:all .2s;text-align:center}
-  .sig-dropzone:hover,.sig-dropzone.over{background:rgba(120,50,255,.18);color:#b388ff;border-color:rgba(120,50,255,.6)}
+  .sig-dropzone{display:flex;align-items:center;justify-content:center;min-width:180px;height:48px;padding:0 16px;background:rgba(135,120,215,.08);border:1px dashed rgba(135,120,215,.4);border-radius:8px;color:var(--text2);font-size:12px;letter-spacing:1px;cursor:pointer;transition:all .2s;text-align:center}
+  .sig-dropzone:hover,.sig-dropzone.over{background:rgba(135,120,215,.18);color:#B0A8E8;border-color:rgba(135,120,215,.6)}
   .sig-dropzone input{display:none}
   .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
   .modal-overlay.active{display:flex}
@@ -165,18 +165,18 @@ if(window.self!==window.top){
   .ip-anom-badge.sev-orange{background:rgba(251,191,36,.18);color:#fbbf24}
   .ip-anom-badge.sev-yellow{background:rgba(250,204,21,.18);color:#facc15}
   .loading-screen{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px}
-  .spinner{width:48px;height:48px;border:3px solid rgba(120,50,255,.15);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+  .spinner{width:48px;height:48px;border:3px solid rgba(135,120,215,.15);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
   .loading-screen p{color:var(--text2);font-size:14px;letter-spacing:2px}
   .quick-links{display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap}
   /* ─── Sous-onglets de la page admin ───────────────────────────────────── */
   .admin-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:24px;padding-bottom:0;border-bottom:1px solid var(--border)}
-  .admin-tab{position:relative;padding:11px 20px;background:rgba(120,50,255,.06);border:1px solid var(--border);border-bottom:none;border-radius:10px 10px 0 0;color:var(--text2);font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .25s;margin-bottom:-1px;display:inline-flex;align-items:center;gap:8px;user-select:none}
-  .admin-tab:hover{background:rgba(120,50,255,.14);color:var(--text)}
-  .admin-tab.active{background:var(--card);color:#fff;border-color:var(--border);box-shadow:0 -4px 12px rgba(120,50,255,.10)}
+  .admin-tab{position:relative;padding:11px 20px;background:rgba(135,120,215,.06);border:1px solid var(--border);border-bottom:none;border-radius:10px 10px 0 0;color:var(--text2);font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .25s;margin-bottom:-1px;display:inline-flex;align-items:center;gap:8px;user-select:none}
+  .admin-tab:hover{background:rgba(135,120,215,.14);color:var(--text)}
+  .admin-tab.active{background:var(--card);color:#fff;border-color:var(--border);box-shadow:0 -4px 12px rgba(135,120,215,.10)}
   .admin-tab.active::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:1px;background:var(--card)}
   .admin-tab .tab-ico{font-size:14px;color:var(--accent);line-height:1}
-  .admin-tab.active .tab-ico{color:#b388ff}
+  .admin-tab.active .tab-ico{color:#B0A8E8}
   .tab-panel{display:none}
   .tab-panel.active{display:block;animation:fadeUp .4s ease}
 
@@ -184,41 +184,41 @@ if(window.self!==window.top){
   .gh-grid{display:grid;grid-template-columns:minmax(260px,360px) 1fr;gap:18px;margin-top:4px}
   @media(max-width:900px){.gh-grid{grid-template-columns:1fr}}
   .gh-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
-  .gh-toolbar input[type="text"]{flex:1;min-width:140px;padding:7px 10px;background:rgba(120,50,255,.06);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:13px}
-  .gh-toolbar select{padding:7px 10px;background:rgba(120,50,255,.06);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
-  .gh-tree{max-height:560px;overflow:auto;background:rgba(10,10,18,.5);border:1px solid var(--border);border-radius:8px;padding:6px 0;font-family:'Rajdhani',sans-serif;font-size:13px}
+  .gh-toolbar input[type="text"]{flex:1;min-width:140px;padding:7px 10px;background:rgba(135,120,215,.06);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:13px}
+  .gh-toolbar select{padding:7px 10px;background:rgba(135,120,215,.06);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
+  .gh-tree{max-height:560px;overflow:auto;background:rgba(20,22,30,.5);border:1px solid var(--border);border-radius:8px;padding:6px 0;font-family:'Rajdhani',sans-serif;font-size:13px}
   .gh-node{display:flex;align-items:center;gap:6px;padding:4px 10px;cursor:pointer;user-select:none;white-space:nowrap;color:var(--text);transition:background .15s}
-  .gh-node:hover{background:rgba(120,50,255,.10)}
-  .gh-node.selected{background:rgba(120,50,255,.20);color:#fff}
+  .gh-node:hover{background:rgba(135,120,215,.10)}
+  .gh-node.selected{background:rgba(135,120,215,.20);color:#fff}
   .gh-node .gh-chevron{width:12px;display:inline-block;color:var(--text2);font-size:10px}
   .gh-node .gh-name{flex:1;overflow:hidden;text-overflow:ellipsis}
   .gh-node .gh-size{font-size:10px;color:var(--text2);opacity:.7}
   .gh-empty{padding:20px;text-align:center;color:var(--text2);font-style:italic}
-  .gh-editor{background:rgba(10,10,18,.5);border:1px solid var(--border);border-radius:8px;display:flex;flex-direction:column;min-height:560px}
-  .gh-editor-head{display:flex;gap:8px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);background:rgba(120,50,255,.04)}
-  .gh-editor-path{flex:1;font-family:'Menlo','Consolas',monospace;font-size:12px;color:#b388ff;word-break:break-all}
+  .gh-editor{background:rgba(20,22,30,.5);border:1px solid var(--border);border-radius:8px;display:flex;flex-direction:column;min-height:560px}
+  .gh-editor-head{display:flex;gap:8px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);background:rgba(135,120,215,.04)}
+  .gh-editor-path{flex:1;font-family:'Menlo','Consolas',monospace;font-size:12px;color:#B0A8E8;word-break:break-all}
   .gh-editor-body{flex:1;display:flex;flex-direction:column;padding:10px 14px;gap:10px;overflow:auto}
-  .gh-editor-body textarea{flex:1;min-height:380px;background:#0a0d14;border:1px solid var(--border);border-radius:6px;padding:10px 12px;color:#cbd5e1;font-family:'Menlo','Consolas',monospace;font-size:12px;line-height:1.55;resize:vertical;white-space:pre;tab-size:2}
-  .gh-editor-body textarea:focus{outline:none;border-color:rgba(120,50,255,.5)}
+  .gh-editor-body textarea{flex:1;min-height:380px;background:#14161e;border:1px solid var(--border);border-radius:6px;padding:10px 12px;color:#cbd5e1;font-family:'Menlo','Consolas',monospace;font-size:12px;line-height:1.55;resize:vertical;white-space:pre;tab-size:2}
+  .gh-editor-body textarea:focus{outline:none;border-color:rgba(135,120,215,.5)}
   .gh-editor-img{max-width:100%;max-height:480px;background:#fff;border-radius:6px;padding:10px;align-self:center}
   .gh-editor-bin{padding:30px 20px;text-align:center;color:var(--text2);font-style:italic;border:1px dashed var(--border);border-radius:6px}
   .gh-editor-foot{display:flex;gap:10px;align-items:center;padding:10px 14px;border-top:1px solid var(--border);flex-wrap:wrap}
-  .gh-editor-foot input[type="text"]{flex:1;min-width:200px;padding:7px 10px;background:rgba(120,50,255,.06);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:13px}
+  .gh-editor-foot input[type="text"]{flex:1;min-width:200px;padding:7px 10px;background:rgba(135,120,215,.06);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:13px}
   .gh-empty-editor{display:flex;align-items:center;justify-content:center;flex:1;color:var(--text2);font-style:italic;padding:40px}
   .gh-cfg-pill{display:inline-block;padding:3px 10px;border-radius:5px;background:rgba(34,197,94,.10);color:#4ade80;border:1px solid rgba(34,197,94,.25);font-size:11px;font-weight:700;letter-spacing:1px}
   .gh-cfg-pill.bad{background:rgba(239,68,68,.10);color:#f87171;border-color:rgba(239,68,68,.25)}
   /* Barre de progression + libellé pour les opérations GitHub */
-  .gh-busy{display:flex;align-items:center;gap:14px;background:rgba(120,50,255,.08);border:1px solid rgba(120,50,255,.25);border-radius:10px;padding:12px 18px;margin-bottom:18px;font-size:13px;color:#b388ff;font-weight:600;animation:fadeUp .25s ease}
+  .gh-busy{display:flex;align-items:center;gap:14px;background:rgba(135,120,215,.08);border:1px solid rgba(135,120,215,.25);border-radius:10px;padding:12px 18px;margin-bottom:18px;font-size:13px;color:#B0A8E8;font-weight:600;animation:fadeUp .25s ease}
   .gh-busy.hidden{display:none}
-  .gh-busy-spin{width:18px;height:18px;border:2px solid rgba(120,50,255,.20);border-top-color:#b388ff;border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+  .gh-busy-spin{width:18px;height:18px;border:2px solid rgba(135,120,215,.20);border-top-color:#B0A8E8;border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
   .gh-busy-text{flex-shrink:0;white-space:nowrap}
-  .gh-busy-bar{flex:1;height:4px;background:rgba(120,50,255,.10);border-radius:2px;overflow:hidden;position:relative;min-width:120px}
-  .gh-busy-bar::before{content:'';position:absolute;inset:0;width:35%;background:linear-gradient(90deg,transparent,#b388ff,transparent);animation:ghBusySlide 1.3s linear infinite}
+  .gh-busy-bar{flex:1;height:4px;background:rgba(135,120,215,.10);border-radius:2px;overflow:hidden;position:relative;min-width:120px}
+  .gh-busy-bar::before{content:'';position:absolute;inset:0;width:35%;background:linear-gradient(90deg,transparent,#B0A8E8,transparent);animation:ghBusySlide 1.3s linear infinite}
   @keyframes ghBusySlide{0%{transform:translateX(-100%)}100%{transform:translateX(380%)}}
   /* ─── Flux d'activité des opérations (statut par opération) ─────────── */
   .gh-tasks{display:flex;flex-direction:column;gap:6px;margin-bottom:18px}
   .gh-tasks:empty{display:none}
-  .gh-task{display:flex;flex-direction:column;background:rgba(120,50,255,.04);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;font-weight:500;color:var(--text);animation:fadeUp .25s ease}
+  .gh-task{display:flex;flex-direction:column;background:rgba(135,120,215,.04);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;font-weight:500;color:var(--text);animation:fadeUp .25s ease}
   .gh-task-row{display:flex;align-items:center;gap:10px;width:100%}
   .gh-task.pending{background:rgba(245,158,11,.06);border-color:rgba(245,158,11,.25)}
   .gh-task.success{background:rgba(34,197,94,.05);border-color:rgba(34,197,94,.20)}
@@ -244,7 +244,7 @@ if(window.self!==window.top){
   .gh-node-ts::before{content:'📤 '}
   /* Status pill en live à côté du titre de la section (header) */
   .gh-header-status{display:none;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:none;padding:5px 12px;border-radius:6px;margin-left:14px;vertical-align:middle;max-width:560px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .gh-header-status.idle{display:inline-flex;background:rgba(120,50,255,.06);color:var(--text2);border:1px solid var(--border)}
+  .gh-header-status.idle{display:inline-flex;background:rgba(135,120,215,.06);color:var(--text2);border:1px solid var(--border)}
   .gh-header-status.pending{display:inline-flex;background:rgba(251,191,36,.10);color:#fbbf24;border:1px solid rgba(251,191,36,.30)}
   .gh-header-status.success{display:inline-flex;background:rgba(34,197,94,.10);color:#4ade80;border:1px solid rgba(34,197,94,.25)}
   .gh-header-status.error{display:inline-flex;background:rgba(239,68,68,.10);color:#f87171;border:1px solid rgba(239,68,68,.30)}
@@ -256,21 +256,21 @@ if(window.self!==window.top){
   /* ─── Onglet TO DO : liste de tâches admin (Firestore live) ─────────── */
   .todo-input-row{display:grid;grid-template-columns:1fr 150px auto;gap:10px;align-items:end;margin-bottom:18px}
   @media(max-width:700px){.todo-input-row{grid-template-columns:1fr}}
-  .todo-input-row input[type="text"],.todo-input-row select{padding:11px 14px;background:rgba(120,50,255,.06);border:1px solid rgba(120,50,255,.18);border-radius:8px;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:500;color:var(--text);outline:none}
-  .todo-input-row input[type="text"]:focus,.todo-input-row select:focus{border-color:rgba(120,50,255,.5);background:rgba(120,50,255,.10)}
+  .todo-input-row input[type="text"],.todo-input-row select{padding:11px 14px;background:rgba(135,120,215,.06);border:1px solid rgba(135,120,215,.18);border-radius:8px;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:500;color:var(--text);outline:none}
+  .todo-input-row input[type="text"]:focus,.todo-input-row select:focus{border-color:rgba(135,120,215,.5);background:rgba(135,120,215,.10)}
   .todo-filters{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
-  .todo-filter{padding:6px 14px;background:rgba(120,50,255,.04);border:1px solid var(--border);border-radius:6px;color:var(--text2);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s}
-  .todo-filter:hover{background:rgba(120,50,255,.10);color:var(--text)}
-  .todo-filter.active{background:rgba(120,50,255,.20);color:#fff;border-color:rgba(120,50,255,.4)}
+  .todo-filter{padding:6px 14px;background:rgba(135,120,215,.04);border:1px solid var(--border);border-radius:6px;color:var(--text2);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s}
+  .todo-filter:hover{background:rgba(135,120,215,.10);color:var(--text)}
+  .todo-filter.active{background:rgba(135,120,215,.20);color:#fff;border-color:rgba(135,120,215,.4)}
   .todo-list{display:flex;flex-direction:column;gap:8px}
-  .todo-item{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:rgba(120,50,255,.04);border:1px solid var(--border);border-radius:10px;transition:all .15s;animation:fadeUp .25s ease}
-  .todo-item:hover{background:rgba(120,50,255,.07)}
+  .todo-item{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:rgba(135,120,215,.04);border:1px solid var(--border);border-radius:10px;transition:all .15s;animation:fadeUp .25s ease}
+  .todo-item:hover{background:rgba(135,120,215,.07)}
   .todo-item.done{opacity:.55;background:rgba(34,197,94,.04);border-color:rgba(34,197,94,.15)}
   .todo-item.done .todo-title{text-decoration:line-through;color:var(--text2)}
   .todo-check{width:20px;height:20px;flex-shrink:0;cursor:pointer;accent-color:var(--accent);margin-top:2px}
   .todo-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
   .todo-title{font-size:15px;font-weight:600;color:var(--text);word-break:break-word;cursor:text}
-  .todo-title[contenteditable="true"]{outline:1px solid rgba(120,50,255,.5);background:rgba(120,50,255,.06);padding:2px 4px;border-radius:4px}
+  .todo-title[contenteditable="true"]{outline:1px solid rgba(135,120,215,.5);background:rgba(135,120,215,.06);padding:2px 4px;border-radius:4px}
   .todo-meta{font-size:11px;color:var(--text2);display:flex;gap:10px;flex-wrap:wrap;align-items:center}
   .todo-pri{display:inline-block;padding:2px 8px;border-radius:5px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;flex-shrink:0}
   .todo-pri.high{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.30)}
@@ -290,7 +290,7 @@ if(window.self!==window.top){
   .fb-status.bad{background:rgba(239,68,68,.10);color:#f87171;border:1px solid rgba(239,68,68,.25)}
   .fb-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
   .fb-rules-info{font-size:11px;color:var(--text2)}
-  .fb-rules-textarea{width:100%;min-height:420px;background:#0a0d14;border:1px solid var(--border);border-radius:6px;padding:12px 14px;color:#cbd5e1;font-family:'Menlo','Consolas',monospace;font-size:12px;line-height:1.55;resize:vertical;white-space:pre;tab-size:2}
+  .fb-rules-textarea{width:100%;min-height:420px;background:#14161e;border:1px solid var(--border);border-radius:6px;padding:12px 14px;color:#cbd5e1;font-family:'Menlo','Consolas',monospace;font-size:12px;line-height:1.55;resize:vertical;white-space:pre;tab-size:2}
   .fb-rules-textarea:focus{outline:none;border-color:rgba(255,160,0,.5)}
 </style>
 </head>
@@ -383,7 +383,7 @@ if(window.self!==window.top){
       </div>
       <div id="ipMap" style="width:100%;height:480px;border-radius:10px;border:1px solid var(--border);background:#0d0d18"></div>
       <div style="margin-top:10px;font-size:11px;color:var(--text2);display:flex;gap:18px;flex-wrap:wrap">
-        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#7832ff;margin-right:6px;vertical-align:middle"></span>IP active</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#8378d0;margin-right:6px;vertical-align:middle"></span>IP active</span>
         <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ff4466;margin-right:6px;vertical-align:middle"></span>IP bannie</span>
         <span>Cliquer sur un point pour bannir/débloquer.</span>
       </div>
@@ -473,11 +473,11 @@ if(window.self!==window.top){
         <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="logFltDebug" checked> debug</label>
         <input type="text" id="logSearch" placeholder="Filtrer (texte ou page)…" style="flex:1;min-width:160px;padding:5px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px">
         <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="logAutoScroll" checked> Auto-scroll</label>
-        <button class="btn btn-sm" onclick="copyConsoleLog()" style="background:rgba(120,50,255,.10);color:#b388ff;border:1px solid rgba(120,50,255,.25)">📋 Copier</button>
+        <button class="btn btn-sm" onclick="copyConsoleLog()" style="background:rgba(135,120,215,.10);color:#B0A8E8;border:1px solid rgba(135,120,215,.25)">📋 Copier</button>
         <button class="btn btn-danger btn-sm" onclick="clearConsoleLog()">🗑 Vider</button>
         <span id="logCount" style="font-size:11px;color:var(--text2);margin-left:auto"></span>
       </div>
-      <pre id="logView" style="margin:0;padding:10px;background:#0a0d14;border:1px solid var(--border);border-radius:4px;max-height:380px;overflow:auto;font-family:'Menlo','Consolas',monospace;font-size:11px;line-height:1.5;color:#cbd5e1;white-space:pre-wrap;word-break:break-word"></pre>
+      <pre id="logView" style="margin:0;padding:10px;background:#14161e;border:1px solid var(--border);border-radius:4px;max-height:380px;overflow:auto;font-family:'Menlo','Consolas',monospace;font-size:11px;line-height:1.5;color:#cbd5e1;white-space:pre-wrap;word-break:break-word"></pre>
     </div>
   </div>
 
@@ -493,7 +493,7 @@ if(window.self!==window.top){
       <h2><span>🐙</span> GitHub — Configuration</h2>
       <div style="font-size:12px;color:var(--text2);margin:-8px 0 14px">
         Personal Access Token (PAT) avec scope <code>repo</code>. Crée-le sur
-        <a href="https://github.com/settings/tokens/new?scopes=repo&description=AL-GOMES%20admin" target="_blank" style="color:#b388ff">github.com/settings/tokens</a>
+        <a href="https://github.com/settings/tokens/new?scopes=repo&description=AL-GOMES%20admin" target="_blank" style="color:#B0A8E8">github.com/settings/tokens</a>
         puis colle-le ci-dessous.
         <br><br>
         <span style="color:#4ade80">🔒 Stocké uniquement dans ton navigateur (localStorage)</span> — jamais envoyé à Firebase ni partagé avec d'autres utilisateurs.
@@ -521,7 +521,7 @@ if(window.self!==window.top){
       </h2>
       <div class="gh-toolbar">
         <select id="ghBranchSelect" onchange="loadGhTree()"></select>
-        <button class="btn btn-sm" onclick="loadGhTree()" style="background:rgba(120,50,255,.10);color:#b388ff;border:1px solid rgba(120,50,255,.25)">↻ Rafraîchir</button>
+        <button class="btn btn-sm" onclick="loadGhTree()" style="background:rgba(135,120,215,.10);color:#B0A8E8;border:1px solid rgba(135,120,215,.25)">↻ Rafraîchir</button>
         <button class="btn btn-sm" onclick="ghCreateFilePrompt()" style="background:rgba(34,197,94,.10);color:#4ade80;border:1px solid rgba(34,197,94,.25)">＋ Nouveau fichier</button>
         <button class="btn btn-sm" onclick="document.getElementById('ghUploadInput').click()" style="background:rgba(59,130,246,.10);color:#60a5fa;border:1px solid rgba(59,130,246,.25)">📤 Uploader un fichier</button>
         <input type="file" id="ghUploadInput" style="display:none" onchange="ghUploadFile(this)">
@@ -570,7 +570,7 @@ if(window.self!==window.top){
       <div class="fb-toolbar">
         <button class="btn btn-sm" onclick="fbLoadRules()" style="background:rgba(255,160,0,.10);color:#ffb74d;border:1px solid rgba(255,160,0,.30)">↻ Recharger depuis Firebase</button>
         <button class="btn btn-primary btn-sm" onclick="fbSaveRules()">💾 Déployer les règles</button>
-        <button class="btn btn-sm" onclick="fbShowRulesHistory()" style="background:rgba(120,50,255,.10);color:#b388ff;border:1px solid rgba(120,50,255,.30)">⟲ Historique / Rollback</button>
+        <button class="btn btn-sm" onclick="fbShowRulesHistory()" style="background:rgba(135,120,215,.10);color:#B0A8E8;border:1px solid rgba(135,120,215,.30)">⟲ Historique / Rollback</button>
         <span id="fbRulesInfo" class="fb-rules-info"></span>
       </div>
       <textarea id="fbRulesText" class="fb-rules-textarea" spellcheck="false" placeholder="Charge les règles depuis Firebase pour commencer…"></textarea>
@@ -647,7 +647,7 @@ if(window.self!==window.top){
   <div class="form-group"><label for="pwdUserLabel">Utilisateur</label><input type="text" id="pwdUserLabel" disabled></div>
   <div class="form-group" style="margin-top:12px"><label for="pwdOld">Mot de passe actuel</label><input type="password" id="pwdOld" placeholder="Mot de passe actuel de l'utilisateur"></div>
   <div class="form-group" style="margin-top:12px"><label for="pwdNew">Nouveau mot de passe</label><input type="password" id="pwdNew" placeholder="Min. 6 caractères"></div>
-  <div style="margin-top:12px;font-size:12px;color:var(--text2)">Le mot de passe actuel est nécessaire pour la modification. Si vous ne le connaissez pas, utilisez la <a href="https://console.firebase.google.com/project/algomes-a4e46/authentication/users" target="_blank" style="color:#b388ff">Console Firebase</a>.</div>
+  <div style="margin-top:12px;font-size:12px;color:var(--text2)">Le mot de passe actuel est nécessaire pour la modification. Si vous ne le connaissez pas, utilisez la <a href="https://console.firebase.google.com/project/algomes-a4e46/authentication/users" target="_blank" style="color:#B0A8E8">Console Firebase</a>.</div>
   <div class="modal-actions">
     <button class="btn btn-danger btn-sm" onclick="closeModal('pwdModal')">Annuler</button>
     <button class="btn btn-primary btn-sm" id="btnChangePwd" onclick="doChangePwd()">Changer</button>
@@ -659,7 +659,7 @@ if(window.self!==window.top){
   <input type="hidden" id="schedUid">
   <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Définir les créneaux d'accès pour <strong id="schedUserLabel" style="color:#fbbf24"></strong>. Si aucun créneau n'est défini, l'utilisateur a accès 24/7.</div>
   <div style="display:flex;gap:8px;margin-bottom:12px">
-    <button class="btn btn-sm" style="background:rgba(120,50,255,.10);color:#b388ff;border:1px solid rgba(120,50,255,.25)" onclick="schedApplyAllWeek()">Appliquer à tous les jours de semaine (Lun-Ven)</button>
+    <button class="btn btn-sm" style="background:rgba(135,120,215,.10);color:#B0A8E8;border:1px solid rgba(135,120,215,.25)" onclick="schedApplyAllWeek()">Appliquer à tous les jours de semaine (Lun-Ven)</button>
     <button class="btn btn-sm" style="background:rgba(239,68,68,.10);color:#f87171;border:1px solid rgba(239,68,68,.25)" onclick="schedClearAll()">Tout désactiver (accès 24/7)</button>
   </div>
   <div id="schedDays" style="display:flex;flex-direction:column;gap:6px">
@@ -710,7 +710,7 @@ const PAGES=[
   {id:'ATTESTATION_ACHEVEMENT.html',label:'Attestation d\'achèvement'},
   {id:'admin.html',label:'Administration'}
 ];
-const DEFROLES=[{id:'admin',label:'Administrateur',color:'#7832ff'},{id:'conducteur',label:'Conducteur de travaux',color:'#22c55e'},{id:'lecteur',label:'Lecteur',color:'#f59e0b'}];
+const DEFROLES=[{id:'admin',label:'Administrateur',color:'#8378d0'},{id:'conducteur',label:'Conducteur de travaux',color:'#22c55e'},{id:'lecteur',label:'Lecteur',color:'#f59e0b'}];
 
 // AUTH
 auth.onAuthStateChanged(async u=>{
@@ -1444,7 +1444,7 @@ function renderGhEditor(){
     bodyHtml = '<div class="gh-editor-bin">Fichier binaire (' + f.ext + ') — édition non supportée. Tu peux le supprimer ou le télécharger.</div>';
   }
   const downloadBtn = f.downloadUrl ?
-    '<a href="' + escHtml(f.downloadUrl) + '" target="_blank" class="btn btn-sm" style="background:rgba(120,50,255,.10);color:#b388ff;border:1px solid rgba(120,50,255,.25);text-decoration:none">⬇ Télécharger</a>' : '';
+    '<a href="' + escHtml(f.downloadUrl) + '" target="_blank" class="btn btn-sm" style="background:rgba(135,120,215,.10);color:#B0A8E8;border:1px solid rgba(135,120,215,.25);text-decoration:none">⬇ Télécharger</a>' : '';
   document.getElementById('ghEditor').innerHTML =
     '<div class="gh-editor-head">'
     + '<span class="gh-editor-path">' + escHtml(f.path) + '</span>'
@@ -1995,22 +1995,22 @@ function fbShowRulesHistory(){
   const ov = document.createElement('div');
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
   ov.innerHTML =
-    '<div style="background:#14141c;border:1px solid rgba(120,50,255,.3);border-radius:12px;padding:24px;max-width:720px;width:100%;max-height:80vh;overflow:auto;color:#e0d8ff;font-family:system-ui,sans-serif">' +
+    '<div style="background:#1d2130;border:1px solid rgba(135,120,215,.3);border-radius:12px;padding:24px;max-width:720px;width:100%;max-height:80vh;overflow:auto;color:#EAEDF6;font-family:system-ui,sans-serif">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">' +
-        '<h3 style="font-size:16px;color:#d4b5ff;margin:0">Historique des règles Firestore (' + list.length + '/5)</h3>' +
+        '<h3 style="font-size:16px;color:#C7BEF6;margin:0">Historique des règles Firestore (' + list.length + '/5)</h3>' +
         '<button style="background:transparent;border:0;color:#888;font-size:24px;cursor:pointer" data-close>×</button>' +
       '</div>' +
       (list.length === 0
         ? '<div style="padding:30px;text-align:center;color:#888;font-size:13px">Aucun backup pour l\'instant. Une copie sera créée automatiquement avant chaque déploiement.</div>'
         : '<div style="display:flex;flex-direction:column;gap:10px">' +
           list.map((b, i) =>
-            '<div style="border:1px solid rgba(120,50,255,.2);border-radius:8px;padding:12px;background:rgba(120,50,255,.04)">' +
+            '<div style="border:1px solid rgba(135,120,215,.2);border-radius:8px;padding:12px;background:rgba(135,120,215,.04)">' +
               '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
                 '<div>' +
                   '<div style="font-size:13px;font-weight:600">' + esc(b.label || ('Version ' + (i+1))) + '</div>' +
                   '<div style="font-size:11px;color:#888">' + new Date(b.ts).toLocaleString('fr-FR') + ' · par ' + esc(b.by||'?') + ' · ' + b.content.length + ' caractères</div>' +
                 '</div>' +
-                '<button class="btn btn-sm" data-restore="' + i + '" style="background:rgba(120,50,255,.15);color:#d4b5ff;border:1px solid rgba(120,50,255,.4)">Restaurer dans l\'éditeur</button>' +
+                '<button class="btn btn-sm" data-restore="' + i + '" style="background:rgba(135,120,215,.15);color:#C7BEF6;border:1px solid rgba(135,120,215,.4)">Restaurer dans l\'éditeur</button>' +
               '</div>' +
               '<details><summary style="cursor:pointer;font-size:11px;color:#a78bfa">Aperçu (premiers 400 car.)</summary>' +
                 '<pre style="background:#0a0a14;padding:10px;border-radius:6px;font-size:11px;max-height:200px;overflow:auto;margin-top:6px;white-space:pre-wrap">' + esc(b.content.slice(0,400)) + (b.content.length > 400 ? '…' : '') + '</pre>' +
@@ -2123,7 +2123,7 @@ function renderTodoItem(t){
   if (isDone && t.doneAt) meta.push('✓ terminée ' + fmtRelativeSince(t.doneAt));
   // Bouton principal selon l'état actuel
   const toggleBtn = isDone
-    ? '<button class="btn btn-xs" style="background:rgba(120,50,255,.10);color:#b388ff;border:1px solid rgba(120,50,255,.25)" onclick="toggleTodoStatus(\'' + escHtml(t.id) + '\', \'done\')">↺ Réactiver</button>'
+    ? '<button class="btn btn-xs" style="background:rgba(135,120,215,.10);color:#B0A8E8;border:1px solid rgba(135,120,215,.25)" onclick="toggleTodoStatus(\'' + escHtml(t.id) + '\', \'done\')">↺ Réactiver</button>'
     : '<button class="btn btn-success btn-xs" onclick="toggleTodoStatus(\'' + escHtml(t.id) + '\', \'active\')">✓ Terminé</button>';
   return '<div class="todo-item' + (isDone ? ' done' : '') + '" data-id="' + escHtml(t.id) + '">'
     + '<input type="checkbox" class="todo-check"' + (isDone ? ' checked' : '') + ' onchange="toggleTodoStatus(\'' + escHtml(t.id) + '\', \'' + (isDone ? 'done' : 'active') + '\')">'
@@ -3206,7 +3206,7 @@ async function loadIpMap(){
       //   - rouge si l'IP est bannie
       //   - vert (pulsé) si au moins un utilisateur est actuellement connecté depuis cette IP
       //   - violet sinon
-      const color = isBanned ? '#ff4466' : (isOnline ? '#22c55e' : '#7832ff');
+      const color = isBanned ? '#ff4466' : (isOnline ? '#22c55e' : '#8378d0');
       const m = L.circleMarker([d.lat, d.lon], {
         radius: Math.min(6 + Math.log2(d.count+1) * 2, 18),
         fillColor: color,
@@ -3229,7 +3229,7 @@ async function loadIpMap(){
           <div style="font-size:12px;margin-bottom:4px">${esc(d.city)} ${esc(d.country)}</div>
           ${d.hostname?`<div style="font-size:10px;color:#555;font-family:monospace;margin-bottom:4px;word-break:break-all">🌐 ${esc(d.hostname)}</div>`:''}
           ${sysLine?`<div style="font-size:11px;color:#555;margin-bottom:4px">💻 ${esc(sysLine)}</div>`:''}
-          ${devicesList?`<div style="font-size:11px;color:#7832ff;margin-bottom:4px"><strong>📱 ${devicesList}</strong></div>`:''}
+          ${devicesList?`<div style="font-size:11px;color:#8378d0;margin-bottom:4px"><strong>📱 ${devicesList}</strong></div>`:''}
           <div style="font-size:11px;color:#555;margin-bottom:4px">${d.count} connexion(s) — Dernière : ${lastTxt}</div>
           <div style="font-size:11px;color:#555;margin-bottom:8px">Utilisateurs : ${usersList}</div>
           ${isBanned

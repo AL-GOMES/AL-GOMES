@@ -142,7 +142,7 @@ auth.onAuthStateChanged(async (user) => {
       if (doc.exists) {
         // Tous les utilisateurs vont vers accueil.html — le routage par rôle
         // est ensuite géré par auth-guard.js et l'access control des pages.
-        window.location.href = 'accueil.html';
+        window.location.href = 'accueil.html?v=' + Date.now();
         return;
       }
     } catch(e) { console.error(e); }
@@ -255,7 +255,7 @@ async function handleLogin() {
       showMsg('Compte admin créé !', 'success');
       btn.textContent = '✓ CONNECTÉ';
       btn.style.background = 'linear-gradient(135deg, #22c55e, #16a34a)';
-      setTimeout(() => { window.location.href = 'accueil.html'; }, 800);
+      setTimeout(() => { window.location.href = 'accueil.html?v=' + Date.now(); }, 800);
 
     } else {
       const cred = await auth.signInWithEmailAndPassword(email, password);
@@ -290,7 +290,7 @@ async function handleLogin() {
       btn.style.background = 'linear-gradient(135deg, #22c55e, #16a34a)';
 
       setTimeout(() => {
-        window.location.href = 'accueil.html';
+        window.location.href = 'accueil.html?v=' + Date.now();
       }, 600);
     }
   } catch(error) {

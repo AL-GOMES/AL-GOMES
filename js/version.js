@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.5';
+window.AL_VERSION      = 'v3.6';
 window.AL_VERSION_DATE = '2026-05-26';
-window.AL_VERSION_TIME = '16:30';
-window.AL_VERSION_NOTE = 'Fiabilisation du déploiement : ajout d\'un fichier .nojekyll (publication des fichiers statiques sans traitement Jekyll) et cache-buster sur js/version.js (accueil.html), afin que le bandeau de version et les pages se mettent à jour de façon fiable après chaque MAJ.';
+window.AL_VERSION_TIME = '17:15';
+window.AL_VERSION_NOTE = 'Correctif cache : après connexion, index.html charge désormais accueil.html avec un paramètre anti-cache, ce qui force toujours la dernière version de la page d\'accueil (et donc du bandeau de version). Fini le blocage sur une ancienne version après une MAJ.';

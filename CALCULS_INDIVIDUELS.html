@@ -1852,6 +1852,9 @@ function R(){
 // ═══════════════════════════════════════════════════════════════════════
 // SCHÉMA RÉCAPITULATIF — arborescence ENEDIS → REMBT → logements
 // ═══════════════════════════════════════════════════════════════════════
+// Pages à inclure dans l'export PDF (cases à cocher de l'onglet Synthèse).
+let pdfPageOpts = { norm:true, chutes:true, dim:true, schema:true };
+function setPdfPage(k, on){ pdfPageOpts[k] = !!on; }
 function escapeHtml(s){
   return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
@@ -1922,7 +1925,14 @@ function renderSchema(){
       </div>
     </div>
 
-    <div class="schema-actions">
+    <div class="schema-actions" style="flex-direction:column;align-items:flex-start;gap:12px">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;font-size:13px;color:#2a2a2a;background:#fff;border:1px solid #d8dce6;border-radius:8px;padding:10px 14px">
+        <span style="font-weight:700">📄 Pages à inclure dans le PDF :</span>
+        <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" ${pdfPageOpts.norm?'checked':''} onchange="setPdfPage('norm', this.checked)"> Cadre normatif</label>
+        <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" ${pdfPageOpts.chutes?'checked':''} onchange="setPdfPage('chutes', this.checked)"> Chutes de tension</label>
+        ${c1only ? '' : '<label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" '+(pdfPageOpts.dim?'checked':'')+' onchange="setPdfPage(\'dim\', this.checked)"> Dimensionnement REMBT</label>'}
+        <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" ${pdfPageOpts.schema?'checked':''} onchange="setPdfPage('schema', this.checked)"> Schéma récapitulatif</label>
+      </div>
       <button class="btn" onclick="exportPDF()">📄 Exporter PDF complet</button>
     </div>
 
@@ -2665,24 +2675,38 @@ async function exportPDF(){
   const c1onlyExport = (CI.scope === 'c1only');
   const noCibeExport = (CI.scope === 'noCibe');
 
-  // Page 1 : cadre normatif
-  addNormPage();
-  doc.addPage();
+  // Pages à inclure (cases à cocher de l'onglet Synthèse). Par défaut tout est
+  // coché → PDF identique à avant.
+  const _pp = pdfPageOpts;
+  const _dimOn = _pp.dim && !c1onlyExport;
+  if(!_pp.norm && !_pp.chutes && !_dimOn && !_pp.schema){
+    alert('Sélectionnez au moins une page à inclure dans le PDF.'); return;
+  }
+  // Saut de page entre sections : on n'ajoute une page que si une section a
+  // déjà été rendue (évite une page blanche en tête quand on en masque).
+  let _emitted = false;
+  const startSection = () => { if(_emitted) doc.addPage(); _emitted = true; };
+
+  // Cadre normatif
+  if(_pp.norm){ startSection(); addNormPage(); }
 
   // Pages de chutes selon le mode
-  if(noCibeExport){
-    addSidePage('REMBT → TABLEAU ABONNÉ (sans CIBE)', 'rc');
-  } else if(c1onlyExport){
-    addSidePage('COFFRET CIBE → TABLEAU ABONNÉ', 'ct');
-  } else {
-    addSidePage('REMBT → COFFRET CIBE', 'rc');
-    doc.addPage();
-    addSidePage('COFFRET CIBE → TABLEAU ABONNÉ', 'ct');
+  if(_pp.chutes){
+    startSection();
+    if(noCibeExport){
+      addSidePage('REMBT → TABLEAU ABONNÉ (sans CIBE)', 'rc');
+    } else if(c1onlyExport){
+      addSidePage('COFFRET CIBE → TABLEAU ABONNÉ', 'ct');
+    } else {
+      addSidePage('REMBT → COFFRET CIBE', 'rc');
+      doc.addPage();
+      addSidePage('COFFRET CIBE → TABLEAU ABONNÉ', 'ct');
+    }
   }
 
   // ── Dimensionnement REMBT (un bloc par REMBT) — masqué en C1 seul ──
-  if(!c1onlyExport){
-  doc.addPage();
+  if(_dimOn){
+  startSection();
   header(pName + ' — DIMENSIONNEMENT REMBT',
     `${CI.rembts.length} REMBT(s)  ·  ${CI.lgts.length} logement(s)  ·  ${CI.rembts.reduce((s,r)=>s+rembtPlages(r),0)} plages au total`);
 
@@ -2758,12 +2782,13 @@ async function exportPDF(){
     yPos = doc.lastAutoTable.finalY + 6;
   });
   footer();
-  } // fin if(!c1onlyExport) — dimensionnement REMBT
+  } // fin if(_dimOn) — dimensionnement REMBT
 
   // ─────────────────────────────────────────────────────────────
   // ── SCHÉMA RÉCAPITULATIF (topologie + tableau complet) ──────
   // ─────────────────────────────────────────────────────────────
-  doc.addPage();
+  if(_pp.schema){
+  startSection();
   const c1onlyPDF = c1onlyExport;
   header(pName + ' — SCHÉMA RÉCAPITULATIF', c1onlyPDF
     ? `Mode C1 seul — dérivations CIBE → Tableau abonné  ·  ${CI.lgts.length} logement(s)`
@@ -3008,6 +3033,7 @@ async function exportPDF(){
     margin:{left:6, right:6}
   });
   footer();
+  } // fin if(_pp.schema) — schéma récapitulatif
 
   const fn = (pName.replace(/[^a-zA-Z0-9éèêëàâùûôîïç _-]/g,'_'))+'_Calculs_Individuels.pdf';
   if(window.showSaveFilePicker){

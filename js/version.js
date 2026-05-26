@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.9';
+window.AL_VERSION      = 'v3.10';
 window.AL_VERSION_DATE = '2026-05-26';
-window.AL_VERSION_TIME = '21:21';
-window.AL_VERSION_NOTE = 'Terminologie : dans Calculs individuels, « CCU » est renommé « CCPI » (terme normatif NF C 14-100) partout — libellés, onglets, assistant de configuration, schéma de synthèse et exports PDF.';
+window.AL_VERSION_TIME = '21:39';
+window.AL_VERSION_NOTE = 'Export PDF des Calculs individuels : vous choisissez désormais les pages à inclure (cadre normatif, chutes de tension, dimensionnement REMBT, schéma récapitulatif) grâce à des cases à cocher dans l\'onglet Synthèse, juste au-dessus du bouton d\'export. Par défaut tout est coché (PDF identique à avant).';

@@ -613,8 +613,8 @@ tk();setInterval(tk,1000);
 //   - ct: { O: longueur CIBE-TA,   P: section retenue CIBE-TA   }
 // Plus un compteur de modules pour le dimensionnement REMBT.
 // ═══════════════════════════════════════════════════════════════════════
-const SECTIONS = [10, 16, 25, 35, 50, 70, 95, 120, 150];
-const SECTIONS_CT = [10, 16, 25, 35];   // CIBE → TA (AR2V) : plafonné à 35 mm²
+const SECTIONS = [16, 25, 35, 50, 70, 95, 120, 150];   // 10 mm² non utilisé
+const SECTIONS_CT = [16, 25, 35];   // CIBE → TA (AR2V) : plafonné à 35 mm²
 const SECT_MAX_CT = 35;
 // Section maxi retenue. Un LOGEMENT est plafonné à 35 mm² (HN33S33 / AR2V)
 // sur les deux tronçons — il n'y a rien au-dessus. Un comptage commercial :
@@ -841,8 +841,9 @@ function load(){
 }
 function normLgt(x, defaultRembtId){
   const isCompt = x.kind === 'compt';
-  // Logement : section plafonnée à 35 mm² sur les deux tronçons.
-  const capLgt = s => isCompt ? s : Math.min(s, 35);
+  // Section : mini 16 mm² (le 10 mm² n'est plus utilisé) ; logement plafonné
+  // à 35 mm² sur les deux tronçons.
+  const secP = (s, capTo) => { s = Math.max(Number(s) || 16, 16); return capTo ? Math.min(s, capTo) : s; };
   return {
     bat: x.bat || '',
     niv: x.niv || 'RDC',
@@ -853,8 +854,8 @@ function normLgt(x, defaultRembtId){
     K:    x.K === 'T' ? 'T' : 'M',
     kind: isCompt ? 'compt' : 'lgt',
     kva:  x.kva === '' || x.kva == null ? '' : Number(x.kva),
-    rc:   { O: (x.rc && x.rc.O!=null) ? Number(x.rc.O) : 5,  P: capLgt((x.rc && x.rc.P) ? Number(x.rc.P) : 35) },
-    ct:   { O: (x.ct && x.ct.O!=null) ? Number(x.ct.O) : 5,  P: Math.min((x.ct && x.ct.P) ? Number(x.ct.P) : 35, 35) },
+    rc:   { O: (x.rc && x.rc.O!=null) ? Number(x.rc.O) : 5,  P: secP((x.rc && x.rc.P) ? Number(x.rc.P) : 35, isCompt ? null : 35) },
+    ct:   { O: (x.ct && x.ct.O!=null) ? Number(x.ct.O) : 5,  P: secP((x.ct && x.ct.P) ? Number(x.ct.P) : 35, 35) },
     rembtId: x.rembtId || defaultRembtId || null,
     rembtPin: !!x.rembtPin
   };
@@ -942,13 +943,12 @@ function chuteVU(K, O, N, P){
 function chutePc(vu){ return vu == null ? null : vu / 2.3; }
 
 // Section recommandée — chute en ALU réel (0,036 / 2,3) ≤ limite par tronçon
-// configurable (CI.limT, défaut 1 % NF C 14-100). Pour disj. 30/60 (12 kVA)
-// la section 10 mm² est exclue (HN33S33).
+// configurable (CI.limT, défaut 1 % NF C 14-100). Section mini = 16 mm² (le
+// 10 mm² n'est pas utilisé).
 function sectionMin(K, O, N, p, maxSect){
   O = parseFloat(O); N = parseFloat(N);
   if(!O || !N) return null;
-  const has12 = (p === 12);
-  let cands = has12 ? [16,25,35,50] : [10,16,25,35,50];
+  let cands = [16,25,35,50];
   if(maxSect) cands = cands.filter(s => s <= maxSect);
   for(const s of cands){
     const vu = K === 'M' ? (0.036 * 2 * O * N) / s : (0.036 * O * N) / s;
@@ -1444,7 +1444,7 @@ function renderDim(){
             <label class="rb-field">
               <span>Section ALU (mm²)</span>
               <select class="sel" onchange="updCF('${r.id}','section',this.value)">
-                ${[10,16,25,35,50,70,95,120,150,185,240].map(s => `<option value="${s}"${r.cf.section==s?' selected':''}>${s}</option>`).join('')}
+                ${[16,25,35,50,70,95,120,150,185,240].map(s => `<option value="${s}"${r.cf.section==s?' selected':''}>${s}</option>`).join('')}
               </select>
             </label>
           </div>` : ''}
@@ -1469,7 +1469,7 @@ function renderDim(){
             <label class="rb-field">
               <span>Section ALU (mm²)</span>
               <select class="sel" onchange="updLink('${r.id}','section',this.value)">
-                ${[10,16,25,35,50,70,95,120,150,185,240].map(s => `<option value="${s}"${r.link.section==s?' selected':''}>${s}</option>`).join('')}
+                ${[16,25,35,50,70,95,120,150,185,240].map(s => `<option value="${s}"${r.link.section==s?' selected':''}>${s}</option>`).join('')}
               </select>
             </label>
           </div>
@@ -2584,7 +2584,7 @@ async function exportPDF(){
 
     h2(y, '3.  Longueurs maximales admissibles du conducteur (limite de '+limT.toFixed(2)+' %)'); y += 3;
     const lmax = (S,I,k) => (limT * 2.3 * S) / (0.036 * k * I);
-    const secs = [10,16,25,35];
+    const secs = [16,25,35];
     y = tbl(y, ['Section ALU (mm²)','Mono 45 A (m)','Mono 60 A (m)','Tri 60 A (m)'],
       secs.map(S => [String(S), lmax(S,45,2).toFixed(1), lmax(S,60,2).toFixed(1), lmax(S,60,1).toFixed(1)]), 50) + 4;
     note(y, 'Longueur maxi pour rester sous la limite. Formule : L = %lim × 2,3 × S / (k × ρ × I), avec ρ = 0,036 Ω·mm²/m, k = 2 (mono) ou 1 (tri), I = calibre disjoncteur. Logement : section limitée à 35 mm² (HN33S33 / AR2V) sur les deux tronçons.');

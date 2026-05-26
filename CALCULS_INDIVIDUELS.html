@@ -276,6 +276,22 @@ button.btn[disabled]{opacity:0.4;cursor:not-allowed}
 .dim-flow b{color:#C7BEF6;font-weight:700}
 .rb-sub{font-size:10.5px;color:rgba(190,199,219,0.55);font-weight:500;letter-spacing:.3px;white-space:nowrap}
 @media(max-width:760px){.dim-guide{grid-template-columns:1fr}}
+/* Jauge de chute de tension (câble amont CCU / liaison cascade) */
+.cf-res{margin-top:12px;padding:11px 13px;border-radius:9px;border:1px solid rgba(165,178,210,0.16);background:rgba(20,22,30,0.55)}
+.cf-res.cf-bad{border-color:rgba(255,107,107,0.40);background:rgba(255,85,85,0.07)}
+.cf-res.cf-warn{border-color:rgba(255,184,108,0.35);background:rgba(255,159,67,0.06)}
+.cf-res.cf-ok{border-color:rgba(95,224,154,0.30);background:rgba(46,213,115,0.06)}
+.cf-res-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:8px}
+.cf-res-lbl{font-size:11px;font-weight:600;color:rgba(208,217,233,0.85);letter-spacing:.3px;text-transform:uppercase}
+.cf-res-pc{font-family:'Courier New',monospace;font-size:16px;font-weight:700;white-space:nowrap}
+.cf-res.cf-ok .cf-res-pc{color:#5FE09A}.cf-res.cf-warn .cf-res-pc{color:#FFB86C}.cf-res.cf-bad .cf-res-pc{color:#FF6B6B}
+.cf-res-pc small{font-size:10px;font-weight:500;color:rgba(190,199,219,0.5);font-family:inherit}
+.cf-res-bar{height:8px;border-radius:5px;background:rgba(255,255,255,0.06);overflow:hidden}
+.cf-res-bar i{display:block;height:100%;border-radius:5px;transition:width .35s ease}
+.cf-res-meta{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.cf-res-meta span{display:flex;flex-direction:column;gap:2px;font-size:9.5px;color:rgba(190,199,219,0.6);letter-spacing:.3px;text-transform:uppercase}
+.cf-res-meta b{font-family:'Courier New',monospace;font-size:13px;color:#EDF0F7;font-weight:700;text-transform:none}
+@media(max-width:560px){.cf-res-meta{grid-template-columns:repeat(2,1fr)}}
 
 /* ═══ Assistant de configuration (Étape 1) ═══ */
 .wz-card{margin-bottom:18px;padding:20px 22px;border-radius:12px;
@@ -768,6 +784,26 @@ function linkChute(rembt){
   const vu = (0.036 * L * a.cal) / S;
   return { vu, pc: vu / 2.3, calibre: a.cal, sumP: a.sumP, Pfois: a.Pfois, k: a.k, Itri: a.Itri, nLgts: a.nLgts };
 }
+// Bloc visuel « chute de tension » d'un câble amont (CCU ou liaison cascade) :
+// jauge colorée vs limite + détail (P foisonnée, courant, longueur, section).
+function chuteResult(c, lbl, long, section){
+  if(!c) return '';
+  const lim = CI.limT;
+  const cls = c.pc > lim ? 'bad' : (c.pc > lim*0.8 ? 'warn' : 'ok');
+  const col = cls === 'bad' ? '#FF6B6B' : cls === 'warn' ? '#FFB86C' : '#5FE09A';
+  const pct = Math.max(3, Math.min((c.pc / lim) * 100, 100));
+  return `<div class="cf-res cf-${cls}">
+    <div class="cf-res-h"><span class="cf-res-lbl">Chute ${lbl}</span>
+      <span class="cf-res-pc">${c.pc.toFixed(2)} %<small> / ${lim.toFixed(2)} % maxi</small></span></div>
+    <div class="cf-res-bar"><i style="width:${pct.toFixed(0)}%;background:${col}"></i></div>
+    <div class="cf-res-meta">
+      <span>Puissance foisonnée<b>${c.Pfois.toFixed(1)} kVA</b></span>
+      <span>Courant (tri 400 V)<b>${c.calibre} A</b></span>
+      <span>Longueur câble<b>${long||'?'} m</b></span>
+      <span>Section ALU<b>${section||'?'} mm²</b></span>
+    </div>
+  </div>`;
+}
 function defaultRembts(){ return [ newRembt('REMBT 1', []) ]; }
 
 // Plages occupées par un REMBT (somme places × quantité)
@@ -792,10 +828,13 @@ function autoModules(rembtId){
   const lgts = CI.lgts.filter(l => l.rembtId === rembtId);
   const mono = lgts.filter(l => lgtPhase(l) === 'M').length;
   const tri  = lgts.filter(l => lgtPhase(l) === 'T').length;
+  // Départs réseau RCP 400 : un par REMBT enfant alimenté en cascade
+  const children = CI.rembts.filter(r => r.parentId === rembtId).length;
   const dim = emptyDim();
   if(lgts.length > 0) dim.RAC240 = 1;
   dim.BR60M = mono;
   dim.BR60T = tri;
+  if(children > 0) dim.RCP400 = children;
   return dim;
 }
 
@@ -1459,7 +1498,8 @@ function renderDim(){
                 ${[16,25,35,50,70,95,120,150,185,240].map(s => `<option value="${s}"${r.cf.section==s?' selected':''}>${s}</option>`).join('')}
               </select>
             </label>
-          </div>` : ''}
+          </div>
+          ${chuteResult(cfChute(r), 'coffret façade → REMBT', r.cf.long, r.cf.section)}` : ''}
         </div>` : ''}
 
         ${r.parentId != null ? `
@@ -1485,6 +1525,7 @@ function renderDim(){
               </select>
             </label>
           </div>
+          ${chuteResult(linkChute(r), escapeHtml((CI.rembts.find(x=>x.id===r.parentId)||{}).name||'parent')+' → '+escapeHtml(r.name), r.link.long, r.link.section)}
         </div>` : ''}
 
         <div class="rb-block">
@@ -1680,10 +1721,12 @@ function updRembtDim(id, k, v){
 function autoFillRembt(id){
   const r = CI.rembts.find(x => x.id === id); if(!r) return;
   const suggested = autoModules(id);
-  // Conserve RAC150/RAC35/RCP400 saisis manuellement, écrase RAC240/BR60M/BR60T
+  // Conserve RAC150/RAC35 manuels ; calcule RAC240, BR60M/T et RCP400
+  // (RCP400 = 1 départ réseau par REMBT alimenté en cascade depuis celui-ci)
   r.dim.RAC240 = suggested.RAC240;
   r.dim.BR60M = suggested.BR60M;
   r.dim.BR60T = suggested.BR60T;
+  r.dim.RCP400 = suggested.RCP400;
   save(); R();
 }
 // ─── Coffret de façade (CCU) ────────────────────────────────

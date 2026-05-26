@@ -593,10 +593,11 @@ label.rb-block-h{cursor:pointer}
 <div class="mode-bar">
   <span class="mode-lbl">⚙️ Mode de calcul :</span>
   <div class="scope-toggle" title="Mode de calcul">
-    <button id="scope-full" class="scope-btn" onclick="setScope('full')">REMBT → CIBE → TA (calcul complet)</button>
-    <button id="scope-c1" class="scope-btn" onclick="setScope('c1only')">CIBE → TA uniquement (C1 seul)</button>
+    <button id="scope-full" class="scope-btn" onclick="setScope('full')">REMBT → CIBE → TA (complet)</button>
+    <button id="scope-nocibe" class="scope-btn" onclick="setScope('noCibe')">REMBT → TA (sans CIBE)</button>
+    <button id="scope-c1" class="scope-btn" onclick="setScope('c1only')">CIBE → TA (C1 seul)</button>
   </div>
-  <span class="mode-help">Pour les dossiers où vous ne dimensionnez que le tronçon final, choisissez « C1 seul » : les étapes 1 et 2 seront masquées.</span>
+  <span class="mode-help">« Sans CIBE » : dérivation directe REMBT → tableau abonné (un seul câble, comparé à la limite totale). « C1 seul » : seul le tronçon final, étapes 1 et 2 masquées.</span>
 </div>
 <div class="tabs">
   <button class="tab active" data-sh="dim" onclick="goSheet('dim')"><span class="tab-num">1</span><span class="tab-ic">🏗️</span><span class="tab-lbl">Installation<br><small>REMBTs + CCU</small></span></button>
@@ -924,7 +925,7 @@ function migrate(d){
     P: d.P || '',
     limT:   (typeof d.limT   === 'number' && d.limT   > 0) ? d.limT   : 1,
     limTot: (typeof d.limTot === 'number' && d.limTot > 0) ? d.limTot : 2,
-    scope: d.scope === 'c1only' ? 'c1only' : 'full',
+    scope: (d.scope === 'c1only' || d.scope === 'noCibe') ? d.scope : 'full',
     // Projet existant sans config d'assistant → considéré déjà configuré
     // (on n'affiche pas l'assistant aux dossiers déjà saisis).
     setup: d.setup ? normSetup(d.setup) : Object.assign(defaultSetup(), { done:true }),
@@ -1070,9 +1071,14 @@ function renderCT(){ renderSide('ct'); }
 
 function renderSide(side){
   const isRc = side === 'rc';
-  const label = isRc ? 'REMBT → COFFRET CIBE' : 'COFFRET CIBE → TABLEAU D\'ABONNÉ';
-  const subL  = isRc ? 'Calcul de la chute de tension C2 (départ REMBT)' : 'Calcul de la chute de tension C1 (montée vers le tableau abonné)';
+  const noCibe = (CI.scope === 'noCibe');
+  const label = isRc ? (noCibe ? 'REMBT → TABLEAU D\'ABONNÉ' : 'REMBT → COFFRET CIBE') : 'COFFRET CIBE → TABLEAU D\'ABONNÉ';
+  const subL  = isRc ? (noCibe ? 'Dérivation individuelle directe — sans coffret CIBE' : 'Calcul de la chute de tension C2 (départ REMBT)') : 'Calcul de la chute de tension C1 (montée vers le tableau abonné)';
   const elId  = isRc ? 'sh-rc' : 'sh-ct';
+  // Sans CIBE, le câble REMBT→TA est toute la dérivation → limite TOTALE ;
+  // sinon limite par tronçon. (hlMain colore la colonne % principale.)
+  const mainLim = (noCibe && isRc) ? CI.limTot : CI.limT;
+  const hlMain = pc => pc == null ? 'vu' : (pc > mainLim ? 'bad' : (pc > mainLim*0.8 ? 'warn' : 'ok'));
 
   // Regroupement des lignes : par REMBT (si demandé, mode complet) ou par niveau
   const byRembt = CI.scope !== 'c1only' && grpBy === 'rembt';
@@ -1091,8 +1097,8 @@ function renderSide(side){
   CI.lgts.forEach(l => {
     const r = compute(l, side);
     if(r.pc != null){
-      if(r.pc > CI.limT) nbBad++;
-      else if(r.pc > CI.limT * 0.8) nbWarn++;
+      if(r.pc > mainLim) nbBad++;
+      else if(r.pc > mainLim * 0.8) nbWarn++;
     }
   });
 
@@ -1122,7 +1128,7 @@ function renderSide(side){
 
   const c1only = (CI.scope === 'c1only');
   const showREMBT = !c1only;
-  const showTotal = !c1only;
+  const showTotal = !c1only && !noCibe;
 
   h += `
     <div class="card">
@@ -1155,7 +1161,7 @@ function renderSide(side){
             <th class="col-h" title="Disjoncteur EDF normalisé">Disj.</th>
             <th class="col-h" title="Calibre du disjoncteur (A)">N <br><span style="font-size:9px;color:rgba(190,199,219,0.40)">A</span></th>
             <th class="col-h" title="Chute de tension (V) — ΔU = ρ·L·I/S">VU<br><span style="font-size:9px;color:rgba(190,199,219,0.40)">V</span></th>
-            <th class="col-h" title="% chute de tension du tronçon (= VU / 2,3)">% ΔU ${isRc?'C2':'C1'}</th>
+            <th class="col-h" title="% chute de tension (= VU / 2,3)">% ΔU ${isRc?(noCibe?'dériv.':'C2'):'C1'}</th>
             ${showTotal ? '<th class="col-h" title="Total C1+C2 — somme avec l\'autre tronçon">% C1+C2</th>' : ''}
             <th class="col-h" title="Section minimale recommandée (chute Al ≤ limite tronçon)">Reco</th>
           </tr>`;
@@ -1240,7 +1246,7 @@ function renderSide(side){
       // VU
       h += `<td class="vu">${rThis.VU == null ? '—' : fmt(rThis.VU, 2)}</td>`;
       // % chute this side
-      h += `<td class="${tdHl(rThis.pc)}">${rThis.pc == null ? '—' : fmt(rThis.pc, 3)+' %'}</td>`;
+      h += `<td class="${hlMain(rThis.pc)}">${rThis.pc == null ? '—' : fmt(rThis.pc, 3)+' %'}</td>`;
       // % chute total (caché en C1-only)
       if(showTotal){
         h += `<td class="${tdHlTotal(pcTotal)}">${pcTotal == null ? '—' : fmt(pcTotal, 3)+' %'}</td>`;
@@ -1257,11 +1263,11 @@ function renderSide(side){
 
   // Status banner
   if(nbBad > 0){
-    h += `<div class="ban ban-no">⚠️ ${nbBad} logement(s) au-dessus de la limite tronçon (${fmt(CI.limT,2)} %) — section à augmenter</div>`;
+    h += `<div class="ban ban-no">⚠️ ${nbBad} logement(s) au-dessus de la limite (${fmt(mainLim,2)} %) — section à augmenter</div>`;
   } else if(nbWarn > 0){
     h += `<div class="ban ban-w">⚠ ${nbWarn} logement(s) proche(s) de la limite — surveillez la section retenue</div>`;
   } else if(CI.lgts.length > 0){
-    h += `<div class="ban ban-ok">✅ Toutes les chutes sont conformes (≤ ${fmt(CI.limT,2)} %)</div>`;
+    h += `<div class="ban ban-ok">✅ Toutes les chutes sont conformes (≤ ${fmt(mainLim,2)} %)</div>`;
   }
 
   document.getElementById(elId).innerHTML = h;
@@ -1270,7 +1276,7 @@ function renderSide(side){
 // ─── Assistant de configuration (Étape 1) ────────────────────────
 function renderSetupWizard(){
   const s = CI.setup || defaultSetup();
-  const full = CI.scope !== 'c1only';
+  const sc = CI.scope;
   const root = CI.rembts.find(r => r.parentId == null) || CI.rembts[0];
   const ccu = !!(root && root.cf && root.cf.active);
   const opt = (name, val, checked, title, sub) =>
@@ -1289,8 +1295,9 @@ function renderSetupWizard(){
     <div class="wz-q">
       <div class="wz-q-lbl">1 · Que voulez-vous calculer ?</div>
       <div class="wz-opts">
-        ${opt('wz-perim','full',full,'Installation complète','Du REMBT jusqu\'au tableau d\'abonné (REMBT → CIBE → TA)')}
-        ${opt('wz-perim','c1only',!full,'Tronçon final seulement','Du coffret CIBE au tableau d\'abonné (C1 seul)')}
+        ${opt('wz-perim','full',sc==='full','Installation complète','REMBT → CIBE → TA (avec coffret CIBE)')}
+        ${opt('wz-perim','noCibe',sc==='noCibe','Sans coffret CIBE','Dérivation directe REMBT → tableau abonné')}
+        ${opt('wz-perim','c1only',sc==='c1only','Tronçon final seulement','Du coffret CIBE au tableau d\'abonné (C1 seul)')}
       </div>
     </div>
 
@@ -1332,7 +1339,8 @@ function applySetupWizard(){
     defPhase: radio('wz-phase') === 'T' ? 'T' : 'M',
     hasCommerce: radio('wz-com') === 'oui'
   };
-  CI.scope = radio('wz-perim') === 'c1only' ? 'c1only' : 'full';
+  const perim = radio('wz-perim');
+  CI.scope = (perim === 'c1only' || perim === 'noCibe') ? perim : 'full';
   const root = CI.rembts.find(r => r.parentId == null) || CI.rembts[0];
   if(root){ if(!root.cf) root.cf = defaultCF(); root.cf.active = radio('wz-ccu') === 'oui'; }
   save(); R();
@@ -1723,8 +1731,9 @@ function updLink(rid, k, v){
 // NAVIGATION
 // ═══════════════════════════════════════════════════════════════════════
 function goSheet(s){
-  // Empêche d'aller sur rc/dim en mode C1 seul
+  // Empêche d'aller sur un onglet masqué selon le mode
   if(CI.scope === 'c1only' && (s === 'rc' || s === 'dim')) s = 'ct';
+  if(CI.scope === 'noCibe' && s === 'ct') s = 'rc';
   active = s;
   document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.sh === s));
   document.querySelectorAll('.sheet').forEach(el => el.classList.remove('active'));
@@ -1732,15 +1741,10 @@ function goSheet(s){
 }
 
 function setScope(s){
-  CI.scope = (s === 'c1only') ? 'c1only' : 'full';
-  // En passant en C1-only, si l'onglet actif est RC ou DIM, on switch vers CT
-  if(CI.scope === 'c1only' && (active === 'rc' || active === 'dim')){
-    active = 'ct';
-  }
-  // En passant en complet, par défaut on revient sur Installation
-  if(CI.scope === 'full' && active === 'ct'){
-    // garde l'onglet courant
-  }
+  CI.scope = (s === 'c1only' || s === 'noCibe') ? s : 'full';
+  // Recale l'onglet actif s'il devient masqué
+  if(CI.scope === 'c1only' && (active === 'rc' || active === 'dim')) active = 'ct';
+  if(CI.scope === 'noCibe' && active === 'ct') active = 'rc';
   save(); R();
 }
 
@@ -1802,39 +1806,41 @@ function R(){
   if(autoDistributeRembts()) save();
   document.getElementById('bL').textContent = CI.lgts.length + ' lgts';
   document.getElementById('projName').value = CI.P || '';
-  // Toggle de mode
+  // Toggle de mode (3 boutons)
   const sf = document.getElementById('scope-full');
   const sc = document.getElementById('scope-c1');
-  if(sf && sc){
-    sf.classList.toggle('on', CI.scope !== 'c1only');
-    sc.classList.toggle('on', CI.scope === 'c1only');
-  }
+  const sn = document.getElementById('scope-nocibe');
+  if(sf) sf.classList.toggle('on', CI.scope === 'full');
+  if(sc) sc.classList.toggle('on', CI.scope === 'c1only');
+  if(sn) sn.classList.toggle('on', CI.scope === 'noCibe');
   // Visibilité des onglets selon le mode
   const c1only = (CI.scope === 'c1only');
+  const noCibe = (CI.scope === 'noCibe');
   document.querySelectorAll('.tab').forEach(tab => {
     const sh = tab.dataset.sh;
-    const hide = c1only && (sh === 'rc' || sh === 'dim');
+    let hide = false;
+    if(c1only) hide = (sh === 'rc' || sh === 'dim');
+    else if(noCibe) hide = (sh === 'ct');
     tab.style.display = hide ? 'none' : '';
   });
   // S'assurer que l'onglet actif est visible
   if(c1only && (active === 'rc' || active === 'dim')) active = 'ct';
+  if(noCibe && active === 'ct') active = 'rc';
   document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.sh === active));
   document.querySelectorAll('.sheet').forEach(el => el.classList.toggle('active', el.id === 'sh-' + active));
+  // Libellé de l'onglet rc selon le mode (REMBT → CIBE, ou REMBT → TA sans CIBE)
+  const rcLbl = document.querySelector('.tab[data-sh="rc"] .tab-lbl');
+  if(rcLbl) rcLbl.innerHTML = noCibe
+    ? 'Chutes REMBT → TA<br><small>dérivation directe</small>'
+    : 'Chutes REMBT → CIBE<br><small>%C2 par logement</small>';
   // Renumérotation dynamique
+  const setNum = (sh,n) => { const e = document.querySelector('.tab[data-sh="'+sh+'"] .tab-num'); if(e) e.textContent = n; };
   if(c1only){
-    const ctNum = document.querySelector('.tab[data-sh="ct"] .tab-num');
-    const schNum = document.querySelector('.tab[data-sh="sch"] .tab-num');
-    if(ctNum) ctNum.textContent = '1';
-    if(schNum) schNum.textContent = '2';
+    setNum('ct','1'); setNum('sch','2');
+  } else if(noCibe){
+    setNum('dim','1'); setNum('rc','2'); setNum('sch','3');
   } else {
-    const dimNum = document.querySelector('.tab[data-sh="dim"] .tab-num');
-    const rcNum  = document.querySelector('.tab[data-sh="rc"] .tab-num');
-    const ctNum  = document.querySelector('.tab[data-sh="ct"] .tab-num');
-    const schNum = document.querySelector('.tab[data-sh="sch"] .tab-num');
-    if(dimNum) dimNum.textContent = '1';
-    if(rcNum)  rcNum.textContent  = '2';
-    if(ctNum)  ctNum.textContent  = '3';
-    if(schNum) schNum.textContent = '4';
+    setNum('dim','1'); setNum('rc','2'); setNum('ct','3'); setNum('sch','4');
   }
 
   renderRC();
@@ -1852,10 +1858,13 @@ function escapeHtml(s){
 
 function renderSchema(){
   const c1only = (CI.scope === 'c1only');
-  // Chute "totale" retenue : C1 seul en mode C1-only, sinon C1+C2.
+  const noCibe = (CI.scope === 'noCibe');
+  // Chute "totale" retenue : C1 seul → C1 ; sans CIBE → câble unique (rc) ; sinon C1+C2.
   const totChute = (a,b) => c1only
     ? b.pc
-    : ((a.pc != null && b.pc != null) ? a.pc + b.pc : (b.pc != null ? b.pc : null));
+    : (noCibe
+        ? a.pc
+        : ((a.pc != null && b.pc != null) ? a.pc + b.pc : (b.pc != null ? b.pc : null)));
   // Stats globales
   let totLgts = CI.lgts.length;
   let okLgts = 0, warnLgts = 0, badLgts = 0;
@@ -1879,7 +1888,9 @@ function renderSchema(){
       <div class="intro-txt">
         <b>Étape ${c1only?'2':'4'} — Synthèse.</b> ${c1only
           ? 'Schéma unifilaire : un coffret CIBE par client (un CIBE = un seul client), puis câble AR2V (C1) → tableau abonné. Aucune notion de REMBT en mode C1 seul.'
-          : 'Schéma unifilaire : Coffret de façade → REMBT → un départ par client (câble C2 → son coffret CIBE → câble C1 → tableau abonné). Un CIBE = un seul client. Section, longueur et chute sur chaque tronçon.'}
+          : (noCibe
+            ? 'Schéma unifilaire : Coffret de façade → REMBT → un câble unique par client (dérivation directe, sans coffret CIBE) → tableau abonné. Section, longueur et chute sur la dérivation.'
+            : 'Schéma unifilaire : Coffret de façade → REMBT → un départ par client (câble C2 → son coffret CIBE → câble C1 → tableau abonné). Un CIBE = un seul client. Section, longueur et chute sur chaque tronçon.')}
       </div>
     </div>
 
@@ -1900,7 +1911,7 @@ function renderSchema(){
         <div class="schema-stat-sub">sur ${CI.rembts.length} REMBT(s)</div>
       </div>`}
       <div class="schema-stat">
-        <div class="schema-stat-lbl">Chute MAX${c1only?' C1':' C1+C2'}</div>
+        <div class="schema-stat-lbl">Chute MAX${c1only?' C1':(noCibe?' dériv.':' C1+C2')}</div>
         <div class="schema-stat-val ${maxTotal>CI.limTot?'red':(maxTotal>CI.limTot*0.85?'orange':'green')}">${fmt(maxTotal,3)} %</div>
         <div class="schema-stat-sub">limite = ${fmt(CI.limTot,2)} %</div>
       </div>
@@ -1972,7 +1983,9 @@ function renderSchema(){
       const midX = (depX1 + depX2)/2;
 
       let Y;
-      if(!c1only){
+      if(noCibe){
+        Y = { cf:16, cfH:28, rembt:74, rembtH:26, bus:120, cab:158, ta:208, taH:34, total:254 };
+      } else if(!c1only){
         Y = { cf:16, cfH:28, rembt:74, rembtH:26, bus:120,
               c2:152, cibe:184, cibeH:22, c1:230, ta:264, taH:34, total:310 };
       } else {
@@ -2017,6 +2030,19 @@ function renderSchema(){
         const tClr = totColor(tot);
         const id = (l.lett||'?');
         const phase = lgtPhase(l), kva = lgtKva(l);
+
+        if(noCibe){
+          // Sans CIBE : un seul câble REMBT → TA (tronçon rc)
+          s += line(x, Y.bus, x, Y.ta, {stroke:INK});
+          s += txt(x+6, Y.cab-2, `HN33S33 · L=${l.rc.O||'?'}m · ${sect(l.rc.P, phase)}`, {size:7.5, anchor:'start', fill:'#888'});
+          s += txt(x+6, Y.cab+8, `chute ${a.pc==null?'—':a.pc.toFixed(2)+'%'}`, {size:7.5, weight:700, anchor:'start', fill:tClr});
+          s += dot(x, (Y.bus+Y.ta)/2, '#e08a1f');
+          const tW = 88, tX = x-tW/2;
+          s += rect(tX, Y.ta, tW, Y.taH, {fill:'#fff', stroke:tClr, sw:2, dash:'4 2'});
+          s += txt(x, Y.ta+13, id, {size:9.5, weight:700, fill:tClr});
+          s += txt(x, Y.ta+24, `${kva||'?'}kVA ${phase==='M'?'M':'T'} · ${tot==null?'—':tot.toFixed(2)+'%'}`, {size:8, weight:700, fill:tClr});
+          return;
+        }
 
         if(!c1only){
           // Répartition → câble C2 (REMBT → CIBE)
@@ -2620,17 +2646,22 @@ async function exportPDF(){
 
   const okPDF = [198,239,206], warnPDF = [255,235,156], badPDF = [255,199,206];
   const c1onlyExport = (CI.scope === 'c1only');
+  const noCibeExport = (CI.scope === 'noCibe');
 
   // Page 1 : cadre normatif
   addNormPage();
   doc.addPage();
 
-  // En mode complet : page des chutes REMBT → CIBE (C2). Masquée en C1 seul.
-  if(!c1onlyExport){
+  // Pages de chutes selon le mode
+  if(noCibeExport){
+    addSidePage('REMBT → TABLEAU ABONNÉ (sans CIBE)', 'rc');
+  } else if(c1onlyExport){
+    addSidePage('COFFRET CIBE → TABLEAU ABONNÉ', 'ct');
+  } else {
     addSidePage('REMBT → COFFRET CIBE', 'rc');
     doc.addPage();
+    addSidePage('COFFRET CIBE → TABLEAU ABONNÉ', 'ct');
   }
-  addSidePage('COFFRET CIBE → TABLEAU ABONNÉ', 'ct');
 
   // ── Dimensionnement REMBT (un bloc par REMBT) — masqué en C1 seul ──
   if(!c1onlyExport){

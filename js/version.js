@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.13';
+window.AL_VERSION      = 'v3.14';
 window.AL_VERSION_DATE = '2026-05-26';
-window.AL_VERSION_TIME = '22:44';
-window.AL_VERSION_NOTE = 'Calcul Câble : la résistivité ρ du conducteur est désormais affichée dans chaque carte résultat — cuivre 0,0175 et aluminium 0,028 Ω·mm²/m (NF C 15-100 §525, à 20 °C), la valeur utilisée pour le calcul de la chute de tension.';
+window.AL_VERSION_TIME = '22:50';
+window.AL_VERSION_NOTE = 'Cohérence des résistivités : Calcul Câble utilise désormais les mêmes valeurs que Calculs Individuels — Cu 0,0225 / Alu 0,037 Ω·mm²/m, à température de service (NF C 15-100 §525, ≈ 1,25 × ρ à 20 °C) au lieu des valeurs à 20 °C. Les chutes de tension affichées sont donc un peu plus élevées (plus prudentes) et identiques entre les deux pages.';

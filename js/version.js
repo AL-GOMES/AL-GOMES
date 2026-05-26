@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.7';
+window.AL_VERSION      = 'v3.8';
 window.AL_VERSION_DATE = '2026-05-26';
-window.AL_VERSION_TIME = '18:49';
-window.AL_VERSION_NOTE = 'Redéploiement après la panne GitHub de la mi-journée (le build GitHub Pages des v3.4–v3.6 avait calé, le site restait coincé sur une ancienne version). Nouveauté : détection automatique des MAJ — un bandeau « Recharger » apparaît dès qu\'une nouvelle version est en ligne, fini les blocages sur une ancienne version en cache.';
+window.AL_VERSION_TIME = '21:01';
+window.AL_VERSION_NOTE = 'Calculs individuels — la Synthèse (onglet 4) reflète désormais entièrement le mode « sans CIBE » : légende du schéma, message d\'aide, tableau des règles du PDF et tableau récapitulatif du PDF décrivent la dérivation directe REMBT → tableau abonné (un seul câble, comparé à la limite totale) au lieu du trajet C2 → CIBE → C1.';

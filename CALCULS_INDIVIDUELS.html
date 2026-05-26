@@ -1929,7 +1929,7 @@ function renderSchema(){
     <div class="plan-paper" data-title="PLAN — ${escapeHtml(CI.P||'Sans titre').toUpperCase()} · ${c1only?'DÉRIVATIONS INDIVIDUELLES CIBE → TA':'BRANCHEMENT COLLECTIF NF C 14-100'}">`;
 
   if(CI.lgts.length === 0 || CI.rembts.length === 0){
-    h += `<div class="schema-empty" style="color:#1a1a1a">Aucun logement à représenter.<br>Renseignez d'abord vos logements dans l'onglet « Chutes CIBE → TA ».</div>`;
+    h += `<div class="schema-empty" style="color:#1a1a1a">Aucun logement à représenter.<br>Renseignez d'abord vos logements dans l'onglet « ${noCibe ? 'Chutes REMBT → TA' : 'Chutes CIBE → TA'} ».</div>`;
   } else {
     const niveauxOrdre = ['SS','RDJ','RDC BAS','RDC','RDC HAUT','R+1','R+2','R+3','R+4','R+5','R+6','R+7','R+8','R+9','R+10','R+11','R+12'];
     function nivIdx(n){ const i = niveauxOrdre.indexOf(n); return i === -1 ? 999 : i; }
@@ -2159,7 +2159,11 @@ function renderSchema(){
   h += `</div>
 
     <div class="formula-box">
-      <b>Comment lire ce plan</b> — Schéma unifilaire du branchement collectif : <b>Coffret de façade → REMBT (jeu de barres) → départ individuel par logement (disjoncteur → câble C2 → CIBE → câble C1 → tableau abonné)</b>. Le cadre rouge pointillé matérialise la limite de l'installation utilisateur (NF C 15-100). Les annotations le long de chaque câble donnent la longueur, la section ALU et le pourcentage de chute.<br>
+      <b>Comment lire ce plan</b> — ${noCibe
+        ? 'Schéma unifilaire du branchement collectif : <b>Coffret de façade → REMBT (jeu de barres) → un câble unique par logement (dérivation individuelle directe, sans coffret CIBE) → tableau abonné</b>. La chute indiquée est celle de cette dérivation unique, comparée à la limite totale.'
+        : (c1only
+          ? 'Schéma unifilaire : <b>un coffret CIBE par client → câble C1 (AR2V) → tableau abonné</b> (mode C1 seul — seul le tronçon final est dimensionné).'
+          : 'Schéma unifilaire du branchement collectif : <b>Coffret de façade → REMBT (jeu de barres) → départ individuel par logement (disjoncteur → câble C2 → CIBE → câble C1 → tableau abonné)</b>.')} Le cadre rouge pointillé matérialise la limite de l'installation utilisateur (NF C 15-100). Les annotations le long de chaque câble donnent la longueur, la section ALU et le pourcentage de chute.<br>
       <b>Cascade</b> — Les REMBT alimentés par un autre REMBT sont dessinés indentés sous leur parent.
     </div>`;
 
@@ -2620,14 +2624,27 @@ async function exportPDF(){
     y += 11;
 
     h2(y, '1.  Chutes de tension maximales admissibles'); y += 3;
-    y = tbl(y, ['Tronçon','Chute max','Référence'], [
-      ['Coffret de façade (CCU) → REMBT (liaison amont)', '≤ '+limT.toFixed(2)+' %', 'NF C 14-100'],
-      ['Liaison cascade REMBT → REMBT', '≤ '+limT.toFixed(2)+' %', 'NF C 14-100'],
-      ['Étape 2 — REMBT → CIBE (tronçon C2)', '≤ '+limT.toFixed(2)+' %', 'NF C 14-100'],
-      ['Étape 3 — CIBE → tableau abonné (tronçon C1)', '≤ '+limT.toFixed(2)+' %', 'NF C 14-100'],
-      ['Total branchement (C1 + C2)', '≤ '+limTot.toFixed(2)+' %', 'NF C 14-100'],
-    ], 150) + 4;
-    note(y, 'Valeurs configurées dans le dossier. NF C 14-100 (branchement collectif) : par défaut 1 % par tronçon et 2 % au total. La liaison coffret de façade → REMBT ne s\'applique que si un CCU est présent.'); y += 9;
+    const _rulesRows = CI.scope === 'noCibe'
+      ? [
+          ['Coffret de façade (CCU) → REMBT (liaison amont)', '≤ '+limT.toFixed(2)+' %', 'NF C 14-100'],
+          ['Liaison cascade REMBT → REMBT', '≤ '+limT.toFixed(2)+' %', 'NF C 14-100'],
+          ['Dérivation individuelle REMBT → tableau abonné (sans CIBE)', '≤ '+limTot.toFixed(2)+' %', 'NF C 14-100'],
+        ]
+      : CI.scope === 'c1only'
+      ? [
+          ['CIBE → tableau abonné (tronçon C1)', '≤ '+limT.toFixed(2)+' %', 'NF C 14-100'],
+        ]
+      : [
+          ['Coffret de façade (CCU) → REMBT (liaison amont)', '≤ '+limT.toFixed(2)+' %', 'NF C 14-100'],
+          ['Liaison cascade REMBT → REMBT', '≤ '+limT.toFixed(2)+' %', 'NF C 14-100'],
+          ['Étape 2 — REMBT → CIBE (tronçon C2)', '≤ '+limT.toFixed(2)+' %', 'NF C 14-100'],
+          ['Étape 3 — CIBE → tableau abonné (tronçon C1)', '≤ '+limT.toFixed(2)+' %', 'NF C 14-100'],
+          ['Total branchement (C1 + C2)', '≤ '+limTot.toFixed(2)+' %', 'NF C 14-100'],
+        ];
+    y = tbl(y, ['Tronçon','Chute max','Référence'], _rulesRows, 150) + 4;
+    note(y, CI.scope === 'noCibe'
+      ? 'Valeurs configurées dans le dossier. En mode « sans CIBE », chaque logement est alimenté par un câble unique REMBT → tableau abonné, comparé à la limite totale (par défaut 2 %). La liaison coffret de façade → REMBT ne s\'applique que si un CCU est présent.'
+      : 'Valeurs configurées dans le dossier. NF C 14-100 (branchement collectif) : par défaut 1 % par tronçon et 2 % au total. La liaison coffret de façade → REMBT ne s\'applique que si un CCU est présent.'); y += 9;
 
     h2(y, '2.  Nombre maximal de logements par REMBT'); y += 3;
     y = tbl(y, ['Règle','Valeur','Référence'], [
@@ -2932,7 +2949,9 @@ async function exportPDF(){
     return (a.l.lett||'').localeCompare(b.l.lett||'');
   });
 
-  const recapHead = [['REMBT','Niv','Lett.','Type','S / kVA','kVA','M/T','L₁','S₁','%C2','L₂','S₂','%C1','Σ C1+C2','État']];
+  const recapHead = noCibeExport
+    ? [['REMBT','Niv','Lett.','Type','S / kVA','kVA','M/T','L (m)','Section','% dériv.','État']]
+    : [['REMBT','Niv','Lett.','Type','S / kVA','kVA','M/T','L₁','S₁','%C2','L₂','S₂','%C1','Σ C1+C2','État']];
   const recapBody = sortedLgts.map(({l, idx}) => {
     const a = compute(l, 'rc'), b = compute(l, 'ct');
     const tot = (a.pc != null && b.pc != null) ? a.pc + b.pc : null;
@@ -2942,18 +2961,28 @@ async function exportPDF(){
       const bg = v > lim ? badPDF : (v > lim*0.85 ? warnPDF : okPDF);
       return { content: v.toFixed(3)+' %', styles: { fillColor: bg, fontStyle:'bold' } };
     };
-    const tot2 = c1onlyPDF ? b.pc : tot;
-    const stCell = tot2 == null ? '' : {
-      content: tot2 > CI.limTot ? '✗ HORS' : (tot2 > CI.limTot*0.85 ? '⚠ LIMITE' : '✓ OK'),
-      styles: { fillColor: tot2 > CI.limTot ? badPDF : (tot2 > CI.limTot*0.85 ? warnPDF : okPDF), fontStyle:'bold' }
-    };
     const condR = lgtPhase(l) === 'M' ? '2×' : '4×';
+    const sCell = l.kind==='compt'?(lgtKva(l)+'kVA'):(l.S===''?'—':l.S);
+    const typeCell = (l.kind==='compt'?'Compt.':l.type)||'—';
+    const stBuild = (val) => val == null ? '' : {
+      content: val > CI.limTot ? '✗ HORS' : (val > CI.limTot*0.85 ? '⚠ LIMITE' : '✓ OK'),
+      styles: { fillColor: val > CI.limTot ? badPDF : (val > CI.limTot*0.85 ? warnPDF : okPDF), fontStyle:'bold' }
+    };
+    if(noCibeExport){
+      // Sans CIBE : un câble unique REMBT → TA (tronçon rc), comparé à la limite totale
+      return [
+        rname, l.niv||'—', l.lett||'—', typeCell,
+        sCell, a.p ?? '—', lgtPhase(l),
+        l.rc.O||'—', l.rc.P==''?'—':(condR+l.rc.P), pcCell(a.pc, CI.limTot), stBuild(a.pc)
+      ];
+    }
+    const tot2 = c1onlyPDF ? b.pc : tot;
     return [
-      rname, l.niv||'—', l.lett||'—', (l.kind==='compt'?'Compt.':l.type)||'—',
-      l.kind==='compt'?(lgtKva(l)+'kVA'):(l.S===''?'—':l.S), a.p ?? '—', lgtPhase(l),
+      rname, l.niv||'—', l.lett||'—', typeCell,
+      sCell, a.p ?? '—', lgtPhase(l),
       l.rc.O||'—', l.rc.P==''?'—':(condR+l.rc.P), pcCell(a.pc, CI.limT),
       l.ct.O||'—', l.ct.P==''?'—':(condR+l.ct.P), pcCell(b.pc, CI.limT),
-      pcCell(tot2, CI.limTot), stCell
+      pcCell(tot2, CI.limTot), stBuild(tot2)
     ];
   });
 
@@ -2961,7 +2990,12 @@ async function exportPDF(){
     head:recapHead, body:recapBody, startY: ty, theme:'grid',
     headStyles:{fillColor:navy, textColor:white, fontStyle:'bold', fontSize:7, halign:'center'},
     bodyStyles:{fontSize:6.8, halign:'center'},
-    columnStyles:{
+    columnStyles: noCibeExport ? {
+      0:{halign:'left', fontStyle:'bold', cellWidth:28},
+      1:{cellWidth:16}, 2:{cellWidth:16}, 3:{cellWidth:14},
+      4:{cellWidth:16}, 5:{cellWidth:12}, 6:{cellWidth:11},
+      7:{cellWidth:16}, 8:{cellWidth:18}, 9:{cellWidth:22}, 10:{cellWidth:'auto'}
+    } : {
       0:{halign:'left', fontStyle:'bold', cellWidth:24},
       1:{cellWidth:12}, 2:{cellWidth:13}, 3:{cellWidth:10},
       4:{cellWidth:12}, 5:{cellWidth:10}, 6:{cellWidth:9},

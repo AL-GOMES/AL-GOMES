@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.6';
+window.AL_VERSION      = 'v3.7';
 window.AL_VERSION_DATE = '2026-05-26';
-window.AL_VERSION_TIME = '17:15';
-window.AL_VERSION_NOTE = 'Correctif cache : après connexion, index.html charge désormais accueil.html avec un paramètre anti-cache, ce qui force toujours la dernière version de la page d\'accueil (et donc du bandeau de version). Fini le blocage sur une ancienne version après une MAJ.';
+window.AL_VERSION_TIME = '18:49';
+window.AL_VERSION_NOTE = 'Redéploiement après la panne GitHub de la mi-journée (le build GitHub Pages des v3.4–v3.6 avait calé, le site restait coincé sur une ancienne version). Nouveauté : détection automatique des MAJ — un bandeau « Recharger » apparaît dès qu\'une nouvelle version est en ligne, fini les blocages sur une ancienne version en cache.';

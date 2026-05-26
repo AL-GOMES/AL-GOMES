@@ -6,6 +6,9 @@
 <link rel="icon" type="image/png" sizes="192x192" href="assets/img/favicon-192.png">
 <link rel="apple-touch-icon" sizes="180x180" href="assets/img/apple-touch-icon.png">
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://cdnjs.cloudflare.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' data: blob: https://*.googleapis.com https://*.firebaseio.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://api.github.com https://ipapi.co https://dns.google https://tile.openstreetmap.org; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'self' blob: data:; frame-src 'self' blob: data:; media-src 'self' blob: data:; worker-src 'self' blob:;">
 <link rel="preconnect" href="https://www.gstatic.com">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,7 +19,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" integrity="sha384-sEVIly94UBRLKWdkYoPpSG7GD/e79YHMrxVyZaOk712Ga7+EAw6w1EFi+xBzBdd+" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js" integrity="sha384-EkqK+ezBWJuvO3hfrSx2iVqr3YQbhmnzn8kPhOpBZ+0GMVU5oGSgptwIu8D84HjE" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js" integrity="sha384-M481iNZJtbpypKgvlvZ+78Giq0BsewFLk5r2k+MOcGXlwKCc27DQRZ+WCV/zpmpC" crossorigin="anonymous"></script>
-<script src="js/version.js?b=36"></script>
+<script src="js/version.js?b=37"></script>
 <script src="js/firebase-init.js"></script>
 <script src="js/util.js"></script>
 <style>
@@ -503,6 +506,75 @@ function initClock() {
   if (note) lines.push('Motif : ' + note);
   // \n est rendu comme retour à la ligne dans l'info-bulle native
   el.title = lines.join('\n');
+})();
+
+// ─── Détection automatique d'une nouvelle version déployée ────────────────
+// On interroge périodiquement js/version.js avec un cache-buster horodaté
+// (donc toujours frais côté serveur). Si la version en ligne diffère de celle
+// chargée au démarrage, on propose un rechargement. Évite de rester bloqué
+// sur une ancienne version servie depuis le cache après une MAJ.
+(function watchVersion(){
+  const LOADED = (typeof window.AL_VERSION === 'string' && window.AL_VERSION) || '';
+  if (!LOADED) return;
+  let shown = false, lastCheck = 0;
+
+  function showBar(newV){
+    if (document.getElementById('newVersionBar')) return;
+    if (!document.getElementById('nvStyle')){
+      const st = document.createElement('style');
+      st.id = 'nvStyle';
+      st.textContent = '@keyframes nvUp{from{opacity:0;transform:translate(-50%,16px)}to{opacity:1;transform:translate(-50%,0)}}';
+      document.head.appendChild(st);
+    }
+    const bar = document.createElement('div');
+    bar.id = 'newVersionBar';
+    bar.style.cssText = 'position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:10000;'
+      + 'display:flex;align-items:center;gap:14px;padding:11px 18px;border-radius:10px;'
+      + 'background:linear-gradient(135deg,#8378d0,#5a1ecc);color:#fff;font-family:Rajdhani,sans-serif;'
+      + 'font-size:14px;font-weight:600;letter-spacing:.5px;box-shadow:0 8px 30px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.08);'
+      + 'animation:nvUp .4s cubic-bezier(.16,1,.3,1)';
+    const txt = document.createElement('span');
+    txt.textContent = '🔄 Nouvelle version ' + newV + ' disponible';
+    const btn = document.createElement('button');
+    btn.textContent = 'Recharger';
+    btn.style.cssText = 'background:#fff;color:#5a1ecc;border:none;border-radius:7px;padding:7px 16px;'
+      + 'font-family:Orbitron,sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;text-transform:uppercase';
+    btn.onclick = function(){
+      try { sessionStorage.setItem('al_reload_target', newV); } catch(e){}
+      window.location.href = window.location.pathname + '?v=' + Date.now();
+    };
+    bar.appendChild(txt); bar.appendChild(btn);
+    document.body.appendChild(bar);
+  }
+
+  function check(){
+    if (shown) return;
+    const now = Date.now();
+    if (now - lastCheck < 10000) return;
+    lastCheck = now;
+    fetch('js/version.js?t=' + now, { cache: 'no-store' })
+      .then(function(r){ return r.ok ? r.text() : null; })
+      .then(function(txt){
+        if (!txt) return;
+        const m = /AL_VERSION\s*=\s*['"]([^'"]+)['"]/.exec(txt);
+        if (!m) return;
+        const deployed = m[1];
+        if (!deployed || deployed === LOADED) return;
+        // N'invite pas à recharger pour la version qu'on vient déjà de charger
+        let target = '';
+        try { target = sessionStorage.getItem('al_reload_target') || ''; } catch(e){}
+        if (deployed === target) return;
+        shown = true;
+        showBar(deployed);
+      })
+      .catch(function(){ /* hors-ligne / erreur : on ignore */ });
+  }
+
+  setTimeout(check, 30000);
+  setInterval(check, 5 * 60 * 1000);
+  document.addEventListener('visibilitychange', function(){
+    if (document.visibilityState === 'visible') check();
+  });
 })();
 
 // ============================================================

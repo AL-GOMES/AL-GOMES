@@ -373,6 +373,10 @@ body::after{background:
             <div class="cable-card-cable" id="oCuMain">—</div>
             <div class="cable-card-ref" id="oCuRef">en attente de saisie</div>
             <div class="cable-card-drop">
+              <span class="drop-label">Résistivité ρ</span>
+              <span class="drop-val" id="oCuRho" style="color:var(--t2)">0,0175 Ω·mm²/m</span>
+            </div>
+            <div class="cable-card-drop">
               <span class="drop-label">Chute de tension</span>
               <span class="drop-val" id="oCuDrop">—</span>
             </div>
@@ -382,6 +386,10 @@ body::after{background:
             <div class="cable-card-tag al">Aluminium — U1000R02V</div>
             <div class="cable-card-cable" id="oAluMain">—</div>
             <div class="cable-card-ref" id="oAluRef">en attente de saisie</div>
+            <div class="cable-card-drop">
+              <span class="drop-label">Résistivité ρ</span>
+              <span class="drop-val" id="oAluRho" style="color:var(--t2)">0,028 Ω·mm²/m</span>
+            </div>
             <div class="cable-card-drop">
               <span class="drop-label">Chute de tension</span>
               <span class="drop-val" id="oAluDrop">—</span>
@@ -805,6 +813,8 @@ function compute(){
   document.getElementById('oAluMain').innerHTML = `${cg} ${sAlu}<span class="unit">mm²</span>`;
   document.getElementById('oCuRef').textContent  = `${pfx}${sCu} mm²${sfx} — U1000R2V`;
   document.getElementById('oAluRef').textContent = `${pfx}${sAlu} mm²${sfx} — U1000R02V`;
+  document.getElementById('oCuRho').textContent  = (''+RCU).replace('.', ',') + ' Ω·mm²/m';
+  document.getElementById('oAluRho').textContent = (''+RALU).replace('.', ',') + ' Ω·mm²/m';
 
   const cuC = dCu > md ? 'drop-bad' : dCu > md * 0.8 ? 'drop-warn' : 'drop-ok';
   const alC = dAlu > md ? 'drop-bad' : dAlu > md * 0.8 ? 'drop-warn' : 'drop-ok';

@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.12';
+window.AL_VERSION      = 'v3.13';
 window.AL_VERSION_DATE = '2026-05-26';
-window.AL_VERSION_TIME = '22:07';
-window.AL_VERSION_NOTE = 'Calculs individuels : le choix du câble final s\'affiche désormais avec les références NF C 32-321 — AR2V (aluminium) et R2V (cuivre) — au lieu de « Alu » / « Cuivre », partout (sélecteur, en-têtes, schéma, PDF et Excel). Le calcul est inchangé : AR2V → ρ=0,037, R2V → ρ=0,0225.';
+window.AL_VERSION_TIME = '22:44';
+window.AL_VERSION_NOTE = 'Calcul Câble : la résistivité ρ du conducteur est désormais affichée dans chaque carte résultat — cuivre 0,0175 et aluminium 0,028 Ω·mm²/m (NF C 15-100 §525, à 20 °C), la valeur utilisée pour le calcul de la chute de tension.';

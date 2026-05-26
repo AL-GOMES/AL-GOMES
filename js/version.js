@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.11';
+window.AL_VERSION      = 'v3.12';
 window.AL_VERSION_DATE = '2026-05-26';
-window.AL_VERSION_TIME = '22:00';
-window.AL_VERSION_NOTE = 'Calculs individuels : pour le câble final vers le tableau abonné (CIBE→TA, ou REMBT→TA en mode sans CIBE), choix Cuivre ou Alu par logement (sélecteur dans la feuille de chutes). Le cuivre utilise ρ=0,0225 (NF C 15-100), l\'alu reste à 0,037. Chutes, section recommandée, schéma, PDF et Excel suivent le matériau choisi. Par défaut tout reste en alu.';
+window.AL_VERSION_TIME = '22:07';
+window.AL_VERSION_NOTE = 'Calculs individuels : le choix du câble final s\'affiche désormais avec les références NF C 32-321 — AR2V (aluminium) et R2V (cuivre) — au lieu de « Alu » / « Cuivre », partout (sélecteur, en-têtes, schéma, PDF et Excel). Le calcul est inchangé : AR2V → ρ=0,037, R2V → ρ=0,0225.';

@@ -667,7 +667,7 @@ function newRembtId(existing){
 function newRembt(name, existing){
   const id = newRembtId(existing);
   return { id, name: name || ('REMBT '+id.slice(1)), notes:'', parentId:null, dim:emptyDim(),
-           cf: defaultCF(), manual:false };
+           cf: defaultCF(), link: defaultLink(), manual:false };
 }
 // Coffret de façade (CCU) — entre ENEDIS et un REMBT racine.
 // Inactif par défaut pour préserver la compat ascendante.
@@ -675,6 +675,10 @@ function newRembt(name, existing){
 // des logements rattachés (foisonnement NF C 14-100).
 function defaultCF(){
   return { active:false, name:'CF', long:5, section:35 };
+}
+// Câble de liaison cascade (REMBT parent → ce REMBT), pour les REMBT non racine.
+function defaultLink(){
+  return { long:5, section:50 };
 }
 // Configuration issue de l'assistant (Étape 1) : réglages projet uniquement
 // (périmètre via CI.scope, CCU via le REMBT racine). Ne stocke ici que la
@@ -712,11 +716,17 @@ function foisK(n){
 // Calibres standard ENEDIS pour disjoncteur de branchement (collectif)
 const STD_CAL = [30, 45, 60, 90, 125, 160, 200, 250, 400];
 
-// Calibre automatique du CCU à partir des logements rattachés au REMBT.
-// Sur un branchement collectif on raisonne en tri 400 V :
+// Calibre automatique (tri 400 V) d'un câble alimentant un REMBT : il porte
+// la charge foisonnée de TOUT le sous-arbre aval (le REMBT + ses cascades).
 //   I = P_foisonnée × 1000 / (U × √3)
+function rembtSubtreeIds(rid){
+  const out = [rid];
+  CI.rembts.forEach(r => { if(r.parentId === rid) out.push(...rembtSubtreeIds(r.id)); });
+  return out;
+}
 function rembtAutoCalibre(rid){
-  const lgts = CI.lgts.filter(l => l.rembtId === rid);
+  const ids = new Set(rembtSubtreeIds(rid));
+  const lgts = CI.lgts.filter(l => ids.has(l.rembtId));
   const sumP = lgts.reduce((s, l) => s + (lgtKva(l) || 0), 0);
   const k = foisK(lgts.length);
   const Pfois = sumP * k;
@@ -734,6 +744,17 @@ function cfChute(rembt){
   const a = rembtAutoCalibre(rembt.id);
   if(!a.cal) return null;
   const vu = (0.036 * L * a.cal) / S;   // tri : ΔU = ρ × L × I / S
+  return { vu, pc: vu / 2.3, calibre: a.cal, sumP: a.sumP, Pfois: a.Pfois, k: a.k, Itri: a.Itri, nLgts: a.nLgts };
+}
+// Chute de tension sur le câble de liaison cascade : REMBT parent → ce REMBT.
+// Le câble porte la charge foisonnée du sous-arbre aval de ce REMBT.
+function linkChute(rembt){
+  if(!rembt || rembt.parentId == null || !rembt.link) return null;
+  const L = parseFloat(rembt.link.long), S = parseFloat(rembt.link.section);
+  if(!L || !S) return null;
+  const a = rembtAutoCalibre(rembt.id);
+  if(!a.cal) return null;
+  const vu = (0.036 * L * a.cal) / S;
   return { vu, pc: vu / 2.3, calibre: a.cal, sumP: a.sumP, Pfois: a.Pfois, k: a.k, Itri: a.Itri, nLgts: a.nLgts };
 }
 function defaultRembts(){ return [ newRembt('REMBT 1', []) ]; }
@@ -849,6 +870,7 @@ function normRembt(x){
     parentId: x.parentId || null,
     dim: Object.assign(emptyDim(), dimSrc),
     cf: Object.assign(defaultCF(), x.cf || {}),
+    link: Object.assign(defaultLink(), x.link || {}),
     manual: !!x.manual
   };
 }
@@ -1363,6 +1385,15 @@ function renderDim(){
         cfPill = `<span class="rb-pill rb-cf">🏠 CCU configuré</span>`;
       }
     }
+    // Pill liaison cascade (câble parent → ce REMBT)
+    let linkPill = '';
+    if(r.parentId != null){
+      const c = linkChute(r);
+      if(c){
+        const lkCls = c.pc > CI.limT ? 'state-bad' : (c.pc > CI.limT*0.8 ? 'state-warn' : 'state-ok');
+        linkPill = `<span class="rb-pill rb-cf ${lkCls}">🔗 ${c.calibre} A · ${c.pc.toFixed(2)} %</span>`;
+      }
+    }
 
     h += `
     <details class="rembt-card" ${idx===0?'open':''}>
@@ -1374,6 +1405,7 @@ function renderDim(){
         <span class="rb-pill">${lgtsR.length} lgt</span>
         <span class="rb-pill ${stateCls}">${sizeLbl}</span>
         ${cfPill}
+        ${linkPill}
         <span class="rembt-sum-spacer"></span>
         <button class="btn-icon-del" onclick="event.preventDefault();event.stopPropagation();delRembt('${r.id}')" ${CI.rembts.length<=1?'disabled':''} title="${CI.rembts.length<=1?'Au moins un REMBT requis':'Supprimer ce REMBT (logements réaffectés automatiquement)'}">✕</button>
       </summary>
@@ -1416,6 +1448,31 @@ function renderDim(){
               </select>
             </label>
           </div>` : ''}
+        </div>` : ''}
+
+        ${r.parentId != null ? `
+        <div class="rb-block rb-block-on">
+          <label class="rb-block-h">
+            <span>🔗 Liaison cascade — câble ${escapeHtml((CI.rembts.find(x=>x.id===r.parentId)||{}).name || 'parent')} → ${escapeHtml(r.name)}</span>
+            ${(function(){
+              const c = linkChute(r);
+              if(!c) return '';
+              const cls = c.pc > CI.limT ? 'bad' : (c.pc > CI.limT*0.8 ? 'warn' : 'ok');
+              return `<span class="rb-chip ${cls}" style="margin-left:auto">${c.calibre} A · ${c.pc.toFixed(2)} %</span>`;
+            })()}
+          </label>
+          <div class="rb-row" style="margin-top:10px">
+            <label class="rb-field">
+              <span>Longueur câble (m)</span>
+              <input type="number" class="ws ns" min="0" step="0.5" value="${r.link.long===''?'':r.link.long}" onchange="updLink('${r.id}','long',this.value)">
+            </label>
+            <label class="rb-field">
+              <span>Section ALU (mm²)</span>
+              <select class="sel" onchange="updLink('${r.id}','section',this.value)">
+                ${[10,16,25,35,50,70,95,120,150,185,240].map(s => `<option value="${s}"${r.link.section==s?' selected':''}>${s}</option>`).join('')}
+              </select>
+            </label>
+          </div>
         </div>` : ''}
 
         <div class="rb-block">
@@ -1631,6 +1688,15 @@ function updCF(rid, k, v){
     r.cf[k] = (v === '' || isNaN(parseFloat(v))) ? '' : parseFloat(v);
   } else {
     r.cf[k] = v;
+  }
+  save(); R();
+}
+// ─── Liaison cascade (câble REMBT parent → REMBT) ───────────
+function updLink(rid, k, v){
+  const r = CI.rembts.find(x => x.id === rid); if(!r) return;
+  if(!r.link) r.link = defaultLink();
+  if(k === 'long' || k === 'section'){
+    r.link[k] = (v === '' || isNaN(parseFloat(v))) ? '' : parseFloat(v);
   }
   save(); R();
 }
@@ -2503,6 +2569,7 @@ async function exportPDF(){
     h2(y, '1.  Chutes de tension maximales admissibles'); y += 3;
     y = tbl(y, ['Tronçon','Chute max','Référence'], [
       ['Coffret de façade (CCU) → REMBT (liaison amont)', '≤ '+limT.toFixed(2)+' %', 'NF C 14-100'],
+      ['Liaison cascade REMBT → REMBT', '≤ '+limT.toFixed(2)+' %', 'NF C 14-100'],
       ['Étape 2 — REMBT → CIBE (tronçon C2)', '≤ '+limT.toFixed(2)+' %', 'NF C 14-100'],
       ['Étape 3 — CIBE → tableau abonné (tronçon C1)', '≤ '+limT.toFixed(2)+' %', 'NF C 14-100'],
       ['Total branchement (C1 + C2)', '≤ '+limTot.toFixed(2)+' %', 'NF C 14-100'],
@@ -2565,6 +2632,18 @@ async function exportPDF(){
     doc.setFontSize(10); doc.setTextColor(...white); doc.setFont('helvetica','bold');
     doc.text(`${r.name}  ·  ${nLgts} logement(s)  ·  alimenté par : ${parent}`, 12, yPos + 5.5);
     yPos += 9;
+
+    // Câble d'alimentation amont : CCU (racine) ou liaison cascade (non racine)
+    const up = (r.parentId == null) ? cfChute(r) : linkChute(r);
+    if(up){
+      const upCfg = (r.parentId == null) ? r.cf : r.link;
+      const upLbl = (r.parentId == null) ? 'CCU → REMBT' : (parent + ' → ' + r.name);
+      const upCls = up.pc > CI.limT ? badPDF : (up.pc > CI.limT*0.8 ? warnPDF : okPDF);
+      doc.setFillColor(...upCls); doc.rect(8, yPos, pageW - 16, 6, 'F');
+      doc.setFontSize(8); doc.setTextColor(40,30,60); doc.setFont('helvetica','bold');
+      doc.text(`Câble d'alimentation (${upLbl}) : L = ${upCfg.long||'?'} m  ·  ${upCfg.section||'?'} mm² ALU  ·  I = ${up.calibre} A (tri)  ·  chute ${up.pc.toFixed(2)} %`, 12, yPos + 4.2);
+      yPos += 8;
+    }
 
     const dHead = [['Module','Places','Qté','Plages']];
     const dBody = MODULES.map(m => {

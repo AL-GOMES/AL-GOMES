@@ -61,6 +61,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   color:rgba(190,199,219,0.50);cursor:pointer;border-bottom:3px solid transparent;border-top:none;border-left:none;border-right:none;background:none;font-family:inherit;transition:all 0.25s;text-align:left;text-transform:none;position:relative}
 .tab:hover{color:rgba(236,239,246,0.90);background:rgba(62,76,112,0.06)}
 .tab.active{color:#EDF0F7;border-bottom-color:#7E7BCE;background:linear-gradient(180deg,rgba(62,76,112,0.10) 0%,transparent 100%)}
+.tab-cfg{margin-left:auto;align-self:center;display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:7px;
+  border:1px solid rgba(139,134,210,0.30);background:rgba(139,134,210,0.10);color:#C7BEF6;font-family:inherit;font-size:11.5px;font-weight:600;
+  letter-spacing:0.3px;cursor:pointer;transition:all 0.2s;white-space:nowrap}
+.tab-cfg:hover{background:rgba(139,134,210,0.18);border-color:rgba(139,134,210,0.5);color:#DFDBFF}
 .tab-num{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:rgba(62,76,112,0.20);color:rgba(150,165,200,0.85);
   border:1px solid rgba(104,118,156,0.30);border-radius:50%;font-family:'Courier New',monospace;font-size:12px;font-weight:700;flex-shrink:0;letter-spacing:0}
 .tab.active .tab-num{background:#7E7BCE;color:#fff;border-color:#7E7BCE;box-shadow:0 2px 6px rgba(104,118,156,0.40)}
@@ -265,17 +269,7 @@ button.btn[disabled]{opacity:0.4;cursor:not-allowed}
 .dim-stats{display:flex;align-items:center;gap:10px;font-size:13px;color:rgba(208,217,233,0.85)}
 .dim-stat b{color:#EDF0F7;font-weight:700;font-size:15px}
 .dim-sep{color:rgba(104,118,156,0.40)}
-/* Étape 1 — légende Auto/Manuel + repère de parcours */
-.dim-guide{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px}
-.dim-guide-col{padding:12px 15px;border-radius:10px;border:1px solid rgba(165,178,210,0.14);background:rgba(20,22,30,0.5)}
-.dim-guide-col.auto{background:rgba(139,134,210,0.10);border-color:rgba(139,134,210,0.30)}
-.dgc-h{display:block;font-size:12px;font-weight:700;letter-spacing:.4px;margin-bottom:5px;color:rgba(208,217,233,0.92)}
-.dim-guide-col.auto .dgc-h{color:#C7BEF6}
-.dgc-t{display:block;font-size:11.5px;line-height:1.5;color:rgba(190,199,219,0.82)}
-.dim-flow{font-size:11.5px;color:rgba(190,199,219,0.85);margin:0 0 14px;padding:8px 12px;border-left:2px solid #8b86d2;background:rgba(139,134,210,0.07);border-radius:0 7px 7px 0}
-.dim-flow b{color:#C7BEF6;font-weight:700}
 .rb-sub{font-size:10.5px;color:rgba(190,199,219,0.55);font-weight:500;letter-spacing:.3px;white-space:nowrap}
-@media(max-width:760px){.dim-guide{grid-template-columns:1fr}}
 /* Jauge de chute de tension (câble amont CCU / liaison cascade) */
 .cf-res{margin-top:12px;padding:11px 13px;border-radius:9px;border:1px solid rgba(165,178,210,0.16);background:rgba(20,22,30,0.55)}
 .cf-res.cf-bad{border-color:rgba(255,107,107,0.40);background:rgba(255,85,85,0.07)}
@@ -315,11 +309,6 @@ button.btn[disabled]{opacity:0.4;cursor:not-allowed}
   box-shadow:inset 0 0 0 1px rgba(150,165,200,0.40)}
 .wz-opt input:focus-visible + .wz-opt-box{outline:2px solid #9BA6DB;outline-offset:2px}
 .wz-actions{display:flex;gap:10px;align-items:center;margin-top:22px;padding-top:16px;border-top:1px solid rgba(104,118,156,0.18)}
-.wz-done{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;padding:10px 16px;border-radius:9px;
-  border:1px solid rgba(104,118,156,0.22);background:rgba(29,33,48,0.45);font-size:12.5px;color:rgba(208,217,233,0.82)}
-.wz-done b{color:#C7BEF6;font-weight:700}
-.wz-done-ic{font-size:16px}
-.wz-done .btn{margin-left:auto}
 
 details.rembt-card{margin-bottom:10px;border:1px solid rgba(104,118,156,0.18);border-radius:10px;background:rgba(29,33,48,0.65);overflow:hidden;transition:border-color 0.2s,background 0.2s}
 details.rembt-card[open]{border-color:rgba(104,118,156,0.40);background:linear-gradient(165deg,rgba(29,33,48,0.85) 0%,rgba(20,22,30,0.92) 100%);box-shadow:0 4px 14px rgba(62,76,112,0.10)}
@@ -611,6 +600,7 @@ label.rb-block-h{cursor:pointer}
   <button class="tab" data-sh="rc" onclick="goSheet('rc')"><span class="tab-num">2</span><span class="tab-ic">📏</span><span class="tab-lbl">Chutes REMBT → CIBE<br><small>%C2 par logement</small></span></button>
   <button class="tab" data-sh="ct" onclick="goSheet('ct')"><span class="tab-num">3</span><span class="tab-ic">📏</span><span class="tab-lbl">Chutes CIBE → TA<br><small>%C1 par logement</small></span></button>
   <button class="tab" data-sh="sch" onclick="goSheet('sch')"><span class="tab-num">4</span><span class="tab-ic">📐</span><span class="tab-lbl">Synthèse<br><small>schéma + exports</small></span></button>
+  <button class="tab-cfg" onclick="reopenSetupWizard()" title="Modifier la configuration du projet (périmètre, CCU, phase, locaux commerciaux)">⚙️ Modifier la config</button>
 </div>
 <div class="content">
   <div class="sheet" id="sh-rc"></div>
@@ -1357,22 +1347,6 @@ function reopenSetupWizard(){
   save(); R();
 }
 
-function setupSummaryBar(){
-  const s = CI.setup || defaultSetup();
-  const root = CI.rembts.find(r => r.parentId == null) || CI.rembts[0];
-  const ccu = !!(root && root.cf && root.cf.active);
-  const bits = [
-    `<b>${CI.scope === 'c1only' ? 'CIBE → TA seul' : 'Installation complète'}</b>`,
-    `CCU <b>${ccu ? 'oui' : 'non'}</b>`,
-    `logements <b>${s.defPhase === 'T' ? 'tri' : 'mono'}</b>`
-  ];
-  if(s.hasCommerce) bits.push('+ locaux commerciaux');
-  return `<div class="wz-done">
-    <span class="wz-done-ic">🧭</span>
-    <span>Configuration : ${bits.join(' · ')}</span>
-    <button class="btn" onclick="reopenSetupWizard()">⚙️ Modifier</button>
-  </div>`;
-}
 
 function renderDim(){
   if(!CI.setup) CI.setup = defaultSetup();
@@ -1384,21 +1358,7 @@ function renderDim(){
     document.getElementById('sh-dim').innerHTML = renderSetupWizard();
     return;
   }
-  h += setupSummaryBar();
-
   h += `
-    <div class="dim-guide">
-      <div class="dim-guide-col auto">
-        <span class="dgc-h">⚡ Automatique</span>
-        <span class="dgc-t">REMBT créés et remplis, répartition à 6 logements maxi, mise en cascade, calibres et chutes calculés.</span>
-      </div>
-      <div class="dim-guide-col">
-        <span class="dgc-h">✋ Manuel (optionnel)</span>
-        <span class="dgc-t">Renommer ou ajouter un REMBT, ajuster les modules / le CCU, forcer un logement vers un REMBT (colonne REMBT des étapes 2-3).</span>
-      </div>
-    </div>
-    <div class="dim-flow">Les <b>logements</b> se saisissent aux <b>étapes 2 et 3</b>. Ici, vous vérifiez et ajustez l'installation (REMBT, câbles, modules).</div>
-
     <div class="dim-toolbar">
       <div class="dim-stats">
         <span class="dim-stat"><b>${CI.rembts.length}</b> REMBT${CI.rembts.length>1?'s':''}</span>

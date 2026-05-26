@@ -900,6 +900,7 @@ function normLgt(x, defaultRembtId){
     kva:  x.kva === '' || x.kva == null ? '' : Number(x.kva),
     rc:   { O: (x.rc && x.rc.O!=null) ? Number(x.rc.O) : 5,  P: secP((x.rc && x.rc.P) ? Number(x.rc.P) : 35, isCompt ? null : 35) },
     ct:   { O: (x.ct && x.ct.O!=null) ? Number(x.ct.O) : 5,  P: secP((x.ct && x.ct.P) ? Number(x.ct.P) : 35, 35) },
+    mat:  x.mat === 'cu' ? 'cu' : 'alu',
     rembtId: x.rembtId || defaultRembtId || null,
     rembtPin: !!x.rembtPin
   };
@@ -976,12 +977,25 @@ function calibreA(p){
   if(p === 12) return 60;
   return null;
 }
-// Chute de tension VU en volts — câble ALU
-// Excel: IF(K="M", (0.037*2*O*N)/P, (0.037*O*N)/P)
-function chuteVU(K, O, N, P){
+// Résistivités (Ω·mm²/m) : alu = 0,037 (valeur projet) ; cuivre = 0,0225 (NF C 15-100).
+const RHO_ALU = 0.037, RHO_CU = 0.0225;
+// Tronçon final vers le tableau abonné : rc (REMBT→TA) en mode sans CIBE,
+// ct (CIBE→TA) en mode complet / C1 seul.
+function finalSide(){ return CI.scope === 'noCibe' ? 'rc' : 'ct'; }
+// Matériau du câble final d'un logement : 'cu' (cuivre) ou 'alu' (défaut).
+function lgtMat(l){ return (l && l.mat === 'cu') ? 'cu' : 'alu'; }
+// Résistivité d'un tronçon : seul le tronçon final suit le matériau choisi pour
+// le logement ; les autres tronçons (C2, amont) restent en alu.
+function rhoFor(l, side){
+  return (side === finalSide() && lgtMat(l) === 'cu') ? RHO_CU : RHO_ALU;
+}
+// Chute de tension VU en volts. rho = résistivité du conducteur (défaut alu).
+// Excel (alu): IF(K="M", (0.037*2*O*N)/P, (0.037*O*N)/P)
+function chuteVU(K, O, N, P, rho){
   O = parseFloat(O); N = parseFloat(N); P = parseFloat(P);
   if(!O || !N || !P) return null;
-  return K === 'M' ? (0.037 * 2 * O * N) / P : (0.037 * O * N) / P;
+  rho = rho || RHO_ALU;
+  return K === 'M' ? (rho * 2 * O * N) / P : (rho * O * N) / P;
 }
 // % chute = VU / 2.3
 function chutePc(vu){ return vu == null ? null : vu / 2.3; }
@@ -989,13 +1003,14 @@ function chutePc(vu){ return vu == null ? null : vu / 2.3; }
 // Section recommandée — chute en ALU réel (0,037 / 2,3) ≤ limite par tronçon
 // configurable (CI.limT, défaut 1 % NF C 14-100). Section mini = 16 mm² (le
 // 10 mm² n'est pas utilisé).
-function sectionMin(K, O, N, p, maxSect){
+function sectionMin(K, O, N, p, maxSect, rho){
   O = parseFloat(O); N = parseFloat(N);
   if(!O || !N) return null;
+  rho = rho || RHO_ALU;
   let cands = [16,25,35,50];
   if(maxSect) cands = cands.filter(s => s <= maxSect);
   for(const s of cands){
-    const vu = K === 'M' ? (0.037 * 2 * O * N) / s : (0.037 * O * N) / s;
+    const vu = K === 'M' ? (rho * 2 * O * N) / s : (rho * O * N) / s;
     const pc = vu / 2.3;
     if(pc <= CI.limT) return s;
   }
@@ -1038,10 +1053,11 @@ function compute(l, side){
   const N = lgtCalibre(l);
   const sub = l[side] || {O:0,P:0};
   const K = lgtPhase(l);
-  const VU = chuteVU(K, sub.O, N, sub.P);
+  const rho = rhoFor(l, side);
+  const VU = chuteVU(K, sub.O, N, sub.P, rho);
   const pc = chutePc(VU);
   // Section recommandée plafonnée selon le type d'entrée (logement = 35 mm² maxi)
-  const rec = sectionMin(K, sub.O, N, p, maxSection(l, side));
+  const rec = sectionMin(K, sub.O, N, p, maxSection(l, side), rho);
   return { p, M, N, VU, pc, rec };
 }
 
@@ -1156,7 +1172,7 @@ function renderSide(side){
             <th class="col-h" title="Pour logement : surface en m². Pour comptage TB tri : kVA souscrits.">Surf. / kVA</th>
             <th>M/T</th>
             <th>Long. m</th>
-            <th>Section mm²<br><span style="font-size:9px;color:rgba(190,199,219,0.40)">${isRc?'HN33S33':'AR2V'}</span></th>
+            <th>Section mm²<br><span style="font-size:9px;color:rgba(190,199,219,0.40)">${(side===finalSide())?'Cu / Alu':(isRc?'HN33S33':'AR2V')}</span></th>
             <th class="col-h" title="Puissance kVA effective">Puiss. <br><span style="font-size:9px;color:rgba(190,199,219,0.40)">kVA</span></th>
             <th class="col-h" title="Disjoncteur EDF normalisé">Disj.</th>
             <th class="col-h" title="Calibre du disjoncteur (A)">N <br><span style="font-size:9px;color:rgba(190,199,219,0.40)">A</span></th>
@@ -1235,8 +1251,11 @@ function renderSide(side){
       }
       // Long.
       h += `<td><input type="number" class="ws ns" value="${sub.O===''?'':sub.O}" onchange="updSub(${i},'${side}','O',this.value)"></td>`;
-      // Section
-      h += `<td><select class="sel" onchange="updSub(${i},'${side}','P',this.value)">${sectOptions}</select></td>`;
+      // Section (+ choix matériau Cu/Alu sur le tronçon final vers le tableau abonné)
+      const matSel = (side === finalSide())
+        ? `<select class="sel mat-sel" style="min-width:62px;margin-right:4px" title="Matériau du câble vers le tableau abonné — alu : ρ=0,037 · cuivre : ρ=0,0225" onchange="upd(${i},'mat',this.value)"><option value="alu"${lgtMat(l)==='alu'?' selected':''}>Alu</option><option value="cu"${lgtMat(l)==='cu'?' selected':''}>Cuivre</option></select>`
+        : '';
+      h += `<td>${matSel}<select class="sel" onchange="updSub(${i},'${side}','P',this.value)">${sectOptions}</select></td>`;
       // Computed: puiss
       h += `<td class="fm">${rThis.p ?? '—'}</td>`;
       // Disj EDF
@@ -1612,6 +1631,7 @@ function addLgt(){
     kva: '',
     rc: { O: (last.rc && last.rc.O) || 5, P: (last.rc && last.rc.P) || 35 },
     ct: { O: (last.ct && last.ct.O) || 5, P: (last.ct && last.ct.P) || 35 },
+    mat: (last && last.mat === 'cu') ? 'cu' : 'alu',
     rembtId: last.rembtId || CI.rembts[0].id
   });
   save(); R();
@@ -1630,6 +1650,7 @@ function addCompt(){
     kva: 12,
     rc: { O: (last.rc && last.rc.O) || 5, P: (last.rc && last.rc.P) || 35 },
     ct: { O: (last.ct && last.ct.O) || 5, P: (last.ct && last.ct.P) || 35 },
+    mat: (last && last.mat === 'cu') ? 'cu' : 'alu',
     rembtId: last.rembtId || CI.rembts[0].id
   });
   save(); R();
@@ -2044,7 +2065,7 @@ function renderSchema(){
         if(noCibe){
           // Sans CIBE : un seul câble REMBT → TA (tronçon rc)
           s += line(x, Y.bus, x, Y.ta, {stroke:INK});
-          s += txt(x+6, Y.cab-2, `HN33S33 · L=${l.rc.O||'?'}m · ${sect(l.rc.P, phase)}`, {size:7.5, anchor:'start', fill:'#888'});
+          s += txt(x+6, Y.cab-2, `${lgtMat(l)==='cu'?'Cuivre':'HN33S33'} · L=${l.rc.O||'?'}m · ${sect(l.rc.P, phase)}`, {size:7.5, anchor:'start', fill:'#888'});
           s += txt(x+6, Y.cab+8, `chute ${a.pc==null?'—':a.pc.toFixed(2)+'%'}`, {size:7.5, weight:700, anchor:'start', fill:tClr});
           s += dot(x, (Y.bus+Y.ta)/2, '#e08a1f');
           const tW = 88, tX = x-tW/2;
@@ -2071,7 +2092,7 @@ function renderSchema(){
 
         // Câble C1 (CIBE → TA)
         s += line(x, Y.cibe+Y.cibeH, x, Y.ta, {stroke:INK});
-        s += txt(x+6, Y.c1-2, `C1 · AR2V · L₂=${l.ct.O||'?'}m · ${sect(l.ct.P, phase)}`, {size:8, anchor:'start', fill:'#555'});
+        s += txt(x+6, Y.c1-2, `C1 · ${lgtMat(l)==='cu'?'Cuivre':'AR2V'} · L₂=${l.ct.O||'?'}m · ${sect(l.ct.P, phase)}`, {size:8, anchor:'start', fill:'#555'});
         s += txt(x+6, Y.c1+8, `chute C1 ${b.pc==null?'—':b.pc.toFixed(2)+'%'}`, {size:8, weight:700, anchor:'start', fill:pcColor(b.pc)});
         s += dot(x, (Y.cibe+Y.cibeH+Y.ta)/2, '#e08a1f');
 
@@ -2225,6 +2246,7 @@ async function exportXLS(){
 
   // ═══ SIDE SHEETS ═══
   function buildSheet(name, side, sideLabel){
+    const isFinalX = (side === finalSide());
     const ws = wb.addWorksheet(name, { properties:{tabColor:{argb:'FF7B5DA8'}},
       pageSetup:{paperSize:9, orientation:'landscape', fitToPage:true, fitToWidth:1} });
     ws.columns = [
@@ -2239,7 +2261,7 @@ async function exportXLS(){
     c1.alignment = ca; ws.getRow(1).height = 32;
 
     ws.mergeCells('A2:P2');
-    const c2 = ws.getCell('A2'); c2.value = 'Calcul de la chute de tension — câble ALU (ρ = 0,037 Ω·mm²/m à 90°C)  ·  limite tronçon = '+CI.limT.toFixed(2)+' %  ·  limite C1+C2 = '+CI.limTot.toFixed(2)+' %';
+    const c2 = ws.getCell('A2'); c2.value = 'Calcul de la chute de tension — '+(isFinalX ? 'câble vers TA : cuivre (ρ=0,0225) ou alu (ρ=0,037) selon logement' : 'câble ALU (ρ = 0,037 Ω·mm²/m à 90°C)')+'  ·  limite tronçon = '+CI.limT.toFixed(2)+' %  ·  limite C1+C2 = '+CI.limTot.toFixed(2)+' %';
     c2.font = { bold:true, color:{argb:'FFB4C7E7'}, size:9.5, name:'Calibri' };
     c2.fill = { type:'pattern', pattern:'solid', fgColor:navyL };
     c2.alignment = ca; ws.getRow(2).height = 18;
@@ -2247,7 +2269,7 @@ async function exportXLS(){
     ws.getRow(3).height = 8;
 
     // En-têtes
-    const headers = ['REMBT','Niveau','Type','Lettrage EDF','HALL','Surface / kVA','M/T','Long. m','Section mm² ('+(side==='rc'?'HN33S33':'AR2V')+')',
+    const headers = ['REMBT','Niveau','Type','Lettrage EDF','HALL','Surface / kVA','M/T','Long. m','Section mm² ('+(isFinalX?'Cu/Alu':(side==='rc'?'HN33S33':'AR2V'))+')',
                      'Puiss. kVA','Disj.','Calibre A','VU (V)','% ΔU '+(side==='rc'?'C2':'C1'), '% C1+C2', 'Reco'];
     headers.forEach((v,ci)=>{
       const cell = ws.getCell(4, ci+1);
@@ -2274,7 +2296,7 @@ async function exportXLS(){
       const row = [
         rembtName, l.niv||'', (l.kind==='compt'?'Comptage TB':l.type)||'', l.lett||'',
         l.hall===''?null:l.hall, l.kind==='compt'?(lgtKva(l)+' kVA'):(l.S===''?null:l.S), lgtPhase(l),
-        sub.O===''?null:sub.O, sub.P===''?'':(condX+sub.P),
+        sub.O===''?null:sub.O, sub.P===''?'':(condX+sub.P+(isFinalX?(lgtMat(l)==='cu'?' Cu':' Al'):'')),
         rThis.p ?? null, rThis.M || '', rThis.N ?? null,
         rThis.VU == null ? null : +rThis.VU.toFixed(3),
         rThis.pc == null ? null : +rThis.pc.toFixed(4),
@@ -2576,8 +2598,9 @@ async function exportPDF(){
   const rembtByIdPDF = Object.fromEntries(CI.rembts.map(r => [r.id, r]));
 
   function addSidePage(title, side){
+    const isFinal = (side === finalSide());
     header(pName + ' — ' + title,
-      'Câble ALU  ρ = 0,037 Ω·mm²/m   ·   limite tronçon = '+CI.limT.toFixed(2)+' %   ·   limite C1+C2 = '+CI.limTot.toFixed(2)+' %');
+      (isFinal ? 'Câble vers TA : cuivre (ρ=0,0225) ou alu (ρ=0,037) selon logement' : 'Câble ALU  ρ = 0,037 Ω·mm²/m')+'   ·   limite tronçon = '+CI.limT.toFixed(2)+' %   ·   limite C1+C2 = '+CI.limTot.toFixed(2)+' %');
 
     const head = [['REMBT','Niv','Type','Lettr.','HALL','S/kVA','M/T','L (m)','S mm²','kVA','Disj.','I (A)','VU (V)','%ΔU '+(side==='rc'?'C2':'C1'),'% C1+C2']];
     const body = CI.lgts.map(l=>{
@@ -2595,7 +2618,7 @@ async function exportPDF(){
       return [
         rembtName, l.niv||'', (l.kind==='compt'?'Compt.':l.type)||'', l.lett||'',
         l.hall===''?'':l.hall, l.kind==='compt'?(lgtKva(l)+'kVA'):(l.S===''?'':l.S), lgtPhase(l),
-        sub.O===''?'':sub.O, sub.P===''?'':(condP+sub.P),
+        sub.O===''?'':sub.O, sub.P===''?'':(condP+sub.P+(isFinal?(lgtMat(l)==='cu'?' Cu':' Al'):'')),
         r.p ?? '', r.M || '', r.N ?? '',
         r.VU == null ? '' : r.VU.toFixed(2),
         pcCell(r.pc, CI.limT),
@@ -2998,7 +3021,7 @@ async function exportPDF(){
       return [
         rname, l.niv||'—', l.lett||'—', typeCell,
         sCell, a.p ?? '—', lgtPhase(l),
-        l.rc.O||'—', l.rc.P==''?'—':(condR+l.rc.P), pcCell(a.pc, CI.limTot), stBuild(a.pc)
+        l.rc.O||'—', l.rc.P==''?'—':(condR+l.rc.P+(lgtMat(l)==='cu'?' Cu':' Al')), pcCell(a.pc, CI.limTot), stBuild(a.pc)
       ];
     }
     const tot2 = c1onlyPDF ? b.pc : tot;
@@ -3006,7 +3029,7 @@ async function exportPDF(){
       rname, l.niv||'—', l.lett||'—', typeCell,
       sCell, a.p ?? '—', lgtPhase(l),
       l.rc.O||'—', l.rc.P==''?'—':(condR+l.rc.P), pcCell(a.pc, CI.limT),
-      l.ct.O||'—', l.ct.P==''?'—':(condR+l.ct.P), pcCell(b.pc, CI.limT),
+      l.ct.O||'—', l.ct.P==''?'—':(condR+l.ct.P+(lgtMat(l)==='cu'?' Cu':' Al')), pcCell(b.pc, CI.limT),
       pcCell(tot2, CI.limTot), stBuild(tot2)
     ];
   });

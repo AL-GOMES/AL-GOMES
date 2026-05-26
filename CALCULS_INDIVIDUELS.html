@@ -265,6 +265,17 @@ button.btn[disabled]{opacity:0.4;cursor:not-allowed}
 .dim-stats{display:flex;align-items:center;gap:10px;font-size:13px;color:rgba(208,217,233,0.85)}
 .dim-stat b{color:#EDF0F7;font-weight:700;font-size:15px}
 .dim-sep{color:rgba(104,118,156,0.40)}
+/* Étape 1 — légende Auto/Manuel + repère de parcours */
+.dim-guide{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px}
+.dim-guide-col{padding:12px 15px;border-radius:10px;border:1px solid rgba(165,178,210,0.14);background:rgba(20,22,30,0.5)}
+.dim-guide-col.auto{background:rgba(139,134,210,0.10);border-color:rgba(139,134,210,0.30)}
+.dgc-h{display:block;font-size:12px;font-weight:700;letter-spacing:.4px;margin-bottom:5px;color:rgba(208,217,233,0.92)}
+.dim-guide-col.auto .dgc-h{color:#C7BEF6}
+.dgc-t{display:block;font-size:11.5px;line-height:1.5;color:rgba(190,199,219,0.82)}
+.dim-flow{font-size:11.5px;color:rgba(190,199,219,0.85);margin:0 0 14px;padding:8px 12px;border-left:2px solid #8b86d2;background:rgba(139,134,210,0.07);border-radius:0 7px 7px 0}
+.dim-flow b{color:#C7BEF6;font-weight:700}
+.rb-sub{font-size:10.5px;color:rgba(190,199,219,0.55);font-weight:500;letter-spacing:.3px;white-space:nowrap}
+@media(max-width:760px){.dim-guide{grid-template-columns:1fr}}
 
 /* ═══ Assistant de configuration (Étape 1) ═══ */
 .wz-card{margin-bottom:18px;padding:20px 22px;border-radius:12px;
@@ -1337,12 +1348,17 @@ function renderDim(){
   h += setupSummaryBar();
 
   h += `
-    <div class="intro intro-compact">
-      <div class="intro-num">1</div>
-      <div class="intro-txt">
-        <b>Étape 1 — Installation.</b> Les REMBTs sont créés et remplis automatiquement (6 logements maxi par REMBT, NF C 14-100 §10, chaînés en cascade). Vous pouvez ajouter un REMBT et forcer un logement vers un REMBT précis (menu de la colonne REMBT, étapes 2/3) : ces choix manuels sont conservés.
+    <div class="dim-guide">
+      <div class="dim-guide-col auto">
+        <span class="dgc-h">⚡ Automatique</span>
+        <span class="dgc-t">REMBT créés et remplis, répartition à 6 logements maxi, mise en cascade, calibres et chutes calculés.</span>
+      </div>
+      <div class="dim-guide-col">
+        <span class="dgc-h">✋ Manuel (optionnel)</span>
+        <span class="dgc-t">Renommer ou ajouter un REMBT, ajuster les modules / le CCU, forcer un logement vers un REMBT (colonne REMBT des étapes 2-3).</span>
       </div>
     </div>
+    <div class="dim-flow">Les <b>logements</b> se saisissent aux <b>étapes 2 et 3</b>. Ici, vous vérifiez et ajustez l'installation (REMBT, câbles, modules).</div>
 
     <div class="dim-toolbar">
       <div class="dim-stats">
@@ -1352,10 +1368,7 @@ function renderDim(){
         <span class="dim-sep">·</span>
         <span class="dim-stat"><b>${totGlobal}</b> plage${totGlobal>1?'s':''}</span>
       </div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <span class="rb-auto-tag" title="REMBT auto (max ${REMBT_MAX_LGTS}/REMBT, cascade) — affectation manuelle possible par logement.">⚡ Auto · ${REMBT_MAX_LGTS} lgts/REMBT · cascade</span>
-        <button class="btn ba" onclick="addRembt()">＋ REMBT</button>
-      </div>
+      <button class="btn ba" onclick="addRembt()">＋ Ajouter un REMBT</button>
     </div>
 
     <div class="rembt-list">`;
@@ -1401,12 +1414,11 @@ function renderDim(){
         <span class="rembt-sum-caret">▶</span>
         <span class="rembt-sum-icon">📦</span>
         <span class="rembt-sum-name">${escapeHtml(r.name)}</span>
-        ${r.parentId ? `<span class="rb-pill rb-cascade">↑ cascade depuis ${escapeHtml((CI.rembts.find(x=>x.id===r.parentId)||{}).name || '—')}</span>` : ''}
-        <span class="rb-pill">${lgtsR.length} lgt</span>
-        <span class="rb-pill ${stateCls}">${sizeLbl}</span>
+        <span class="rb-sub">${r.parentId ? '↑ '+escapeHtml((CI.rembts.find(x=>x.id===r.parentId)||{}).name || '—') : 'racine (ENEDIS)'}</span>
+        <span class="rembt-sum-spacer"></span>
+        <span class="rb-pill ${stateCls}">${isProblem ? sizeLbl : lgtsR.length+' lgt · '+plages+'/'+sugg+' pl.'}</span>
         ${cfPill}
         ${linkPill}
-        <span class="rembt-sum-spacer"></span>
         <button class="btn-icon-del" onclick="event.preventDefault();event.stopPropagation();delRembt('${r.id}')" ${CI.rembts.length<=1?'disabled':''} title="${CI.rembts.length<=1?'Au moins un REMBT requis':'Supprimer ce REMBT (logements réaffectés automatiquement)'}">✕</button>
       </summary>
 

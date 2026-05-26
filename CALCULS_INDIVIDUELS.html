@@ -755,15 +755,16 @@ function rembtAutoCalibre(rid){
   return { nLgts:lgts.length, sumP, k, Pfois, Itri, cal };
 }
 
-// Chute de tension sur le câble Coffret façade → REMBT (formule ALU)
-// Toujours tri 400 V au niveau CCU, calibre = auto.
+// Chute de tension sur le câble Coffret façade → REMBT (formule ALU, tri 400 V).
+// La chute est calculée au COURANT D'EMPLOI foisonné (Itri), pas au calibre
+// normalisé du dispositif de protection (NF C 14-100, conforme Elium).
 function cfChute(rembt){
   if(!rembt || !rembt.cf || !rembt.cf.active) return null;
   const L = parseFloat(rembt.cf.long), S = parseFloat(rembt.cf.section);
   if(!L || !S) return null;
   const a = rembtAutoCalibre(rembt.id);
-  if(!a.cal) return null;
-  const vu = (0.036 * L * a.cal) / S;   // tri : ΔU = ρ × L × I / S
+  if(!a.Itri) return null;
+  const vu = (0.036 * L * a.Itri) / S;   // tri : ΔU = ρ × L × I / S
   return { vu, pc: vu / 2.3, calibre: a.cal, sumP: a.sumP, Pfois: a.Pfois, k: a.k, Itri: a.Itri, nLgts: a.nLgts };
 }
 // Chute de tension sur le câble de liaison cascade : REMBT parent → ce REMBT.
@@ -773,8 +774,8 @@ function linkChute(rembt){
   const L = parseFloat(rembt.link.long), S = parseFloat(rembt.link.section);
   if(!L || !S) return null;
   const a = rembtAutoCalibre(rembt.id);
-  if(!a.cal) return null;
-  const vu = (0.036 * L * a.cal) / S;
+  if(!a.Itri) return null;
+  const vu = (0.036 * L * a.Itri) / S;   // courant d'emploi foisonné (Itri)
   return { vu, pc: vu / 2.3, calibre: a.cal, sumP: a.sumP, Pfois: a.Pfois, k: a.k, Itri: a.Itri, nLgts: a.nLgts };
 }
 // Bloc visuel « chute de tension » d'un câble amont (CCU ou liaison cascade) :
@@ -2667,7 +2668,7 @@ async function exportPDF(){
       const upCls = up.pc > CI.limT ? badPDF : (up.pc > CI.limT*0.8 ? warnPDF : okPDF);
       doc.setFillColor(...upCls); doc.rect(8, yPos, pageW - 16, 6, 'F');
       doc.setFontSize(8); doc.setTextColor(40,30,60); doc.setFont('helvetica','bold');
-      doc.text(`Câble d'alimentation (${upLbl}) : L = ${upCfg.long||'?'} m  ·  ${upCfg.section||'?'} mm² ALU  ·  I = ${up.calibre} A (tri)  ·  chute ${up.pc.toFixed(2)} %`, 12, yPos + 4.2);
+      doc.text(`Câble d'alimentation (${upLbl}) : L = ${upCfg.long||'?'} m  ·  ${upCfg.section||'?'} mm² ALU  ·  I = ${Math.round(up.Itri)} A (foisonné, tri)  ·  chute ${up.pc.toFixed(2)} %`, 12, yPos + 4.2);
       yPos += 8;
     }
 

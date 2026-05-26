@@ -257,7 +257,7 @@ tr:hover .rd{opacity:1}.rd:hover{color:#FF6B6B}
 .rb-static{background:rgba(190,199,219,0.06)!important;color:rgba(208,217,233,0.70)!important;cursor:default;border-style:dashed!important}
 button.btn[disabled]{opacity:0.4;cursor:not-allowed}
 
-/* ═══ Coffret de façade (CCU) ═══ */
+/* ═══ Coffret de façade (CCPI) ═══ */
 
 /* ═══ Installation REMBT — design épuré + cartes pliables ═══ */
 .intro-compact{padding:10px 16px;margin-bottom:14px}
@@ -270,7 +270,7 @@ button.btn[disabled]{opacity:0.4;cursor:not-allowed}
 .dim-stat b{color:#EDF0F7;font-weight:700;font-size:15px}
 .dim-sep{color:rgba(104,118,156,0.40)}
 .rb-sub{font-size:10.5px;color:rgba(190,199,219,0.55);font-weight:500;letter-spacing:.3px;white-space:nowrap}
-/* Jauge de chute de tension (câble amont CCU / liaison cascade) */
+/* Jauge de chute de tension (câble amont CCPI / liaison cascade) */
 .cf-res{margin-top:12px;padding:11px 13px;border-radius:9px;border:1px solid rgba(165,178,210,0.16);background:rgba(20,22,30,0.55)}
 .cf-res.cf-bad{border-color:rgba(255,107,107,0.40);background:rgba(255,85,85,0.07)}
 .cf-res.cf-warn{border-color:rgba(255,184,108,0.35);background:rgba(255,159,67,0.06)}
@@ -465,7 +465,7 @@ label.rb-block-h{cursor:pointer}
 .plan-rembt-section:last-of-type{border-bottom:none}
 .plan-rembt-title{font-family:'Helvetica','Arial',sans-serif;font-size:12px;font-weight:700;color:#1f3864;letter-spacing:2.5px;text-transform:uppercase;margin-bottom:18px;padding:6px 12px;background:#fff;border:1.5px solid #1f3864;display:inline-block}
 
-/* Ligne principale horizontale Réseau→CCU→REMBT→CIBE */
+/* Ligne principale horizontale Réseau→CCPI→REMBT→CIBE */
 .plan-line{display:flex;align-items:center;gap:0;position:relative;min-width:fit-content;margin-bottom:16px}
 
 /* Blocs (boîtes type "armoire" double bordure ENEDIS) */
@@ -600,11 +600,11 @@ label.rb-block-h{cursor:pointer}
   <span class="mode-help">« Sans CIBE » : dérivation directe REMBT → tableau abonné (un seul câble, comparé à la limite totale). « C1 seul » : seul le tronçon final, étapes 1 et 2 masquées.</span>
 </div>
 <div class="tabs">
-  <button class="tab active" data-sh="dim" onclick="goSheet('dim')"><span class="tab-num">1</span><span class="tab-ic">🏗️</span><span class="tab-lbl">Installation<br><small>REMBTs + CCU</small></span></button>
+  <button class="tab active" data-sh="dim" onclick="goSheet('dim')"><span class="tab-num">1</span><span class="tab-ic">🏗️</span><span class="tab-lbl">Installation<br><small>REMBTs + CCPI</small></span></button>
   <button class="tab" data-sh="rc" onclick="goSheet('rc')"><span class="tab-num">2</span><span class="tab-ic">📏</span><span class="tab-lbl">Chutes REMBT → CIBE<br><small>%C2 par logement</small></span></button>
   <button class="tab" data-sh="ct" onclick="goSheet('ct')"><span class="tab-num">3</span><span class="tab-ic">📏</span><span class="tab-lbl">Chutes CIBE → TA<br><small>%C1 par logement</small></span></button>
   <button class="tab" data-sh="sch" onclick="goSheet('sch')"><span class="tab-num">4</span><span class="tab-ic">📐</span><span class="tab-lbl">Synthèse<br><small>schéma + exports</small></span></button>
-  <button class="tab-cfg" onclick="reopenSetupWizard()" title="Modifier la configuration du projet (périmètre, CCU, phase, locaux commerciaux)">⚙️ Modifier la config</button>
+  <button class="tab-cfg" onclick="reopenSetupWizard()" title="Modifier la configuration du projet (périmètre, CCPI, phase, locaux commerciaux)">⚙️ Modifier la config</button>
 </div>
 <div class="content">
   <div class="sheet" id="sh-rc"></div>
@@ -690,7 +690,7 @@ function newRembt(name, existing){
   return { id, name: name || ('REMBT '+id.slice(1)), notes:'', parentId:null, dim:emptyDim(),
            cf: defaultCF(), link: defaultLink(), manual:false };
 }
-// Coffret de façade (CCU) — entre ENEDIS et un REMBT racine.
+// Coffret de façade (CCPI) — entre ENEDIS et un REMBT racine.
 // Inactif par défaut pour préserver la compat ascendante.
 // Le calibre disj. et la phase sont calculés automatiquement à partir
 // des logements rattachés (foisonnement NF C 14-100).
@@ -702,7 +702,7 @@ function defaultLink(){
   return { long:5, section:50 };
 }
 // Configuration issue de l'assistant (Étape 1) : réglages projet uniquement
-// (périmètre via CI.scope, CCU via le REMBT racine). Ne stocke ici que la
+// (périmètre via CI.scope, CCPI via le REMBT racine). Ne stocke ici que la
 // phase pré-sélectionnée des nouveaux logements et la présence de commerces.
 function defaultSetup(){
   return { done:false, defPhase:'M', hasCommerce:false };
@@ -779,7 +779,7 @@ function linkChute(rembt){
   const vu = (0.037 * L * a.Itri) / S;   // courant d'emploi foisonné (Itri)
   return { vu, pc: vu / 2.3, calibre: a.cal, sumP: a.sumP, Pfois: a.Pfois, k: a.k, Itri: a.Itri, nLgts: a.nLgts };
 }
-// Bloc visuel « chute de tension » d'un câble amont (CCU ou liaison cascade) :
+// Bloc visuel « chute de tension » d'un câble amont (CCPI ou liaison cascade) :
 // jauge colorée vs limite + détail (P foisonnée, courant, longueur, section).
 function chuteResult(c, lbl, long, section){
   if(!c) return '';
@@ -1302,7 +1302,7 @@ function renderSetupWizard(){
     </div>
 
     <div class="wz-q">
-      <div class="wz-q-lbl">2 · Y a-t-il un coffret de façade (CCU) ?</div>
+      <div class="wz-q-lbl">2 · Y a-t-il un coffret de façade (CCPI) ?</div>
       <div class="wz-opts">
         ${opt('wz-ccu','oui',ccu,'Oui','Un coffret entre le réseau ENEDIS et le 1ᵉʳ REMBT')}
         ${opt('wz-ccu','non',!ccu,'Non','Raccordement direct sur le REMBT')}
@@ -1397,15 +1397,15 @@ function renderDim(){
         ? `${lgtsR.length} > ${REMBT_MAX_LGTS} lgts — diviser`
         : `${plages}/${sugg} plages`;
 
-    // Pill CCU (résumé compact)
+    // Pill CCPI (résumé compact)
     let cfPill = '';
     if(r.parentId == null && r.cf && r.cf.active){
       const c = cfChute(r);
       if(c){
         const cfCls = c.pc > CI.limT ? 'state-bad' : (c.pc > CI.limT*0.8 ? 'state-warn' : 'state-ok');
-        cfPill = `<span class="rb-pill rb-cf ${cfCls}">🏠 CCU · ${c.pc.toFixed(2)} %</span>`;
+        cfPill = `<span class="rb-pill rb-cf ${cfCls}">🏠 CCPI · ${c.pc.toFixed(2)} %</span>`;
       } else {
-        cfPill = `<span class="rb-pill rb-cf">🏠 CCU configuré</span>`;
+        cfPill = `<span class="rb-pill rb-cf">🏠 CCPI configuré</span>`;
       }
     }
     // Pill liaison cascade (câble parent → ce REMBT)
@@ -1449,7 +1449,7 @@ function renderDim(){
         <div class="rb-block ${r.cf && r.cf.active ? 'rb-block-on' : ''}">
           <label class="rb-block-h">
             <input type="checkbox" ${r.cf && r.cf.active ? 'checked':''} onchange="toggleCF('${r.id}',this.checked)">
-            <span>⚡ Coffret de façade (CCU) entre ENEDIS et ce REMBT</span>
+            <span>⚡ Coffret de façade (CCPI) entre ENEDIS et ce REMBT</span>
             ${r.cf && r.cf.active ? (function(){
               const c = cfChute(r);
               if(!c) return '';
@@ -1700,7 +1700,7 @@ function autoFillRembt(id){
   r.dim.RCP400 = suggested.RCP400;
   save(); R();
 }
-// ─── Coffret de façade (CCU) ────────────────────────────────
+// ─── Coffret de façade (CCPI) ────────────────────────────────
 function toggleCF(rid, on){
   const r = CI.rembts.find(x => x.id === rid); if(!r) return;
   if(!r.cf) r.cf = defaultCF();
@@ -2626,7 +2626,7 @@ async function exportPDF(){
     h2(y, '1.  Chutes de tension maximales admissibles'); y += 3;
     const _rulesRows = CI.scope === 'noCibe'
       ? [
-          ['Coffret de façade (CCU) → REMBT (liaison amont)', '≤ '+limT.toFixed(2)+' %', 'NF C 14-100'],
+          ['Coffret de façade (CCPI) → REMBT (liaison amont)', '≤ '+limT.toFixed(2)+' %', 'NF C 14-100'],
           ['Liaison cascade REMBT → REMBT', '≤ '+limT.toFixed(2)+' %', 'NF C 14-100'],
           ['Dérivation individuelle REMBT → tableau abonné (sans CIBE)', '≤ '+limTot.toFixed(2)+' %', 'NF C 14-100'],
         ]
@@ -2635,7 +2635,7 @@ async function exportPDF(){
           ['CIBE → tableau abonné (tronçon C1)', '≤ '+limT.toFixed(2)+' %', 'NF C 14-100'],
         ]
       : [
-          ['Coffret de façade (CCU) → REMBT (liaison amont)', '≤ '+limT.toFixed(2)+' %', 'NF C 14-100'],
+          ['Coffret de façade (CCPI) → REMBT (liaison amont)', '≤ '+limT.toFixed(2)+' %', 'NF C 14-100'],
           ['Liaison cascade REMBT → REMBT', '≤ '+limT.toFixed(2)+' %', 'NF C 14-100'],
           ['Étape 2 — REMBT → CIBE (tronçon C2)', '≤ '+limT.toFixed(2)+' %', 'NF C 14-100'],
           ['Étape 3 — CIBE → tableau abonné (tronçon C1)', '≤ '+limT.toFixed(2)+' %', 'NF C 14-100'],
@@ -2643,8 +2643,8 @@ async function exportPDF(){
         ];
     y = tbl(y, ['Tronçon','Chute max','Référence'], _rulesRows, 150) + 4;
     note(y, CI.scope === 'noCibe'
-      ? 'Valeurs configurées dans le dossier. En mode « sans CIBE », chaque logement est alimenté par un câble unique REMBT → tableau abonné, comparé à la limite totale (par défaut 2 %). La liaison coffret de façade → REMBT ne s\'applique que si un CCU est présent.'
-      : 'Valeurs configurées dans le dossier. NF C 14-100 (branchement collectif) : par défaut 1 % par tronçon et 2 % au total. La liaison coffret de façade → REMBT ne s\'applique que si un CCU est présent.'); y += 9;
+      ? 'Valeurs configurées dans le dossier. En mode « sans CIBE », chaque logement est alimenté par un câble unique REMBT → tableau abonné, comparé à la limite totale (par défaut 2 %). La liaison coffret de façade → REMBT ne s\'applique que si un CCPI est présent.'
+      : 'Valeurs configurées dans le dossier. NF C 14-100 (branchement collectif) : par défaut 1 % par tronçon et 2 % au total. La liaison coffret de façade → REMBT ne s\'applique que si un CCPI est présent.'); y += 9;
 
     h2(y, '2.  Nombre maximal de logements par REMBT'); y += 3;
     y = tbl(y, ['Règle','Valeur','Référence'], [
@@ -2708,11 +2708,11 @@ async function exportPDF(){
     doc.text(`${r.name}  ·  ${nLgts} logement(s)  ·  alimenté par : ${parent}`, 12, yPos + 5.5);
     yPos += 9;
 
-    // Câble d'alimentation amont : CCU (racine) ou liaison cascade (non racine)
+    // Câble d'alimentation amont : CCPI (racine) ou liaison cascade (non racine)
     const up = (r.parentId == null) ? cfChute(r) : linkChute(r);
     if(up){
       const upCfg = (r.parentId == null) ? r.cf : r.link;
-      const upLbl = (r.parentId == null) ? 'CCU → REMBT' : (parent + ' → ' + r.name);
+      const upLbl = (r.parentId == null) ? 'CCPI → REMBT' : (parent + ' → ' + r.name);
       const upCls = up.pc > CI.limT ? badPDF : (up.pc > CI.limT*0.8 ? warnPDF : okPDF);
       doc.setFillColor(...upCls); doc.rect(8, yPos, pageW - 16, 6, 'F');
       doc.setFontSize(8); doc.setTextColor(40,30,60); doc.setFont('helvetica','bold');

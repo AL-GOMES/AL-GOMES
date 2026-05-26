@@ -5,8 +5,11 @@
 //   - AL_VERSION_DATE  : YYYY-MM-DD (jour de la MAJ)
 //   - AL_VERSION_TIME  : HH:MM      (heure de la MAJ — local Paris)
 //   - AL_VERSION_NOTE  : 1 phrase courte qui décrit le motif de la MAJ
+//   IMPORTANT : à chaque bump, mettre aussi à jour le cache-buster
+//   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
+//   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.4';
+window.AL_VERSION      = 'v3.5';
 window.AL_VERSION_DATE = '2026-05-26';
-window.AL_VERSION_TIME = '15:00';
-window.AL_VERSION_NOTE = 'Calculs individuels — nouveau mode « sans CIBE » : dérivation directe REMBT → tableau abonné (un seul câble, comparé à la limite totale ≈ 2 %). Choix dans la barre « Mode de calcul » et dans l\'assistant. Étape 3 (CIBE → TA) masquée, étape 2 renommée « REMBT → TA », schéma et PDF adaptés (un câble unique, sans coffret CIBE).';
+window.AL_VERSION_TIME = '16:30';
+window.AL_VERSION_NOTE = 'Fiabilisation du déploiement : ajout d\'un fichier .nojekyll (publication des fichiers statiques sans traitement Jekyll) et cache-buster sur js/version.js (accueil.html), afin que le bandeau de version et les pages se mettent à jour de façon fiable après chaque MAJ.';

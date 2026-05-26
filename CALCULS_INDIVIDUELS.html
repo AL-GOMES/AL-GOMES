@@ -11,6 +11,9 @@
   .topbar .topbar-left>a[href]{display:none!important}
   .topbar .topbar-left>.topbar-sep:first-of-type{display:none!important}
   body{padding-top:0!important;margin-top:0!important}
+  /* topbar repassé en flux (relative) ci-dessus : le contenu ne doit plus
+     réserver sa hauteur (48px) en double → margin-top 160-48 = 112px */
+  .content{margin-top:112px!important}
 </style>
 
 <meta charset="UTF-8">

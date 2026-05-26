@@ -174,6 +174,65 @@ select.form-input option{background:var(--bg2);color:var(--t1);font-family:'DM S
   .doc-head{padding:12px 14px}
   .doc-body{padding:6px 14px 16px}
 }
+
+/* ════════════ REFONTE VISUELLE ════════════ */
+body::after{background:
+  radial-gradient(820px 460px at 80% -8%, rgba(139,134,210,.20), transparent 62%),
+  radial-gradient(620px 460px at 2% 6%, rgba(90,120,200,.12), transparent 58%),
+  radial-gradient(700px 520px at 100% 105%, rgba(139,134,210,.07), transparent 60%)}
+
+.title-main{font-size:1.7rem;letter-spacing:.3px;
+  background:linear-gradient(92deg,#EDF0F7 28%,#C7BEF6);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.title-sub{font-size:.82rem;color:var(--t2)}
+.title-line{width:64px;height:2px;opacity:.85;background:linear-gradient(90deg,transparent,var(--accent),transparent)}
+
+.card{background:linear-gradient(168deg,rgba(31,35,52,.92),rgba(20,22,30,.97));
+  border:1px solid rgba(165,178,210,.16);border-radius:16px;
+  box-shadow:0 24px 50px -34px rgba(0,0,0,.85), inset 0 1px 0 rgba(255,255,255,.035)}
+.card-title{letter-spacing:1.8px}
+.card-title::before{height:15px;width:3.5px;border-radius:3px;
+  background:linear-gradient(180deg,var(--accent-l),var(--accent));box-shadow:0 0 10px rgba(139,134,210,.55)}
+
+/* Cartes câble — héro */
+.cable-cards{gap:16px;margin-bottom:22px}
+.cable-card{padding:22px 20px;border-radius:14px;
+  background:linear-gradient(160deg,rgba(30,34,50,.92),rgba(17,19,27,.96));
+  transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease}
+.cable-card::before{height:4px;opacity:.95}
+.cable-card.cu{box-shadow:0 18px 42px -28px rgba(212,160,86,.65)}
+.cable-card.al{box-shadow:0 18px 42px -28px rgba(140,160,190,.55)}
+.cable-card:hover{transform:translateY(-3px)}
+.cable-card.cu:hover{border-color:rgba(212,160,86,.45)}
+.cable-card.al:hover{border-color:rgba(150,165,195,.45)}
+.cable-card-tag{font-size:.66rem;letter-spacing:1px}
+.cable-card-cable{font-size:2.5rem;font-weight:700;letter-spacing:-.5px;margin:4px 0 6px}
+.cable-card.cu .cable-card-cable{background:linear-gradient(180deg,#f3cf92,#d49a47);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.cable-card.al .cable-card-cable{background:linear-gradient(180deg,#cfd6e0,#868d99);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.cable-card-cable .unit{-webkit-text-fill-color:var(--t3);color:var(--t3);font-size:1rem}
+.cable-card-bar{height:7px;border-radius:4px;background:rgba(255,255,255,.05);margin-top:10px}
+.cable-card-bar-fill{border-radius:4px}
+.drop-val{font-size:.95rem}
+
+/* Tuiles métriques */
+.details{gap:10px}
+.details-cell{padding:13px 14px 13px 16px;border-radius:11px;position:relative;overflow:hidden;
+  background:linear-gradient(160deg,rgba(31,35,52,.72),rgba(19,21,29,.9));
+  border:1px solid rgba(165,178,210,.12);transition:transform .18s ease,border-color .18s ease}
+.details-cell::after{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--accent-l),var(--accent));opacity:.7}
+.details-cell:hover{transform:translateY(-2px);border-color:rgba(139,134,210,.32)}
+.details-val{font-size:1.08rem}
+.details-tag{letter-spacing:.9px}
+
+/* Toggles segmentés — pilules */
+.seg{padding:3px;gap:3px;border-radius:9px;background:rgba(10,12,18,.55);border:1px solid var(--border)}
+.seg-btn{border-radius:7px;padding:9px 8px}
+.seg-btn.on{background:linear-gradient(180deg,rgba(139,134,210,.4),rgba(139,134,210,.2));color:#fff;
+  box-shadow:0 4px 12px -4px rgba(139,134,210,.6),inset 0 0 0 1px rgba(170,164,221,.45)}
+
+/* Champs */
+.form-input{border-radius:8px;padding:11px 13px}
+.form-input:focus{box-shadow:0 0 0 3px rgba(139,134,210,.16)}
+.form-label{letter-spacing:.6px}
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" integrity="sha384-sEVIly94UBRLKWdkYoPpSG7GD/e79YHMrxVyZaOk712Ga7+EAw6w1EFi+xBzBdd+" crossorigin="anonymous"></script>

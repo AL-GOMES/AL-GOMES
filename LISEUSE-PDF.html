@@ -36,9 +36,9 @@
   --bg-3: #181826;
   --bg-4: #22223a;
   --panel-border: #2a2a44;
-  --accent: #8b5cf6;
+  --accent: #8B86D2;
   --accent-2: #a78bfa;
-  --accent-d: #6d28d9;
+  --accent-d: #5a52a8;
   --text-0: #f5f5fa;
   --text-1: #b8b8cc;
   --text-2: #8080a0;
@@ -3323,7 +3323,7 @@ class PDFViewer {
         ctx.save();
         ctx.fillStyle = 'rgba(124,95,214,0.18)';
         ctx.fillRect(bb.x, bb.y, bb.w, bb.h);
-        ctx.strokeStyle = '#7c5fd6';
+        ctx.strokeStyle = '#8378d0';
         ctx.lineWidth = 2;
         ctx.strokeRect(bb.x, bb.y, bb.w, bb.h);
         ctx.restore();
@@ -3337,7 +3337,7 @@ class PDFViewer {
         ctx.save();
         ctx.fillStyle = 'rgba(124,95,214,0.18)';
         ctx.fillRect(bb.x, bb.y, bb.w, bb.h);
-        ctx.strokeStyle = '#7c5fd6';
+        ctx.strokeStyle = '#8378d0';
         ctx.lineWidth = 2;
         ctx.strokeRect(bb.x, bb.y, bb.w, bb.h);
         ctx.restore();
@@ -3362,7 +3362,7 @@ class PDFViewer {
           // Fond translucide pour bien voir la zone, puis bord plein épais
           ctx.fillStyle = 'rgba(124,95,214,0.18)';
           ctx.fillRect(bb.x, bb.y, bb.w, bb.h);
-          ctx.strokeStyle = '#7c5fd6';
+          ctx.strokeStyle = '#8378d0';
           ctx.lineWidth = 2;
           ctx.strokeRect(bb.x, bb.y, bb.w, bb.h);
           ctx.restore();
@@ -3976,14 +3976,14 @@ class PDFViewer {
     const z = this.zoom;
     const x = b.x * z, y = b.y * z, w = b.w * z, h = b.h * z;
     ctx.save();
-    ctx.strokeStyle = '#8b5cf6';
+    ctx.strokeStyle = '#8B86D2';
     ctx.lineWidth = 1.5;
     ctx.setLineDash([5, 4]);
     ctx.strokeRect(x, y, w, h);
     ctx.setLineDash([]);
     const hs = 9;
     ctx.fillStyle = '#fff';
-    ctx.strokeStyle = '#8b5cf6';
+    ctx.strokeStyle = '#8B86D2';
     ctx.lineWidth = 1.5;
     for (const [cx, cy] of [[x, y], [x + w, y], [x, y + h], [x + w, y + h]]) {
       ctx.beginPath();
@@ -4038,9 +4038,9 @@ class PDFViewer {
   // L'agrégation des 3 viewers garantit qu'un câble traversant Z1/Z2 a la
   // même couleur des deux côtés.
   _cableColor(name) {
-    if (!name) return '#8b5cf6';
+    if (!name) return '#8B86D2';
     const map = buildCableColorMap(getAllCableAnnotations(), 75, 55);
-    return map.get(name) || '#8b5cf6';
+    return map.get(name) || '#8B86D2';
   }
 
   _cableLength(points) {
@@ -4161,11 +4161,11 @@ class PDFViewer {
     ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.fillStyle = '#fff';
     ctx.fill();
-    ctx.strokeStyle = '#8b5cf6';
+    ctx.strokeStyle = '#8B86D2';
     ctx.lineWidth = 2;
     ctx.stroke();
     // Numéro
-    ctx.fillStyle = '#8b5cf6';
+    ctx.fillStyle = '#8B86D2';
     ctx.font = 'bold 11px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -4816,7 +4816,7 @@ class PDFViewer {
         row.style.cursor = 'pointer';
         const srcBadge = e._src === 'B' ? '<span class="cable-src">B</span>' : '';
         row.innerHTML =
-          '<div class="cable-swatch" style="background:#fff;border:2px solid #8b5cf6;color:#8b5cf6;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:bold;border-radius:50%;box-sizing:border-box">' + (i + 1) + '</div>' +
+          '<div class="cable-swatch" style="background:#fff;border:2px solid #8B86D2;color:#8B86D2;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:bold;border-radius:50%;box-sizing:border-box">' + (i + 1) + '</div>' +
           '<div class="cable-info">' +
             '<div class="cable-name">Coude n°' + (i + 1) + srcBadge + '</div>' +
             '<div class="cable-meta">Page ' + e.page + '</div>' +
@@ -4974,7 +4974,7 @@ const DEFAULT_CATEGORIES = [];
 
 // Palette de couleurs bien distinctes, pour attribution auto aux nouvelles catégories
 const CATEGORY_PALETTE = [
-  '#8b5cf6', // violet
+  '#8B86D2', // violet
   '#fbbf24', // jaune
   '#10b981', // vert
   '#ef4444', // rouge
@@ -8011,8 +8011,8 @@ async function renderAssembledCanvasForExport(renderScale) {
     ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.fillStyle = '#fff'; ctx.fill();
-    ctx.strokeStyle = '#8b5cf6'; ctx.lineWidth = 3; ctx.stroke();
-    ctx.fillStyle = '#8b5cf6'; ctx.font = 'bold 15px sans-serif';
+    ctx.strokeStyle = '#8B86D2'; ctx.lineWidth = 3; ctx.stroke();
+    ctx.fillStyle = '#8B86D2'; ctx.font = 'bold 15px sans-serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(String(i + 1), x, y);
   }
@@ -8042,7 +8042,7 @@ function drawAllAnnotationsOnCanvasForExport(ctx, viewer, pageNum, renderScale) 
   // Z1 et Z2 a la même couleur, et la séquence d'attribution évite les
   // collisions (chaque nom obtient une teinte unique via l'index + angle d'or).
   const _exportColorMap = buildCableColorMap(getAllCableAnnotations(), 70, 45);
-  const cableColor = (name) => _exportColorMap.get(name) || '#8b5cf6';
+  const cableColor = (name) => _exportColorMap.get(name) || '#8B86D2';
 
   // MESURES
   for (const a of annots.filter(x => x.type === 'measure')) {
@@ -8246,8 +8246,8 @@ function drawAllAnnotationsOnCanvasForExport(ctx, viewer, pageNum, renderScale) 
     const x = a.x * renderScale, y = a.y * renderScale, r = 14;
     ctx.fillStyle = '#fff';
     ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = '#8b5cf6'; ctx.lineWidth = 3; ctx.stroke();
-    ctx.fillStyle = '#8b5cf6'; ctx.font = 'bold 15px sans-serif';
+    ctx.strokeStyle = '#8B86D2'; ctx.lineWidth = 3; ctx.stroke();
+    ctx.fillStyle = '#8B86D2'; ctx.font = 'bold 15px sans-serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(String(i + 1), x, y);
   }

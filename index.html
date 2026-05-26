@@ -21,29 +21,29 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
   *{margin:0;padding:0;box-sizing:border-box}
-  body{min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:'Rajdhani',sans-serif;background:#0a0a0f;overflow:hidden;position:relative}
-  body::before{content:'';position:fixed;inset:0;background:repeating-conic-gradient(#111 0% 25%,#0d0d12 0% 50%) 0 0/4px 4px,radial-gradient(ellipse at 30% 20%,rgba(120,50,255,.08) 0%,transparent 60%),radial-gradient(ellipse at 70% 80%,rgba(80,30,200,.06) 0%,transparent 60%);z-index:0}
-  body::after{content:'';position:fixed;inset:0;background:linear-gradient(90deg,rgba(120,50,255,.03) 1px,transparent 1px),linear-gradient(0deg,rgba(120,50,255,.03) 1px,transparent 1px);background-size:60px 60px;z-index:0;animation:gridPulse 8s ease-in-out infinite}
+  body{min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:'Rajdhani',sans-serif;background:#14161e;overflow:hidden;position:relative}
+  body::before{content:'';position:fixed;inset:0;background:repeating-conic-gradient(#111 0% 25%,#14161e 0% 50%) 0 0/4px 4px,radial-gradient(ellipse at 30% 20%,rgba(135,120,215,.08) 0%,transparent 60%),radial-gradient(ellipse at 70% 80%,rgba(80,30,200,.06) 0%,transparent 60%);z-index:0}
+  body::after{content:'';position:fixed;inset:0;background:linear-gradient(90deg,rgba(135,120,215,.03) 1px,transparent 1px),linear-gradient(0deg,rgba(135,120,215,.03) 1px,transparent 1px);background-size:60px 60px;z-index:0;animation:gridPulse 8s ease-in-out infinite}
   @keyframes gridPulse{0%,100%{opacity:.3}50%{opacity:.7}}
   .login-container{position:relative;z-index:1;width:420px;max-width:94vw}
-  .login-card{background:linear-gradient(145deg,rgba(18,18,30,.95),rgba(10,10,18,.98));border:1px solid rgba(120,50,255,.2);border-radius:16px;padding:44px 40px;backdrop-filter:blur(20px);box-shadow:0 0 40px rgba(120,50,255,.08),0 20px 60px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.05);animation:cardAppear .8s cubic-bezier(.16,1,.3,1)}
+  .login-card{background:linear-gradient(145deg,rgba(18,18,30,.95),rgba(20,22,30,.98));border:1px solid rgba(135,120,215,.2);border-radius:16px;padding:44px 40px;backdrop-filter:blur(20px);box-shadow:0 0 40px rgba(135,120,215,.08),0 20px 60px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.05);animation:cardAppear .8s cubic-bezier(.16,1,.3,1)}
   @keyframes cardAppear{from{opacity:0;transform:translateY(30px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
   .logo-section{text-align:center;margin-bottom:32px}
-  .logo-icon{width:64px;height:64px;margin:0 auto 16px;background:linear-gradient(135deg,#7832ff,#5a1ecc);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 4px 20px rgba(120,50,255,.3);animation:logoPulse 3s ease-in-out infinite}
-  @keyframes logoPulse{0%,100%{box-shadow:0 4px 20px rgba(120,50,255,.3)}50%{box-shadow:0 4px 30px rgba(120,50,255,.5)}}
-  .logo-title{font-family:'Orbitron',sans-serif;font-size:26px;font-weight:900;letter-spacing:4px;background:linear-gradient(135deg,#fff,#b388ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .logo-icon{width:64px;height:64px;margin:0 auto 16px;background:linear-gradient(135deg,#8378d0,#5a1ecc);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 4px 20px rgba(135,120,215,.3);animation:logoPulse 3s ease-in-out infinite}
+  @keyframes logoPulse{0%,100%{box-shadow:0 4px 20px rgba(135,120,215,.3)}50%{box-shadow:0 4px 30px rgba(135,120,215,.5)}}
+  .logo-title{font-family:'Orbitron',sans-serif;font-size:26px;font-weight:900;letter-spacing:4px;background:linear-gradient(135deg,#fff,#B0A8E8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
   .logo-subtitle{font-size:13px;color:rgba(180,160,255,.5);letter-spacing:6px;text-transform:uppercase;margin-top:6px;font-weight:300}
   .form-group{margin-bottom:18px}
   .form-group label{display:block;font-size:12px;font-weight:600;color:rgba(180,160,255,.6);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
   .input-wrapper{position:relative}
   .input-wrapper .icon{position:absolute;left:16px;top:50%;transform:translateY(-50%);font-size:15px;opacity:.4;transition:opacity .3s}
-  .form-group input{width:100%;padding:14px 16px 14px 44px;background:rgba(120,50,255,.06);border:1px solid rgba(120,50,255,.15);border-radius:10px;font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:500;color:#e0d8ff;outline:none;transition:all .3s}
+  .form-group input{width:100%;padding:14px 16px 14px 44px;background:rgba(135,120,215,.06);border:1px solid rgba(135,120,215,.15);border-radius:10px;font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:500;color:#EAEDF6;outline:none;transition:all .3s}
   .form-group input::placeholder{color:rgba(180,160,255,.25)}
-  .form-group input:focus{border-color:rgba(120,50,255,.5);background:rgba(120,50,255,.1);box-shadow:0 0 20px rgba(120,50,255,.1)}
+  .form-group input:focus{border-color:rgba(135,120,215,.5);background:rgba(135,120,215,.1);box-shadow:0 0 20px rgba(135,120,215,.1)}
   .input-wrapper:focus-within .icon{opacity:.8}
-  .btn-login{width:100%;padding:15px;margin-top:8px;background:linear-gradient(135deg,#7832ff,#5a1ecc);border:none;border-radius:10px;font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;letter-spacing:3px;color:#fff;cursor:pointer;transition:all .3s;text-transform:uppercase;position:relative;overflow:hidden}
+  .btn-login{width:100%;padding:15px;margin-top:8px;background:linear-gradient(135deg,#8378d0,#5a1ecc);border:none;border-radius:10px;font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;letter-spacing:3px;color:#fff;cursor:pointer;transition:all .3s;text-transform:uppercase;position:relative;overflow:hidden}
   .btn-login::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent,rgba(255,255,255,.1),transparent);transform:translateX(-100%);transition:transform .5s}
-  .btn-login:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(120,50,255,.4)}
+  .btn-login:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(135,120,215,.4)}
   .btn-login:hover::before{transform:translateX(100%)}
   .btn-login:active{transform:translateY(0)}
   .btn-login:disabled{opacity:.5;cursor:not-allowed;transform:none!important;box-shadow:none!important}
@@ -51,18 +51,18 @@
   .msg.visible{opacity:1}
   .msg.error{color:#ff4466;animation:shake .4s ease}
   .msg.success{color:#22c55e}
-  .msg.info{color:#b388ff}
+  .msg.info{color:#B0A8E8}
   @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}50%{transform:translateX(8px)}75%{transform:translateX(-4px)}}
   .footer-text{text-align:center;margin-top:20px;font-size:11px;color:rgba(180,160,255,.25);letter-spacing:1px}
   .setup-badge{display:none;text-align:center;margin-bottom:16px;padding:10px 16px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);border-radius:8px;color:#4ade80;font-size:13px;font-weight:500;letter-spacing:1px}
   .setup-badge.visible{display:block;animation:cardAppear .5s ease}
-  .particle{position:fixed;width:2px;height:2px;background:rgba(120,50,255,.4);border-radius:50%;z-index:0;animation:float linear infinite}
+  .particle{position:fixed;width:2px;height:2px;background:rgba(135,120,215,.4);border-radius:50%;z-index:0;animation:float linear infinite}
   @keyframes float{0%{transform:translateY(100vh) scale(0);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translateY(-10vh) scale(1);opacity:0}}
   .loading-overlay{display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,10,15,.95);align-items:center;justify-content:center;flex-direction:column}
   .loading-overlay.active{display:flex}
-  .spinner{width:48px;height:48px;border:3px solid rgba(120,50,255,.15);border-top-color:#7832ff;border-radius:50%;animation:spin .8s linear infinite}
+  .spinner{width:48px;height:48px;border:3px solid rgba(135,120,215,.15);border-top-color:#8378d0;border-radius:50%;animation:spin .8s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
-  .loading-text{margin-top:16px;color:#b388ff;font-size:14px;letter-spacing:2px}
+  .loading-text{margin-top:16px;color:#B0A8E8;font-size:14px;letter-spacing:2px}
 </style>
 </head>
 <body oncontextmenu="return false">
@@ -246,7 +246,7 @@ async function handleLogin() {
 
       await db.collection('config').doc('roles').set({
         list: [
-          { id: 'admin', label: 'Administrateur', color: '#7832ff' },
+          { id: 'admin', label: 'Administrateur', color: '#8378d0' },
           { id: 'conducteur', label: 'Conducteur de travaux', color: '#22c55e' },
           { id: 'lecteur', label: 'Lecteur', color: '#f59e0b' }
         ]

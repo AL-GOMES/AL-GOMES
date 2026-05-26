@@ -24,62 +24,62 @@
 <title>Tableau Abonné — AL GOMES</title>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-body{min-height:100vh;background:#0e0e10;color:rgba(220,210,235,0.90);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;position:relative}
+body{min-height:100vh;background:#14161e;color:rgba(236,239,246,0.90);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;position:relative}
 body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   background:repeating-linear-gradient(45deg,transparent 0px,transparent 1px,rgba(255,255,255,0.018) 1px,rgba(255,255,255,0.018) 2px),
   repeating-linear-gradient(-45deg,transparent 0px,transparent 1px,rgba(255,255,255,0.018) 1px,rgba(255,255,255,0.018) 2px);background-size:4px 4px}
 
 .topbar{position:fixed;top:0;left:0;right:0;z-index:100;height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;
-  background:linear-gradient(180deg,rgba(14,14,16,0.92) 0%,rgba(14,14,16,0.75) 100%);border-bottom:1px solid rgba(123,95,172,0.10);backdrop-filter:blur(12px)}
+  background:linear-gradient(180deg,rgba(20,22,30,0.92) 0%,rgba(20,22,30,0.75) 100%);border-bottom:1px solid rgba(104,118,156,0.10);backdrop-filter:blur(12px)}
 .topbar-left,.topbar-right{display:flex;align-items:center;gap:16px}
 .topbar-center{display:flex;align-items:center;gap:16px}
-.btn-top{display:flex;align-items:center;gap:8px;padding:6px 18px;border:1px solid rgba(123,95,172,0.25);border-radius:6px;
-  background:rgba(91,63,140,0.08);color:rgba(200,186,216,0.85);font-family:'Segoe UI',system-ui,sans-serif;font-size:12.5px;
+.btn-top{display:flex;align-items:center;gap:8px;padding:6px 18px;border:1px solid rgba(104,118,156,0.25);border-radius:6px;
+  background:rgba(62,76,112,0.08);color:rgba(208,217,233,0.85);font-family:'Segoe UI',system-ui,sans-serif;font-size:12.5px;
   letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all 0.3s ease;text-decoration:none}
-.btn-top:hover{background:rgba(91,63,140,0.20);border-color:rgba(123,95,172,0.45);color:#E8E0F2}
+.btn-top:hover{background:rgba(62,76,112,0.20);border-color:rgba(104,118,156,0.45);color:#EDF0F7}
 .btn-top svg{width:14px;height:14px;opacity:0.7}
-.topbar-sep{width:1px;height:18px;background:rgba(123,95,172,0.15)}
-.topbar-title{font-size:14px;font-weight:600;color:rgba(220,210,235,0.9);letter-spacing:1px}
-.topbar-clock{display:flex;align-items:center;gap:20px;color:rgba(200,186,216,0.6);font-size:13px}
-.topbar-time{font-size:15px;font-weight:500;color:rgba(220,210,235,0.85);font-variant-numeric:tabular-nums;letter-spacing:1.5px}
-.topbar-date{font-size:12.5px;color:rgba(180,165,200,0.50);letter-spacing:1px;text-transform:uppercase}
-.badge-count{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:1px;background:rgba(91,63,140,0.25);color:rgba(200,186,216,0.90);border:1px solid rgba(123,95,172,0.30)}
+.topbar-sep{width:1px;height:18px;background:rgba(104,118,156,0.15)}
+.topbar-title{font-size:14px;font-weight:600;color:rgba(236,239,246,0.9);letter-spacing:1px}
+.topbar-clock{display:flex;align-items:center;gap:20px;color:rgba(208,217,233,0.6);font-size:13px}
+.topbar-time{font-size:15px;font-weight:500;color:rgba(236,239,246,0.85);font-variant-numeric:tabular-nums;letter-spacing:1.5px}
+.topbar-date{font-size:12.5px;color:rgba(190,199,219,0.50);letter-spacing:1px;text-transform:uppercase}
+.badge-count{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:1px;background:rgba(62,76,112,0.25);color:rgba(208,217,233,0.90);border:1px solid rgba(104,118,156,0.30)}
 
-.tabs{position:fixed;top:48px;left:0;right:0;z-index:99;display:flex;gap:0;background:rgba(14,14,16,0.90);border-bottom:1px solid rgba(123,95,172,0.08);backdrop-filter:blur(8px);padding:0 24px}
-.tab{padding:10px 22px;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(180,165,200,0.40);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.3s}
-.tab:hover{color:rgba(200,186,216,0.70)}
-.tab.on{color:rgba(232,224,242,0.95);border-bottom-color:#7B5DA8}
+.tabs{position:fixed;top:48px;left:0;right:0;z-index:99;display:flex;gap:0;background:rgba(20,22,30,0.90);border-bottom:1px solid rgba(104,118,156,0.08);backdrop-filter:blur(8px);padding:0 24px}
+.tab{padding:10px 22px;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(190,199,219,0.40);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.3s}
+.tab:hover{color:rgba(208,217,233,0.70)}
+.tab.on{color:rgba(240,243,250,0.95);border-bottom-color:#7E7BCE}
 
 .content{padding:90px 24px 40px;position:relative;z-index:1}
 
-.card{border-radius:10px;border:1px solid rgba(123,95,172,0.10);background:linear-gradient(165deg,rgba(22,18,32,0.70) 0%,rgba(14,14,16,0.80) 100%);margin-bottom:18px;position:relative;overflow:hidden}
-.card-h{display:flex;align-items:center;gap:10px;padding:14px 18px;font-size:13px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:rgba(220,210,235,0.85);border-bottom:1px solid rgba(123,95,172,0.06)}
+.card{border-radius:10px;border:1px solid rgba(104,118,156,0.10);background:linear-gradient(165deg,rgba(29,33,48,0.70) 0%,rgba(20,22,30,0.80) 100%);margin-bottom:18px;position:relative;overflow:hidden}
+.card-h{display:flex;align-items:center;gap:10px;padding:14px 18px;font-size:13px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:rgba(236,239,246,0.85);border-bottom:1px solid rgba(104,118,156,0.06)}
 .card-h .rt{margin-left:auto;display:flex;align-items:center;gap:8px}
 .card-b{padding:16px 18px;overflow-x:auto}
 
 table{width:100%;border-collapse:collapse;white-space:nowrap}
-th{text-align:center;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:rgba(155,125,197,0.60);padding:6px 4px;border-bottom:1px solid rgba(123,95,172,0.12)}
-td{padding:4px 3px;text-align:center;border-bottom:1px solid rgba(123,95,172,0.05);font-size:12px}
-th.sep-l,td.sep-l{border-left:2px solid rgba(123,95,172,0.20)}
-.fsep td{border-top:2px solid rgba(123,95,172,0.20)}
-table tr:hover td{background:rgba(91,63,140,0.10)}
+th{text-align:center;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:rgba(150,165,200,0.60);padding:6px 4px;border-bottom:1px solid rgba(104,118,156,0.12)}
+td{padding:4px 3px;text-align:center;border-bottom:1px solid rgba(104,118,156,0.05);font-size:12px}
+th.sep-l,td.sep-l{border-left:2px solid rgba(104,118,156,0.20)}
+.fsep td{border-top:2px solid rgba(104,118,156,0.20)}
+table tr:hover td{background:rgba(62,76,112,0.10)}
 table tr.row-hl td{background:rgba(187,107,217,0.18)!important;box-shadow:inset 0 0 0 1px rgba(187,107,217,0.55)}
 table tr.row-hl td:first-child{border-left:3px solid #BB6BD9!important}
 
-input[type="number"]{background:rgba(22,18,32,0.6);border:1px solid rgba(123,95,172,0.10);border-radius:3px;color:rgba(220,210,235,0.90);padding:3px 2px;font-family:inherit;font-size:11px;text-align:center;width:38px;-moz-appearance:textfield}
+input[type="number"]{background:rgba(29,33,48,0.6);border:1px solid rgba(104,118,156,0.10);border-radius:3px;color:rgba(236,239,246,0.90);padding:3px 2px;font-family:inherit;font-size:11px;text-align:center;width:38px;-moz-appearance:textfield}
 input::-webkit-inner-spin-button,input::-webkit-outer-spin-button{-webkit-appearance:none}
-input:focus{outline:none;border-color:rgba(123,95,172,0.35)}
+input:focus{outline:none;border-color:rgba(104,118,156,0.35)}
 
-.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;gap:20px;color:rgba(180,165,200,0.30)}
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;gap:20px;color:rgba(190,199,219,0.30)}
 .empty .ic-big{font-size:48px;opacity:0.4}
 .empty .msg{font-size:14px;letter-spacing:1px;text-align:center;line-height:1.8}
 
 .type-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:1px;
-  background:rgba(91,63,140,0.15);color:rgba(155,125,197,0.85);border:1px solid rgba(123,95,172,0.20)}
+  background:rgba(62,76,112,0.15);color:rgba(150,165,200,0.85);border:1px solid rgba(104,118,156,0.20)}
 
 ::-webkit-scrollbar{width:6px;height:6px}
 ::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:rgba(123,95,172,0.15);border-radius:3px}
+::-webkit-scrollbar-thumb{background:rgba(104,118,156,0.15);border-radius:3px}
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" integrity="sha384-sEVIly94UBRLKWdkYoPpSG7GD/e79YHMrxVyZaOk712Ga7+EAw6w1EFi+xBzBdd+" crossorigin="anonymous"></script>
@@ -99,8 +99,8 @@ input:focus{outline:none;border-color:rgba(123,95,172,0.35)}
     <div class="topbar-sep"></div>
     <span class="topbar-title">TABLEAU ABONNÉ</span>
     <div class="topbar-sep"></div>
-    <input type="text" id="projName" value="" placeholder="Nom de l'affaire..." style="background:rgba(91,63,140,0.08);border:1px solid rgba(123,95,172,0.20);border-radius:6px;
-      color:rgba(232,224,242,0.95);font-size:13px;font-weight:600;padding:5px 14px;width:260px">
+    <input type="text" id="projName" value="" placeholder="Nom de l'affaire..." style="background:rgba(62,76,112,0.08);border:1px solid rgba(104,118,156,0.20);border-radius:6px;
+      color:rgba(240,243,250,0.95);font-size:13px;font-weight:600;padding:5px 14px;width:260px">
   </div>
   <div class="topbar-center">
     <label class="btn-top" style="cursor:pointer">📤 Importer Dérivations<input type="file" accept=".xlsx,.alg,.ALG" onchange="importDeriv(this)" style="display:none"></label>
@@ -266,7 +266,7 @@ function setupStickyHeader(){
   // Construction du clone
   const wrap=document.createElement('div');
   wrap.id='sticky-hdr-wrap';
-  wrap.style.cssText='position:fixed;top:84px;z-index:50;background:#0e0e10;display:none;overflow:hidden;border-bottom:1px solid rgba(123,95,172,0.20)';
+  wrap.style.cssText='position:fixed;top:84px;z-index:50;background:#14161e;display:none;overflow:hidden;border-bottom:1px solid rgba(104,118,156,0.20)';
   const tblClone=document.createElement('table');
   tblClone.style.cssText='border-collapse:collapse;white-space:nowrap;table-layout:fixed;margin:0';
   const hdrClone=hdr.cloneNode(true);
@@ -343,14 +343,14 @@ function rB(bi){
     </div></div><div class="card-b">`;
 
   // ── BLOC RECAP / QTE / TYPE (placé AU-DESSUS en format horizontal compact) ──
-  h+=`<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;padding:10px 12px;background:rgba(123,95,172,0.04);border:1px solid rgba(123,95,172,0.12);border-radius:8px;align-items:center">
-    <span style="font-size:10px;font-weight:700;letter-spacing:2px;color:rgba(155,125,197,0.65);text-transform:uppercase;margin-right:4px">Récap types :</span>`;
+  h+=`<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;padding:10px 12px;background:rgba(104,118,156,0.04);border:1px solid rgba(104,118,156,0.12);border-radius:8px;align-items:center">
+    <span style="font-size:10px;font-weight:700;letter-spacing:2px;color:rgba(150,165,200,0.65);text-transform:uppercase;margin-right:4px">Récap types :</span>`;
   sortedTypes.forEach(([t,cnt])=>{
     const rc=typeRecap[t];
-    h+=`<div onclick="scrollToTypeSchema(${bi},'${t}')" style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:rgba(22,18,32,0.55);border:1px solid rgba(123,95,172,0.15);border-radius:6px;cursor:pointer;transition:transform 0.15s,border-color 0.15s" onmouseenter="this.style.transform='scale(1.05)';this.style.borderColor='rgba(187,107,217,0.55)'" onmouseleave="this.style.transform='scale(1)';this.style.borderColor='rgba(123,95,172,0.15)'" title="Cliquer pour aller au schéma Type ${t}">
+    h+=`<div onclick="scrollToTypeSchema(${bi},'${t}')" style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:rgba(29,33,48,0.55);border:1px solid rgba(104,118,156,0.15);border-radius:6px;cursor:pointer;transition:transform 0.15s,border-color 0.15s" onmouseenter="this.style.transform='scale(1.05)';this.style.borderColor='rgba(187,107,217,0.55)'" onmouseleave="this.style.transform='scale(1)';this.style.borderColor='rgba(104,118,156,0.15)'" title="Cliquer pour aller au schéma Type ${t}">
       ${typeBadge(t)}
-      <span style="font-weight:700;font-size:13px;color:rgba(220,210,235,0.90)">${cnt}</span>
-      <span style="font-size:10px;color:rgba(155,125,197,0.55)">lgt${cnt>1?'s':''}</span>
+      <span style="font-weight:700;font-size:13px;color:rgba(236,239,246,0.90)">${cnt}</span>
+      <span style="font-size:10px;color:rgba(150,165,200,0.55)">lgt${cnt>1?'s':''}</span>
     </div>`;
   });
   h+=`<div style="margin-left:auto;padding:5px 12px;background:rgba(155,89,182,0.10);border:1px solid rgba(155,89,182,0.25);border-radius:6px">
@@ -388,16 +388,16 @@ function rB(bi){
     const rowCls = (newF&&i>0?'fsep ':'')+'row-lgt';
     const rowId  = `row-${bi}-${i}`;
     h+=`<tr id="${rowId}" class="${rowCls.trim()}"${changed?' style="background:rgba(237,125,49,0.06)"':''}>`;
-    h+=`<td style="font-weight:${newF?'700':'400'};color:${newF?'rgba(123,95,172,0.90)':'rgba(220,210,235,0.40)'}">${newF?x.f:''}</td>`;
-    h+=`<td style="font-size:11px;cursor:pointer;text-decoration:underline dotted rgba(155,125,197,0.35)" onclick="toggleRowHl('${rowId}')" title="Cliquer pour mettre en valeur la ligne">${x.r}</td><td style="font-size:11px">${x.e}</td>`;
-    h+=`<td>${x.u}</td><td style="font-weight:600;color:rgba(123,95,172,0.80)">${x.p}</td><td>${x.c}A</td>`;
+    h+=`<td style="font-weight:${newF?'700':'400'};color:${newF?'rgba(104,118,156,0.90)':'rgba(236,239,246,0.40)'}">${newF?x.f:''}</td>`;
+    h+=`<td style="font-size:11px;cursor:pointer;text-decoration:underline dotted rgba(150,165,200,0.35)" onclick="toggleRowHl('${rowId}')" title="Cliquer pour mettre en valeur la ligne">${x.r}</td><td style="font-size:11px">${x.e}</td>`;
+    h+=`<td>${x.u}</td><td style="font-weight:600;color:rgba(104,118,156,0.80)">${x.p}</td><td>${x.c}A</td>`;
     CIR.forEach((c,ci)=>{
       h+=`<td class="${ci===0?'sep-l':''}"><input type="number" value="${x[c.k]}" min="0" onchange="B[${bi}].a[${i}].${c.k}=parseInt(this.value)||0;R()"></td>`;
     });
     h+=`<td class="sep-l">${typeBadge(x.type)}</td>`;
     if(hasBefore){
       if(changed) h+=`<td>${typeBadge(x.tb)} <span style="font-size:10px;color:#ED7D31">→</span></td>`;
-      else h+=`<td style="color:rgba(155,125,197,0.25)">${x.tb||''}</td>`;
+      else h+=`<td style="color:rgba(150,165,200,0.25)">${x.tb||''}</td>`;
     }
     h+=`</tr>`;
   });
@@ -432,7 +432,7 @@ function rB(bi){
     CIR.forEach(c=>{h+=`<td>${ref[c.k]}</td>`});
     h+=`</tr>`;
   });
-  h+=`<tr style="border-top:2px solid rgba(123,95,172,0.20)"><td style="font-weight:700">TOTAL</td><td style="font-weight:700">${a.length}</td><td></td>`;
+  h+=`<tr style="border-top:2px solid rgba(104,118,156,0.20)"><td style="font-weight:700">TOTAL</td><td style="font-weight:700">${a.length}</td><td></td>`;
   CIR.forEach(c=>{h+=`<td style="font-weight:600">${a.reduce((s,x)=>s+(x[c.k]||0),0)}</td>`});
   h+=`</tr></table></div></div>`;
 
@@ -441,15 +441,15 @@ function rB(bi){
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">`;
   sortedTypes.forEach(([t,cnt])=>{
     const ref=typeRef[t];const items=byType[t]||[];
-    h+=`<div style="border:1px solid rgba(123,95,172,0.12);border-radius:8px;padding:12px;background:rgba(14,14,16,0.4)">
+    h+=`<div style="border:1px solid rgba(104,118,156,0.12);border-radius:8px;padding:12px;background:rgba(20,22,30,0.4)">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
         ${typeBadge(t)}
         <span style="font-weight:700;font-size:14px">${cnt} logement${cnt>1?'s':''}</span>
-        <span style="font-size:11px;color:rgba(155,125,197,0.40);margin-left:auto">${ref.c}A — ${ref.p} kVA</span>
+        <span style="font-size:11px;color:rgba(150,165,200,0.40);margin-left:auto">${ref.c}A — ${ref.p} kVA</span>
       </div>
       <table style="width:100%"><tr><th style="text-align:left">Niveau</th><th style="text-align:left">N° Archi</th><th style="text-align:left">N° ENEDIS</th></tr>`;
     items.forEach(x=>{
-      h+=`<tr><td style="text-align:left;color:rgba(123,95,172,0.80);font-weight:600;font-size:11px">${x.f}</td>
+      h+=`<tr><td style="text-align:left;color:rgba(104,118,156,0.80);font-weight:600;font-size:11px">${x.f}</td>
         <td style="text-align:left;font-size:11px">${x.r}</td>
         <td style="text-align:left;font-size:11px">${x.e}</td></tr>`;
     });
@@ -460,13 +460,13 @@ function rB(bi){
   // ── LÉGENDE NF C 15-100 ──
   h+=`<div class="card"><div class="card-h" style="cursor:pointer" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
     📖 Légende — Règles de dimensionnement NF C 15-100
-    <div class="rt"><span style="font-size:10px;color:rgba(155,125,197,0.40)">cliquer pour afficher/masquer</span></div>
+    <div class="rt"><span style="font-size:10px;color:rgba(150,165,200,0.40)">cliquer pour afficher/masquer</span></div>
   </div><div class="card-b" style="display:none">
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px">
 
       <div style="border:1px solid rgba(52,152,219,0.20);border-radius:8px;padding:16px;background:rgba(52,152,219,0.04)">
         <div style="font-size:13px;font-weight:700;color:#3498DB;margin-bottom:10px;letter-spacing:1px">🔵 DÉPARTS TYPE AC</div>
-        <div style="font-size:11px;color:rgba(220,210,235,0.70);line-height:1.8">
+        <div style="font-size:11px;color:rgba(236,239,246,0.70);line-height:1.8">
           <strong>Rôle :</strong> Protège tous les circuits classiques<br><br>
           <strong>Circuits rattachés :</strong><br>
           • PC GTL (16A) · Éclairage (10A) · Prises (16A)<br>
@@ -493,7 +493,7 @@ function rB(bi){
 
       <div style="border:1px solid rgba(237,125,49,0.20);border-radius:8px;padding:16px;background:rgba(237,125,49,0.04)">
         <div style="font-size:13px;font-weight:700;color:#ED7D31;margin-bottom:10px;letter-spacing:1px">🟠 DÉPART TYPE A</div>
-        <div style="font-size:11px;color:rgba(220,210,235,0.70);line-height:1.8">
+        <div style="font-size:11px;color:rgba(236,239,246,0.70);line-height:1.8">
           <strong>Rôle :</strong> Protection obligatoire pour les circuits à courant de défaut à composante continue<br><br>
           <strong>Circuits rattachés :</strong><br>
           • <strong>Plaque de cuisson (32A)</strong><br>
@@ -513,7 +513,7 @@ function rB(bi){
 
       <div style="border:1px solid rgba(241,196,15,0.25);border-radius:8px;padding:16px;background:rgba(241,196,15,0.04)">
         <div style="font-size:13px;font-weight:700;color:#F1C40F;margin-bottom:10px;letter-spacing:1px">🟡 DÉPART TYPE F / HPI</div>
-        <div style="font-size:11px;color:rgba(220,210,235,0.70);line-height:1.8">
+        <div style="font-size:11px;color:rgba(236,239,246,0.70);line-height:1.8">
           <strong>Dénomination :</strong> Type F selon la norme, souvent commercialisé sous les appellations <strong>HPI</strong> (Haute Immunité) ou <strong>Si</strong> (Super-immunisé) selon le fabricant (Schneider, Legrand, Hager…).<br><br>
           <strong>Rôle :</strong> Type A <em>renforcé</em> + immunisé aux perturbations transitoires (foudre, surtensions, harmoniques).<br><br>
           <strong>Recommandé pour :</strong><br>
@@ -539,7 +539,7 @@ function rB(bi){
 
       <div style="border:1px solid rgba(231,76,60,0.25);border-radius:8px;padding:16px;background:rgba(231,76,60,0.04)">
         <div style="font-size:13px;font-weight:700;color:#E74C3C;margin-bottom:10px;letter-spacing:1px">🔴 DÉPART TYPE B</div>
-        <div style="font-size:11px;color:rgba(220,210,235,0.70);line-height:1.8">
+        <div style="font-size:11px;color:rgba(236,239,246,0.70);line-height:1.8">
           <strong>Rôle :</strong> Protection la plus haute — détecte aussi les courants de défaut <strong>continus lisses</strong> (DC) qui feraient "aveugler" un Type A ou Type F.<br><br>
           <strong>Recommandé pour :</strong><br>
           • Équipements alimentés via redresseur triphasé<br>
@@ -565,7 +565,7 @@ function rB(bi){
 
       <div style="border:1px solid rgba(155,89,182,0.20);border-radius:8px;padding:16px;background:rgba(155,89,182,0.04)">
         <div style="font-size:13px;font-weight:700;color:#BB6BD9;margin-bottom:10px;letter-spacing:1px">📐 CALCUL DES RANGÉES</div>
-        <div style="font-size:11px;color:rgba(220,210,235,0.70);line-height:1.8">
+        <div style="font-size:11px;color:rgba(236,239,246,0.70);line-height:1.8">
           <strong>Comptage des modules :</strong><br><br>
           • Interrupteur différentiel (ID) = <strong>2 modules</strong><br>
           • Disjoncteur standard (10A à 20A) = <strong>1 module</strong><br>
@@ -913,17 +913,17 @@ function drawPanel(type,ap,bi,isAuto){
   const tc=TYPE_COLORS[(type.charCodeAt(0)-65)%TYPE_COLORS.length];
   // ID stable du panel pour permettre un scroll direct depuis le badge
   // "Récap types" (chaque type a son ancre <id="schema-{bi}-{type}">).
-  let h=`<div id="schema-${bi}-${type}" style="border:1px solid rgba(123,95,172,0.15);border-radius:12px;padding:30px;background:rgba(10,8,16,0.5);scroll-margin-top:80px">`;
+  let h=`<div id="schema-${bi}-${type}" style="border:1px solid rgba(104,118,156,0.15);border-radius:12px;padding:30px;background:rgba(14,16,24,0.5);scroll-margin-top:80px">`;
   h+=`<div style="display:flex;align-items:center;gap:14px;margin-bottom:6px">
     ${typeBadge(type)}
-    <span style="font-size:16px;font-weight:700;color:rgba(220,210,235,0.90)">${ap.p} kVA — Calibre ${ap.c}A</span>
+    <span style="font-size:16px;font-weight:700;color:rgba(236,239,246,0.90)">${ap.p} kVA — Calibre ${ap.c}A</span>
     <span style="margin-left:auto;font-size:14px;padding:6px 16px;border-radius:6px;background:rgba(155,89,182,0.10);border:1px solid rgba(155,89,182,0.25);color:${COL_AB};font-weight:600">
       ${totalMod} modules — ${rangees} rangée${rangees>1?'s':''}</span>
     <button class="btn-top" style="padding:4px 14px;font-size:10px;${isAuto?'background:rgba(84,130,53,0.15);border-color:rgba(84,130,53,0.35);color:#70AD47':'background:rgba(192,0,0,0.12);border-color:rgba(192,0,0,0.30);color:#FF6B6B'}" onclick="toggleAutoType(${bi},'${type}')">
       ${isAuto?'🔒 Auto':'🔓 Manuel'}
     </button>
   </div>`;
-  h+=`<div style="font-size:12px;color:rgba(155,125,197,0.40);margin-bottom:${errors.length?'10':'28'}px">${builtDeps.length} départ${builtDeps.length>1?'s':''} différentiels · 13 modules/rangée</div>`;
+  h+=`<div style="font-size:12px;color:rgba(150,165,200,0.40);margin-bottom:${errors.length?'10':'28'}px">${builtDeps.length} départ${builtDeps.length>1?'s':''} différentiels · 13 modules/rangée</div>`;
 
   // Errors
   if(errors.length){
@@ -950,9 +950,9 @@ function drawPanel(type,ap,bi,isAuto){
     </div>
     <div style="font-size:13px;font-weight:700;color:${COL_AB};margin-top:6px">DISJ. ABONNÉ ${ap.c}A</div>
   </div>`;
-  h+=`<div style="width:2.5px;height:30px;background:rgba(155,125,197,0.25)"></div>`;
+  h+=`<div style="width:2.5px;height:30px;background:rgba(150,165,200,0.25)"></div>`;
   const barW=Math.max(builtDeps.length*240,320);
-  h+=`<div style="width:${barW}px;height:2.5px;background:rgba(155,125,197,0.25)"></div>`;
+  h+=`<div style="width:${barW}px;height:2.5px;background:rgba(150,165,200,0.25)"></div>`;
 
   // Encode ap ref for drag/drop
   const apRef=`${bi}_${type}`;
@@ -1023,7 +1023,7 @@ function drawPanel(type,ap,bi,isAuto){
             `<option value="${e.uid}" title="${e.full}"${e.uid===curUid?' selected':''}>${e.label}</option>`
           ).join('');
           h+=`<select onchange="setSubParent('${apRef}','${c._subKind}',${c._subIdx},this.value)"
-                style="margin-top:4px;width:34px;max-width:34px;font-size:8px;padding:1px;background:rgba(22,18,32,0.6);color:${subC};border:1px solid ${subC}55;border-radius:3px;cursor:pointer;box-sizing:border-box"
+                style="margin-top:4px;width:34px;max-width:34px;font-size:8px;padding:1px;background:rgba(29,33,48,0.6);color:${subC};border:1px solid ${subC}55;border-radius:3px;cursor:pointer;box-sizing:border-box"
                 title="Choisir le départ ECL parent">${opts}</select>`;
         }
         h+=`</div>`;
@@ -1061,8 +1061,8 @@ function drawPanel(type,ap,bi,isAuto){
   h+=`</div></div>`;
 
   // ── CALCUL CALIBRES (à droite) ──
-  h+=`<div style="flex-shrink:0;min-width:220px;margin-left:24px;border-left:1px solid rgba(123,95,172,0.10);padding-left:20px">`;
-  h+=`<div style="font-size:11px;font-weight:700;color:rgba(220,210,235,0.60);letter-spacing:1.5px;margin-bottom:14px;text-transform:uppercase">Calcul calibres ID</div>`;
+  h+=`<div style="flex-shrink:0;min-width:220px;margin-left:24px;border-left:1px solid rgba(104,118,156,0.10);padding-left:20px">`;
+  h+=`<div style="font-size:11px;font-weight:700;color:rgba(236,239,246,0.60);letter-spacing:1.5px;margin-bottom:14px;text-transform:uppercase">Calcul calibres ID</div>`;
   
   builtDeps.forEach((dep,di)=>{
     const col=typeDiffCol(dep.type);
@@ -1080,7 +1080,7 @@ function drawPanel(type,ap,bi,isAuto){
     
     // Full items (100%)
     if(fullItems.length){
-      h+=`<div style="font-size:9px;color:rgba(220,210,235,0.45);margin-bottom:2px">100% (chauff/ECS) :</div>`;
+      h+=`<div style="font-size:9px;color:rgba(236,239,246,0.45);margin-bottom:2px">100% (chauff/ECS) :</div>`;
       fullItems.forEach(x=>{
         h+=`<div style="font-size:10px;color:${col};padding:1px 0">${x.n} = <strong>${x.a}A</strong></div>`;
       });
@@ -1088,7 +1088,7 @@ function drawPanel(type,ap,bi,isAuto){
     
     // Half items (÷2)
     if(halfItems.length){
-      h+=`<div style="font-size:9px;color:rgba(220,210,235,0.45);margin-top:4px;margin-bottom:2px">÷2 (autres) :</div>`;
+      h+=`<div style="font-size:9px;color:rgba(236,239,246,0.45);margin-top:4px;margin-bottom:2px">÷2 (autres) :</div>`;
       halfItems.forEach(x=>{
         h+=`<div style="font-size:10px;color:${col};opacity:0.7;padding:1px 0">${x.n} ${x.a}A → <strong>${x.a/2}A</strong></div>`;
       });
@@ -1486,15 +1486,15 @@ async function exportPDF(){
       .pg{padding:24px 28px;width:297mm;height:210mm;background:#fff;overflow:hidden;position:relative}
       .hdr{background:linear-gradient(135deg,#1F3864,#2D1B4E);padding:10px 20px;display:flex;justify-content:space-between;align-items:center;border-radius:8px;margin-bottom:16px}
       .hdr h1{margin:0;font-size:15px;color:#fff}.hdr span{font-size:9px;color:rgba(255,255,255,0.7)}
-      .card{border:1px solid rgba(123,95,172,0.25);border-radius:10px;padding:16px;background:#fff;margin-bottom:14px}
+      .card{border:1px solid rgba(104,118,156,0.25);border-radius:10px;padding:16px;background:#fff;margin-bottom:14px}
       .card-t{font-size:10px;font-weight:700;color:#1F3864;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px}
       table{border-collapse:collapse;font-size:8px;margin-bottom:8px}
-      th{background:#1F3864;color:#fff;padding:4px 7px;text-align:center;border:1px solid rgba(91,63,140,0.2)}
-      td{padding:3px 7px;text-align:center;border:1px solid rgba(91,63,140,0.1);color:#333}
-      tr:nth-child(even) td{background:rgba(91,63,140,0.05)}
+      th{background:#1F3864;color:#fff;padding:4px 7px;text-align:center;border:1px solid rgba(62,76,112,0.2)}
+      td{padding:3px 7px;text-align:center;border:1px solid rgba(62,76,112,0.1);color:#333}
+      tr:nth-child(even) td{background:rgba(62,76,112,0.05)}
       .tot td{background:#1F3864;color:#fff;font-weight:bold}
       .badge{display:inline-block;padding:2px 8px;border-radius:4px;font-weight:700;font-size:9px}
-      .th{background:rgba(91,63,140,0.08);border:1px solid rgba(123,95,172,0.15);padding:4px 10px;font-weight:700;color:#333;font-size:9px;margin-top:8px;border-radius:4px}
+      .th{background:rgba(62,76,112,0.08);border:1px solid rgba(104,118,156,0.15);padding:4px 10px;font-weight:700;color:#333;font-size:9px;margin-top:8px;border-radius:4px}
       svg{display:block;margin:0 auto}
       .ft{text-align:center;font-size:7px;color:#999;font-style:italic;margin-top:8px}
     </style></head><body>

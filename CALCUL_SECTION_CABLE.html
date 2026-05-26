@@ -374,7 +374,7 @@ body::after{background:
             <div class="cable-card-ref" id="oCuRef">en attente de saisie</div>
             <div class="cable-card-drop">
               <span class="drop-label">Résistivité ρ</span>
-              <span class="drop-val" id="oCuRho" style="color:var(--t2)">0,0175 Ω·mm²/m</span>
+              <span class="drop-val" id="oCuRho" style="color:var(--t2)">0,0225 Ω·mm²/m</span>
             </div>
             <div class="cable-card-drop">
               <span class="drop-label">Chute de tension</span>
@@ -388,7 +388,7 @@ body::after{background:
             <div class="cable-card-ref" id="oAluRef">en attente de saisie</div>
             <div class="cable-card-drop">
               <span class="drop-label">Résistivité ρ</span>
-              <span class="drop-val" id="oAluRho" style="color:var(--t2)">0,028 Ω·mm²/m</span>
+              <span class="drop-val" id="oAluRho" style="color:var(--t2)">0,037 Ω·mm²/m</span>
             </div>
             <div class="cable-card-drop">
               <span class="drop-label">Chute de tension</span>
@@ -449,7 +449,7 @@ body::after{background:
       </div>
       <div class="doc-body">
         <div class="notice-text">
-          <b>Résistivité :</b> Cu <span class="notice-code">ρ = 0,0175 Ω·mm²/m</span> · Alu <span class="notice-code">ρ = 0,028 Ω·mm²/m</span> (à 20 °C)<br>
+          <b>Résistivité :</b> Cu <span class="notice-code">ρ = 0,0225 Ω·mm²/m</span> · Alu <span class="notice-code">ρ = 0,037 Ω·mm²/m</span> (à température de service — NF C 15-100 §525, ≈ 1,25 × ρ₂₀)<br>
           <b>Chute de tension max (§525) :</b> <span class="notice-code">3 %</span> éclairage · <span class="notice-code">5 %</span> autres usages<br>
           <b>Chute de tension :</b> mono <span class="notice-code">ΔU = 2·ρ·L·I·cosφ / S</span> · tri <span class="notice-code">ΔU = √3·ρ·L·I·cosφ / S</span><br>
           <b>Intensité d'emploi I<sub>b</sub> :</b> mono <span class="notice-code">I<sub>b</sub> = P/U</span> · tri <span class="notice-code">I<sub>b</sub> = P/(√3·U)</span> avec U = 230 / 400 V (P en VA)<br>
@@ -613,7 +613,7 @@ body::after{background:
 // STATE  (cos φ et K sont lus depuis le DOM à chaque calcul)
 // =====================================================
 const S = { phase:'tri', type:'force', alg:true };
-const RCU = 0.0175, RALU = 0.028;
+const RCU = 0.0225, RALU = 0.037;
 function getCosPhi(){
   const v = parseFloat(document.getElementById('inCosPhi').value);
   return (isFinite(v) && v > 0 && v <= 1) ? v : 0.85;

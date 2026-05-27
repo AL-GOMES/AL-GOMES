@@ -19,7 +19,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" integrity="sha384-sEVIly94UBRLKWdkYoPpSG7GD/e79YHMrxVyZaOk712Ga7+EAw6w1EFi+xBzBdd+" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js" integrity="sha384-EkqK+ezBWJuvO3hfrSx2iVqr3YQbhmnzn8kPhOpBZ+0GMVU5oGSgptwIu8D84HjE" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js" integrity="sha384-M481iNZJtbpypKgvlvZ+78Giq0BsewFLk5r2k+MOcGXlwKCc27DQRZ+WCV/zpmpC" crossorigin="anonymous"></script>
-<script src="js/version.js?b=63"></script>
+<script src="js/version.js?b=64"></script>
 <script src="js/firebase-init.js"></script>
 <script src="js/util.js"></script>
 <style>
@@ -263,6 +263,7 @@ auth.onAuthStateChanged(async (user) => {
 
     buildNavTabs();
     initClock();
+    if (!(await enforceSingleSession(user))) return;   // refuse une 2ᵉ connexion simultanée
     initPresence();
     initAccessSchedule();
   } catch(e) {
@@ -429,6 +430,7 @@ async function syncServerTime(){
 }
 
 async function initAccessSchedule(){
+  if(_sessionBlocked) return;
   const user = currentUserData;
   if(!user) return;
 
@@ -449,6 +451,7 @@ async function initAccessSchedule(){
   // 2) Synchronise l'heure SERVEUR (anti-triche horloge PC) puis re-vérifie :
   //    attrape le cas "horloge locale avancée pour entrer dans le créneau".
   await syncServerTime();
+  if(_sessionBlocked) return;
   ev = evaluateSchedule(user.schedule, serverNow());
   if(!ev.inside){
     blockAccess(ev.today);
@@ -465,6 +468,7 @@ async function initAccessSchedule(){
 }
 
 function tickSchedule(){
+  if(_sessionBlocked) return;
   const user = currentUserData;
   if(!user || !user.schedule) return;
   const ev = evaluateSchedule(user.schedule, serverNow());
@@ -513,6 +517,83 @@ async function blockAccess(today, wasInside){
     </div>`;
   // Laisser le panneau visible 1 min avant de déconnecter (→ redirection login).
   setTimeout(() => { try { auth.signOut(); } catch(e){} }, 60000);
+}
+
+// ============================================================
+// SESSION UNIQUE — refuse une 2ᵉ connexion simultanée du même compte
+// (granularité : par appareil/navigateur ; plusieurs onglets = OK).
+// Réutilise presence/{uid} :
+//   - sid   : identifiant de l'appareil détenant la session (localStorage)
+//   - sidAt : dernier « battement » (heure serveur), rafraîchi toutes les 30 s
+// Un autre appareil est considéré actif si sidAt date de moins de SESSION_TTL.
+// Filet de sécurité : on écoute presence/{uid} ; si sid passe à un autre
+// appareil (reprise après gel d'onglet), on se déconnecte.
+// Contrôle côté navigateur (comme les horaires) : dissuasif, pas un verrou
+// serveur. Repli : en cas d'échec réseau, on N'EMPÊCHE PAS l'accès.
+// ============================================================
+const SESSION_TTL = 90000;            // 90 s (battement session = 30 s)
+let _sessionHbId = null, _sessionUnsub = null, _sessionBlocked = false;
+
+function getClientId(){
+  const gen = () => 'c' + Date.now() + '-' + Math.random().toString(16).slice(2);
+  try {
+    let id = localStorage.getItem('al_client_id');
+    if(!id){ id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : gen(); localStorage.setItem('al_client_id', id); }
+    return id;
+  } catch(e){ return gen(); }          // localStorage bloqué → id volatile
+}
+
+async function enforceSingleSession(user){
+  const clientId = getClientId();
+  window._alClientId = clientId;
+  const presRef = db.collection('presence').doc(user.uid);
+  try {
+    const snap = await presRef.get({ source: 'server' });
+    const d = snap.exists ? snap.data() : null;
+    if (d && d.sid && d.sid !== clientId) {
+      // Un autre appareil détient peut-être la session : on vérifie sa fraîcheur
+      // avec l'heure SERVEUR (sans toucher au sid de l'autre).
+      const otherSeen = (d.sidAt && d.sidAt.toMillis) ? d.sidAt.toMillis() : 0;
+      const synced = await syncServerTime();
+      if (synced && otherSeen && (serverNow().getTime() - otherSeen) < SESSION_TTL) {
+        blockSingleSession();
+        return false;
+      }
+      // Sinon : session de l'autre périmée (ou heure serveur indisponible) → on prend la main.
+    }
+    // Revendiquer la session pour cet appareil.
+    await presRef.set({ sid: clientId, sidAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    // Battement de session (rafraîchit sidAt) — indépendant du heartbeat présence.
+    _sessionHbId = setInterval(() => {
+      presRef.update({ sidAt: firebase.firestore.FieldValue.serverTimestamp() }).catch(() => {});
+    }, 30000);
+    // Filet : si un autre appareil revendique la session, on se déconnecte.
+    _sessionUnsub = presRef.onSnapshot(s => {
+      const dd = s.data();
+      if (dd && dd.sid && dd.sid !== clientId) blockSingleSession();
+    }, () => {});
+    return true;
+  } catch(e){
+    try { console.warn('[session] contrôle session unique indisponible, accès accordé :', e && e.message); } catch(_){}
+    return true;                        // fail-open : ne jamais bloquer sur une erreur réseau
+  }
+}
+
+function blockSingleSession(){
+  if (_sessionBlocked) return;
+  _sessionBlocked = true;
+  try { if(_sessionHbId) clearInterval(_sessionHbId); } catch(e){}
+  try { if(_sessionUnsub) _sessionUnsub(); } catch(e){}
+  try { if(_scheduleTickerId) clearInterval(_scheduleTickerId); } catch(e){}
+  document.body.innerHTML = `
+    <div style="position:fixed;inset:0;background:#14161e;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px;padding:30px;text-align:center;font-family:'Rajdhani',sans-serif">
+      <div style="font-size:56px;line-height:1">🔒</div>
+      <div style="font-family:'Orbitron',sans-serif;font-size:22px;font-weight:700;color:#fbbf24;letter-spacing:3px">COMPTE DÉJÀ CONNECTÉ</div>
+      <div style="font-size:16px;color:#E6E9F5;max-width:520px;line-height:1.5">Ce compte est déjà utilisé sur un autre appareil. Une seule connexion simultanée est autorisée.</div>
+      <div style="font-size:13px;color:rgba(190,199,219,.5);max-width:520px;line-height:1.5">Fermez la session sur l'autre appareil puis réessayez (cela peut prendre 1 à 2 minutes).</div>
+      <a href="index.html" onclick="try{auth.signOut();}catch(e){}" style="margin-top:20px;color:#B0A8E8;border:1px solid rgba(135,120,215,.3);padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:700;letter-spacing:2px;font-size:12px;text-transform:uppercase">Retour</a>
+    </div>`;
+  setTimeout(() => { try { auth.signOut(); } catch(e){} }, 10000);
 }
 
 
@@ -690,6 +771,7 @@ window.openDevicePrompt = function(){
 };
 
 function initPresence() {
+  if(_sessionBlocked) return;
   const user = currentUserData;
   const presRef = db.collection('presence').doc(user.uid);
 
@@ -800,7 +882,7 @@ function doLogout() {
   // — utile en particulier sur un poste partagé.
   try { if (window.AlgomesPurgeSensitive) window.AlgomesPurgeSensitive(); } catch (e) {}
   if (user) {
-    db.collection('presence').doc(user.uid).update({ online: false })
+    db.collection('presence').doc(user.uid).update({ online: false, sid: null })
       .then(() => auth.signOut())
       .then(() => { window.location.href = 'index.html'; })
       .catch(() => auth.signOut().then(() => { window.location.href = 'index.html'; }));

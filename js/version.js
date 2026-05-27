@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.32';
+window.AL_VERSION      = 'v3.33';
 window.AL_VERSION_DATE = '2026-05-27';
-window.AL_VERSION_TIME = '15:58';
-window.AL_VERSION_NOTE = 'Accès restreint (horaires) : le panneau « ACCÈS RESTREINT » reste maintenant affiché 1 minute avant la déconnexion automatique, pour laisser le temps de lire le message.';
+window.AL_VERSION_TIME = '16:08';
+window.AL_VERSION_NOTE = 'Administration → Rôles & Accès : la page « Calculs individuels » apparaît désormais dans la matrice « Accès par rôle » (elle manquait), permettant d\'en restreindre l\'accès par rôle. Par défaut elle reste ouverte à tous, comme avant.';

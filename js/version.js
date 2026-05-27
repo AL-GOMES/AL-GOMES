@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.19';
+window.AL_VERSION      = 'v3.20';
 window.AL_VERSION_DATE = '2026-05-27';
-window.AL_VERSION_TIME = '09:37';
-window.AL_VERSION_NOTE = 'Dimensionnement REMBT : le RCP 400 (module réseau coupure 400 / protection 200) devient une case « point de coupure / protection réseau » par REMBT. Elle est pré-cochée pour une racine alimentée directement par le réseau ENEDIS, décochée pour un coffret de façade (CCPI) ou une cascade (départ déjà protégé en amont), et ajustable au cas par cas selon le plan de montage ENEDIS de l\'affaire. Codet ENEDIS du RCP 400 ajouté (67.71.109). Le reste (RAC, BR, support, nomenclature) demeure full auto.';
+window.AL_VERSION_TIME = '09:52';
+window.AL_VERSION_NOTE = 'Dimensionnement REMBT : quand un REMBT est un point de coupure / protection réseau (case RCP 400 cochée), le RCP 400 tient désormais lieu d\'arrivée réseau et REMPLACE le RAC d\'arrivée au lieu de s\'y ajouter — conforme au principe « un REMBT porte soit un module de protection fusiblé (RCP), soit une fausse coupure (RAC), jamais les deux ». Les départs en cascade et les branchements restent inchangés.';

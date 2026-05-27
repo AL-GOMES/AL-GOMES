@@ -2094,7 +2094,7 @@ function R(){
 // SCHÉMA RÉCAPITULATIF — arborescence ENEDIS → REMBT → logements
 // ═══════════════════════════════════════════════════════════════════════
 // Pages à inclure dans l'export PDF (cases à cocher de l'onglet Synthèse).
-let pdfPageOpts = { norm:true, chutes:true, dim:true, schema:true };
+let pdfPageOpts = { norm:true, chutes:true, reseau:true, dim:true, schema:true };
 function setPdfPage(k, on){ pdfPageOpts[k] = !!on; }
 function escapeHtml(s){
   return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -2171,6 +2171,7 @@ function renderSchema(){
         <span style="font-weight:700">📄 Pages à inclure dans le PDF :</span>
         <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" ${pdfPageOpts.norm?'checked':''} onchange="setPdfPage('norm', this.checked)"> Cadre normatif</label>
         <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" ${pdfPageOpts.chutes?'checked':''} onchange="setPdfPage('chutes', this.checked)"> Chutes de tension</label>
+        ${c1only ? '' : '<label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" '+(pdfPageOpts.reseau?'checked':'')+' onchange="setPdfPage(\'reseau\', this.checked)"> Feuille réseaux</label>'}
         ${c1only ? '' : '<label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" '+(pdfPageOpts.dim?'checked':'')+' onchange="setPdfPage(\'dim\', this.checked)"> Dimensionnement REMBT</label>'}
         <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" ${pdfPageOpts.schema?'checked':''} onchange="setPdfPage('schema', this.checked)"> Schéma récapitulatif</label>
       </div>
@@ -2859,6 +2860,46 @@ async function exportPDF(){
     footer();
   }
 
+  // ── Feuille de calcul RÉSEAUX : câbles réseau BT (CCPI → REMBT et liaisons
+  // cascade REMBT → REMBT) avec foisonnement, courant d'emploi, calibre et chute.
+  function addReseauPage(){
+    header(pName + ' — FEUILLE DE CALCUL RÉSEAUX',
+      'Câbles réseau BT (CCPI → REMBT et liaisons cascade) · ALU ρ = 0,037 · tri 400 V · courant d\'emploi foisonné (NF C 14-100)   ·   limite tronçon = '+CI.limT.toFixed(2)+' %');
+    const head = [['Tronçon','Type','L (m)','Section','Lgts desservis','P foisonnée (kVA)','k','I emploi (A)','Calibre (A)','ΔU (V)','% chute']];
+    const body = [];
+    CI.rembts.forEach(r => {
+      let up=null, cfg=null, lbl='', type='';
+      if(r.parentId == null && r.cf && r.cf.active){ up = cfChute(r); cfg = r.cf; lbl = 'CCPI → '+r.name; type='CCPI'; }
+      else if(r.parentId != null){ up = linkChute(r); cfg = r.link; const par=(rembtByIdPDF[r.parentId]&&rembtByIdPDF[r.parentId].name)||'—'; lbl = par+' → '+r.name; type='Cascade'; }
+      if(!up || !cfg) return;
+      const bg = up.pc > CI.limT ? badC : (up.pc > CI.limT*0.85 ? warnC : okC);
+      body.push([
+        lbl, type, (cfg.long||'?'), (cfg.section||'?')+' mm²', up.nLgts,
+        up.Pfois.toFixed(1), up.k.toFixed(2), Math.round(up.Itri), up.calibre,
+        up.vu.toFixed(2),
+        { content: up.pc.toFixed(2)+' %', styles:{ fillColor:bg, fontStyle:'bold' } }
+      ]);
+    });
+    if(body.length === 0){
+      doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(90,90,90);
+      doc.text('Aucun câble réseau à calculer : le(s) REMBT est/sont alimenté(s) directement par le réseau ENEDIS, sans coffret de façade (CCPI) ni cascade.', 14, 30, {maxWidth: pageW-28});
+      footer(); return;
+    }
+    doc.autoTable({
+      head, body, startY: 22, theme:'grid',
+      headStyles:{fillColor:navy, textColor:white, fontStyle:'bold', fontSize:8, halign:'center'},
+      bodyStyles:{fontSize:8, halign:'center'},
+      alternateRowStyles:{fillColor:greyL},
+      columnStyles:{0:{halign:'left', cellWidth:55}},
+      styles:{cellPadding:1.5, lineColor:[180,180,180], lineWidth:0.2},
+      margin:{left:6, right:6}
+    });
+    let yL = doc.lastAutoTable.finalY + 6;
+    doc.setFont('helvetica','italic'); doc.setFontSize(7.5); doc.setTextColor(110,110,110);
+    doc.text('I emploi = P foisonnée × 1000 / (U·√3), U = 400 V   ·   calibre = 1ᵉʳ calibre normalisé ≥ I emploi   ·   ΔU = ρ·L·I/S (tri)   ·   foisonnement NF C 14-100 sur le nombre de logements desservis par le câble (sous-arbre aval).', 14, yL, {maxWidth: pageW-28});
+    footer();
+  }
+
   // ── Page « Cadre normatif » : chutes max, max logements/REMBT, longueurs max
   function addNormPage(){
     header('CADRE NORMATIF & LIMITES', pName);
@@ -2925,7 +2966,8 @@ async function exportPDF(){
   // coché → PDF identique à avant.
   const _pp = pdfPageOpts;
   const _dimOn = _pp.dim && !c1onlyExport;
-  if(!_pp.norm && !_pp.chutes && !_dimOn && !_pp.schema){
+  const _reseauOn = _pp.reseau && !c1onlyExport;
+  if(!_pp.norm && !_pp.chutes && !_reseauOn && !_dimOn && !_pp.schema){
     alert('Sélectionnez au moins une page à inclure dans le PDF.'); return;
   }
   // Saut de page entre sections : on n'ajoute une page que si une section a
@@ -2935,6 +2977,9 @@ async function exportPDF(){
 
   // Cadre normatif
   if(_pp.norm){ startSection(); addNormPage(); }
+
+  // Feuille de calcul RÉSEAUX (câbles CCPI→REMBT et liaisons cascade)
+  if(_reseauOn){ startSection(); addReseauPage(); }
 
   // Pages de chutes selon le mode
   if(_pp.chutes){

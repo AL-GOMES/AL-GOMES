@@ -312,10 +312,10 @@ if(window.self!==window.top){
     <a href="https://github.com/jerome93190/AL-GOMES" target="_blank" class="btn-nav" style="text-decoration:none">🐙 Dépôt GitHub</a>
   </div>
 
-  <!-- Panneau d'alertes IP : visible quand un utilisateur s'est connecté
-       depuis plusieurs IPs distinctes dans une fenêtre courte. -->
+  <!-- Panneau d'alertes : tentatives de double connexion (refusées) + activité
+       IP suspecte (connexions depuis plusieurs IPs dans une fenêtre courte). -->
   <div class="ip-anom-panel empty" id="ipAnomPanel">
-    <h3>⚠ Alertes IP — <span id="ipAnomCount">0</span> utilisateur(s) avec activité suspecte</h3>
+    <h3>⚠ Alertes sécurité — <span id="ipAnomCount">0</span> alerte(s)</h3>
     <div class="ip-anom-list" id="ipAnomList"></div>
   </div>
 
@@ -2311,6 +2311,7 @@ async function loadSessions(){
     let html='<table style="width:100%"><thead><tr><th>Date</th><th>Identifiant</th><th>Nom</th><th>IP</th><th>Localisation</th></tr></thead><tbody>';
     snap.forEach(doc=>{
       const s=doc.data();
+      if(s.type === 'blocked_double_login') return;   // affichées dans le panneau « Alertes », pas dans le journal
       html+=`<tr class="session-row">
         <td style="font-size:12px;white-space:nowrap">${fmtDate(s.timestamp)}</td>
         <td><strong>${esc(s.login||'—')}</strong></td>
@@ -2617,6 +2618,7 @@ async function doChangePwd(){
 let _ipAnomalies = [];
 let _ipAnomaliesByUid = {};
 let _ipAnomFirstToastShown = false;
+let _blockedLogins = [];   // tentatives de double connexion refusées (sessions type='blocked_double_login')
 
 // Seuils : ordre du plus sévère au moins sévère. Le premier match l'emporte.
 const IP_ANOM_WINDOWS = [
@@ -2669,14 +2671,26 @@ function renderIpAnomaliesPanel(){
   const list = document.getElementById('ipAnomList');
   const count = document.getElementById('ipAnomCount');
   if(!panel || !list || !count) return;
-  if(!_ipAnomalies.length){
+  const total = _blockedLogins.length + _ipAnomalies.length;
+  if(!total){
     panel.classList.add('empty');
     list.innerHTML = '';
+    count.textContent = '0';
     return;
   }
   panel.classList.remove('empty');
-  count.textContent = _ipAnomalies.length;
-  list.innerHTML = _ipAnomalies.map(a => `
+  count.textContent = total;
+  const fmt = ms => { try { return new Date(ms).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); } catch(e){ return ''; } };
+  // Tentatives de double connexion (refusées) — en tête, sévérité rouge.
+  const blockedHtml = _blockedLogins.map(b => `
+    <div class="ip-anom-row sev-red">
+      <span class="ip-user">🔒 ${esc(b.name)} <span style="font-weight:400;color:var(--text2);font-size:11px">@${esc(b.login)}</span></span>
+      <span class="ip-sev-tag">DOUBLE CONNEXION</span>
+      <span class="ip-list">${esc(fmt(b.t))} — tentative depuis ${esc(b.device)}${b.os?' ('+esc(b.os)+(b.browser?' · '+esc(b.browser):'')+')':''}${b.other?` alors que déjà connecté sur ${esc(b.other)}${b.otherCity?' · '+esc(b.otherCity):''}`:''}</span>
+      <button class="btn btn-sm" onclick="dismissBlockedLogin('${escJs(b.id)}')" style="background:rgba(34,197,94,.10);color:#4ade80;border:1px solid rgba(34,197,94,.25)">✓ Vu</button>
+    </div>
+  `).join('');
+  const anomHtml = _ipAnomalies.map(a => `
     <div class="ip-anom-row sev-${a.severity}">
       <span class="ip-user">${esc(a.name)} <span style="font-weight:400;color:var(--text2);font-size:11px">@${esc(a.login)}</span></span>
       <span class="ip-sev-tag">${esc(a.windowLabel)}</span>
@@ -2684,6 +2698,13 @@ function renderIpAnomaliesPanel(){
       <button class="btn btn-sm" onclick="ackIpAnomaly('${escJs(a.uid)}')" style="background:rgba(34,197,94,.10);color:#4ade80;border:1px solid rgba(34,197,94,.25)">✓ Marquer comme normal</button>
     </div>
   `).join('');
+  list.innerHTML = blockedHtml + anomHtml;
+}
+
+// Marque une alerte de double connexion comme vue (supprime l'entrée sessions).
+async function dismissBlockedLogin(id){
+  try { await db.collection('sessions').doc(id).delete(); } catch(e){ console.error(e); }
+  loadIpTracking();
 }
 
 // Ajoute les IPs courantes de l'anomalie au tableau trustedIps[] de l'user :
@@ -2716,11 +2737,20 @@ async function loadIpTracking(){
     const usersByUid = Object.fromEntries(users.map(u => [u.uid, u]));
     _ipAnomalies = computeIpAnomalies(snap.docs, usersByUid);
     _ipAnomaliesByUid = Object.fromEntries(_ipAnomalies.map(a => [a.uid, a]));
+    // Tentatives de double connexion refusées (journalisées par accueil.html).
+    _blockedLogins = snap.docs.map(dd => ({ id:dd.id, s:dd.data() }))
+      .filter(x => x.s.type === 'blocked_double_login' && x.s.timestamp)
+      .map(x => ({ id:x.id, login:x.s.login||'?', name:x.s.name||x.s.login||'?',
+        t:(x.s.timestamp.seconds ? x.s.timestamp.seconds*1000 : 0),
+        device:x.s.deviceName||'?', os:x.s.os||'', browser:x.s.browser||'',
+        other:x.s.otherDeviceName||'', otherCity:x.s.otherCity||'' }))
+      .sort((a,b) => b.t - a.t).slice(0, 50);
     renderIpAnomaliesPanel();
     renderUsers();
-    if(!_ipAnomFirstToastShown && _ipAnomalies.length){
+    const _totalAlerts = _blockedLogins.length + _ipAnomalies.length;
+    if(!_ipAnomFirstToastShown && _totalAlerts){
       _ipAnomFirstToastShown = true;
-      toast('⚠ '+_ipAnomalies.length+' alerte(s) IP — voir le panneau en haut','error');
+      toast('⚠ '+_totalAlerts+' alerte(s) sécurité — voir le panneau en haut','error');
     }
     const ipMap={};
     snap.forEach(doc=>{

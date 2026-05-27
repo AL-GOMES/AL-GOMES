@@ -19,7 +19,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" integrity="sha384-sEVIly94UBRLKWdkYoPpSG7GD/e79YHMrxVyZaOk712Ga7+EAw6w1EFi+xBzBdd+" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js" integrity="sha384-EkqK+ezBWJuvO3hfrSx2iVqr3YQbhmnzn8kPhOpBZ+0GMVU5oGSgptwIu8D84HjE" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js" integrity="sha384-M481iNZJtbpypKgvlvZ+78Giq0BsewFLk5r2k+MOcGXlwKCc27DQRZ+WCV/zpmpC" crossorigin="anonymous"></script>
-<script src="js/version.js?b=64"></script>
+<script src="js/version.js?b=65"></script>
 <script src="js/firebase-init.js"></script>
 <script src="js/util.js"></script>
 <style>
@@ -556,6 +556,7 @@ async function enforceSingleSession(user){
       const otherSeen = (d.sidAt && d.sidAt.toMillis) ? d.sidAt.toMillis() : 0;
       const synced = await syncServerTime();
       if (synced && otherSeen && (serverNow().getTime() - otherSeen) < SESSION_TTL) {
+        logBlockedLogin(user, d);
         blockSingleSession();
         return false;
       }
@@ -577,6 +578,33 @@ async function enforceSingleSession(user){
     try { console.warn('[session] contrôle session unique indisponible, accès accordé :', e && e.message); } catch(_){}
     return true;                        // fail-open : ne jamais bloquer sur une erreur réseau
   }
+}
+
+// Journalise une tentative de double connexion refusée (visible dans le panneau
+// « Alertes » de l'admin). Réutilise la collection sessions (type='blocked_double_login').
+// Throttle 5 min/compte/navigateur pour éviter le flood si un appareil insiste.
+function logBlockedLogin(user, existing){
+  try {
+    const k = 'al_blk_' + user.uid;
+    if (Date.now() - (+(localStorage.getItem(k) || 0)) < 300000) return;
+    localStorage.setItem(k, String(Date.now()));
+  } catch(e){}
+  try {
+    const ua = navigator.userAgent;
+    const info = (typeof parseUA === 'function') ? parseUA(ua) : { os:'', browser:'' };
+    db.collection('sessions').add({
+      type: 'blocked_double_login',
+      uid: user.uid,
+      login: (currentUserData && currentUserData.login) || '',
+      name:  (currentUserData && currentUserData.name)  || '',
+      deviceName: (typeof getDeviceName === 'function') ? getDeviceName() : '',
+      os: info.os, browser: info.browser,
+      otherDeviceName: (existing && existing.deviceName) || '',
+      otherCity:       (existing && existing.city)       || '',
+      otherIp:         (existing && existing.ip)         || '',
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    }).catch(() => {});
+  } catch(e){}
 }
 
 function blockSingleSession(){

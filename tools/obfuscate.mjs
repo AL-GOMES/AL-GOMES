@@ -26,18 +26,26 @@ const CFG = {
 };
 
 const [,, inFile, outFile] = process.argv;
-let html = fs.readFileSync(inFile, 'utf8');
-let n = 0, total = 0, skipped = 0;
-const MAX = 400000; // au-delà = librairie minifiée embarquée (pdf.js, etc.) → on ne touche pas
-// Cible les blocs <script> SANS attribut src (inline applicatif). Les <script src=...> sont ignorés.
-html = html.replace(/<script(\s[^>]*)?>([\s\S]*?)<\/script>/gi, (m, attrs, code) => {
-  if (attrs && /\bsrc\s*=/.test(attrs)) return m;       // librairie externe → inchangé
-  if (!code.trim()) return m;                            // vide → inchangé
-  total++;
-  if (code.length > MAX) { skipped++; return m; }        // gros blob minifié → inchangé
-  const obf = Obf.obfuscate(code, CFG).getObfuscatedCode();
-  n++;
-  return `<script${attrs || ''}>${obf}</script>`;
-});
-fs.writeFileSync(outFile, html, 'utf8');
-console.log(`  ${inFile} → ${outFile} : ${n}/${total} script(s) obfusqué(s)${skipped?` · ${skipped} gros blob(s) ignoré(s)`:''}`);
+const input = fs.readFileSync(inFile, 'utf8');
+
+if (/\.js$/i.test(inFile)) {
+  // Fichier JavaScript autonome (ex: js/util.js) → on obfusque tout le contenu.
+  const obf = Obf.obfuscate(input, CFG).getObfuscatedCode();
+  fs.writeFileSync(outFile, obf, 'utf8');
+  console.log(`  ${inFile} → ${outFile} : fichier .js obfusqué`);
+} else {
+  // Fichier HTML → on obfusque uniquement les <script> inline (sans src).
+  let n = 0, total = 0, skipped = 0;
+  const MAX = 400000; // au-delà = librairie minifiée embarquée (pdf.js, etc.) → on ne touche pas
+  const html = input.replace(/<script(\s[^>]*)?>([\s\S]*?)<\/script>/gi, (m, attrs, code) => {
+    if (attrs && /\bsrc\s*=/.test(attrs)) return m;       // librairie externe → inchangé
+    if (!code.trim()) return m;                            // vide → inchangé
+    total++;
+    if (code.length > MAX) { skipped++; return m; }        // gros blob minifié → inchangé
+    const obf = Obf.obfuscate(code, CFG).getObfuscatedCode();
+    n++;
+    return `<script${attrs || ''}>${obf}</script>`;
+  });
+  fs.writeFileSync(outFile, html, 'utf8');
+  console.log(`  ${inFile} → ${outFile} : ${n}/${total} script(s) obfusqué(s)${skipped?` · ${skipped} gros blob(s) ignoré(s)`:''}`);
+}

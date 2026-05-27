@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.23';
+window.AL_VERSION      = 'v3.24';
 window.AL_VERSION_DATE = '2026-05-27';
-window.AL_VERSION_TIME = '10:38';
-window.AL_VERSION_NOTE = 'Installation (étape 1) : chaque carte REMBT affiche désormais un SCHÉMA DE CÂBLAGE du coffret (jeu de barres + symboles des modules, style catalogue Cahors), généré automatiquement depuis la configuration : arrivée réseau ↑, branchements protégés (fusible), départs réseau ↓, départs non protégés (RAC 35, hachuré), RCP 400, et plages libres. En interne, la liste ordonnée des modules (rembtLayout) devient la source unique du dimensionnement et du schéma.';
+window.AL_VERSION_TIME = '10:55';
+window.AL_VERSION_NOTE = 'Export PDF : nouvelle page « FEUILLE DE CALCUL RÉSEAUX » (optionnelle, cochée par défaut) qui liste les câbles réseau BT — CCPI → REMBT et liaisons cascade REMBT → REMBT — avec longueur, section, nombre de logements desservis, puissance foisonnée, coefficient k, courant d\'emploi, calibre normalisé et chute de tension (colorée selon la limite). Case « Feuille réseaux » ajoutée dans l\'onglet Synthèse.';

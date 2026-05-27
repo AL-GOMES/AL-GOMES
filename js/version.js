@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.29';
+window.AL_VERSION      = 'v3.30';
 window.AL_VERSION_DATE = '2026-05-27';
-window.AL_VERSION_TIME = '14:10';
-window.AL_VERSION_NOTE = 'Sécurité (suite) : Planning — les noms de chantier affichés dans la vue timeline et les listes déroulantes sont désormais échappés (ils étaient rendus bruts alors qu\'ils proviennent d\'un planning partagé entre tous les utilisateurs). Vérifié : Attestations (carnet/modèles) et tokens admin déjà sécurisés (échappement + sessionStorage), aucun changement nécessaire.';
+window.AL_VERSION_TIME = '15:18';
+window.AL_VERSION_NOTE = 'Le code JavaScript de toutes les pages est désormais obfusqué (illisible) en production. Le comportement est strictement identique (vérifié page par page) ; seul le code source côté navigateur devient illisible. La version lisible est conservée hors ligne pour la maintenance.';

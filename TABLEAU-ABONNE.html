@@ -228,7 +228,7 @@ function R(){
   document.getElementById('bL').textContent=total+' lgts';
   let th='';B.forEach((b,i)=>{th+=`<div class="tab${curTab==='b'+i?' on':''}" onclick="S('b${i}')">${b.n}</div>`});
   document.getElementById('tabs').innerHTML=th;
-  if(!B.length){document.getElementById('sh').innerHTML=`<div class="empty"><div class="ic-big">📋</div><div class="msg">Aucun bâtiment chargé<br><br>Importez un fichier Excel provenant de<br><strong>Dérivations & TGBT</strong> pour commencer</div></div>`;setupStickyHeader();return}
+  if(!B.length){document.getElementById('sh').innerHTML=`<div class="empty"><div class="ic-big">📋</div><div class="msg">Aucun bâtiment chargé<br><br>Importez un fichier Excel provenant de<br><strong>Calculs collectif</strong> pour commencer</div></div>`;setupStickyHeader();return}
   if(curTab===null)curTab='b0';
   const bi=parseInt(curTab.replace('b',''));
   if(bi>=B.length){curTab='b0';return R()}
@@ -1172,8 +1172,8 @@ function setSubParent(apRef, subKind, subIdx, newEclUid){
 
 // ═══ IMPORT DERIVATIONS ═══
 // Accepte 2 formats :
-//  - .xlsx exporté par Dérivations TGBT (feuille cachée _DATA avec JSON)
-//  - .alg / .ALG : fichier de partage texte/JSON (créé par Dérivations TGBT →
+//  - .xlsx exporté par Calculs collectif (feuille cachée _DATA avec JSON)
+//  - .alg / .ALG : fichier de partage texte/JSON (créé par Calculs collectif →
 //    bouton « 🔗 Partage TA »). Non lisible dans Excel, juste importable ici.
 // La détection se fait sur les MAGIC BYTES du fichier (PK = zip = xlsx,
 // sinon JSON .ALG) plutôt que sur l'extension, pour gérer correctement
@@ -1193,7 +1193,7 @@ async function importDeriv(input){
       const buf=await file.arrayBuffer();
       const wb=new ExcelJS.Workbook();await wb.xlsx.load(buf);
       let ds=null;wb.eachSheet(ws=>{if(ws.name==='_DATA')ds=ws});
-      if(!ds){alert('Ce fichier Excel ne provient pas de Dérivations & TGBT.\nAucun onglet _DATA trouvé.');input.value='';return}
+      if(!ds){alert('Ce fichier Excel ne provient pas de Calculs collectif.\nAucun onglet _DATA trouvé.');input.value='';return}
       const raw=ds.getCell('A1').value;
       if(!raw){alert('Données vides.');input.value='';return}
       data=JSON.parse(raw);
@@ -1202,11 +1202,11 @@ async function importDeriv(input){
       const txt=await file.text();
       try{ data=JSON.parse(txt); }
       catch{
-        alert('Fichier non reconnu.\n\nFormats acceptés : .xlsx exporté par Dérivations TGBT, ou .ALG (Partage TA).');
+        alert('Fichier non reconnu.\n\nFormats acceptés : .xlsx exporté par Calculs collectif, ou .ALG (Partage TA).');
         input.value='';return;
       }
       if(!data || data._format!=='algomes-tgbt-share'){
-        alert('Ce fichier .ALG n\'est pas un partage valide A.L.GOMES.\n\nAttendu : un fichier généré par le bouton « 🔗 Partage TA » de Dérivations TGBT.');
+        alert('Ce fichier .ALG n\'est pas un partage valide A.L.GOMES.\n\nAttendu : un fichier généré par le bouton « 🔗 Partage TA » de Calculs collectif.');
         input.value='';return;
       }
     }

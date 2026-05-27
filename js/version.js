@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.30';
+window.AL_VERSION      = 'v3.31';
 window.AL_VERSION_DATE = '2026-05-27';
-window.AL_VERSION_TIME = '15:18';
-window.AL_VERSION_NOTE = 'Le code JavaScript de toutes les pages est désormais obfusqué (illisible) en production. Le comportement est strictement identique (vérifié page par page) ; seul le code source côté navigateur devient illisible. La version lisible est conservée hors ligne pour la maintenance.';
+window.AL_VERSION_TIME = '15:48';
+window.AL_VERSION_NOTE = 'Contrôle des horaires d\'accès : l\'heure de référence est désormais l\'heure SERVEUR (Firestore/Google), plus l\'horloge du PC. Modifier l\'heure de son ordinateur ne permet donc plus de contourner le créneau d\'accès. Repli automatique sur l\'horloge locale si le réseau est indisponible.';

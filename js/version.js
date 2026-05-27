@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.20';
+window.AL_VERSION      = 'v3.21';
 window.AL_VERSION_DATE = '2026-05-27';
-window.AL_VERSION_TIME = '09:52';
-window.AL_VERSION_NOTE = 'Dimensionnement REMBT : quand un REMBT est un point de coupure / protection réseau (case RCP 400 cochée), le RCP 400 tient désormais lieu d\'arrivée réseau et REMPLACE le RAC d\'arrivée au lieu de s\'y ajouter — conforme au principe « un REMBT porte soit un module de protection fusiblé (RCP), soit une fausse coupure (RAC), jamais les deux ». Les départs en cascade et les branchements restent inchangés.';
+window.AL_VERSION_TIME = '10:00';
+window.AL_VERSION_NOTE = 'Synthèse / schéma unifilaire : les REMBT alimentés en cascade sont désormais reliés à leur parent par un CÂBLE DE LIAISON dessiné (ligne verticale avec point de départ et flèche d\'arrivée), annoté de sa section, sa longueur et sa chute de tension — au lieu d\'une simple étiquette texte.';

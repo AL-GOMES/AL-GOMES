@@ -458,9 +458,14 @@ label.rb-block-h{cursor:pointer}
   padding:9px 18px;border-bottom:2.5px solid #1a1a1a;text-align:center}
 
 /* Bloc REMBT (une "ligne" complète Réseau→CIBE + dérivations) */
-.plan-cascade{display:inline-flex;align-items:center;gap:7px;margin:0 0 14px;padding:7px 13px;background:#fff;border:1.5px solid #1f3864;border-left:5px solid #1f3864;font-family:'Helvetica','Arial',sans-serif;font-size:11px;font-weight:600;color:#1f3864;letter-spacing:0.3px}
-.plan-cascade b{color:#1a1a1a}
-.plan-cascade b.ok{color:#2e6b3e}.plan-cascade b.warn{color:#b26d24}.plan-cascade b.bad{color:#a83232}
+/* Câble de liaison cascade entre REMBT (vue synthèse) : ligne verticale (câble) + jonction au départ + flèche à l'arrivée + étiquette des specs */
+.plan-wire{position:relative;padding:16px 0 16px 26px;margin:2px 0}
+.plan-wire-line{position:absolute;left:0;top:-12px;bottom:-12px;width:3px;background:#1f3864}
+.plan-wire-line::before{content:'';position:absolute;left:1.5px;top:0;width:12px;height:12px;border-radius:50%;background:#1f3864;border:2px solid #faf7ee;transform:translate(-50%,-50%)}
+.plan-wire-line::after{content:'';position:absolute;left:1.5px;bottom:0;transform:translate(-50%,50%);border-left:6px solid transparent;border-right:6px solid transparent;border-top:10px solid #1f3864}
+.plan-wire-tag{display:inline-flex;align-items:center;gap:7px;background:#fff;border:1.5px solid #1f3864;border-left:5px solid #1f3864;padding:7px 13px;font-family:'Helvetica','Arial',sans-serif;font-size:11px;font-weight:600;color:#1f3864;letter-spacing:0.3px}
+.plan-wire-tag b{color:#1a1a1a}
+.plan-wire-tag b.ok{color:#2e6b3e}.plan-wire-tag b.warn{color:#b26d24}.plan-wire-tag b.bad{color:#a83232}
 .plan-rembt-section{margin-bottom:30px;padding-bottom:20px;border-bottom:1.5px dashed #c2b89a}
 .plan-rembt-section:last-of-type{border-bottom:none}
 .plan-rembt-title{font-family:'Helvetica','Arial',sans-serif;font-size:12px;font-weight:700;color:#1f3864;letter-spacing:2.5px;text-transform:uppercase;margin-bottom:18px;padding:6px 12px;background:#fff;border:1.5px solid #1f3864;display:inline-block}
@@ -2239,7 +2244,10 @@ function renderSchema(){
         const lc = linkChute(r);
         const lcc = lc ? (lc.pc > CI.limT ? 'bad' : (lc.pc > CI.limT*0.8 ? 'warn' : 'ok')) : '';
         const chuteTxt = lc ? ` · ${lc.calibre} A · chute <b class="${lcc}">${lc.pc.toFixed(2)} %</b>` : '';
-        block += `<div class="plan-cascade" style="${indent?'margin-left:40px':''}">🔗 Câble cascade <b>${escapeHtml(par)} → ${escapeHtml(r.name)}</b> — ${(r.link&&r.link.section)||'?'} mm² ALU · L ${(r.link&&r.link.long)||'?'} m${chuteTxt}</div>`;
+        block += `<div class="plan-wire" style="${indent?'margin-left:40px':''}">
+          <span class="plan-wire-line"></span>
+          <span class="plan-wire-tag">🔗 Câble cascade <b>${escapeHtml(par)} → ${escapeHtml(r.name)}</b> — ${(r.link&&r.link.section)||'?'} mm² ALU · L ${(r.link&&r.link.long)||'?'} m${chuteTxt}</span>
+        </div>`;
       }
       block += `<div class="plan-rembt-section" style="${indent?'margin-left:40px;border-left:2px dashed #1f3864;padding-left:24px':''}">
         <div class="plan-rembt-title">${titleTxt}</div>
@@ -2308,7 +2316,7 @@ function renderSchema(){
         : (c1only
           ? 'Schéma unifilaire : <b>un coffret CIBE par client → câble C1 (AR2V) → tableau abonné</b> (mode C1 seul — seul le tronçon final est dimensionné).'
           : 'Schéma unifilaire du branchement collectif : <b>Coffret de façade → REMBT (jeu de barres) → départ individuel par logement (disjoncteur → câble C2 → CIBE → câble C1 → tableau abonné)</b>.')} Le cadre rouge pointillé matérialise la limite de l'installation utilisateur (NF C 15-100). Les annotations le long de chaque câble donnent la longueur, la section ALU et le pourcentage de chute.<br>
-      <b>Cascade</b> — Les REMBT alimentés par un autre REMBT sont dessinés indentés sous leur parent.
+      <b>Cascade</b> — Les REMBT alimentés par un autre REMBT sont indentés sous leur parent et <b>reliés à lui par un câble de liaison</b> (ligne verticale, avec point de départ et flèche d'arrivée) annoté de sa section, sa longueur et sa chute de tension.
     </div>`;
 
   document.getElementById('sh-sch').innerHTML = h;

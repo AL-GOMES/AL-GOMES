@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.31';
+window.AL_VERSION      = 'v3.32';
 window.AL_VERSION_DATE = '2026-05-27';
-window.AL_VERSION_TIME = '15:48';
-window.AL_VERSION_NOTE = 'Contrôle des horaires d\'accès : l\'heure de référence est désormais l\'heure SERVEUR (Firestore/Google), plus l\'horloge du PC. Modifier l\'heure de son ordinateur ne permet donc plus de contourner le créneau d\'accès. Repli automatique sur l\'horloge locale si le réseau est indisponible.';
+window.AL_VERSION_TIME = '15:58';
+window.AL_VERSION_NOTE = 'Accès restreint (horaires) : le panneau « ACCÈS RESTREINT » reste maintenant affiché 1 minute avant la déconnexion automatique, pour laisser le temps de lire le message.';

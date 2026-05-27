@@ -647,13 +647,13 @@ function maxSection(l, side){
 const PHASES = ['M','T'];
 
 const MODULES = [
-  { k:'RAC240',  n:'RAC 240',        l:'Module RAC 240 (3Ph+1N) — arrivée réseau 240² / N 150²  ·  ENEDIS 67.71.700', p:2 },
-  { k:'RAC150',  n:'RAC 150 (150²)', l:'Module RAC 150 (3Ph+1N) — câble 150²  ·  ENEDIS 67.71.702',                 p:2 },
-  { k:'RAC150b', n:'RAC 150 (≤95²)', l:'Module RAC 150 (3Ph+1N) — câble 50 à 95²  ·  ENEDIS 67.71.702',             p:1 },
-  { k:'RAC35',   n:'RAC 35',         l:'Module RAC 35 (3Ph+1N) — 3 départs tri, câble 10 à 35²  ·  ENEDIS 67.71.704', p:1 },
-  { k:'BR60T',   n:'BR 60T',         l:'Module BR 60T (3Ph+1N) — départ tri protégé 60 A  ·  ENEDIS 67.71.708',     p:1 },
-  { k:'BR60M',   n:'BR 60M',         l:'Module BR 60M (1Ph+1N) — départ mono protégé 60 A  ·  ENEDIS 67.71.706',    p:1 },
-  { k:'RCP400',  n:'RCP 400',        l:'Module RCP 400 — coupure 400 A / protection 200 A  ·  réf 0540879',          p:4 },
+  { k:'RAC240',  n:'RAC 240',        l:'Module RAC 240 (3Ph+1N) — arrivée réseau 240² / N 150²  ·  ENEDIS 67.71.700', p:2, ref:'0540870', nom:'67.71.700' },
+  { k:'RAC150',  n:'RAC 150 (150²)', l:'Module RAC 150 (3Ph+1N) — câble 150²  ·  ENEDIS 67.71.702',                 p:2, ref:'0540871', nom:'67.71.702' },
+  { k:'RAC150b', n:'RAC 150 (≤95²)', l:'Module RAC 150 (3Ph+1N) — câble 50 à 95²  ·  ENEDIS 67.71.702',             p:1, ref:'0540871', nom:'67.71.702' },
+  { k:'RAC35',   n:'RAC 35',         l:'Module RAC 35 (3Ph+1N) — 3 départs tri, câble 10 à 35²  ·  ENEDIS 67.71.704', p:1, ref:'0540872', nom:'67.71.704' },
+  { k:'BR60T',   n:'BR 60T',         l:'Module BR 60T (3Ph+1N) — départ tri protégé 60 A  ·  ENEDIS 67.71.708',     p:1, ref:'0540874', nom:'67.71.708' },
+  { k:'BR60M',   n:'BR 60M',         l:'Module BR 60M (1Ph+1N) — départ mono protégé 60 A  ·  ENEDIS 67.71.706',    p:1, ref:'0540873', nom:'67.71.706' },
+  { k:'RCP400',  n:'RCP 400',        l:'Module RCP 400 — coupure 400 A / protection 200 A  ·  réf 0540879',          p:4, ref:'0540879', nom:'—' },
 ];
 
 function defaultLgts(){
@@ -679,6 +679,22 @@ function emptyDim(){
 // Au-delà → grand collectif → diviser en plusieurs REMBT (ou utiliser RCP400).
 const REMBT_SIZES = [6, 9, 12];
 const REMBT_MAX_LGTS = 6;
+// Support (jeu de barres G3) + enveloppe (borne REMMO) par nombre de plages.
+// Réfs catalogue Cahors / Enedis-Spec-REMBT (page 28). Borne sans téléreport ;
+// variantes coffret (300) / avec téléreport disponibles selon le besoin.
+const REMBT_SUPPORT = {
+  6:  { gamme:'REMMO 300', supRef:'0540860', supNom:'67.70.112', envRef:'0460304', envNom:'67.72.011' },
+  9:  { gamme:'REMMO 450', supRef:'0540861', supNom:'67.70.122', envRef:'0460303', envNom:'67.72.021' },
+  12: { gamme:'REMMO 600', supRef:'0540862', supNom:'67.70.132', envRef:'0460301', envNom:'67.72.029' },
+};
+// Module d'arrivée/départ réseau (RAC) selon la section du câble (mm²) :
+// ≤ 95² → RAC 150 (1 plage) · ≤ 150² → RAC 150 (2 plages) · sinon RAC 240 (2 plages).
+function sectionToRAC(section){
+  const s = parseFloat(section) || 0;
+  if(s <= 95)  return 'RAC150b';
+  if(s <= 150) return 'RAC150';
+  return 'RAC240';
+}
 
 function newRembtId(existing){
   const used = new Set((existing||[]).map(r=>r.id));
@@ -813,23 +829,57 @@ function rembtSuggest(plages){
   for(const sz of REMBT_SIZES) if(plages <= sz) return sz;
   return null;
 }
-// Compte modules suggérés par les logements assignés à ce REMBT.
-//  - 1× RAC 240 (arrivée réseau) si au moins 1 logement → 2 plages
-//  - 1× BR60M par logement mono
-//  - 1× BR60T par logement tri
-// (l'utilisateur peut compléter avec RAC150 / RAC35 / RCP400 manuellement)
+// Modules suggérés pour un REMBT (catalogue Cahors / Enedis-Spec-REMBT) :
+//  - 1 module d'arrivée réseau (RAC) dimensionné selon la section amont :
+//    câble de liaison (cascade), CCPI (racine avec coffret façade), ou 240²
+//    par défaut (racine raccordée directement sur le réseau) ;
+//  - 1 BR 60M par logement mono, 1 BR 60T par logement tri (branchements protégés) ;
+//  - 1 départ réseau (RAC) par REMBT enfant alimenté en cascade, dimensionné
+//    selon la section du câble de liaison de l'enfant.
+// (RCP 400 / RAC 35 restent à ajouter manuellement selon le schéma : fausse-
+//  coupure, départs non protégés…)
 function autoModules(rembtId){
+  const r = CI.rembts.find(x => x.id === rembtId);
   const lgts = CI.lgts.filter(l => l.rembtId === rembtId);
   const mono = lgts.filter(l => lgtPhase(l) === 'M').length;
   const tri  = lgts.filter(l => lgtPhase(l) === 'T').length;
-  // Départs réseau RCP 400 : un par REMBT enfant alimenté en cascade
-  const children = CI.rembts.filter(r => r.parentId === rembtId).length;
+  const children = CI.rembts.filter(x => x.parentId === rembtId);
   const dim = emptyDim();
-  if(lgts.length > 0) dim.RAC240 = 1;
+  // Arrivée réseau — module RAC selon la section du câble amont
+  if(lgts.length > 0 || children.length > 0 || (r && r.parentId != null)){
+    let arrSec = 240;
+    if(r && r.parentId != null && r.link)  arrSec = r.link.section;
+    else if(r && r.cf && r.cf.active)      arrSec = r.cf.section;
+    dim[sectionToRAC(arrSec)] += 1;
+  }
+  // Branchements protégés (un par logement)
   dim.BR60M = mono;
   dim.BR60T = tri;
-  if(children > 0) dim.RCP400 = children;
+  // Départs réseau vers les REMBT enfants (cascade / repiquage)
+  children.forEach(c => { dim[sectionToRAC(c.link ? c.link.section : 240)] += 1; });
   return dim;
+}
+// Plages libres + réserve réalimentation (catalogue : « prévoir 2 plages libres
+// pour la réalimentation »). Renvoie le support suggéré, les plages libres, si
+// la réserve de 2 est respectée, et le support qui la garantirait.
+function rembtReserve(plages){
+  const sugg = rembtSuggest(plages);
+  if(sugg == null) return { sugg:null, free:0, ok:false, next:null };
+  let next = null;
+  for(const sz of REMBT_SIZES){ if(sz >= plages + 2){ next = sz; break; } }
+  return { sugg, free: sugg - plages, ok: (sugg - plages) >= 2, next };
+}
+// Nomenclature à commander d'un REMBT : enveloppe + support + modules (avec réfs).
+function rembtBOM(r){
+  const sugg = rembtSuggest(rembtPlages(r));
+  const lines = [];
+  if(sugg != null && REMBT_SUPPORT[sugg]){
+    const s = REMBT_SUPPORT[sugg];
+    lines.push({ label:'Borne '+s.gamme, qty:1, ref:s.envRef, nom:s.envNom });
+    lines.push({ label:'Support '+sugg+' plages G3', qty:1, ref:s.supRef, nom:s.supNom });
+  }
+  MODULES.forEach(m => { const q = r.dim[m.k]||0; if(q>0) lines.push({ label:m.n, qty:q, ref:m.ref, nom:m.nom }); });
+  return lines;
 }
 
 let CI = (function(){
@@ -1530,8 +1580,14 @@ function renderDim(){
     } else {
       h += `<span class="rb-mod-empty">Aucun module — cliquez « ⚡ Calcul auto » ou ajustez ci-dessous</span>`;
     }
-    h += `</div>
-          <details class="rb-mod-edit">
+    h += `</div>`;
+    const _rsv = rembtReserve(plages);
+    if(_rsv.sugg != null){
+      h += _rsv.ok
+        ? `<div style="margin-top:6px;font-size:11px;color:#9fd6a9">✓ ${_rsv.free} plage(s) libre(s) — réserve réalimentation OK <span style="opacity:.55">(catalogue : 2 plages conseillées)</span></div>`
+        : `<div style="margin-top:6px;font-size:11px;color:#e0b84a">⚠ ${_rsv.free} plage(s) libre(s) — pour réserver 2 plages de réalimentation : ${_rsv.next ? 'support '+_rsv.next+' plages ('+REMBT_SUPPORT[_rsv.next].gamme+')' : 'répartir sur 2 REMBT'}</div>`;
+    }
+    h += `<details class="rb-mod-edit">
             <summary>✏️ Ajuster les modules</summary>
             <div class="rb-mods">`;
     MODULES.forEach(m => {
@@ -1545,7 +1601,14 @@ function renderDim(){
       </div>`;
     });
     h += `</div>
-          </details>
+          </details>`;
+    const _bom = rembtBOM(r);
+    if(_bom.length){
+      h += `<details class="rb-mod-edit" style="margin-top:8px"><summary>🧾 Nomenclature à commander</summary><table class="rb-ref" style="margin-top:6px;width:100%"><tr><th>Désignation</th><th>Qté</th><th>Réf. éclair</th><th>Nom. Enedis</th></tr>`
+        + _bom.map(b => `<tr><td class="fl L">${escapeHtml(b.label)}</td><td>${b.qty}</td><td>${b.ref}</td><td>${b.nom}</td></tr>`).join('')
+        + `</table></details>`;
+    }
+    h += `
         </div>
 
         <details class="rb-notes-det">
@@ -1712,13 +1775,11 @@ function updRembtDim(id, k, v){
 }
 function autoFillRembt(id){
   const r = CI.rembts.find(x => x.id === id); if(!r) return;
-  const suggested = autoModules(id);
-  // Conserve RAC150/RAC35 manuels ; calcule RAC240, BR60M/T et RCP400
-  // (RCP400 = 1 départ réseau par REMBT alimenté en cascade depuis celui-ci)
-  r.dim.RAC240 = suggested.RAC240;
-  r.dim.BR60M = suggested.BR60M;
-  r.dim.BR60T = suggested.BR60T;
-  r.dim.RCP400 = suggested.RCP400;
+  const s = autoModules(id);
+  // Calcule l'arrivée + les départs réseau (RAC) et les branchements (BR).
+  // RCP 400 et RAC 35 restent saisis manuellement (fausse-coupure, départs
+  // non protégés selon le schéma).
+  ['RAC240','RAC150','RAC150b','BR60M','BR60T'].forEach(k => { r.dim[k] = s[k] || 0; });
   save(); R();
 }
 // ─── Coffret de façade (CCPI) ────────────────────────────────
@@ -2767,11 +2828,17 @@ async function exportPDF(){
       yPos += 8;
     }
 
-    const dHead = [['Module','Places','Qté','Plages']];
+    const dHead = [['Désignation','Places','Qté','Plages']];
     const dBody = MODULES.map(m => {
       const q = r.dim[m.k] || 0, p = q*m.p;
       return [m.l, m.p, q, p];
     });
+    // Nomenclature à commander : enveloppe + support en tête de tableau
+    if(sugg != null && REMBT_SUPPORT[sugg]){
+      const _s = REMBT_SUPPORT[sugg];
+      dBody.unshift([{content:`Support ${sugg} plages G3  ·  réf ${_s.supRef}  ·  Nom. Enedis ${_s.supNom}`, colSpan:3, styles:{halign:'left', fillColor:[226,232,240]}}, {content:'1', styles:{fillColor:[226,232,240]}}]);
+      dBody.unshift([{content:`Enveloppe — Borne ${_s.gamme}  ·  réf ${_s.envRef}  ·  Nom. Enedis ${_s.envNom}`, colSpan:3, styles:{halign:'left', fillColor:[226,232,240]}}, {content:'1', styles:{fillColor:[226,232,240]}}]);
+    }
     const tooManyPDF = nLgts > REMBT_MAX_LGTS;
     const sizeBg = (sugg == null || tooManyPDF) ? badPDF : (plages > sugg - 1 ? warnPDF : okPDF);
     dBody.push([{content:'NOMBRE DE PLAGES', colSpan:3, styles:{fillColor:navy, textColor:white, fontStyle:'bold'}},
@@ -2790,6 +2857,13 @@ async function exportPDF(){
           : `${sugg} plages`,
       styles:{fillColor:sizeBg, fontStyle:'bold'}
     }]);
+    const _rsvP = rembtReserve(plages);
+    if(_rsvP.sugg != null && !tooManyPDF){
+      dBody.push([{content: _rsvP.ok
+          ? `RÉSERVE RÉALIMENTATION — ✓ ${_rsvP.free} plage(s) libre(s) (catalogue : ≥ 2 conseillées)`
+          : `RÉSERVE RÉALIMENTATION — ⚠ ${_rsvP.free} plage(s) libre(s) ; pour en réserver 2 : ${_rsvP.next ? 'support '+_rsvP.next+' plages ('+REMBT_SUPPORT[_rsvP.next].gamme+')' : 'répartir sur 2 REMBT'}`,
+        colSpan:4, styles:{fillColor:_rsvP.ok?okPDF:warnPDF, halign:'left', fontStyle:'bold'}}]);
+    }
     if(r.notes && r.notes.trim()){
       dBody.push([{content:'📝 Notes : '+r.notes, colSpan:4, styles:{fontStyle:'italic', fillColor:[255,242,204], halign:'left'}}]);
     }

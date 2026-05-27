@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.14';
-window.AL_VERSION_DATE = '2026-05-26';
-window.AL_VERSION_TIME = '22:50';
-window.AL_VERSION_NOTE = 'Cohérence des résistivités : Calcul Câble utilise désormais les mêmes valeurs que Calculs Individuels — Cu 0,0225 / Alu 0,037 Ω·mm²/m, à température de service (NF C 15-100 §525, ≈ 1,25 × ρ à 20 °C) au lieu des valeurs à 20 °C. Les chutes de tension affichées sont donc un peu plus élevées (plus prudentes) et identiques entre les deux pages.';
+window.AL_VERSION      = 'v3.15';
+window.AL_VERSION_DATE = '2026-05-27';
+window.AL_VERSION_TIME = '08:33';
+window.AL_VERSION_NOTE = 'Dimensionnement REMBT revu d\'après le catalogue Cahors / Enedis-Spec-REMBT : (1) réserve « 2 plages libres pour la réalimentation » signalée dans chaque REMBT ; (2) nomenclature à commander par REMBT (enveloppe REMMO + support + modules avec réfs Cahors), à l\'écran et dans le PDF ; (3) choix auto des modules affiné — arrivée RAC selon la section du câble amont et départ réseau RAC par cascade (au lieu d\'un RCP 400 systématique).';

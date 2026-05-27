@@ -968,7 +968,8 @@ function normRembt(x){
     dim: Object.assign(emptyDim(), dimSrc),
     cf: Object.assign(defaultCF(), x.cf || {}),
     link: Object.assign(defaultLink(), x.link || {}),
-    manual: !!x.manual
+    manual: !!x.manual,
+    dimManual: !!x.dimManual
   };
 }
 // Migration : ancien format {P, lgts, dim, limT, limTot} → {P, lgts(+rembtId), rembts[], …}
@@ -1571,15 +1572,15 @@ function renderDim(){
 
         <div class="rb-block">
           <div class="rb-block-h">
-            <span>📦 Modules — <b class="${stateCls==='state-bad'?'rb-h-bad':stateCls==='state-warn'?'rb-h-warn':'rb-h-ok'}">${sizeLbl}</b></span>
-            <button class="btn" style="padding:3px 11px;font-size:10.5px;margin-left:auto" onclick="autoFillRembt('${r.id}')">⚡ Calcul auto</button>
+            <span>📦 Modules — <b class="${stateCls==='state-bad'?'rb-h-bad':stateCls==='state-warn'?'rb-h-warn':'rb-h-ok'}">${sizeLbl}</b><span style="font-size:10px;font-weight:600;margin-left:8px;color:${r.dimManual?'#e0b84a':'#9fd6a9'}">${r.dimManual?'✋ manuel':'⚙️ auto'}</span></span>
+            ${r.dimManual ? `<button class="btn" style="padding:3px 11px;font-size:10.5px;margin-left:auto" onclick="autoFillRembt('${r.id}')" title="Repasser ce REMBT en calcul automatique">↺ Calcul auto</button>` : ''}
           </div>
           <div class="rb-mod-sum">`;
     const usedMods = MODULES.filter(m => (r.dim[m.k]||0) > 0);
     if(usedMods.length){
       h += usedMods.map(m => `<span class="rb-modchip">${m.n} ×${r.dim[m.k]}</span>`).join('');
     } else {
-      h += `<span class="rb-mod-empty">Aucun module — cliquez « ⚡ Calcul auto » ou ajustez ci-dessous</span>`;
+      h += `<span class="rb-mod-empty">Aucun module — rattachez des logements (calcul automatique) ou ajustez manuellement ci-dessous</span>`;
     }
     h += `</div>`;
     const _rsv = rembtReserve(plages);
@@ -1772,15 +1773,13 @@ function setRembtNotes(id, v){
 function updRembtDim(id, k, v){
   const r = CI.rembts.find(x => x.id === id); if(!r) return;
   r.dim[k] = Math.max(0, parseInt(v, 10) || 0);
+  r.dimManual = true;   // saisie manuelle → ce REMBT n'est plus recalculé automatiquement
   save(); R();
 }
 function autoFillRembt(id){
   const r = CI.rembts.find(x => x.id === id); if(!r) return;
-  const s = autoModules(id);
-  // Calcule l'arrivée réseau (RAC), les branchements (BR) et les départs
-  // protégés vers les cascades (RCP 400). RAC 35 et RCP 400 supplémentaires
-  // (fausse-coupure en tête…) restent saisis manuellement.
-  ['RAC240','RAC150','RAC150b','BR60M','BR60T','RCP400'].forEach(k => { r.dim[k] = s[k] || 0; });
+  r.dimManual = false;       // repasse ce REMBT en calcul automatique
+  r.dim = autoModules(id);   // recalcul immédiat (le rendu le maintient ensuite à jour)
   save(); R();
 }
 // ─── Coffret de façade (CCPI) ────────────────────────────────
@@ -1887,6 +1886,10 @@ function autoDistributeRembts(){
 // Render all
 function R(){
   if(autoDistributeRembts()) save();
+  // Dimensionnement « full auto » : les modules de chaque REMBT sont recalculés
+  // à chaque rendu d'après les logements + la structure en cascade. Un REMBT
+  // passé en saisie manuelle (r.dimManual) est laissé tel quel.
+  CI.rembts.forEach(r => { if(!r.dimManual) r.dim = autoModules(r.id); });
   document.getElementById('bL').textContent = CI.lgts.length + ' lgts';
   document.getElementById('projName').value = CI.P || '';
   // Toggle de mode (3 boutons)

@@ -267,10 +267,10 @@ h+=`</div></div>`});h+='</div>';return h}
 function rTimeline(tasks){const WEEKS=GW();const ch=[...new Set(tasks.map(t=>t.chantier))].sort();const mx={};ch.forEach(c=>mx[c]={});tasks.forEach(t=>{(mx[t.chantier][t.week]=mx[t.chantier][t.week]||[]).push(t)});
 let h=`<div class="timeline-container"><div class="timeline-grid" style="grid-template-columns:200px repeat(${WEEKS.length},1fr)"><div class="timeline-header-cell">CHANTIER</div>`;
 WEEKS.forEach(w=>h+=`<div class="timeline-header-cell">S${pad(w)}</div>`);
-ch.forEach(c=>{h+=`<div class="timeline-row-label" style="border-left:3px solid ${gc(c)}">${c}</div>`;
+ch.forEach(c=>{h+=`<div class="timeline-row-label" style="border-left:3px solid ${gc(c)}">${esc(c)}</div>`;
 WEEKS.forEach(w=>{const cl=mx[c][w]||[];if(!cl.length){h+=`<div class="timeline-cell"><div class="timeline-dot empty"></div></div>`;return}
 const hw=cl.some(t=>t.hasAttention),hr=cl.some(t=>t.status==='report'),ht=cl.some(t=>t.status==='todo'),dc=hw?'warn':hr?'report':ht?'todo':'done';
-h+=`<div class="timeline-cell"><div class="timeline-dot ${dc}" style="width:${Math.min(8+cl.length*5,28)}px;height:${Math.min(8+cl.length*5,28)}px;cursor:pointer" onclick="setWeek(${w});setView('table')"></div><div class="tt">${c} S${pad(w)}: ${cl.length}</div></div>`})});
+h+=`<div class="timeline-cell"><div class="timeline-dot ${dc}" style="width:${Math.min(8+cl.length*5,28)}px;height:${Math.min(8+cl.length*5,28)}px;cursor:pointer" onclick="setWeek(${w});setView('table')"></div><div class="tt">${esc(c)} S${pad(w)}: ${cl.length}</div></div>`})});
 h+='</div></div>';return h}
 function rModal(){
 if(modal.mode==='importPreview')return rImportPreviewModal();
@@ -279,7 +279,7 @@ if(modal.mode==='delWeek')return rDelWeekM();
 const isE=modal.mode==='edit';const t=isE?modal.task:{week:modal.week||GW()[GW().length-1]||1,chantier:'',tache:'',status:'todo',isReport:false,reportTo:'',date:'',hasAttention:false,attentionMsg:''};
 const curStatus=t.status||(t.isReport?'report':(t.date?'progress':'todo'));
 const wO=Array.from({length:53},(_,i)=>i+1).map(w=>`<option value="${w}" ${t.week===w?'selected':''}>Semaine ${pad(w)}</option>`).join('');
-const cO=allCh().map(c=>`<option value="${c}">${c}</option>`).join('');
+const cO=allCh().map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
 const rW=t.reportTo?parseInt(t.reportTo.replace(/\D/g,'')):t.week+1;
 const rO=Array.from({length:53},(_,i)=>i+1).map(w=>`<option value="${w}" ${rW===w?'selected':''}>Semaine ${pad(w)}</option>`).join('');
 return`<div class="modal-overlay" onclick="if(event.target===this){modal=null;render()}"><div class="modal">
@@ -288,7 +288,7 @@ return`<div class="modal-overlay" onclick="if(event.target===this){modal=null;re
 <div class="form-row"><div class="form-group"><label>Semaine</label><select class="form-input" id="m-week">${wO}</select></div><div class="form-group"><label>Statut</label><select class="form-input" id="m-status" onchange="updM()"><option value="report" ${curStatus==='report'?'selected':''}>Reportée</option><option value="todo" ${curStatus==='todo'?'selected':''}>À faire</option><option value="progress" ${curStatus==='progress'?'selected':''}>Fini / Date</option></select></div></div>
 <div class="form-group"><label>Chantier</label><input class="form-input" id="m-chantier" list="dl-ch" value="${esc(t.chantier)}" placeholder="Nom du chantier..."><datalist id="dl-ch">${cO}</datalist></div>
 <div class="form-group"><label>Tâche</label><input class="form-input" id="m-tache" value="${esc(t.tache)}" placeholder="Description..."></div>
-<div class="form-row"><div class="form-group" id="m-rg" style="${curStatus==='report'?'':'display:none'}"><label>Reporter vers</label><select class="form-input" id="m-reportTo">${rO}</select></div><div class="form-group" id="m-dg" style="${curStatus==='progress'?'':'display:none'}"><label>Date de sortie</label><input class="form-input" type="date" id="m-date" value="${t.date}" onchange="if(this.value){document.getElementById('m-status').value='progress';updM()}"></div></div>
+<div class="form-row"><div class="form-group" id="m-rg" style="${curStatus==='report'?'':'display:none'}"><label>Reporter vers</label><select class="form-input" id="m-reportTo">${rO}</select></div><div class="form-group" id="m-dg" style="${curStatus==='progress'?'':'display:none'}"><label>Date de sortie</label><input class="form-input" type="date" id="m-date" value="${esc(t.date)}" onchange="if(this.value){document.getElementById('m-status').value='progress';updM()}"></div></div>
 <div class="form-group" style="display:flex;align-items:center;gap:10px"><label style="margin:0;cursor:pointer;display:flex;align-items:center;gap:6px"><input type="checkbox" id="m-att" ${t.hasAttention?'checked':''} onchange="document.getElementById('m-amg').style.display=this.checked?'':'none'" style="width:16px;height:16px;accent-color:var(--warn)"> Alerte ATTENTION</label></div>
 <div class="form-group" id="m-amg" style="${t.hasAttention?'':'display:none'}"><label>Message d'alerte</label><input class="form-input" id="m-attMsg" value="${esc(t.attentionMsg||'')}" placeholder="ATTENTION : ..."></div>
 </div>
@@ -457,7 +457,7 @@ function rImportPreviewModal(){
   const rp=t.filter(x=>x.status==='report').length, td=t.filter(x=>x.status==='todo').length, dn=t.filter(x=>x.status==='progress').length, att=t.filter(x=>x.hasAttention).length;
   const overlapping=weeks.filter(w=>TASKS.some(x=>x.week===w));
   return `<div class="modal-overlay" onclick="if(event.target===this){modal=null;render()}"><div class="modal">
-<div class="modal-header"><h3>📥 Import depuis ${modal.fileName}</h3><button class="modal-close" onclick="modal=null;render()">×</button></div>
+<div class="modal-header"><h3>📥 Import depuis ${esc(modal.fileName)}</h3><button class="modal-close" onclick="modal=null;render()">×</button></div>
 <div class="modal-body">
 <p style="font-size:14px;color:var(--text2);margin-bottom:12px">Fichier analysé — voici ce qui va être importé :</p>
 <div class="del-summary">

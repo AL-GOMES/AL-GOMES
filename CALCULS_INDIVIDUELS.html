@@ -2175,7 +2175,10 @@ function renderSchema(){
         ${c1only ? '' : '<label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" '+(pdfPageOpts.dim?'checked':'')+' onchange="setPdfPage(\'dim\', this.checked)"> Dimensionnement REMBT</label>'}
         <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" ${pdfPageOpts.schema?'checked':''} onchange="setPdfPage('schema', this.checked)"> Schéma récapitulatif</label>
       </div>
-      <button class="btn" onclick="exportPDF()">📄 Exporter PDF complet</button>
+      <div style="display:flex;flex-wrap:wrap;gap:10px">
+        <button class="btn" onclick="exportPDF()">📄 Exporter PDF complet</button>
+        <button class="btn" onclick="exportDerivationsTA()" title="Enregistrer les dérivations au format .ALG, réimportable dans le module Tableau Abonné (bouton « 📤 Importer Dérivations »)">💾 Enregistrer dérivations → Tableau Abonné</button>
+      </div>
     </div>
 
     <div class="plan-paper" data-title="PLAN — ${escapeHtml(CI.P||'Sans titre').toUpperCase()} · ${c1only?'DÉRIVATIONS INDIVIDUELLES CIBE → TA':'BRANCHEMENT COLLECTIF NF C 14-100'}">`;
@@ -2736,6 +2739,68 @@ async function importXLS(input){
     alert('Ce fichier Excel ne contient pas de données reconnaissables.\nUtilisez un fichier exporté depuis cette application.');
   }catch(e){ alert('Erreur d\'import : '+e.message); }
   input.value = '';
+}
+
+// ═══ EXPORT DÉRIVATIONS → TABLEAU ABONNÉ ═══
+// Enregistre les dérivations (logements) au format .ALG « algomes-tgbt-share »,
+// directement réimportable dans le module Tableau Abonné (bouton « 📤 Importer
+// Dérivations »). Mapping : f = niveau · r = repère (N° Archi) · e = N° ENEDIS
+// (vide) · u = surface (m²) — le Tableau Abonné en dérive la puissance (pw) et
+// le calibre (cl). Les logements sont regroupés par bâtiment.
+function _floorIndexTA(niv){
+  if(!niv) return 0;
+  const s = String(niv).toUpperCase().trim();
+  const m = s.match(/R\s*\+\s*(\d+)/);
+  if(m) return parseInt(m[1], 10);
+  return 0; // RDC, SS, RDJ, RDC BAS/HAUT… → rez (le Tableau Abonné ne gère que RDC + R+n)
+}
+function exportDerivationsTA(){
+  if(!CI.lgts.length){ alert('Aucun logement à exporter.'); return; }
+  // Regroupe les logements par bâtiment, dans l'ordre d'apparition.
+  const order = [];
+  const byBat = new Map();
+  CI.lgts.forEach(l => {
+    const bat = ((l.bat != null ? String(l.bat) : '') .trim()) || 'A';
+    if(!byBat.has(bat)){ byBat.set(bat, []); order.push(bat); }
+    byBat.get(bat).push(l);
+  });
+  const B = order.map(bat => {
+    const lgts = byBat.get(bat);
+    let niv = 0;
+    lgts.forEach(l => { niv = Math.max(niv, _floorIndexTA(l.niv)); });
+    const fl = ['RDC']; for(let i = 1; i <= niv; i++) fl.push('R+' + i);
+    const a = lgts.map(l => {
+      const fi = _floorIndexTA(l.niv);
+      return {
+        f: fi === 0 ? 'RDC' : 'R+' + fi,
+        r: (l.lett != null ? String(l.lett) : ''),
+        e: '',
+        u: parseFloat(l.S) || 0
+      };
+    });
+    return { n: (bat.length <= 2 ? 'Bâtiment ' + bat : bat), niv, fl, a };
+  });
+  const pName = (CI.P || 'Sans titre').trim();
+  const payload = {
+    _format: 'algomes-tgbt-share',
+    _version: 1,
+    _exportedAt: new Date().toISOString(),
+    _note: 'Dérivations exportées depuis Calculs Individuels — A.L. GOMES',
+    P: pName,
+    B
+  };
+  const json = JSON.stringify(payload, null, 2);
+  const blob = new Blob([json], { type: 'application/octet-stream' });
+  const safe = (pName.replace(/[^a-zA-Z0-9éèêëàâùûôîïçÉÈÊËÀÂÙÛÔÎÏÇ _-]/g, '_').trim()) + ' - DERIVATIONS.ALG';
+  if(window.showSaveFilePicker){
+    window.showSaveFilePicker({ suggestedName: safe, types:[{ description:'Sauvegarde de partage A.L.GOMES', accept:{ 'application/octet-stream':['.ALG','.alg'] } }] })
+      .then(async h => { const w = await h.createWritable(); await w.write(blob); await w.close(); })
+      .catch(e => { if(e.name !== 'AbortError') alert('Erreur : ' + e.message); });
+  } else {
+    const url = URL.createObjectURL(blob); const link = document.createElement('a');
+    link.href = url; link.download = safe;
+    document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url);
+  }
 }
 
 async function exportPDF(){

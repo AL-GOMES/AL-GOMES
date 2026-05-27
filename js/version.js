@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.24';
+window.AL_VERSION      = 'v3.25';
 window.AL_VERSION_DATE = '2026-05-27';
-window.AL_VERSION_TIME = '10:55';
-window.AL_VERSION_NOTE = 'Export PDF : nouvelle page « FEUILLE DE CALCUL RÉSEAUX » (optionnelle, cochée par défaut) qui liste les câbles réseau BT — CCPI → REMBT et liaisons cascade REMBT → REMBT — avec longueur, section, nombre de logements desservis, puissance foisonnée, coefficient k, courant d\'emploi, calibre normalisé et chute de tension (colorée selon la limite). Case « Feuille réseaux » ajoutée dans l\'onglet Synthèse.';
+window.AL_VERSION_TIME = '11:49';
+window.AL_VERSION_NOTE = 'Calculs Individuels → onglet Synthèse : nouveau bouton « 💾 Enregistrer dérivations → Tableau Abonné » qui exporte les logements au format .ALG (algomes-tgbt-share), directement réimportable dans le module Tableau Abonné via « 📤 Importer Dérivations ». Regroupement par bâtiment ; mapping niveau / repère (N° Archi) / surface (m²) — la puissance et le calibre sont dérivés de la surface côté Tableau Abonné.';

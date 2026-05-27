@@ -2791,7 +2791,7 @@ function exportDerivationsTA(){
   };
   const json = JSON.stringify(payload, null, 2);
   const blob = new Blob([json], { type: 'application/octet-stream' });
-  const safe = (pName.replace(/[^a-zA-Z0-9éèêëàâùûôîïçÉÈÊËÀÂÙÛÔÎÏÇ _-]/g, '_').trim()) + ' - DERIVATIONS.ALG';
+  const safe = (pName.replace(/[^a-zA-Z0-9éèêëàâùûôîïçÉÈÊËÀÂÙÛÔÎÏÇ _-]/g, '_').trim()) + ' - DERIVATIONS INDIV.ALG';
   if(window.showSaveFilePicker){
     window.showSaveFilePicker({ suggestedName: safe, types:[{ description:'Sauvegarde de partage A.L.GOMES', accept:{ 'application/octet-stream':['.ALG','.alg'] } }] })
       .then(async h => { const w = await h.createWritable(); await w.write(blob); await w.close(); })

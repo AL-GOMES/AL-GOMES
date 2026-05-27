@@ -19,7 +19,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" integrity="sha384-sEVIly94UBRLKWdkYoPpSG7GD/e79YHMrxVyZaOk712Ga7+EAw6w1EFi+xBzBdd+" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js" integrity="sha384-EkqK+ezBWJuvO3hfrSx2iVqr3YQbhmnzn8kPhOpBZ+0GMVU5oGSgptwIu8D84HjE" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js" integrity="sha384-M481iNZJtbpypKgvlvZ+78Giq0BsewFLk5r2k+MOcGXlwKCc27DQRZ+WCV/zpmpC" crossorigin="anonymous"></script>
-<script src="js/version.js?b=60"></script>
+<script src="js/version.js?b=61"></script>
 <script src="js/firebase-init.js"></script>
 <script src="js/util.js"></script>
 <style>
@@ -340,6 +340,9 @@ window.navigateTo = navigateTo;
 //  - empêche la connexion hors créneau (déconnexion immédiate)
 //  - affiche un compte à rebours dans la topbar pendant le créneau
 //  - déconnecte à l'expiration du créneau
+// L'heure de référence est l'heure SERVEUR (Firestore/Google), pas l'horloge du
+// PC : voir serverNow()/syncServerTime() plus bas. Modifier l'heure de sa
+// machine ne permet donc plus de contourner le créneau.
 // ============================================================
 // Ordre Date.getDay() : 0=Dim, 1=Lun, ..., 6=Sam
 const DAY_KEYS = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
@@ -391,7 +394,41 @@ function formatRemaining(sec){
 
 let _scheduleTickerId = null;
 
-function initAccessSchedule(){
+// ─── Heure de référence : horloge SERVEUR (Firestore/Google), pas celle du PC ───
+// On lit l'heure serveur (via presence/{uid}.lastSeen, déjà autorisé par les règles)
+// et on l'ancre sur performance.now() — une horloge monotone insensible aux
+// changements d'heure système. serverNow() renvoie donc l'heure réelle même si
+// l'utilisateur modifie l'horloge de son ordinateur, avant OU pendant la session.
+// Repli : tant que la synchro n'a pas eu lieu (ou si le réseau échoue), on retombe
+// sur l'horloge locale — soit le comportement historique, jamais pire.
+let _srvAnchorMs = null;   // heure serveur (ms epoch) au moment de la synchro
+let _perfAnchor  = 0;      // performance.now() correspondant
+
+function serverNow(){
+  if(_srvAnchorMs === null) return new Date();
+  return new Date(_srvAnchorMs + (performance.now() - _perfAnchor));
+}
+
+async function syncServerTime(){
+  const user = currentUserData;
+  if(!user || !user.uid || !window.db) return false;
+  try {
+    const ref = db.collection('presence').doc(user.uid);
+    // Écrit un horodatage serveur (champ déjà utilisé par la présence)…
+    await ref.set({ lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    // …puis le relit DEPUIS LE SERVEUR (jamais le cache) pour obtenir l'heure Google.
+    const snap = await ref.get({ source: 'server' });
+    const ts = snap.get('lastSeen');
+    if(ts && typeof ts.toMillis === 'function'){
+      _srvAnchorMs = ts.toMillis();
+      _perfAnchor  = performance.now();
+      return true;
+    }
+  } catch(e){ /* hors-ligne / refusé → on garde l'horloge locale */ }
+  return false;
+}
+
+async function initAccessSchedule(){
   const user = currentUserData;
   if(!user) return;
 
@@ -401,8 +438,18 @@ function initAccessSchedule(){
     return;
   }
 
-  // Vérif immédiate : hors créneau → déconnexion
-  const ev = evaluateSchedule(user.schedule, new Date());
+  // 1) Vérif immédiate avec l'heure disponible (locale au pire) : bloque tout de
+  //    suite si l'utilisateur est déjà hors créneau → pas de "flash" de l'appli.
+  let ev = evaluateSchedule(user.schedule, serverNow());
+  if(!ev.inside){
+    blockAccess(ev.today);
+    return;
+  }
+
+  // 2) Synchronise l'heure SERVEUR (anti-triche horloge PC) puis re-vérifie :
+  //    attrape le cas "horloge locale avancée pour entrer dans le créneau".
+  await syncServerTime();
+  ev = evaluateSchedule(user.schedule, serverNow());
   if(!ev.inside){
     blockAccess(ev.today);
     return;
@@ -412,12 +459,15 @@ function initAccessSchedule(){
   document.getElementById('accessCountdown').style.display = 'flex';
   tickSchedule();
   _scheduleTickerId = setInterval(tickSchedule, 1000);
+
+  // Re-synchronise périodiquement (corrige la dérive d'horloge + la mise en veille)
+  setInterval(syncServerTime, 5 * 60 * 1000);
 }
 
 function tickSchedule(){
   const user = currentUserData;
   if(!user || !user.schedule) return;
-  const ev = evaluateSchedule(user.schedule, new Date());
+  const ev = evaluateSchedule(user.schedule, serverNow());
   if(!ev.inside){
     // Le créneau vient de se terminer → déconnexion
     clearInterval(_scheduleTickerId);
@@ -468,7 +518,7 @@ async function blockAccess(today, wasInside){
 
 function initClock() {
   function update() {
-    const now = new Date();
+    const now = serverNow();
     const days = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
     const months = ['janv.','fév.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
     document.getElementById('topDate').textContent = days[now.getDay()] + ' ' + now.getDate() + ' ' + months[now.getMonth()];

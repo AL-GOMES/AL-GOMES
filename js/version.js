@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.33';
+window.AL_VERSION      = 'v3.34';
 window.AL_VERSION_DATE = '2026-05-27';
-window.AL_VERSION_TIME = '16:08';
-window.AL_VERSION_NOTE = 'Administration → Rôles & Accès : la page « Calculs individuels » apparaît désormais dans la matrice « Accès par rôle » (elle manquait), permettant d\'en restreindre l\'accès par rôle. Par défaut elle reste ouverte à tous, comme avant.';
+window.AL_VERSION_TIME = '21:50';
+window.AL_VERSION_NOTE = 'Sécurité : une seule connexion simultanée par compte. Si le compte est déjà utilisé sur un autre appareil, la nouvelle connexion est refusée (« Compte déjà connecté »). Plusieurs onglets sur le même navigateur restent autorisés. Après fermeture de l\'autre session, la reconnexion est possible (immédiate si déconnexion propre, sinon sous 1 à 2 min).';

@@ -24,7 +24,7 @@
 <link rel="preconnect" href="https://firestore.googleapis.com">
 <link rel="preconnect" href="https://cdnjs.cloudflare.com">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dérivations & TGBT</title>
+<title>Calculs collectif</title>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 html{font-size:13px}
@@ -179,7 +179,7 @@ tr:hover .rd{opacity:1}.rd:hover{color:#FF6B6B}
       Accueil
     </a>
     <div class="topbar-sep"></div>
-    <span class="topbar-title">DÉRIVATIONS & TGBT</span>
+    <span class="topbar-title">CALCULS COLLECTIF</span>
     <div class="topbar-sep"></div>
     <input type="text" id="projName" value="" placeholder="Nom de l'affaire..." style="background:rgba(62,76,112,0.08);border:1px solid rgba(104,118,156,0.20);border-radius:6px;
       color:rgba(240,243,250,0.95);font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;font-weight:600;letter-spacing:0.5px;
@@ -1098,7 +1098,7 @@ async function exportXLS(){
 // l'importer QUE dans le module Tableau Abonné (et non dans Dérivations
 // TGBT). Contient les mêmes données utiles que l'export Excel mais dans
 // un format opaque (JSON) — pas modifiable dans Excel.
-// Nom du fichier : <NOM AFFAIRE> - DERIVATIONS.ALG
+// Nom du fichier : <NOM AFFAIRE> - DERIVATIONS COLLECTIFS.ALG
 async function exportShareTA(){
   const pName=document.getElementById('projName').value.trim()||'Sans titre';
   const payload={
@@ -1113,8 +1113,8 @@ async function exportShareTA(){
   };
   const json=JSON.stringify(payload,null,2);
   const blob=new Blob([json],{type:'application/octet-stream'});
-  // Format demandé : "<NOM AFFAIRE> - DERIVATIONS.ALG"
-  const safeName=(pName.replace(/[^a-zA-Z0-9éèêëàâùûôîïçÉÈÊËÀÂÙÛÔÎÏÇ _-]/g,'_').trim())+' - DERIVATIONS.ALG';
+  // Format demandé : "<NOM AFFAIRE> - DERIVATIONS COLLECTIFS.ALG"
+  const safeName=(pName.replace(/[^a-zA-Z0-9éèêëàâùûôîïçÉÈÊËÀÂÙÛÔÎÏÇ _-]/g,'_').trim())+' - DERIVATIONS COLLECTIFS.ALG';
   if(window.showSaveFilePicker){
     try{
       const handle=await window.showSaveFilePicker({

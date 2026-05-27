@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.26';
+window.AL_VERSION      = 'v3.27';
 window.AL_VERSION_DATE = '2026-05-27';
-window.AL_VERSION_TIME = '11:53';
-window.AL_VERSION_NOTE = 'Calculs Individuels : le fichier d\'export des dérivations vers le Tableau Abonné est désormais nommé « <AFFAIRE> - DERIVATIONS INDIV.ALG ».';
+window.AL_VERSION_TIME = '12:05';
+window.AL_VERSION_NOTE = 'Le module « Dérivations & TGBT » est renommé « Calculs collectif » (navigation, page d\'accueil, titres). Son export de partage vers le Tableau Abonné s\'appelle désormais « <AFFAIRE> - DERIVATIONS COLLECTIFS.ALG » (l\'export équivalent de Calculs Individuels reste « <AFFAIRE> - DERIVATIONS INDIV.ALG »).';

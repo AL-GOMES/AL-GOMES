@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.22';
+window.AL_VERSION      = 'v3.23';
 window.AL_VERSION_DATE = '2026-05-27';
-window.AL_VERSION_TIME = '10:18';
-window.AL_VERSION_NOTE = 'Synthèse / schéma : le câble de liaison cascade est désormais CENTRÉ sur l\'axe des blocs REMBT (et l\'indentation supprimée), si bien qu\'il relie réellement le bloc parent au bloc enfant — point de départ sur le REMBT amont, flèche d\'arrivée sur le REMBT aval. Corrige le câble qui apparaissait isolé à gauche.';
+window.AL_VERSION_TIME = '10:38';
+window.AL_VERSION_NOTE = 'Installation (étape 1) : chaque carte REMBT affiche désormais un SCHÉMA DE CÂBLAGE du coffret (jeu de barres + symboles des modules, style catalogue Cahors), généré automatiquement depuis la configuration : arrivée réseau ↑, branchements protégés (fusible), départs réseau ↓, départs non protégés (RAC 35, hachuré), RCP 400, et plages libres. En interne, la liste ordonnée des modules (rembtLayout) devient la source unique du dimensionnement et du schéma.';

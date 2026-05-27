@@ -360,6 +360,9 @@ label.rb-block-h{cursor:pointer}
 .rb-mod-edit > summary{cursor:pointer;font-size:11px;color:rgba(190,199,219,0.65);letter-spacing:0.4px;list-style:none;padding:4px 0;user-select:none}
 .rb-mod-edit > summary::-webkit-details-marker{display:none}
 .rb-mod-edit > summary:hover{color:#C7BEF6}
+.rb-schema{margin-top:12px}
+.rb-schema-h{font-size:11px;font-weight:700;color:rgba(208,217,233,0.82);letter-spacing:0.4px;margin-bottom:7px}
+.rb-schema-wrap{padding:10px}
 .rb-notes-det{margin-top:14px}
 .rb-notes-det > summary{cursor:pointer;font-size:12.5px;font-weight:700;color:rgba(236,239,246,0.85);letter-spacing:0.3px;list-style:none;padding:4px 0;user-select:none}
 .rb-notes-det > summary::-webkit-details-marker{display:none}
@@ -849,42 +852,137 @@ function rcpOn(r){
   if(!r) return false;
   return (r.rcp === true || r.rcp === false) ? r.rcp : rcpAuto(r);
 }
-// Modules suggérés pour un REMBT (catalogue Cahors / Enedis-Spec-REMBT) :
-//  - Arrivée réseau EN TÊTE — soit 1 RCP 400 (si point de coupure/protection :
-//    il assure lui-même raccordement + coupure + protection), soit 1 RAC de
-//    fausse coupure selon la section du câble amont, mais JAMAIS les deux ;
+// Liste ORDONNÉE des modules d'un REMBT, avec leur RÔLE — source unique pour le
+// dimensionnement (autoModules) ET le schéma de câblage (busbarSvg).
+// Règle (catalogue Cahors / Enedis-Spec-REMBT) :
+//  - Arrivée réseau EN TÊTE — soit 1 RCP 400 (point de coupure/protection : il
+//    assure lui-même raccordement + coupure + protection), soit 1 RAC de fausse
+//    coupure selon la section du câble amont, mais JAMAIS les deux ;
 //  - 1 BR 60M par logement mono, 1 BR 60T par logement tri (branchements protégés) ;
 //  - 1 départ réseau (RAC) par REMBT enfant alimenté en cascade.
-// (Modules RAC 35 / RCP 400 supplémentaires restent à ajouter manuellement.)
-function autoModules(rembtId){
-  const r = CI.rembts.find(x => x.id === rembtId);
-  const lgts = CI.lgts.filter(l => l.rembtId === rembtId);
+function rembtAutoItems(r){
+  const items = [];
+  if(!r) return items;
+  const lgts = CI.lgts.filter(l => l.rembtId === r.id);
   const mono = lgts.filter(l => lgtPhase(l) === 'M').length;
   const tri  = lgts.filter(l => lgtPhase(l) === 'T').length;
-  const children = CI.rembts.filter(x => x.parentId === rembtId);
-  const isRoot = !r || r.parentId == null;
+  const children = CI.rembts.filter(x => x.parentId === r.id);
+  const isRoot = r.parentId == null;
   const inUse  = lgts.length > 0 || children.length > 0;
-  const dim = emptyDim();
   if(inUse || !isRoot){
     if(rcpOn(r)){
-      // Point de coupure/protection réseau : le RCP 400 assure lui-même
-      // raccordement + coupure + protection EN TÊTE → il tient lieu d'arrivée
-      // réseau (pas de RAC d'arrivée en plus).
-      dim.RCP400 = 1;
+      items.push({ role:'rcp', mod:'RCP400' });
     } else {
-      // Arrivée réseau (fausse coupure) — module RAC selon la section du câble amont.
       let arrSec = 240;
-      if(r && r.parentId != null && r.link)  arrSec = r.link.section;
-      else if(r && r.cf && r.cf.active)      arrSec = r.cf.section;
-      dim[sectionToRAC(arrSec)] += 1;
+      if(r.parentId != null && r.link) arrSec = r.link.section;
+      else if(r.cf && r.cf.active)     arrSec = r.cf.section;
+      items.push({ role:'arrivee', mod:sectionToRAC(arrSec), sec:arrSec });
     }
   }
-  // Branchements protégés (un par logement)
-  dim.BR60M = mono;
-  dim.BR60T = tri;
-  // Départ réseau vers chaque REMBT enfant en cascade (RAC selon section liaison)
-  children.forEach(c => { dim[sectionToRAC(c.link ? c.link.section : 240)] += 1; });
+  for(let i = 0; i < tri;  i++) items.push({ role:'br', mod:'BR60T', phase:'T' });
+  for(let i = 0; i < mono; i++) items.push({ role:'br', mod:'BR60M', phase:'M' });
+  children.forEach(c => {
+    const sec = (c.link && c.link.section) || 240;
+    items.push({ role:'depart', mod:sectionToRAC(sec), sec, to:c.name });
+  });
+  return items;
+}
+// REMBT en saisie manuelle : rôles inconnus → on reconstruit depuis r.dim
+// (1er module réseau = arrivée, les RAC suivants = départs).
+function rembtManualItems(r){
+  const items = [];
+  if(!r) return items;
+  let firstNet = true;
+  ['RCP400','RAC240','RAC150','RAC150b','RAC35','BR60T','BR60M'].forEach(k => {
+    const q = r.dim[k] || 0;
+    for(let i = 0; i < q; i++){
+      if(k === 'RCP400')      items.push({ role:'rcp',    mod:k });
+      else if(k === 'RAC35')  items.push({ role:'nonpro', mod:k });
+      else if(k === 'BR60T')  items.push({ role:'br', mod:k, phase:'T' });
+      else if(k === 'BR60M')  items.push({ role:'br', mod:k, phase:'M' });
+      else { items.push({ role: firstNet ? 'arrivee' : 'depart', mod:k }); firstNet = false; }
+    }
+  });
+  return items;
+}
+function rembtLayout(r){
+  return (r && r.dimManual) ? rembtManualItems(r) : rembtAutoItems(r);
+}
+function autoModules(rembtId){
+  const r = CI.rembts.find(x => x.id === rembtId);
+  const dim = emptyDim();
+  rembtAutoItems(r).forEach(it => { dim[it.mod] = (dim[it.mod] || 0) + 1; });
   return dim;
+}
+// Schéma de câblage du coffret (jeu de barres + symboles des modules), style
+// catalogue Cahors, généré depuis rembtLayout(r) :
+//   arrivée réseau ↑ (bleu) · départ réseau ↓ (bleu) · branchement protégé =
+//   fusible + ↓ · RAC 35 = 3 départs tri non protégés (hachuré) · RCP 400 =
+//   coupure/protection. Les plages non occupées sont marquées « libre ».
+function busbarSvg(r){
+  const items = rembtLayout(r);
+  const used  = rembtPlages(r);
+  const sugg  = rembtSuggest(used);
+  const nPl   = sugg || Math.max(used, 1);
+  const NAVY='#1f3864', INK='#1a1a1a', BLUE='#1f6fb2', GOLD='#f3c521', GREY='#9aa3b2';
+  const plW=50, padX=30, topPad=30;
+  const barY=topPad, barH=9;
+  const modY=barY+barH+12, modH=44;
+  const arrY=modY+modH, arrLen=24;
+  const lblY=arrY+arrLen+13;
+  const W = padX*2 + nPl*plW, H = lblY+44;
+  const esc=s=>escapeHtml(String(s));
+  const px = i => padX + i*plW;
+  const out=[];
+  out.push(`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="uni-svg" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica,Arial,sans-serif">`);
+  // Jeu de barres (barre dorée) + graduations + numéros de plage
+  out.push(`<rect x="${padX}" y="${barY}" width="${nPl*plW}" height="${barH}" rx="1" fill="${GOLD}" stroke="${INK}" stroke-width="1"/>`);
+  for(let i=0;i<=nPl;i++){ out.push(`<line x1="${px(i)}" y1="${barY-4}" x2="${px(i)}" y2="${barY+barH+4}" stroke="${INK}" stroke-width="0.8"/>`); }
+  for(let i=0;i<nPl;i++){ out.push(`<text x="${px(i)+plW/2}" y="${barY-7}" font-size="10" font-weight="700" fill="${INK}" text-anchor="middle">${i+1}</text>`); }
+  const arrowDown=(x,col)=>`<line x1="${x}" y1="${arrY}" x2="${x}" y2="${arrY+arrLen-8}" stroke="${col}" stroke-width="2"/><path d="M${x-5} ${arrY+arrLen-9} L${x+5} ${arrY+arrLen-9} L${x} ${arrY+arrLen} Z" fill="${col}"/>`;
+  const arrowUp  =(x,col)=>`<line x1="${x}" y1="${arrY+arrLen}" x2="${x}" y2="${arrY+8}" stroke="${col}" stroke-width="2"/><path d="M${x-5} ${arrY+9} L${x+5} ${arrY+9} L${x} ${arrY} Z" fill="${col}"/>`;
+  const fuse=(x)=>`<rect x="${x-7}" y="${modY+10}" width="14" height="22" fill="#fff" stroke="${NAVY}" stroke-width="1.5"/><line x1="${x}" y1="${modY+10}" x2="${x}" y2="${modY+32}" stroke="${NAVY}" stroke-width="1.5"/>`;
+  // Regroupe les modules identiques consécutifs (1 étiquette pour le groupe)
+  const groups=[];
+  items.forEach(it=>{
+    const key=[it.role,it.mod,it.phase||'',it.sec||''].join('|');
+    const last=groups[groups.length-1];
+    if(last && last.key===key) last.n++;
+    else groups.push({key, role:it.role, mod:it.mod, phase:it.phase, sec:it.sec, n:1});
+  });
+  let pl=0;
+  if(items.length===0){
+    out.push(`<text x="${W/2}" y="${modY+28}" font-size="11" fill="#888" text-anchor="middle">Aucun module — rattachez des logements ou ajustez ci-dessous.</text>`);
+  }
+  groups.forEach(g=>{
+    const p=(MODULES.find(m=>m.k===g.mod)||{p:1}).p;
+    const gx0=px(pl), gw=g.n*p*plW, gxc=gx0+gw/2;
+    for(let k=0;k<g.n;k++){
+      const x0=px(pl+k*p), w=p*plW, xc=x0+w/2;
+      out.push(`<line x1="${xc}" y1="${barY+barH}" x2="${xc}" y2="${modY}" stroke="${NAVY}" stroke-width="1.4"/>`);
+      out.push(`<rect x="${x0+5}" y="${modY}" width="${w-10}" height="${modH}" rx="2" fill="#fff" stroke="${NAVY}" stroke-width="1.5"/>`);
+      if(g.role==='rcp'){ out.push(fuse(xc)); out.push(arrowDown(xc,NAVY)); }
+      else if(g.role==='br'){ out.push(fuse(xc)); out.push(arrowDown(xc,INK)); }
+      else if(g.role==='nonpro'){
+        for(let h=0;h<3;h++){ const hx=x0+12+h*((w-24)/2); out.push(`<line x1="${hx}" y1="${modY+8}" x2="${hx+7}" y2="${modY+modH-8}" stroke="${NAVY}" stroke-width="1.2"/>`); }
+        for(let a=0;a<3;a++){ out.push(arrowDown(xc-13+a*13,INK)); }
+      }
+      else if(g.role==='arrivee'){ out.push(arrowUp(xc,BLUE)); }
+      else { out.push(arrowDown(xc,BLUE)); }
+    }
+    let l1='', l2='';
+    if(g.role==='rcp'){ l1='RCP 400'; l2='coupure 400 / prot. 200'; }
+    else if(g.role==='br'){ l1=(g.n>1?g.n+'× ':'')+'BR 60'+(g.phase==='T'?'T':'M'); l2='protégé'; }
+    else if(g.role==='nonpro'){ l1=(g.n>1?g.n+'× ':'')+'RAC 35'; l2='3 dép. non prot.'; }
+    else if(g.role==='arrivee'){ l1='Arrivée réseau'; l2=g.sec?g.sec+' mm²':''; }
+    else { l1=(g.n>1?g.n+'× ':'')+'Départ réseau'; l2=g.sec?g.sec+' mm²':''; }
+    out.push(`<text x="${gxc}" y="${lblY}" font-size="9" font-weight="700" fill="${NAVY}" text-anchor="middle">${esc(l1)}</text>`);
+    if(l2) out.push(`<text x="${gxc}" y="${lblY+11}" font-size="8.5" font-weight="500" fill="#555" text-anchor="middle">${esc(l2)}</text>`);
+    pl+=g.n*p;
+  });
+  for(let i=pl;i<nPl;i++){ out.push(`<text x="${px(i)+plW/2}" y="${modY+26}" font-size="8.5" fill="${GREY}" text-anchor="middle">libre</text>`); }
+  out.push(`</svg>`);
+  return out.join('');
 }
 // Plages libres + réserve réalimentation (catalogue : « prévoir 2 plages libres
 // pour la réalimentation »). Renvoie le support suggéré, les plages libres, si
@@ -1629,6 +1727,10 @@ function renderDim(){
         ? `<div style="margin-top:6px;font-size:11px;color:#9fd6a9">✓ ${_rsv.free} plage(s) libre(s) — réserve réalimentation OK <span style="opacity:.55">(catalogue : 2 plages conseillées)</span></div>`
         : `<div style="margin-top:6px;font-size:11px;color:#e0b84a">⚠ ${_rsv.free} plage(s) libre(s) — pour réserver 2 plages de réalimentation : ${_rsv.next ? 'support '+_rsv.next+' plages ('+REMBT_SUPPORT[_rsv.next].gamme+')' : 'répartir sur 2 REMBT'}</div>`;
     }
+    h += `<div class="rb-schema">
+            <div class="rb-schema-h">🔌 Schéma de câblage — jeu de barres${sugg!=null?' · support '+sugg+' plages'+(REMBT_SUPPORT[sugg]?' ('+REMBT_SUPPORT[sugg].gamme+')':''):''}</div>
+            <div class="uni-wrap rb-schema-wrap">${busbarSvg(r)}</div>
+          </div>`;
     h += `<details class="rb-mod-edit">
             <summary>✏️ Ajuster les modules</summary>
             <div class="rb-mods">`;

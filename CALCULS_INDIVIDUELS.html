@@ -653,7 +653,7 @@ const MODULES = [
   { k:'RAC35',   n:'RAC 35',         l:'Module RAC 35 (3Ph+1N) — 3 départs tri, câble 10 à 35²  ·  ENEDIS 67.71.704', p:1, ref:'0540872', nom:'67.71.704' },
   { k:'BR60T',   n:'BR 60T',         l:'Module BR 60T (3Ph+1N) — départ tri protégé 60 A  ·  ENEDIS 67.71.708',     p:1, ref:'0540874', nom:'67.71.708' },
   { k:'BR60M',   n:'BR 60M',         l:'Module BR 60M (1Ph+1N) — départ mono protégé 60 A  ·  ENEDIS 67.71.706',    p:1, ref:'0540873', nom:'67.71.706' },
-  { k:'RCP400',  n:'RCP 400',        l:'Module RCP 400 — coupure 400 A / protection 200 A  ·  réf 0540879',          p:4, ref:'0540879', nom:'—' },
+  { k:'RCP400',  n:'RCP 400',        l:'Module RCP 400 (réseau) — raccordement + coupure 400 A / protection 200 A  ·  ENEDIS 67.71.109', p:4, ref:'0540879', nom:'67.71.109' },
 ];
 
 function defaultLgts(){
@@ -704,7 +704,7 @@ function newRembtId(existing){
 function newRembt(name, existing){
   const id = newRembtId(existing);
   return { id, name: name || ('REMBT '+id.slice(1)), notes:'', parentId:null, dim:emptyDim(),
-           cf: defaultCF(), link: defaultLink(), manual:false };
+           cf: defaultCF(), link: defaultLink(), manual:false, rcp:null };
 }
 // Coffret de façade (CCPI) — entre ENEDIS et un REMBT racine.
 // Inactif par défaut pour préserver la compat ascendante.
@@ -829,12 +829,25 @@ function rembtSuggest(plages){
   for(const sz of REMBT_SIZES) if(plages <= sz) return sz;
   return null;
 }
+// RCP 400 = module RÉSEAU de coupure/protection (400 A / protection 200 A). Sa
+// présence n'est PAS déduite de qui alimente le REMBT, mais de ce que ce REMBT
+// doit faire en aval : couper/protéger un départ → RCP 400 ; simple dérivation
+// de réseau déjà protégé en amont → RAC + BR sans RCP. La règle réelle est fixée
+// par le plan de montage ENEDIS de l'affaire (codet 67.71.109).
+// Pré-cochage selon l'alimentation : coché par défaut pour une racine alimentée
+// DIRECTEMENT par le réseau ENEDIS (ni coffret de façade, ni cascade) ; décoché
+// sinon (CCPI ou cascade = départ déjà protégé en amont). r.rcp surcharge ce défaut.
+function rcpAuto(r){
+  return !!r && r.parentId == null && !(r.cf && r.cf.active);
+}
+function rcpOn(r){
+  if(!r) return false;
+  return (r.rcp === true || r.rcp === false) ? r.rcp : rcpAuto(r);
+}
 // Modules suggérés pour un REMBT (catalogue Cahors / Enedis-Spec-REMBT) :
 //  - 1 module d'arrivée réseau (RAC) selon la section du câble amont (liaison
 //    cascade, CCPI, ou 240² par défaut) ;
-//  - 1 RCP 400 (coupure 400 / protection 200) EN TÊTE : tout REMBT alimenté
-//    directement par le réseau ENEDIS ou par un coffret de façade (CCPI),
-//    c'est-à-dire un REMBT racine ;
+//  - 1 RCP 400 si ce REMBT est un point de coupure/protection réseau (voir rcpOn) ;
 //  - 1 BR 60M par logement mono, 1 BR 60T par logement tri (branchements protégés) ;
 //  - 1 départ réseau (RAC) par REMBT enfant alimenté en cascade.
 // (RAC 35 et RCP 400 supplémentaires restent à ajouter manuellement.)
@@ -853,9 +866,8 @@ function autoModules(rembtId){
     if(r && r.parentId != null && r.link)  arrSec = r.link.section;
     else if(r && r.cf && r.cf.active)      arrSec = r.cf.section;
     dim[sectionToRAC(arrSec)] += 1;
-    // RCP 400 en tête : REMBT alimenté directement par le réseau ENEDIS ou par
-    // un coffret de façade (CCPI) → REMBT racine.
-    if(isRoot) dim.RCP400 = 1;
+    // RCP 400 : seulement si ce REMBT est un point de coupure/protection réseau.
+    if(rcpOn(r)) dim.RCP400 = 1;
   }
   // Branchements protégés (un par logement)
   dim.BR60M = mono;
@@ -973,7 +985,9 @@ function normRembt(x){
     cf: Object.assign(defaultCF(), x.cf || {}),
     link: Object.assign(defaultLink(), x.link || {}),
     manual: !!x.manual,
-    dimManual: !!x.dimManual
+    dimManual: !!x.dimManual,
+    // null = suivre le pré-cochage selon l'alimentation ; true/false = choix explicite
+    rcp: (x.rcp === true || x.rcp === false) ? x.rcp : null
   };
 }
 // Migration : ancien format {P, lgts, dim, limT, limTot} → {P, lgts(+rembtId), rembts[], …}
@@ -1574,6 +1588,18 @@ function renderDim(){
           ${chuteResult(linkChute(r), escapeHtml((CI.rembts.find(x=>x.id===r.parentId)||{}).name||'parent')+' → '+escapeHtml(r.name), r.link.long, r.link.section)}
         </div>` : ''}
 
+        <div class="rb-block ${rcpOn(r) ? 'rb-block-on' : ''}">
+          <label class="rb-block-h">
+            <input type="checkbox" ${rcpOn(r) ? 'checked':''} onchange="toggleRCP('${r.id}',this.checked)">
+            <span>🛡️ Point de coupure / protection réseau — RCP 400 (coupure 400 A / protection 200 A)</span>
+            <span style="margin-left:auto;font-size:10px;font-weight:600;color:${(r.rcp===true||r.rcp===false)?'#e0b84a':'#9fd6a9'}">${(r.rcp===true||r.rcp===false)?'✋ manuel':'⚙️ auto'}</span>
+            ${(r.rcp===true||r.rcp===false)?`<button class="btn" style="padding:2px 9px;font-size:10px;margin-left:8px" onclick="event.preventDefault();resetRCP('${r.id}')" title="Suivre à nouveau le pré-cochage selon l'alimentation">↺</button>`:''}
+          </label>
+          <div style="margin-top:6px;font-size:11px;color:#8fa7bf">${rcpOn(r)
+            ? 'Ce coffret coupe / protège un départ aval — occupe 4 plages.'
+            : 'Simple dérivation de réseau déjà protégé en amont — pas de RCP 400.'} <span style="opacity:.6">Pré-coché pour une racine alimentée directement par le réseau ENEDIS ; la présence réelle du RCP 400 est fixée par le plan de montage ENEDIS de l'affaire.</span></div>
+        </div>
+
         <div class="rb-block">
           <div class="rb-block-h">
             <span>📦 Modules — <b class="${stateCls==='state-bad'?'rb-h-bad':stateCls==='state-warn'?'rb-h-warn':'rb-h-ok'}">${sizeLbl}</b><span style="font-size:10px;font-weight:600;margin-left:8px;color:${r.dimManual?'#e0b84a':'#9fd6a9'}">${r.dimManual?'✋ manuel':'⚙️ auto'}</span></span>
@@ -1637,7 +1663,7 @@ function renderDim(){
           <tr><td class="fl L">RAC 35</td><td class="L">3 Ph + 1 N — 3 départs tri, câble 10–35²</td><td>67.71.704</td><td>1</td></tr>
           <tr><td class="fl L">BR 60T</td><td class="L">3 Ph + 1 N — départ tri protégé 60 A</td><td>67.71.708</td><td>1</td></tr>
           <tr><td class="fl L">BR 60M</td><td class="L">1 Ph + 1 N — départ mono protégé 60 A</td><td>67.71.706</td><td>1</td></tr>
-          <tr><td class="fl L">RCP 400</td><td class="L">Coupure 400 A / protection 200 A (réf. 0540879)</td><td>—</td><td>4</td></tr>
+          <tr><td class="fl L">RCP 400</td><td class="L">Réseau — raccordement + coupure 400 A / protection 200 A (point de coupure/protection)</td><td>67.71.109</td><td>4</td></tr>
         </table>
         <p class="rb-help-p"><b>Tailles standard</b> · coffrets de <code>6</code>, <code>9</code> ou <code>12</code> plages (réf. Cahors G3 : 300 / 450 / 600).</p>
         <p class="rb-help-p"><b>Petit collectif</b> NF C 14-100 §10 : max <code>${REMBT_MAX_LGTS}</code> logements par REMBT. La répartition des logements et le chaînage en cascade des REMBTs sont <b>automatiques</b> — ajoutez ou supprimez simplement des logements.</p>
@@ -1810,6 +1836,19 @@ function updLink(rid, k, v){
   if(k === 'long' || k === 'section'){
     r.link[k] = (v === '' || isNaN(parseFloat(v))) ? '' : parseFloat(v);
   }
+  save(); R();
+}
+// ─── Point de coupure / protection réseau (RCP 400) ──────────
+// Choix explicite par REMBT (surcharge le pré-cochage selon l'alimentation).
+function toggleRCP(rid, on){
+  const r = CI.rembts.find(x => x.id === rid); if(!r) return;
+  r.rcp = !!on;
+  save(); R();
+}
+// Repasse ce REMBT en pré-cochage automatique (selon l'alimentation).
+function resetRCP(rid){
+  const r = CI.rembts.find(x => x.id === rid); if(!r) return;
+  r.rcp = null;
   save(); R();
 }
 

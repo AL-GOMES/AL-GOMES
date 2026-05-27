@@ -834,10 +834,10 @@ function rembtSuggest(plages){
 //    câble de liaison (cascade), CCPI (racine avec coffret façade), ou 240²
 //    par défaut (racine raccordée directement sur le réseau) ;
 //  - 1 BR 60M par logement mono, 1 BR 60T par logement tri (branchements protégés) ;
-//  - 1 départ réseau (RAC) par REMBT enfant alimenté en cascade, dimensionné
-//    selon la section du câble de liaison de l'enfant.
-// (RCP 400 / RAC 35 restent à ajouter manuellement selon le schéma : fausse-
-//  coupure, départs non protégés…)
+//  - 1 RCP 400 (départ réseau protégé — coupure 400 / protection 200,
+//    raccordement câble départ 50 à 240²) par REMBT enfant alimenté en cascade.
+// (RAC 35 et RCP 400 supplémentaires — fausse-coupure en tête… — restent à
+//  ajouter manuellement selon le schéma électrique.)
 function autoModules(rembtId){
   const r = CI.rembts.find(x => x.id === rembtId);
   const lgts = CI.lgts.filter(l => l.rembtId === rembtId);
@@ -855,8 +855,9 @@ function autoModules(rembtId){
   // Branchements protégés (un par logement)
   dim.BR60M = mono;
   dim.BR60T = tri;
-  // Départs réseau vers les REMBT enfants (cascade / repiquage)
-  children.forEach(c => { dim[sectionToRAC(c.link ? c.link.section : 240)] += 1; });
+  // Départ réseau protégé vers chaque REMBT enfant en cascade : RCP 400
+  // (coupure 400 / protection 200, raccordement câble départ 50-240²).
+  if(children.length > 0) dim.RCP400 = children.length;
   return dim;
 }
 // Plages libres + réserve réalimentation (catalogue : « prévoir 2 plages libres
@@ -1776,10 +1777,10 @@ function updRembtDim(id, k, v){
 function autoFillRembt(id){
   const r = CI.rembts.find(x => x.id === id); if(!r) return;
   const s = autoModules(id);
-  // Calcule l'arrivée + les départs réseau (RAC) et les branchements (BR).
-  // RCP 400 et RAC 35 restent saisis manuellement (fausse-coupure, départs
-  // non protégés selon le schéma).
-  ['RAC240','RAC150','RAC150b','BR60M','BR60T'].forEach(k => { r.dim[k] = s[k] || 0; });
+  // Calcule l'arrivée réseau (RAC), les branchements (BR) et les départs
+  // protégés vers les cascades (RCP 400). RAC 35 et RCP 400 supplémentaires
+  // (fausse-coupure en tête…) restent saisis manuellement.
+  ['RAC240','RAC150','RAC150b','BR60M','BR60T','RCP400'].forEach(k => { r.dim[k] = s[k] || 0; });
   save(); R();
 }
 // ─── Coffret de façade (CCPI) ────────────────────────────────

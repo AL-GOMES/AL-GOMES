@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.16';
+window.AL_VERSION      = 'v3.17';
 window.AL_VERSION_DATE = '2026-05-27';
-window.AL_VERSION_TIME = '08:53';
-window.AL_VERSION_NOTE = 'Correctif dimensionnement REMBT : le RCP 400 est de nouveau utilisé par le Calcul auto. D\'après le catalogue Cahors, le RCP 400 est un « raccordement câble départ 50-240² + coupure 400 / protection 200 » — c\'est donc le départ réseau PROTÉGÉ vers chaque REMBT enfant en cascade (1 RCP 400 par enfant). L\'arrivée reste un module RAC choisi selon la section du câble amont.';
+window.AL_VERSION_TIME = '09:01';
+window.AL_VERSION_NOTE = 'Dimensionnement REMBT « full auto » : les modules de chaque REMBT (arrivée RAC selon section, BR par logement, RCP 400 par cascade) sont calculés automatiquement à chaque modification — plus besoin de cliquer sur « Calcul auto ». Le support, la réserve de plages et la nomenclature suivent. Indicateur ⚙️ auto / ✋ manuel par REMBT ; toute saisie manuelle fige le REMBT, avec un bouton « ↺ Calcul auto » pour revenir à l\'automatique.';

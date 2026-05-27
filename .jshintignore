@@ -1,0 +1,7 @@
+# Fichiers js/ obfusqués pour la production (artefacts de build).
+# Le code lisible et maintenu vit sur la branche « source » ; ici (main) ces
+# fichiers sont du charabia non lintable. version.js reste lisible → linté.
+js/firebase-init.js
+js/util.js
+js/auth-guard.js
+js/cloud-sync.js

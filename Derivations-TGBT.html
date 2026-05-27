@@ -264,6 +264,8 @@ let B=[
 function pw(s){return s<35?6:s<100?9:12}
 function cl(p){return p===3?15:p===6?45:p===9?45:p===12?60:45}
 function gFL(niv){const f=['RDC'];for(let i=1;i<=niv;i++)f.push('R+'+i);return f}
+// Échappement HTML (anti-XSS) pour toute donnée importée/saisie injectée en innerHTML.
+function escH(s){return String(s==null?'':s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function sT(b){if(!b.sgx){b.sgx=[{n:'SGX',p:b.s||36}];delete b.s}return b.sgx.reduce((s,x)=>s+(parseFloat(x.p)||0),0)}
 function vl(n){let r=0;for(let[k,v]of CO){if(k<=n)r=v;else break}return r}
 function cI(b){if(b>=10&&b<=20)return 15;if(b>=21&&b<=40)return 22;if(b>=41&&b<50)return 30;if(b>=50&&b<=100)return 30+6*Math.ceil((b-50)/10);if(b>=101&&b<=200)return 60+3.6*Math.ceil((b-100)/10);if(b>200)return 96+.2*(b-200);return''}
@@ -287,11 +289,11 @@ function rT(){
   T.i.forEach((x,i)=>{
     const au=x.a>0;
     h+=`<tr><td style="width:24px">${i>=2?'<button class="rd" style="opacity:0.5" onclick="T.i.splice('+i+',1);R()">✕</button>':''}</td>`;
-    h+=`<td class="L"><input type="text" class="wl" value="${x.n}" onchange="T.i[${i}].n=this.value"></td>`;
-    h+=x.B==='-'||x.B===''?`<td style="color:rgba(104,118,156,0.20)">${x.B}</td>`:`<td><input class="ws ns" type="number" value="${x.B}" onchange="T.i[${i}].B=parseFloat(this.value)||0;R()"></td>`;
-    h+=x.C==='-'||x.C===''?`<td style="color:rgba(104,118,156,0.20)">${x.C}</td>`:`<td><input class="ws ns" type="number" value="${x.C}" onchange="T.i[${i}].C=parseFloat(this.value)||0;R()"></td>`;
-    h+=au?`<td class="fm">${x.D}</td>`:`<td><input class="ws ns" type="number" value="${x.D||''}" onchange="T.i[${i}].D=parseFloat(this.value)||0;R()"></td>`;
-    h+=au?`<td class="fm">${x.E===''?'':x.E}</td>`:`<td><input class="ws ns" type="number" value="${x.E||''}" step=".5" onchange="T.i[${i}].E=parseFloat(this.value)||0;R()"></td>`;
+    h+=`<td class="L"><input type="text" class="wl" value="${escH(x.n)}" onchange="T.i[${i}].n=this.value"></td>`;
+    h+=x.B==='-'||x.B===''?`<td style="color:rgba(104,118,156,0.20)">${x.B}</td>`:`<td><input class="ws ns" type="number" value="${escH(x.B)}" onchange="T.i[${i}].B=parseFloat(this.value)||0;R()"></td>`;
+    h+=x.C==='-'||x.C===''?`<td style="color:rgba(104,118,156,0.20)">${x.C}</td>`:`<td><input class="ws ns" type="number" value="${escH(x.C)}" onchange="T.i[${i}].C=parseFloat(this.value)||0;R()"></td>`;
+    h+=au?`<td class="fm">${x.D}</td>`:`<td><input class="ws ns" type="number" value="${escH(x.D||'')}" onchange="T.i[${i}].D=parseFloat(this.value)||0;R()"></td>`;
+    h+=au?`<td class="fm">${x.E===''?'':x.E}</td>`:`<td><input class="ws ns" type="number" value="${escH(x.E||'')}" step=".5" onchange="T.i[${i}].E=parseFloat(this.value)||0;R()"></td>`;
     h+=`</tr>`;
   });
   h+=`<tr class="tot"><td></td><td class="L" colspan="4">Puissance Totale Brut</td><td><span class="ch cp">${tot} kVA</span></td></tr>
@@ -351,7 +353,7 @@ function rB(bi){
 
   let h=`<div class="ban ${ok?'ban-ok':'ban-no'}">${ok?'✅':'⚠️'} ${tx}</div>`;
   h+=`<div class="gB">`;
-  h+=`<div class="card"><div class="card-h"><div class="ic">🏠</div>Dérivations — ${b.n}<div class="rt">
+  h+=`<div class="card"><div class="card-h"><div class="ic">🏠</div>Dérivations — ${escH(b.n)}<div class="rt">
     <span style="display:inline-flex;align-items:center;gap:4px;margin-right:8px">
       <button class="btn ${!b.transfo?'ba':''}" style="padding:3px 12px;font-size:10px" onclick="B[${bi}].transfo=false;R();S('b'+${bi})">📦 Coffret</button>
       <button class="btn ${b.transfo?'ba':''}" style="padding:3px 12px;font-size:10px;${b.transfo?'background:rgba(255,159,67,0.15);border-color:rgba(255,159,67,0.40);color:#FFB86C':''}" onclick="B[${bi}].transfo=true;R();S('b'+${bi})">⚡ Transfo</button>
@@ -366,7 +368,7 @@ function rB(bi){
     <div id="flEdit${bi}" style="display:none;margin-bottom:10px;padding:10px;border-radius:6px;border:1px solid rgba(104,118,156,0.20);background:rgba(29,33,48,0.6)">
       <div style="font-size:11px;color:rgba(190,199,219,0.55);margin-bottom:6px;letter-spacing:1px">NIVEAUX (séparés par des virgules, du bas vers le haut) :</div>
       <div style="display:flex;gap:8px;align-items:center">
-        <input type="text" id="flInput${bi}" class="wl" style="flex:1;width:100%;text-align:left;font-size:12px" value="${bFL.join(', ')}">
+        <input type="text" id="flInput${bi}" class="wl" style="flex:1;width:100%;text-align:left;font-size:12px" value="${escH(bFL.join(', '))}">
         <button class="btn ba" onclick="saveFloors(${bi})">Valider</button>
         <button class="btn" onclick="document.getElementById('flEdit${bi}').style.display='none'">Annuler</button>
       </div>
@@ -378,10 +380,10 @@ function rB(bi){
     <button class="btn ba" onclick="aA(${bi})">＋ Logement</button>
     <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:rgba(190,199,219,0.55)">au niveau
       <select class="sel" id="addFloor${bi}" style="min-width:62px">`;
-  bFL.forEach((f,fi)=>{h+=`<option value="${f}">${f}</option>`});
+  bFL.forEach((f,fi)=>{h+=`<option value="${escH(f)}">${f}</option>`});
   h+=`</select></span>
     <button class="btn" onclick="autoEnedis(${bi})">⚡ Auto N° Enedis</button>
-    <span style="margin-left:auto"><button class="btn bd" onclick="delBat(${bi})">Supprimer ${b.n}</button></span></div>
+    <span style="margin-left:auto"><button class="btn bd" onclick="delBat(${bi})">Supprimer ${escH(b.n)}</button></span></div>
     <div class="ts"><table><tr><th></th><th>Niv</th><th>N° Archi</th><th>N° Enedis</th><th>Surface m²</th><th>Long. m</th><th>kVA</th><th>Calibre</th>
     <th style="color:#FF6B6B">3</th><th style="color:#FF6B6B">6</th><th style="color:#FF6B6B">9</th><th style="color:#FF6B6B">12</th><th>Tot</th></tr>`;
   let pf='';const dn={};
@@ -391,10 +393,10 @@ function rB(bi){
     h+=`<tr class="${nf?'fsep':''} ${rc}">`;
     h+=`<td class="hl"><button class="rd" onclick="B[${bi}].a.splice(${i},1);R()">✕</button></td>`;
     h+=`<td class="fl hl"><select class="sel" style="min-width:58px;color:#9BA6DB;font-weight:700" onchange="B[${bi}].a[${i}].f=this.value;R()">`;
-    bFL.forEach(f=>{h+=`<option value="${f}"${x.f===f?' selected':''}>${f}</option>`});
+    bFL.forEach(f=>{h+=`<option value="${escH(f)}"${x.f===f?' selected':''}>${f}</option>`});
     h+=`</select></td>`;
-    h+=`<td class="hl"><input type="text" class="wlc" value="${x.r}" onchange="B[${bi}].a[${i}].r=this.value"></td>`;
-    h+=`<td class="hl"><input type="text" class="wlc" value="${x.e}" onchange="B[${bi}].a[${i}].e=this.value"></td>`;
+    h+=`<td class="hl"><input type="text" class="wlc" value="${escH(x.r)}" onchange="B[${bi}].a[${i}].r=this.value"></td>`;
+    h+=`<td class="hl"><input type="text" class="wlc" value="${escH(x.e)}" onchange="B[${bi}].a[${i}].e=this.value"></td>`;
     h+=`<td class="hl"><input class="wm ns" type="number" value="${x.u}" step=".01" onchange="B[${bi}].a[${i}].u=parseFloat(this.value)||0;B[${bi}].a[${i}].p=pw(B[${bi}].a[${i}].u);B[${bi}].a[${i}].forced=false;R()"></td>`;
     h+=`<td class="hl"><input class="ws ns" type="number" value="${x.l}" onchange="B[${bi}].a[${i}].l=parseInt(this.value)||0"></td>`;
     const isForced=x.p!==pw(x.u);
@@ -415,7 +417,7 @@ function rB(bi){
     <div style="margin-top:8px;font-size:10px;color:rgba(190,199,219,0.25)">Auto : &lt;35m²→6kVA | 35–99m²→9kVA | ≥100m²→12kVA — Modifiable manuellement (3/6/9/12)</div>
   </div></div>`;
 
-  h+=`<div class="card"><div class="card-h"><div class="ic">📊</div>Calcul de Colonne — ${b.n}
+  h+=`<div class="card"><div class="card-h"><div class="ic">📊</div>Calcul de Colonne — ${escH(b.n)}
     <div class="rt"><span class="topbar-badge badge-purple">SGX Total : ${sT(b)} kVA</span></div>
   </div><div class="card-b">
     <div style="margin-bottom:12px;padding:10px;border-radius:6px;border:1px solid rgba(104,118,156,0.15);background:rgba(29,33,48,0.5)">
@@ -425,7 +427,7 @@ function rB(bi){
       </div>`;
   b.sgx.forEach((sx,si)=>{
     h+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-      <input type="text" class="wl" value="${sx.n}" style="flex:1;text-align:left" onchange="B[${bi}].sgx[${si}].n=this.value">
+      <input type="text" class="wl" value="${escH(sx.n)}" style="flex:1;text-align:left" onchange="B[${bi}].sgx[${si}].n=this.value">
       <input type="number" class="ws ns" value="${sx.p}" step="0.5" onchange="B[${bi}].sgx[${si}].p=parseFloat(this.value)||0;R();S('b'+${bi})">
       <span style="font-size:11px;color:rgba(190,199,219,0.45)">kVA</span>
       ${b.sgx.length>1?`<button class="rd" style="opacity:1" onclick="B[${bi}].sgx.splice(${si},1);R();S('b'+${bi})">✕</button>`:''}
@@ -462,7 +464,7 @@ function rTG(ti){
   const rg=gR(tot),tf=gT(rg);
 
   let h=`<div class="g2"><div>
-    <div class="card"><div class="card-h"><div class="ic">🔌</div>${tg.n}<div class="rt">
+    <div class="card"><div class="card-h"><div class="ic">🔌</div>${escH(tg.n)}<div class="rt">
     <span style="display:inline-flex;align-items:center;gap:4px;margin-right:8px">
       <button class="btn ${!tg.transfo?'ba':''}" style="padding:3px 12px;font-size:10px" onclick="${ref}.transfo=false;R();S('tg'+${ti})">📦 Coffret</button>
       <button class="btn ${tg.transfo?'ba':''}" style="padding:3px 12px;font-size:10px;${tg.transfo?'background:rgba(255,159,67,0.15);border-color:rgba(255,159,67,0.40);color:#FFB86C':''}" onclick="${ref}.transfo=true;R();S('tg'+${ti})">⚡ Transfo</button>
@@ -474,11 +476,11 @@ function rTG(ti){
   tg.i.forEach((x,i)=>{
     const au=x.a>0;
     h+=`<tr><td style="width:24px">${i>=2?'<button class="rd" style="opacity:0.5" onclick="'+ref+'.i.splice('+i+',1);R();S(\'tg'+ti+'\')">✕</button>':''}</td>`;
-    h+=`<td class="L"><input type="text" class="wl" value="${x.n}" onchange="${ref}.i[${i}].n=this.value"></td>`;
-    h+=x.B==='-'||x.B===''?`<td style="color:rgba(104,118,156,0.20)">${x.B}</td>`:`<td><input class="ws ns" type="number" value="${x.B}" onchange="${ref}.i[${i}].B=parseFloat(this.value)||0;R();S('tg'+${ti})"></td>`;
-    h+=x.C==='-'||x.C===''?`<td style="color:rgba(104,118,156,0.20)">${x.C}</td>`:`<td><input class="ws ns" type="number" value="${x.C}" onchange="${ref}.i[${i}].C=parseFloat(this.value)||0;R();S('tg'+${ti})"></td>`;
-    h+=au?`<td class="fm">${x.D}</td>`:`<td><input class="ws ns" type="number" value="${x.D||''}" onchange="${ref}.i[${i}].D=parseFloat(this.value)||0;R();S('tg'+${ti})"></td>`;
-    h+=au?`<td class="fm">${x.E===''?'':x.E}</td>`:`<td><input class="ws ns" type="number" value="${x.E||''}" step=".5" onchange="${ref}.i[${i}].E=parseFloat(this.value)||0;R();S('tg'+${ti})"></td>`;
+    h+=`<td class="L"><input type="text" class="wl" value="${escH(x.n)}" onchange="${ref}.i[${i}].n=this.value"></td>`;
+    h+=x.B==='-'||x.B===''?`<td style="color:rgba(104,118,156,0.20)">${x.B}</td>`:`<td><input class="ws ns" type="number" value="${escH(x.B)}" onchange="${ref}.i[${i}].B=parseFloat(this.value)||0;R();S('tg'+${ti})"></td>`;
+    h+=x.C==='-'||x.C===''?`<td style="color:rgba(104,118,156,0.20)">${x.C}</td>`:`<td><input class="ws ns" type="number" value="${escH(x.C)}" onchange="${ref}.i[${i}].C=parseFloat(this.value)||0;R();S('tg'+${ti})"></td>`;
+    h+=au?`<td class="fm">${x.D}</td>`:`<td><input class="ws ns" type="number" value="${escH(x.D||'')}" onchange="${ref}.i[${i}].D=parseFloat(this.value)||0;R();S('tg'+${ti})"></td>`;
+    h+=au?`<td class="fm">${x.E===''?'':x.E}</td>`:`<td><input class="ws ns" type="number" value="${escH(x.E||'')}" step=".5" onchange="${ref}.i[${i}].E=parseFloat(this.value)||0;R();S('tg'+${ti})"></td>`;
     h+=`</tr>`;
   });
   h+=`<tr class="tot"><td></td><td class="L" colspan="4">Puissance Totale Brut</td><td><span class="ch cp">${tot} kVA</span></td></tr>
@@ -562,9 +564,9 @@ function rBP(){
   h+=`<th style="width:30px"></th></tr>`;
   rows.forEach(r=>{
     if(r.type==='custom'){
-      h+=`<tr><td class="L"><input type="text" class="wl" value="${r.name}" style="text-align:left;width:160px" onchange="T.bpLignes[${r.li}].n=this.value"></td>
+      h+=`<tr><td class="L"><input type="text" class="wl" value="${escH(r.name)}" style="text-align:left;width:160px" onchange="T.bpLignes[${r.li}].n=this.value"></td>
         <td class="fm">—</td><td class="fm">—</td><td class="fm">—</td>
-        <td><input type="number" class="ws ns" value="${r.pBat}" step="0.5" style="width:60px" onchange="T.bpLignes[${r.li}].p=parseFloat(this.value)||0;R();S('bp')"></td>`;
+        <td><input type="number" class="ws ns" value="${escH(r.pBat)}" step="0.5" style="width:60px" onchange="T.bpLignes[${r.li}].p=parseFloat(this.value)||0;R();S('bp')"></td>`;
       if(nT>1){
         h+=`<td><select class="sel" style="min-width:50px" onchange="${r.sel}=parseInt(this.value);R();S('bp')">`;
         for(let j=1;j<=nT;j++)h+=`<option value="${j}" ${r.tNum===j?'selected':''}>T${j}</option>`;
@@ -573,7 +575,7 @@ function rBP(){
       h+=`<td><button class="rd" onclick="T.bpLignes.splice(${r.li},1);R();S('bp')">✕</button></td></tr>`;
     } else {
       h+=`<tr><td class="L" style="font-weight:700">${r.name}</td>
-        <td class="fm">${r.n}</td><td class="fm">${r.type==='bat'?r.pK+' kVA':r.pK}</td>
+        <td class="fm">${escH(r.n)}</td><td class="fm">${r.type==='bat'?r.pK+' kVA':r.pK}</td>
         <td class="fm">${r.type==='bat'?r.sgx+' kVA':r.sgx}</td>
         <td class="fm" style="font-weight:700">${r.pBat} kVA</td>`;
       if(nT>1){
@@ -619,8 +621,8 @@ function R(){
   const at=document.querySelector('.tab.active'),ai=at?at.dataset.t:'tgbt';
   const hasTransfo=T.transfo||B.some(b=>b.transfo)||TG.some(t=>t.transfo);
   let th=`<div class="tab${ai==='tgbt'?' active':''}" data-t="tgbt" onclick="S('tgbt')">TGBT</div>`;
-  B.forEach((_,i)=>{const id='b'+i;th+=`<div class="tab${ai===id?' active':''}" data-t="${id}" onclick="S('${id}')">${B[i].n}</div>`});
-  TG.forEach((_,i)=>{const id='tg'+i;th+=`<div class="tab${ai===id?' active':''}" data-t="${id}" onclick="S('${id}')">${TG[i].n}</div>`});
+  B.forEach((_,i)=>{const id='b'+i;th+=`<div class="tab${ai===id?' active':''}" data-t="${id}" onclick="S('${id}')">${escH(B[i].n)}</div>`});
+  TG.forEach((_,i)=>{const id='tg'+i;th+=`<div class="tab${ai===id?' active':''}" data-t="${id}" onclick="S('${id}')">${escH(TG[i].n)}</div>`});
   if(hasTransfo)th+=`<div class="tab${ai==='bp'?' active':''}" data-t="bp" onclick="S('bp')" style="color:rgba(255,159,67,0.85)">⚡ BILAN TRANSFO</div>`;
   th+=`<div class="tab-add" onclick="oM()">＋</div>`;
   document.getElementById('tabs').innerHTML=th;

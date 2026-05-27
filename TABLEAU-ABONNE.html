@@ -160,6 +160,8 @@ function defCir(kva){
 function pw(s){return s<35?6:s<100?9:12}
 function cl(p){return p===3?15:p===6?45:p===9?45:p===12?60:45}
 function gFL(niv){const f=['RDC'];for(let i=1;i<=niv;i++)f.push('R+'+i);return f}
+// Échappement HTML (anti-XSS) pour toute donnée importée/saisie injectée en innerHTML.
+function escH(s){return String(s==null?'':s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function getRecap(x){return ''+x.c+CIR.map(c=>x[c.k]).join('')}
 const TYPE_COLORS=[
   {bg:'rgba(0,176,240,0.15)',  border:'rgba(0,176,240,0.35)',  color:'#00B0F0'},
@@ -226,7 +228,7 @@ tk();setInterval(tk,1000);
 function R(){
   let total=0;B.forEach(b=>total+=b.a.length);
   document.getElementById('bL').textContent=total+' lgts';
-  let th='';B.forEach((b,i)=>{th+=`<div class="tab${curTab==='b'+i?' on':''}" onclick="S('b${i}')">${b.n}</div>`});
+  let th='';B.forEach((b,i)=>{th+=`<div class="tab${curTab==='b'+i?' on':''}" onclick="S('b${i}')">${escH(b.n)}</div>`});
   document.getElementById('tabs').innerHTML=th;
   if(!B.length){document.getElementById('sh').innerHTML=`<div class="empty"><div class="ic-big">📋</div><div class="msg">Aucun bâtiment chargé<br><br>Importez un fichier Excel provenant de<br><strong>Calculs collectif</strong> pour commencer</div></div>`;setupStickyHeader();return}
   if(curTab===null)curTab='b0';
@@ -335,7 +337,7 @@ function rB(bi){
   const sortedTypes=Object.entries(typeCounts).sort((a,b)=>a[0].localeCompare(b[0]));
   const hasBefore=a.some(x=>x.tb!==undefined);
 
-  let h=`<div class="card"><div class="card-h">📋 Tableau Abonné — ${b.n}
+  let h=`<div class="card"><div class="card-h">📋 Tableau Abonné — ${escH(b.n)}
     <div class="rt">
       <button class="btn-top" style="padding:4px 14px;font-size:10px" onclick="figerTypes(${bi})">📸 Figer types avant correction</button>
       ${hasBefore?`<button class="btn-top" style="padding:4px 14px;font-size:10px" onclick="clearTypes(${bi})">✕ Effacer</button>`:''}
@@ -374,7 +376,7 @@ function rB(bi){
     // ajoutées via "+"). Sert au calcul dep.mc / totalMod / rangées.
     const modVal = modOf(c.k);
     const modInput = `<input type="number" min="1" step="1" value="${modVal}" onchange="setCirMod('${c.k}', this.value)" onclick="event.stopPropagation()" title="Nombre de modules par disjoncteur" style="width:30px;font-size:9px;background:transparent;border:1px solid ${hc}33;color:${hc};text-align:center;border-radius:3px;padding:1px 2px;cursor:text"/>`;
-    h+=`<th class="${ci===0?'sep-l':''}" style="width:40px;background:${hb};color:${hc};border-top:2px solid ${hc}" title="Type ${dt} · ${modVal} module${modVal>1?'s':''}/disj">${c.n}${c.k.startsWith('_a')?`<span onclick="removeAlim('${c.k}')" style="cursor:pointer;color:#E74C3C;font-size:10px;margin-left:2px" title="Supprimer">×</span>`:''}<br>${calInput}<br><span style="display:inline-flex;align-items:center;gap:2px;font-size:8px;opacity:0.7">${modInput}<span>M</span></span></th>`;
+    h+=`<th class="${ci===0?'sep-l':''}" style="width:40px;background:${hb};color:${hc};border-top:2px solid ${hc}" title="Type ${dt} · ${modVal} module${modVal>1?'s':''}/disj">${escH(c.n)}${c.k.startsWith('_a')?`<span onclick="removeAlim('${c.k}')" style="cursor:pointer;color:#E74C3C;font-size:10px;margin-left:2px" title="Supprimer">×</span>`:''}<br>${calInput}<br><span style="display:inline-flex;align-items:center;gap:2px;font-size:8px;opacity:0.7">${modInput}<span>M</span></span></th>`;
   });
   h+=`<th style="width:30px;cursor:pointer;opacity:0.5" onclick="addAlim()" title="Ajouter une alimentation">＋</th>`;
   h+=`<th class="sep-l">TYPE</th>`;
@@ -388,8 +390,8 @@ function rB(bi){
     const rowCls = (newF&&i>0?'fsep ':'')+'row-lgt';
     const rowId  = `row-${bi}-${i}`;
     h+=`<tr id="${rowId}" class="${rowCls.trim()}"${changed?' style="background:rgba(237,125,49,0.06)"':''}>`;
-    h+=`<td style="font-weight:${newF?'700':'400'};color:${newF?'rgba(104,118,156,0.90)':'rgba(236,239,246,0.40)'}">${newF?x.f:''}</td>`;
-    h+=`<td style="font-size:11px;cursor:pointer;text-decoration:underline dotted rgba(150,165,200,0.35)" onclick="toggleRowHl('${rowId}')" title="Cliquer pour mettre en valeur la ligne">${x.r}</td><td style="font-size:11px">${x.e}</td>`;
+    h+=`<td style="font-weight:${newF?'700':'400'};color:${newF?'rgba(104,118,156,0.90)':'rgba(236,239,246,0.40)'}">${newF?escH(x.f):''}</td>`;
+    h+=`<td style="font-size:11px;cursor:pointer;text-decoration:underline dotted rgba(150,165,200,0.35)" onclick="toggleRowHl('${rowId}')" title="Cliquer pour mettre en valeur la ligne">${escH(x.r)}</td><td style="font-size:11px">${escH(x.e)}</td>`;
     h+=`<td>${x.u}</td><td style="font-weight:600;color:rgba(104,118,156,0.80)">${x.p}</td><td>${x.c}A</td>`;
     CIR.forEach((c,ci)=>{
       h+=`<td class="${ci===0?'sep-l':''}"><input type="number" value="${x[c.k]}" min="0" onchange="B[${bi}].a[${i}].${c.k}=parseInt(this.value)||0;R()"></td>`;
@@ -424,7 +426,7 @@ function rB(bi){
   const byType={};a.forEach(x=>{if(!byType[x.type])byType[x.type]=[];byType[x.type].push(x)});
 
   h+=`<div class="card"><div class="card-h">📊 Synthèse des Types</div><div class="card-b"><table><tr><th>Type</th><th>Qté</th><th>Cal.</th>`;
-  CIR.forEach(c=>{h+=`<th>${c.n}</th>`});
+  CIR.forEach(c=>{h+=`<th>${escH(c.n)}</th>`});
   h+=`</tr>`;
   sortedTypes.forEach(([t,cnt])=>{
     const ref=typeRef[t];
@@ -449,9 +451,9 @@ function rB(bi){
       </div>
       <table style="width:100%"><tr><th style="text-align:left">Niveau</th><th style="text-align:left">N° Archi</th><th style="text-align:left">N° ENEDIS</th></tr>`;
     items.forEach(x=>{
-      h+=`<tr><td style="text-align:left;color:rgba(104,118,156,0.80);font-weight:600;font-size:11px">${x.f}</td>
-        <td style="text-align:left;font-size:11px">${x.r}</td>
-        <td style="text-align:left;font-size:11px">${x.e}</td></tr>`;
+      h+=`<tr><td style="text-align:left;color:rgba(104,118,156,0.80);font-weight:600;font-size:11px">${escH(x.f)}</td>
+        <td style="text-align:left;font-size:11px">${escH(x.r)}</td>
+        <td style="text-align:left;font-size:11px">${escH(x.e)}</td></tr>`;
     });
     h+=`</table></div>`;
   });
@@ -1014,7 +1016,7 @@ function drawPanel(type,ap,bi,isAuto){
             <div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:8px solid ${subC};opacity:0.85"></div>
             <div style="width:12px;height:2px;background:${subC};opacity:0.85"></div>
           </div>
-          <div style="font-size:10px;font-weight:700;color:${subC};margin-top:3px;white-space:nowrap">${c.n}</div>
+          <div style="font-size:10px;font-weight:700;color:${subC};margin-top:3px;white-space:nowrap">${escH(c.n)}</div>
           <div style="font-size:8px;color:${subC};opacity:0.7;white-space:nowrap">sur ECL</div>`;
         // En mode manuel : sélecteur pour changer l'ECL parent
         if(!isAuto && _allEclList.length > 1){
@@ -1039,7 +1041,7 @@ function drawPanel(type,ap,bi,isAuto){
           <div style="width:${w>30?14:8}px;height:${w>30?14:8}px;border:1.5px solid ${col};border-radius:2px;opacity:0.7"></div>
         </div>
         <div style="font-size:11px;font-weight:700;color:${col};margin-top:3px">${c.a}</div>
-        <div style="font-size:10px;color:${col};opacity:0.55;white-space:nowrap">${c.n}</div>`;
+        <div style="font-size:10px;color:${col};opacity:0.55;white-space:nowrap">${escH(c.n)}</div>`;
       // RT2012 gestionnaire box
       if(c.k==='rt'){
         h+=`<div style="width:1.5px;height:8px;background:#E74C3C;opacity:0.3"></div>
@@ -1082,7 +1084,7 @@ function drawPanel(type,ap,bi,isAuto){
     if(fullItems.length){
       h+=`<div style="font-size:9px;color:rgba(236,239,246,0.45);margin-bottom:2px">100% (chauff/ECS) :</div>`;
       fullItems.forEach(x=>{
-        h+=`<div style="font-size:10px;color:${col};padding:1px 0">${x.n} = <strong>${x.a}A</strong></div>`;
+        h+=`<div style="font-size:10px;color:${col};padding:1px 0">${escH(x.n)} = <strong>${x.a}A</strong></div>`;
       });
     }
     
@@ -1090,7 +1092,7 @@ function drawPanel(type,ap,bi,isAuto){
     if(halfItems.length){
       h+=`<div style="font-size:9px;color:rgba(236,239,246,0.45);margin-top:4px;margin-bottom:2px">÷2 (autres) :</div>`;
       halfItems.forEach(x=>{
-        h+=`<div style="font-size:10px;color:${col};opacity:0.7;padding:1px 0">${x.n} ${x.a}A → <strong>${x.a/2}A</strong></div>`;
+        h+=`<div style="font-size:10px;color:${col};opacity:0.7;padding:1px 0">${escH(x.n)} ${x.a}A → <strong>${x.a/2}A</strong></div>`;
       });
     }
     
@@ -1580,7 +1582,7 @@ async function exportPDF(){
     });
 
     HTML += (`<div class="card"><div class="card-t">📊 Synthèse des Types</div><table><thead><tr><th>TYPE</th><th>QTÉ</th><th>CAL.</th><th>MOD.</th><th>RG.</th>`);
-    CIR.forEach(c=>{HTML += (`<th>${c.n}</th>`)});
+    CIR.forEach(c=>{HTML += (`<th>${escH(c.n)}</th>`)});
     HTML += (`</tr></thead><tbody>`);
     sT.forEach(([t,cnt])=>{
       const ref=tRef[t];const tc=TYPE_COLORS[(t.charCodeAt(0)-65)%TYPE_COLORS.length];
@@ -1628,7 +1630,7 @@ async function exportPDF(){
       const maxRows=15;
       if(items.length<=maxRows){
         HTML += (`<table><thead><tr><th>Niveau</th><th>N° Archi</th><th>N° ENEDIS</th><th>m²</th><th>kVA</th><th>Cal.</th></tr></thead><tbody>`);
-        items.forEach(x=>{HTML += (`<tr><td style="font-weight:bold;text-align:left">${x.f}</td><td style="text-align:left">${x.r}</td><td style="text-align:left">${x.e}</td><td>${x.u}</td><td style="font-weight:bold">${x.p}</td><td>${x.c}A</td></tr>`)});
+        items.forEach(x=>{HTML += (`<tr><td style="font-weight:bold;text-align:left">${escH(x.f)}</td><td style="text-align:left">${escH(x.r)}</td><td style="text-align:left">${escH(x.e)}</td><td>${x.u}</td><td style="font-weight:bold">${x.p}</td><td>${x.c}A</td></tr>`)});
         HTML += (`</tbody></table>`);
       } else {
         const nCols=items.length>30?3:2;
@@ -1637,7 +1639,7 @@ async function exportPDF(){
         for(let col=0;col<nCols;col++){
           const start=col*perCol;const end=Math.min(start+perCol,items.length);
           HTML += (`<table style="flex:1"><thead><tr><th>Niveau</th><th>N° Archi</th><th>N° ENEDIS</th><th>m²</th><th>kVA</th><th>Cal.</th></tr></thead><tbody>`);
-          for(let i=start;i<end;i++){const x=items[i];HTML += (`<tr><td style="font-weight:bold;text-align:left">${x.f}</td><td style="text-align:left">${x.r}</td><td style="text-align:left">${x.e}</td><td>${x.u}</td><td style="font-weight:bold">${x.p}</td><td>${x.c}A</td></tr>`)}
+          for(let i=start;i<end;i++){const x=items[i];HTML += (`<tr><td style="font-weight:bold;text-align:left">${escH(x.f)}</td><td style="text-align:left">${escH(x.r)}</td><td style="text-align:left">${escH(x.e)}</td><td>${x.u}</td><td style="font-weight:bold">${x.p}</td><td>${x.c}A</td></tr>`)}
           HTML += (`</tbody></table>`);
         }
         HTML += (`</div>`);
@@ -1816,7 +1818,7 @@ async function exportPDF(){
             svg+=`<polygon points="${ccx-5},${dy+30} ${ccx+5},${dy+30} ${ccx},${dy+18}" fill="none" stroke="${subC}" stroke-width="1.3"/>`;
             svg+=`<line x1="${ccx-5}" y1="${dy+35}" x2="${ccx+5}" y2="${dy+35}" stroke="${subC}" stroke-width="1.2"/>`;
             // Libellés
-            svg+=`<text x="${ccx}" y="${dy+56}" font-size="9" font-weight="bold" fill="${subC}" text-anchor="middle">${c.n}</text>`;
+            svg+=`<text x="${ccx}" y="${dy+56}" font-size="9" font-weight="bold" fill="${subC}" text-anchor="middle">${escH(c.n)}</text>`;
             svg+=`<text x="${ccx}" y="${dy+68}" font-size="7" fill="${subC}" text-anchor="middle" opacity="0.85">sur ECL</text>`;
             return; // Pas de symbole disjoncteur ni de label calibre pour TELE/SON
           }
@@ -1831,7 +1833,7 @@ async function exportPDF(){
           svg+=`<rect x="${ccx-5}" y="${dy+22}" width="10" height="10" rx="2" fill="none" stroke="${col}" stroke-width="1" opacity="0.7"/>`;
           // Labels — code couleur par calibre uniquement sur les textes
           svg+=`<text x="${ccx}" y="${dy+56}" font-size="10" font-weight="bold" fill="${cc.color}" text-anchor="middle">${c.a}</text>`;
-          svg+=`<text x="${ccx}" y="${dy+68}" font-size="8" fill="${cc.color}" text-anchor="middle" opacity="0.85">${c.n}</text>`;
+          svg+=`<text x="${ccx}" y="${dy+68}" font-size="8" fill="${cc.color}" text-anchor="middle" opacity="0.85">${escH(c.n)}</text>`;
           // RT2012 gestionnaire d'énergie : positionné EN DESSOUS du
           // disjoncteur et de ses labels, centré dans la colonne, pour ne
           // pas déborder horizontalement dans le départ adjacent (le RT2012

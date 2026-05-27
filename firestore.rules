@@ -41,9 +41,15 @@ service cloud.firestore {
 
     // ─── presence : chacun écrit son propre doc, lecture connectés non bannis
     // (la liste des présents est affichée dans la topbar à tous les users)
+    // Validation de type/taille (défense en profondeur anti-injection : le doc
+    // est rendu chez tous les utilisateurs). Motif « optionnel » → ne rejette
+    // que les valeurs absentes-malformées, jamais un écrit valide.
     match /presence/{uid} {
       allow read: if notBanned();
-      allow write: if isSignedIn() && request.auth.uid == uid;
+      allow write: if isSignedIn() && request.auth.uid == uid
+        && (!('name'  in request.resource.data) || (request.resource.data.name  is string && request.resource.data.name.size()  < 128))
+        && (!('login' in request.resource.data) || (request.resource.data.login is string && request.resource.data.login.size() < 128))
+        && (!('role'  in request.resource.data) || (request.resource.data.role  is string && request.resource.data.role.size()  < 64));
     }
 
     // ─── sessions : append-only par l'utilisateur, lecture admin ────────────

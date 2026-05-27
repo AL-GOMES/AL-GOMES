@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.17';
+window.AL_VERSION      = 'v3.18';
 window.AL_VERSION_DATE = '2026-05-27';
-window.AL_VERSION_TIME = '09:01';
-window.AL_VERSION_NOTE = 'Dimensionnement REMBT « full auto » : les modules de chaque REMBT (arrivée RAC selon section, BR par logement, RCP 400 par cascade) sont calculés automatiquement à chaque modification — plus besoin de cliquer sur « Calcul auto ». Le support, la réserve de plages et la nomenclature suivent. Indicateur ⚙️ auto / ✋ manuel par REMBT ; toute saisie manuelle fige le REMBT, avec un bouton « ↺ Calcul auto » pour revenir à l\'automatique.';
+window.AL_VERSION_TIME = '09:10';
+window.AL_VERSION_NOTE = 'Dimensionnement REMBT : le RCP 400 (coupure 400 / protection 200) est désormais placé EN TÊTE — sur chaque REMBT racine alimenté directement par le réseau ENEDIS ou par un coffret de façade (CCPI) — et non plus par cascade. Les départs vers les REMBT enfants en cascade sont des modules réseau RAC (selon section). Le tout reste full auto.';

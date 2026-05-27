@@ -830,34 +830,38 @@ function rembtSuggest(plages){
   return null;
 }
 // Modules suggérés pour un REMBT (catalogue Cahors / Enedis-Spec-REMBT) :
-//  - 1 module d'arrivée réseau (RAC) dimensionné selon la section amont :
-//    câble de liaison (cascade), CCPI (racine avec coffret façade), ou 240²
-//    par défaut (racine raccordée directement sur le réseau) ;
+//  - 1 module d'arrivée réseau (RAC) selon la section du câble amont (liaison
+//    cascade, CCPI, ou 240² par défaut) ;
+//  - 1 RCP 400 (coupure 400 / protection 200) EN TÊTE : tout REMBT alimenté
+//    directement par le réseau ENEDIS ou par un coffret de façade (CCPI),
+//    c'est-à-dire un REMBT racine ;
 //  - 1 BR 60M par logement mono, 1 BR 60T par logement tri (branchements protégés) ;
-//  - 1 RCP 400 (départ réseau protégé — coupure 400 / protection 200,
-//    raccordement câble départ 50 à 240²) par REMBT enfant alimenté en cascade.
-// (RAC 35 et RCP 400 supplémentaires — fausse-coupure en tête… — restent à
-//  ajouter manuellement selon le schéma électrique.)
+//  - 1 départ réseau (RAC) par REMBT enfant alimenté en cascade.
+// (RAC 35 et RCP 400 supplémentaires restent à ajouter manuellement.)
 function autoModules(rembtId){
   const r = CI.rembts.find(x => x.id === rembtId);
   const lgts = CI.lgts.filter(l => l.rembtId === rembtId);
   const mono = lgts.filter(l => lgtPhase(l) === 'M').length;
   const tri  = lgts.filter(l => lgtPhase(l) === 'T').length;
   const children = CI.rembts.filter(x => x.parentId === rembtId);
+  const isRoot = !r || r.parentId == null;
+  const inUse  = lgts.length > 0 || children.length > 0;
   const dim = emptyDim();
-  // Arrivée réseau — module RAC selon la section du câble amont
-  if(lgts.length > 0 || children.length > 0 || (r && r.parentId != null)){
+  if(inUse || !isRoot){
+    // Arrivée réseau — module RAC selon la section du câble amont
     let arrSec = 240;
     if(r && r.parentId != null && r.link)  arrSec = r.link.section;
     else if(r && r.cf && r.cf.active)      arrSec = r.cf.section;
     dim[sectionToRAC(arrSec)] += 1;
+    // RCP 400 en tête : REMBT alimenté directement par le réseau ENEDIS ou par
+    // un coffret de façade (CCPI) → REMBT racine.
+    if(isRoot) dim.RCP400 = 1;
   }
   // Branchements protégés (un par logement)
   dim.BR60M = mono;
   dim.BR60T = tri;
-  // Départ réseau protégé vers chaque REMBT enfant en cascade : RCP 400
-  // (coupure 400 / protection 200, raccordement câble départ 50-240²).
-  if(children.length > 0) dim.RCP400 = children.length;
+  // Départ réseau vers chaque REMBT enfant en cascade (RAC selon section liaison)
+  children.forEach(c => { dim[sectionToRAC(c.link ? c.link.section : 240)] += 1; });
   return dim;
 }
 // Plages libres + réserve réalimentation (catalogue : « prévoir 2 plages libres

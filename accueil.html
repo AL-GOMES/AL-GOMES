@@ -19,7 +19,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" integrity="sha384-sEVIly94UBRLKWdkYoPpSG7GD/e79YHMrxVyZaOk712Ga7+EAw6w1EFi+xBzBdd+" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js" integrity="sha384-EkqK+ezBWJuvO3hfrSx2iVqr3YQbhmnzn8kPhOpBZ+0GMVU5oGSgptwIu8D84HjE" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js" integrity="sha384-M481iNZJtbpypKgvlvZ+78Giq0BsewFLk5r2k+MOcGXlwKCc27DQRZ+WCV/zpmpC" crossorigin="anonymous"></script>
-<script src="js/version.js?b=61"></script>
+<script src="js/version.js?b=62"></script>
 <script src="js/firebase-init.js"></script>
 <script src="js/util.js"></script>
 <style>
@@ -511,8 +511,8 @@ async function blockAccess(today, wasInside){
       <div style="font-size:13px;color:rgba(190,199,219,.5);max-width:520px;line-height:1.5">Contactez l'administrateur si vous estimez devoir disposer d'un accès étendu.</div>
       <a href="index.html" style="margin-top:20px;color:#B0A8E8;border:1px solid rgba(135,120,215,.3);padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:700;letter-spacing:2px;font-size:12px;text-transform:uppercase">Retour</a>
     </div>`;
-  // Déconnecter après 1s pour laisser le temps de voir le message
-  setTimeout(() => { try { auth.signOut(); } catch(e){} }, 1000);
+  // Laisser le panneau visible 1 min avant de déconnecter (→ redirection login).
+  setTimeout(() => { try { auth.signOut(); } catch(e){} }, 60000);
 }
 
 

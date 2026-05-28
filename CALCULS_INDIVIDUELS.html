@@ -1195,7 +1195,28 @@ label.rb-block-h{cursor:pointer}
     var dim = document.getElementById('sh-dim');
     if (!dim) { setTimeout(attachReseauObserver, 100); return; }
     injectReseauTables();
-    new MutationObserver(function () { injectReseauTables(); }).observe(dim, { childList: true, subtree: true });
+    cleanRembtCardBlocks();
+    new MutationObserver(function () { injectReseauTables(); cleanRembtCardBlocks(); }).observe(dim, { childList: true, subtree: true });
+  }
+  // (v3.66) Retire les blocs CCPI et Cascade dans les cartes REMBT (sh-dim) :
+  // la config se fait maintenant dans l'Étape 1 + dans les tableaux d'Étape 2,
+  // donc ces blocs sont redondants. Retire aussi le bouton « Modifier la config ».
+  function cleanRembtCardBlocks() {
+    try {
+      // Bouton « Modifier la config » en haut à droite
+      document.querySelectorAll('.tab-cfg').forEach(function (b) { b.style.display = 'none'; });
+    } catch (_) {}
+    try {
+      var dim = document.getElementById('sh-dim');
+      if (!dim) return;
+      dim.querySelectorAll('.rb-block').forEach(function (block) {
+        var txt = (block.textContent || '');
+        // CCPI block : « ⚡ Coffret de façade (CCPI) entre ENEDIS… »
+        if (/Coffret de façade.*CCPI/.test(txt)) { block.style.display = 'none'; return; }
+        // Cascade block : « 🔗 Liaison cascade — câble … »
+        if (/Liaison cascade/.test(txt)) { block.style.display = 'none'; return; }
+      });
+    } catch (_) {}
   }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', attachReseauObserver);

@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.39';
+window.AL_VERSION      = 'v3.40';
 window.AL_VERSION_DATE = '2026-05-28';
-window.AL_VERSION_TIME = '07:30';
-window.AL_VERSION_NOTE = 'Calculs individuels — le PDF devient le format de sauvegarde : les données JSON du projet sont embarquées en fin de fichier après %%EOF (ignoré par les visualiseurs PDF) et le bouton « 📥 Import » accepte désormais les PDF pour restaurer un projet. L\'ancien bouton « 📥 Excel » devient « 🔗 Partage TA » (export .ALG vers le module Tableau Abonné). Les deux boutons d\'export à l\'intérieur de la vue Synthèse (PDF complet + Enregistrer dérivations) sont retirés — les exports restent accessibles via le bandeau du haut.';
+window.AL_VERSION_TIME = '13:30';
+window.AL_VERSION_NOTE = 'Calculs individuels — correctif sauvegarde PDF : le patch jsPDF est désormais appliqué « eagerly » (polling dès que la lib est chargée, sans flag conditionnel), pour éviter qu\'un clic rapide sur PDF avant DOMContentLoaded sorte un PDF sans payload. Ajout aussi de meta http-equiv Cache-Control no-cache pour forcer le navigateur à recharger la page. Console : un log « [ALGOMES backup] » confirme que le patch est actif.';

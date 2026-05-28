@@ -765,6 +765,60 @@
     }
   };
 
+  // ---- 4 bis) Capture du mdp existant d'un user (saisi par l'admin et
+  // vérifié auprès de Firebase Auth via une app secondaire — comme
+  // l'addUser et le doChangePwd existants). Une fois capturé, le mdp est
+  // stocké en clair dans users/{uid}.password et apparaît dans la colonne.
+  window.capturePassword = async function (uid, login) {
+    var arr;
+    try { arr = (typeof users !== 'undefined' && users) ? users : (window.users || []); } catch (_) { arr = []; }
+    if (!login) {
+      var u0 = arr.find(function (x) { return x.uid === uid; });
+      if (u0) login = u0.login;
+    }
+    var pwd = prompt('Saisir le mot de passe actuel de « ' + (login || uid) + ' »\n\n' +
+      'Demandez-le à l\'utilisateur, ou réinitialisez-le au préalable via\n' +
+      'la Console Firebase (puis tapez ici le nouveau mdp).');
+    if (pwd === null) return;
+    pwd = String(pwd);
+    if (pwd.length < 6) {
+      if (typeof window.toast === 'function') window.toast('Mot de passe trop court (min 6)', 'error');
+      return;
+    }
+    // FC et toEmail sont déclarés au top-level du script obfusqué — accessibles
+    // depuis ici via la chaîne de scope (même environnement lexical global).
+    if (typeof FC === 'undefined' || typeof toEmail !== 'function') {
+      if (typeof window.toast === 'function') window.toast('Config Firebase introuvable', 'error');
+      return;
+    }
+    var sec = null;
+    try {
+      var email = toEmail(login);
+      sec = firebase.initializeApp(FC, 'capture_' + Date.now());
+      try {
+        await sec.auth().signInWithEmailAndPassword(email, pwd);
+      } catch (e) {
+        var code = (e && e.code) || '';
+        if (code === 'auth/wrong-password' || code === 'auth/invalid-login-credentials' || code === 'auth/invalid-credential') {
+          if (typeof window.toast === 'function') window.toast('Mot de passe incorrect', 'error');
+        } else if (code === 'auth/user-not-found') {
+          if (typeof window.toast === 'function') window.toast('Utilisateur introuvable', 'error');
+        } else {
+          if (typeof window.toast === 'function') window.toast('Erreur : ' + (e.message || code), 'error');
+        }
+        return;
+      }
+      await window.db.collection('users').doc(uid).update({ password: pwd });
+      if (typeof window.toast === 'function') window.toast('Mot de passe capturé pour ' + login, 'success');
+      if (typeof window.loadUsers === 'function') window.loadUsers();
+    } catch (e) {
+      if (typeof window.toast === 'function') window.toast('Erreur : ' + (e.message || ''), 'error');
+    } finally {
+      try { if (sec) await sec.auth().signOut(); } catch (_) {}
+      try { if (sec) await sec.delete(); } catch (_) {}
+    }
+  };
+
   // ---- 5) Toggle / copy d'un mdp affiché. ----
   window.togglePwdCell = function (btn) {
     var cell = btn.closest('td');
@@ -830,7 +884,19 @@
             ' <button class="btn btn-xs" style="background:rgba(135,120,215,.12);color:#B0A8E8;border:1px solid rgba(135,120,215,.25)" onclick="togglePwdCell(this)" title="Afficher / masquer">👁</button>' +
             ' <button class="btn btn-xs" style="background:rgba(34,197,94,.12);color:#4ade80;border:1px solid rgba(34,197,94,.25)" onclick="copyPwdCell(this)" title="Copier">📋</button>';
         } else {
-          pwdCell.innerHTML = '<span style="color:var(--text2);font-style:italic">non stocké</span>';
+          pwdCell.innerHTML = '<span style="color:var(--text2);font-style:italic;margin-right:6px">non stocké</span>';
+          var captureBtn = document.createElement('button');
+          captureBtn.type = 'button';
+          captureBtn.className = 'btn btn-xs';
+          captureBtn.style.background = 'rgba(135,120,215,.12)';
+          captureBtn.style.color = '#B0A8E8';
+          captureBtn.style.border = '1px solid rgba(135,120,215,.25)';
+          captureBtn.textContent = '🔑 Capturer';
+          captureBtn.title = 'Saisir une fois le mdp actuel pour qu\'il apparaisse ici (Firebase Auth ne le révèle pas)';
+          (function (uid, login) {
+            captureBtn.addEventListener('click', function () { window.capturePassword(uid, login); });
+          })(u.uid, u.login);
+          pwdCell.appendChild(captureBtn);
         }
         var ref = row.children[3] || null;
         row.insertBefore(pwdCell, ref);

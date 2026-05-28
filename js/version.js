@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.51';
+window.AL_VERSION      = 'v3.52';
 window.AL_VERSION_DATE = '2026-05-28';
-window.AL_VERSION_TIME = '18:00';
-window.AL_VERSION_NOTE = 'Autocontrôle PDF SéQuélec — la détection portrait/paysage v3.50 ne marchait pas : les pages du template ont toutes une MediaBox portrait, mais le « X sur 10 » du template est positionné au CENTRE-bas. On place donc systématiquement la pagination dynamique au centre-bas (largeur 160 pt), peu importe l\'orientation visuelle.';
+window.AL_VERSION_TIME = '18:30';
+window.AL_VERSION_NOTE = 'Calculs individuels — correctif PDF mode « CIBE → TA seul » : les libellés « C1+C2 » qui apparaissent dans le titre, l\'en-tête de colonne et le tableau récap sont remplacés par « C1 » via un monkey-patch de jsPDF.text et jspdf-autotable. En mode c1only il n\'y a pas de tronçon C2, donc « C1+C2 » était trompeur.';

@@ -966,6 +966,77 @@ label.rb-block-h{cursor:pointer}
   } else {
     attachSyntheseObserver();
   }
+
+  // ────────────────────────────────────────────────────────────────
+  // (v3.52) Correction des libellés « C1+C2 » dans le PDF quand le
+  // mode de calcul est « CIBE → TA seul » (CI.scope === 'c1only') :
+  // dans ce mode il n'y a PAS de tronçon C2, donc le label « C1+C2 »
+  // est faux. On remplace par « C1 » dans tout texte que jsPDF /
+  // jspdf-autotable va dessiner sur le PDF.
+  // ────────────────────────────────────────────────────────────────
+  function getScope() {
+    try { if (typeof CI === 'object' && CI && CI.scope) return CI.scope; } catch (_) {}
+    try { if (window.CI && window.CI.scope) return window.CI.scope; } catch (_) {}
+    return null;
+  }
+  function fixC1C2Text(s) {
+    if (typeof s !== 'string' || s.indexOf('C1+C2') === -1 && s.indexOf('C1 + C2') === -1) return s;
+    var scope = getScope();
+    if (scope !== 'c1only') return s;
+    return s
+      .replace(/Σ\s*C1\s*\+\s*C2/g, '% C1')
+      .replace(/%\s*C1\s*\+\s*C2/g, '% C1')
+      .replace(/limite\s+C1\s*\+\s*C2\s*=\s*([\d.]+)\s*%/gi, 'limite C1 = $1 %')
+      .replace(/Total\s+branchement\s*\(\s*C1\s*\+\s*C2\s*\)/gi, 'Chute C1 (CIBE → TA)')
+      .replace(/C1\s*\+\s*C2/g, 'C1');
+  }
+  function patchPdfC1C2() {
+    if (typeof jspdf === 'undefined' || !jspdf.jsPDF || !jspdf.jsPDF.prototype) {
+      setTimeout(patchPdfC1C2, 100); return;
+    }
+    var Proto = jspdf.jsPDF.prototype;
+    if (Proto.__algomesC1C2Patched) return;
+    Proto.__algomesC1C2Patched = true;
+    // jsPDF.text
+    var origText = Proto.text;
+    Proto.text = function (text) {
+      try {
+        var args = Array.prototype.slice.call(arguments);
+        if (typeof args[0] === 'string') {
+          args[0] = fixC1C2Text(args[0]);
+        } else if (Array.isArray(args[0])) {
+          args[0] = args[0].map(fixC1C2Text);
+        }
+        return origText.apply(this, args);
+      } catch (_) { return origText.apply(this, arguments); }
+    };
+    // jspdf-autotable : remplace dans head / body et via didParseCell
+    var origAutoTable = Proto.autoTable;
+    if (typeof origAutoTable === 'function') {
+      Proto.autoTable = function (opts) {
+        try {
+          opts = Object.assign({}, opts || {});
+          if (Array.isArray(opts.head)) {
+            opts.head = opts.head.map(function (row) { return row.map(fixC1C2Text); });
+          }
+          if (Array.isArray(opts.body)) {
+            opts.body = opts.body.map(function (row) { return row.map(fixC1C2Text); });
+          }
+          var userParse = opts.didParseCell;
+          opts.didParseCell = function (data) {
+            try {
+              if (data.cell && Array.isArray(data.cell.text)) {
+                data.cell.text = data.cell.text.map(fixC1C2Text);
+              }
+            } catch (_) {}
+            if (typeof userParse === 'function') userParse(data);
+          };
+          return origAutoTable.call(this, opts);
+        } catch (_) { return origAutoTable.apply(this, arguments); }
+      };
+    }
+  }
+  patchPdfC1C2();
 })();
 </script>
 

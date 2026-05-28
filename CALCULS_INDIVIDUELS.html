@@ -644,11 +644,7 @@ label.rb-block-h{cursor:pointer}
             <label for="algo-ccpi-long" style="font-size:12px;color:rgba(180,190,210,.75);font-weight:600">Longueur câble CCPI → REMBT racine (m)</label>
             <input type="number" id="algo-ccpi-long" min="0" step="0.5" style="background:rgba(20,22,30,.6);border:1px solid rgba(104,118,156,.35);border-radius:6px;color:#fff;padding:8px 10px;font-size:14px">
           </div>
-          <div id="algo-cascade-long-field" style="display:none;flex-direction:column;gap:6px;grid-column:1/-1;max-width:300px">
-            <label for="algo-cascade-long" style="font-size:12px;color:rgba(180,190,210,.75);font-weight:600">Longueur câble cascade REMBT → REMBT (m)</label>
-            <input type="number" id="algo-cascade-long" min="0" step="0.5" style="background:rgba(20,22,30,.6);border:1px solid rgba(104,118,156,.35);border-radius:6px;color:#fff;padding:8px 10px;font-size:14px">
-            <span style="font-size:11px;color:rgba(180,190,210,.6)">S'applique à toutes les liaisons cascade entre REMBTs. Modifications fines possibles dans Étape 2.</span>
-          </div>
+          <div id="algo-cascade-fields" style="display:none;flex-direction:column;gap:10px;grid-column:1/-1"></div>
         </div>
       </div>
     </div>
@@ -1249,16 +1245,69 @@ label.rb-block-h{cursor:pointer}
     if (longInput && root && root.cf && document.activeElement !== longInput) {
       longInput.value = root.cf.long || '';
     }
-    // Cascade entre REMBTs : visible s'il y a au moins 1 REMBT enfant
-    var cascadeField = document.getElementById('algo-cascade-long-field');
-    var cascadeInput = document.getElementById('algo-cascade-long');
+    // Cascade entre REMBTs : un champ PAR enfant, généré dynamiquement
+    var cascadeContainer = document.getElementById('algo-cascade-fields');
     var children = (Array.isArray(ci.rembts) ? ci.rembts.filter(function (r) { return r.parentId != null; }) : []);
-    if (cascadeField) cascadeField.style.display = children.length > 0 ? 'flex' : 'none';
-    if (cascadeInput && children.length > 0 && document.activeElement !== cascadeInput) {
-      // Affiche la longueur du premier enfant comme valeur de référence.
-      var firstLong = (children[0].link && children[0].link.long) || '';
-      cascadeInput.value = firstLong;
+    if (cascadeContainer) {
+      if (children.length === 0) {
+        cascadeContainer.style.display = 'none';
+        cascadeContainer.innerHTML = '';
+      } else {
+        cascadeContainer.style.display = 'flex';
+        var byId = {};
+        ci.rembts.forEach(function (r) { byId[r.id] = r; });
+        // Reconstruit uniquement si la liste a changé ou si le focus
+        // n'est pas dans un input cascade (évite de perdre la saisie).
+        var focusedId = (document.activeElement && document.activeElement.dataset && document.activeElement.dataset.cascadeRembt) || null;
+        var existingIds = Array.prototype.map.call(cascadeContainer.querySelectorAll('input[data-cascade-rembt]'), function (i) { return i.dataset.cascadeRembt; });
+        var newIds = children.map(function (c) { return c.id; });
+        var sameSet = existingIds.length === newIds.length && existingIds.every(function (id, idx) { return id === newIds[idx]; });
+        if (!sameSet) {
+          var html = '<label style="font-size:12px;color:rgba(180,190,210,.75);font-weight:600">Longueurs câbles cascade REMBT → REMBT (un champ par REMBT enfant)</label>';
+          html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">';
+          children.forEach(function (child) {
+            var parent = byId[child.parentId];
+            var pn = parent ? parent.name : '?';
+            var cn = child.name || '?';
+            var v = (child.link && child.link.long) || '';
+            html += '<div style="display:flex;flex-direction:column;gap:4px">' +
+              '<label style="font-size:11px;color:rgba(180,190,210,.7)">' + pn + ' → ' + cn + ' (m)</label>' +
+              '<input type="number" min="0" step="0.5" data-cascade-rembt="' + child.id + '" value="' + v + '" style="background:rgba(20,22,30,.6);border:1px solid rgba(104,118,156,.35);border-radius:6px;color:#fff;padding:6px 10px;font-size:13px">' +
+              '</div>';
+          });
+          html += '</div>';
+          cascadeContainer.innerHTML = html;
+          // Attache les listeners sur chaque input cascade
+          cascadeContainer.querySelectorAll('input[data-cascade-rembt]').forEach(function (inp) {
+            inp.addEventListener('change', function () {
+              var ciNow = getCIref(); if (!ciNow) return;
+              var rid = inp.dataset.cascadeRembt;
+              var r = ciNow.rembts.find(function (x) { return x.id === rid; });
+              if (!r) return;
+              if (!r.link) r.link = { long: '', section: '' };
+              r.link.long = inp.value;
+              refreshAndStay();
+            });
+          });
+        } else {
+          // Met à jour les valeurs des inputs existants si on n'est pas en focus
+          cascadeContainer.querySelectorAll('input[data-cascade-rembt]').forEach(function (inp) {
+            if (document.activeElement === inp) return;
+            var rid = inp.dataset.cascadeRembt;
+            var child = byId[rid];
+            if (child && child.link) inp.value = child.link.long || '';
+          });
+        }
+      }
     }
+  }
+  // Wrapper sauvegarde + render qui RESTE sur l'onglet scenario (sinon R()
+  // remet le tab actif à 'dim' via la variable globale `active`).
+  function refreshAndStay() {
+    try { if (typeof save === 'function') save(); } catch (_) {}
+    try { if (typeof R === 'function') R(); } catch (_) {}
+    if (typeof activateScenarioSheet === 'function') activateScenarioSheet();
+    syncScenarioFields();
   }
   function attachScenarioFields() {
     var nbInput = document.getElementById('algo-nb-lgts');
@@ -1277,22 +1326,21 @@ label.rb-block-h{cursor:pointer}
       var target = Math.max(1, Math.min(200, parseInt(nbInput.value, 10) || 1));
       var cur = ci.lgts.length;
       if (target === cur) return;
-      if (target > cur) {
-        for (var i = 0; i < target - cur; i++) {
-          try { if (typeof addLgt === 'function') addLgt(); } catch (_) {}
+      // Suppression des confirmations bloquantes pendant l'ajustement.
+      var origConfirm = window.confirm;
+      window.confirm = function () { return true; };
+      try {
+        if (target > cur) {
+          for (var i = 0; i < target - cur; i++) {
+            try { if (typeof addLgt === 'function') addLgt(); } catch (_) {}
+          }
+        } else {
+          for (var j = cur - 1; j >= target; j--) {
+            try { if (typeof delLgt === 'function') delLgt(j); } catch (_) {}
+          }
         }
-      } else {
-        for (var j = cur - 1; j >= target; j--) {
-          try { if (typeof delLgt === 'function') {
-            // bypass le confirm si on supprime le dernier
-            if (j === 0 && typeof window.confirm === 'function') {
-              var orig = window.confirm; window.confirm = function () { return true; };
-              try { delLgt(j); } finally { window.confirm = orig; }
-            } else { delLgt(j); }
-          } } catch (_) {}
-        }
-      }
-      syncScenarioFields();
+      } finally { window.confirm = origConfirm; }
+      refreshAndStay();
     });
 
     // CCPI oui / non
@@ -1302,9 +1350,7 @@ label.rb-block-h{cursor:pointer}
       if (!root) return;
       if (!root.cf) root.cf = { active: false, long: '', section: '' };
       root.cf.active = !!active;
-      try { if (typeof save === 'function') save(); } catch (_) {}
-      try { if (typeof R === 'function') R(); } catch (_) {}
-      syncScenarioFields();
+      refreshAndStay();
     }
     if (btnYes) btnYes.addEventListener('click', function () { setCcpi(true); });
     if (btnNo) btnNo.addEventListener('click', function () { setCcpi(false); });
@@ -1317,26 +1363,7 @@ label.rb-block-h{cursor:pointer}
         if (!root) return;
         if (!root.cf) root.cf = { active: true, long: '', section: '' };
         root.cf.long = longInput.value;
-        try { if (typeof save === 'function') save(); } catch (_) {}
-        try { if (typeof R === 'function') R(); } catch (_) {}
-        syncScenarioFields();
-      });
-    }
-
-    // Longueur cascade REMBT → REMBT : s'applique à tous les enfants
-    var cascadeInputEl = document.getElementById('algo-cascade-long');
-    if (cascadeInputEl) {
-      cascadeInputEl.addEventListener('change', function () {
-        var ci = getCIref(); if (!ci) return;
-        var v = cascadeInputEl.value;
-        ci.rembts.forEach(function (r) {
-          if (r.parentId == null) return;
-          if (!r.link) r.link = { long: '', section: '' };
-          r.link.long = v;
-        });
-        try { if (typeof save === 'function') save(); } catch (_) {}
-        try { if (typeof R === 'function') R(); } catch (_) {}
-        syncScenarioFields();
+        refreshAndStay();
       });
     }
 

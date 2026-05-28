@@ -602,26 +602,34 @@ label.rb-block-h{cursor:pointer}
     </div>
   </div>
 </div>
-<div class="mode-bar">
-  <span class="mode-lbl">⚙️ Mode de calcul :</span>
-  <div class="scope-toggle" title="Mode de calcul">
-    <button id="scope-full" class="scope-btn" onclick="setScope('full')">REMBT → CIBE → TA (complet)</button>
-    <button id="scope-nocibe" class="scope-btn" onclick="setScope('noCibe')">REMBT → TA (sans CIBE)</button>
-    <button id="scope-c1" class="scope-btn" onclick="setScope('c1only')">CIBE → TA (C1 seul)</button>
-  </div>
-  <span class="mode-help">« Sans CIBE » : dérivation directe REMBT → tableau abonné (un seul câble, comparé à la limite totale). « C1 seul » : seul le tronçon final, étapes 1 et 2 masquées.</span>
-</div>
 <div class="tabs">
-  <button class="tab active" data-sh="dim" onclick="goSheet('dim')"><span class="tab-num">1</span><span class="tab-ic">🏗️</span><span class="tab-lbl">Installation<br><small>REMBTs + CCPI</small></span></button>
-  <button class="tab" data-sh="rc" onclick="goSheet('rc')"><span class="tab-num">2</span><span class="tab-ic">📏</span><span class="tab-lbl">Chutes REMBT → CIBE<br><small>%C2 par logement</small></span></button>
-  <button class="tab" data-sh="ct" onclick="goSheet('ct')"><span class="tab-num">3</span><span class="tab-ic">📏</span><span class="tab-lbl">Chutes CIBE → TA<br><small>%C1 par logement</small></span></button>
-  <button class="tab" data-sh="sch" onclick="goSheet('sch')"><span class="tab-num">4</span><span class="tab-ic">📐</span><span class="tab-lbl">Synthèse<br><small>schéma + exports</small></span></button>
+  <button class="tab active" data-sh="scenario"><span class="tab-num">1</span><span class="tab-ic">⚙️</span><span class="tab-lbl">Choix du scénario<br><small>mode de calcul</small></span></button>
+  <button class="tab" data-sh="dim" onclick="goSheet('dim')"><span class="tab-num">2</span><span class="tab-ic">📐</span><span class="tab-lbl">Note de calcul câbles<br><small>CCPI ↔ REMBT + REMBT ↔ REMBT</small></span></button>
+  <button class="tab" data-sh="rc" onclick="goSheet('rc')"><span class="tab-num">3</span><span class="tab-ic">📏</span><span class="tab-lbl">Chutes REMBT → CIBE<br><small>%C2 par logement</small></span></button>
+  <button class="tab" data-sh="ct" onclick="goSheet('ct')"><span class="tab-num">4</span><span class="tab-ic">📏</span><span class="tab-lbl">Chutes CIBE → TA<br><small>%C1 par logement</small></span></button>
+  <button class="tab" data-sh="sch" onclick="goSheet('sch')"><span class="tab-num">5</span><span class="tab-ic">📐</span><span class="tab-lbl">Synthèse<br><small>schéma + exports</small></span></button>
   <button class="tab-cfg" onclick="reopenSetupWizard()" title="Modifier la configuration du projet (périmètre, CCPI, phase, locaux commerciaux)">⚙️ Modifier la config</button>
 </div>
 <div class="content">
+  <div class="sheet active" id="sh-scenario">
+    <div style="max-width:800px;margin:24px auto;padding:28px;background:rgba(29,33,48,0.65);border:1px solid rgba(104,118,156,0.35);border-radius:12px;display:flex;flex-direction:column;gap:18px">
+      <h2 style="margin:0;font-size:20px;color:#fff;display:flex;align-items:center;gap:10px">⚙️ Choix du scénario de calcul</h2>
+      <p style="margin:0;color:rgba(180,190,210,.85);font-size:14px;line-height:1.5">Sélectionnez le périmètre des calculs à effectuer. Les étapes affichées dans le bandeau s'adapteront automatiquement.</p>
+      <div class="scope-toggle" style="align-self:flex-start" title="Mode de calcul">
+        <button id="scope-full" class="scope-btn" onclick="setScope('full')">REMBT → CIBE → TA (complet)</button>
+        <button id="scope-nocibe" class="scope-btn" onclick="setScope('noCibe')">REMBT → TA (sans CIBE)</button>
+        <button id="scope-c1" class="scope-btn" onclick="setScope('c1only')">CIBE → TA (C1 seul)</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr;gap:8px;font-size:13px;color:rgba(180,190,210,.75);line-height:1.5">
+        <div><strong style="color:#cbd5e1">REMBT → CIBE → TA (complet)</strong> — branchement collectif normal NF C 14-100, deux tronçons (C2 puis C1).</div>
+        <div><strong style="color:#cbd5e1">REMBT → TA (sans CIBE)</strong> — dérivation directe, un seul câble REMBT → tableau abonné, comparé à la limite totale.</div>
+        <div><strong style="color:#cbd5e1">CIBE → TA (C1 seul)</strong> — seul le tronçon final est calculé ; les étapes amont (CCPI → REMBT, REMBT → CIBE) sont masquées.</div>
+      </div>
+    </div>
+  </div>
   <div class="sheet" id="sh-rc"></div>
   <div class="sheet" id="sh-ct"></div>
-  <div class="sheet active" id="sh-dim"></div>
+  <div class="sheet" id="sh-dim"></div>
   <div class="sheet" id="sh-sch"></div>
 </div>
 
@@ -987,6 +995,40 @@ label.rb-block-h{cursor:pointer}
     document.addEventListener('DOMContentLoaded', attachSyntheseObserver);
   } else {
     attachSyntheseObserver();
+  }
+
+  // (v3.59) Gestion du nouvel onglet « ÉTAPE 1 — Choix du scénario ».
+  // L'onglet 1 n'a pas d'onclick="goSheet(...)" comme les autres : on
+  // ajoute notre propre gestion qui active uniquement #sh-scenario et
+  // désactive les sheets gérés par le goSheet obfusqué.
+  function activateScenarioSheet() {
+    var tabs = document.querySelectorAll('.tab[data-sh]');
+    tabs.forEach(function (t) { t.classList.toggle('active', t.dataset.sh === 'scenario'); });
+    ['scenario', 'rc', 'ct', 'dim', 'sch'].forEach(function (k) {
+      var sh = document.getElementById('sh-' + k);
+      if (sh) sh.classList.toggle('active', k === 'scenario');
+    });
+  }
+  function attachScenarioTab() {
+    var scenarioTab = document.querySelector('.tab[data-sh="scenario"]');
+    if (!scenarioTab) { setTimeout(attachScenarioTab, 100); return; }
+    scenarioTab.addEventListener('click', activateScenarioSheet);
+    // Quand l'utilisateur clique un AUTRE onglet (gestion par goSheet),
+    // on désactive notre sheet scenario pour ne pas qu'il reste affiché.
+    document.querySelectorAll('.tab[data-sh]').forEach(function (b) {
+      if (b.dataset.sh === 'scenario') return;
+      b.addEventListener('click', function () {
+        var s = document.getElementById('sh-scenario');
+        if (s) s.classList.remove('active');
+      }, true);
+    });
+    // Activation initiale : scenario est l'étape 1.
+    activateScenarioSheet();
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', attachScenarioTab);
+  } else {
+    attachScenarioTab();
   }
 
   // ────────────────────────────────────────────────────────────────

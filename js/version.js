@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.40';
+window.AL_VERSION      = 'v3.41';
 window.AL_VERSION_DATE = '2026-05-28';
-window.AL_VERSION_TIME = '13:30';
-window.AL_VERSION_NOTE = 'Calculs individuels — correctif sauvegarde PDF : le patch jsPDF est désormais appliqué « eagerly » (polling dès que la lib est chargée, sans flag conditionnel), pour éviter qu\'un clic rapide sur PDF avant DOMContentLoaded sorte un PDF sans payload. Ajout aussi de meta http-equiv Cache-Control no-cache pour forcer le navigateur à recharger la page. Console : un log « [ALGOMES backup] » confirme que le patch est actif.';
+window.AL_VERSION_TIME = '15:00';
+window.AL_VERSION_NOTE = 'Calculs individuels — indicateurs visibles ajoutés (plus besoin d\'ouvrir la console F12) : badge vert « v3.41 ✓ sauvegarde PDF » dans le bandeau du haut quand le patch est actif, et notif verte « ✓ PDF avec sauvegarde intégrée (N logements, K Ko) » à chaque export PDF. Message d\'erreur de l\'import enrichi pour rappeler qu\'il faut d\'abord générer un PDF NEUF (les anciens PDF n\'ont pas de sauvegarde).';

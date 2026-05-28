@@ -647,6 +647,7 @@ label.rb-block-h{cursor:pointer}
 
   var BACKUP_BEGIN = '%ALGOMES_CI_BACKUP_BEGIN';
   var BACKUP_END = '%ALGOMES_CI_BACKUP_END';
+  var BUILD_TAG = 'v3.41';
 
   function b64encUtf8(s) {
     return btoa(unescape(encodeURIComponent(s)));
@@ -662,14 +663,38 @@ label.rb-block-h{cursor:pointer}
     return null;
   }
 
-  // Ajoute le payload de sauvegarde après %%EOF du PDF. Les visualiseurs
-  // PDF arrêtent leur lecture à %%EOF, le payload est donc invisible mais
-  // récupérable à l'import.
+  // ---- UI helpers : badge en topbar + toast pour signaler visuellement
+  // que le patch est actif (les utilisateurs ne sont pas obligés d'ouvrir
+  // la console pour vérifier).
+  function showStatusBadge() {
+    if (document.getElementById('algomes-backup-badge')) return;
+    var topbar = document.querySelector('.topbar-center');
+    if (!topbar) return;
+    var b = document.createElement('span');
+    b.id = 'algomes-backup-badge';
+    b.textContent = BUILD_TAG + ' ✓ sauvegarde PDF';
+    b.title = 'La sauvegarde PDF est active : chaque export contient les données du projet, réimportables via « 📥 Import ».';
+    b.style.cssText = 'display:inline-block;margin-left:8px;padding:2px 8px;background:rgba(34,197,94,.18);color:#4ade80;border:1px solid rgba(34,197,94,.4);border-radius:5px;font-size:11px;font-weight:700;letter-spacing:.5px;font-family:Rajdhani,sans-serif';
+    topbar.appendChild(b);
+  }
+  function showToast(msg, kind) {
+    var t = document.createElement('div');
+    var bg = kind === 'error' ? 'rgba(239,68,68,.95)' : 'rgba(34,197,94,.95)';
+    t.style.cssText = 'position:fixed;top:80px;right:24px;background:' + bg + ';color:#fff;padding:14px 22px;border-radius:8px;font-family:Rajdhani,sans-serif;font-weight:600;z-index:100000;box-shadow:0 6px 24px rgba(0,0,0,.4);font-size:14px;max-width:380px;line-height:1.4;opacity:0;transition:opacity .25s';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    requestAnimationFrame(function () { t.style.opacity = '1'; });
+    setTimeout(function () { t.style.opacity = '0'; }, 3500);
+    setTimeout(function () { try { t.remove(); } catch (_) {} }, 3900);
+  }
+
+  // Ajoute le payload de sauvegarde après %%EOF du PDF.
   function injectBackup(arrBuf) {
     try {
       var ci = getCI();
       if (!ci) {
-        try { console.warn('[ALGOMES backup] CI introuvable au moment du save — PDF généré SANS sauvegarde.'); } catch (_) {}
+        showToast('⚠ PDF généré SANS sauvegarde (données du projet introuvables)', 'error');
+        try { console.warn('[ALGOMES backup] CI introuvable au moment du save.'); } catch (_) {}
         return arrBuf;
       }
       var u8 = (arrBuf instanceof Uint8Array) ? arrBuf : new Uint8Array(arrBuf);
@@ -678,7 +703,9 @@ label.rb-block-h{cursor:pointer}
       var out = new Uint8Array(u8.length + add.length);
       out.set(u8, 0);
       out.set(add, u8.length);
-      try { console.log('[ALGOMES backup] payload injecté (' + add.length + ' octets, ' + (ci.lgts ? ci.lgts.length : 0) + ' logements).'); } catch (_) {}
+      var lgtCount = (ci.lgts && ci.lgts.length) || 0;
+      showToast('✓ PDF avec sauvegarde intégrée (' + lgtCount + ' logements, ' + Math.round(add.length / 1024) + ' Ko de données)');
+      try { console.log('[ALGOMES backup] payload injecté (' + add.length + ' octets, ' + lgtCount + ' logements).'); } catch (_) {}
       return out.buffer;
     } catch (e) {
       try { console.error('[ALGOMES backup] injection échouée', e); } catch (_) {}
@@ -686,9 +713,7 @@ label.rb-block-h{cursor:pointer}
     }
   }
 
-  // Patch jsPDF.prototype.{save, output} — sans flag, on injecte toujours
-  // (le seul usage de jsPDF sur cette page est exportPDF, et injectBackup
-  // est un no-op si CI n'est pas disponible).
+  // Patch jsPDF.prototype.{save, output}.
   function patchJsPdf() {
     if (typeof jspdf === 'undefined' || !jspdf.jsPDF || !jspdf.jsPDF.prototype) return false;
     var Proto = jspdf.jsPDF.prototype;
@@ -723,7 +748,7 @@ label.rb-block-h{cursor:pointer}
       }
       return res;
     };
-    try { console.log('[ALGOMES backup] jsPDF prototype patché — les PDF générés intègrent la sauvegarde.'); } catch (_) {}
+    try { console.log('[ALGOMES backup] ' + BUILD_TAG + ' actif — jsPDF prototype patché.'); } catch (_) {}
     return true;
   }
 
@@ -735,20 +760,34 @@ label.rb-block-h{cursor:pointer}
   }
   pollPatchJsPdf();
 
-  // Import : lit un PDF, extrait le payload, restaure CI via migrate().
+  // Polling pour ajouter le badge dès que la topbar est dans le DOM.
+  var _badgeDeadline = Date.now() + 20000;
+  function pollBadge() {
+    showStatusBadge();
+    if (!document.getElementById('algomes-backup-badge') && Date.now() < _badgeDeadline) {
+      setTimeout(pollBadge, 200);
+    }
+  }
+  pollBadge();
+
+  // Import.
   window.importPDF = async function (input) {
     var file = input && input.files && input.files[0];
     if (!file) return;
     try {
       var buf = await file.arrayBuffer();
       var u8 = new Uint8Array(buf);
-      // On ne convertit pas tout le PDF en string : seulement le tail.
       var tailStart = Math.max(0, u8.length - 256 * 1024);
       var tail = new TextDecoder('latin1').decode(u8.subarray(tailStart));
       var iBeg = tail.indexOf(BACKUP_BEGIN);
       var iEnd = tail.indexOf(BACKUP_END);
       if (iBeg < 0 || iEnd < 0 || iEnd <= iBeg) {
-        alert('Ce PDF ne contient pas de sauvegarde A.L.GOMES.\n\nUtilisez un PDF exporté depuis ce module à partir de la v3.40.');
+        alert('Ce PDF ne contient pas de sauvegarde A.L.GOMES.\n\n' +
+              'Il faut d\'abord générer un PDF NEUF avec ce module (à partir de la v3.40) :\n' +
+              '1) saisir/ouvrir un projet\n' +
+              '2) cliquer « 📄 PDF » → la notif verte « ✓ PDF avec sauvegarde intégrée » doit apparaître\n' +
+              '3) puis « 📥 Import » sur ce nouveau PDF.\n\n' +
+              'Les PDF générés avant la v3.40 ne contiennent pas de sauvegarde, c\'est normal.');
         input.value = '';
         return;
       }
@@ -770,6 +809,7 @@ label.rb-block-h{cursor:pointer}
       ci.ts = m.ts;
       if (typeof save === 'function') save();
       if (typeof R === 'function') R();
+      showToast('✓ Projet « ' + (m.P || 'sans titre') + ' » restauré depuis le PDF (' + ((m.lgts || []).length) + ' logements)');
       input.value = '';
     } catch (e) {
       alert('Erreur d\'import PDF : ' + (e && e.message ? e.message : e));
@@ -777,7 +817,7 @@ label.rb-block-h{cursor:pointer}
     }
   };
 
-  // Nettoyage de la vue Synthèse : retire les 2 boutons d'export.
+  // Nettoyage de la vue Synthèse.
   function cleanSyntheseButtons() {
     var sh = document.getElementById('sh-sch');
     if (!sh) return;

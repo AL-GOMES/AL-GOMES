@@ -974,21 +974,67 @@ label.rb-block-h{cursor:pointer}
   // est faux. On remplace par « C1 » dans tout texte que jsPDF /
   // jspdf-autotable va dessiner sur le PDF.
   // ────────────────────────────────────────────────────────────────
+  // Détecte le scope par plusieurs voies (CI global → window.CI → DOM →
+  // localStorage). Le code obfusqué peut rendre `CI` inaccessible depuis
+  // ma <script> selon l'ordre d'exécution ou les transformations de
+  // l'obfuscateur, donc on a un fallback visuel via le bouton .scope-btn.on.
   function getScope() {
     try { if (typeof CI === 'object' && CI && CI.scope) return CI.scope; } catch (_) {}
     try { if (window.CI && window.CI.scope) return window.CI.scope; } catch (_) {}
+    try {
+      var active = document.querySelector('.scope-btn.on');
+      if (active) {
+        if (active.id === 'scope-c1') return 'c1only';
+        if (active.id === 'scope-nocibe') return 'noCibe';
+        if (active.id === 'scope-full') return 'full';
+      }
+    } catch (_) {}
+    try {
+      var keys = Object.keys(localStorage);
+      for (var i = 0; i < keys.length; i++) {
+        var k = keys[i];
+        if (k.indexOf('ci') !== -1 || k.indexOf('CI') !== -1 || k.indexOf('calcul') !== -1) {
+          try {
+            var d = JSON.parse(localStorage.getItem(k));
+            if (d && typeof d === 'object' && d.scope) return d.scope;
+          } catch (_) {}
+        }
+      }
+    } catch (_) {}
     return null;
   }
+
+  // Notif visible (compteur de remplacements C1+C2 — debug).
+  var _c1c2ReplaceCount = 0;
+  function bumpC1C2Badge() {
+    try {
+      var b = document.getElementById('algomes-c1c2-badge');
+      if (!b) {
+        b = document.createElement('span');
+        b.id = 'algomes-c1c2-badge';
+        b.style.cssText = 'position:fixed;bottom:60px;right:18px;padding:6px 12px;background:rgba(135,120,215,.92);color:#fff;border-radius:6px;font-family:Rajdhani,sans-serif;font-weight:600;font-size:12px;z-index:99999;box-shadow:0 4px 12px rgba(0,0,0,.3)';
+        document.body.appendChild(b);
+      }
+      var scope = getScope() || '?';
+      b.textContent = 'C1+C2→C1 : ' + _c1c2ReplaceCount + ' (scope=' + scope + ')';
+      clearTimeout(b._t);
+      b._t = setTimeout(function () { try { b.remove(); _c1c2ReplaceCount = 0; } catch (_) {} }, 4000);
+    } catch (_) {}
+  }
+
   function fixC1C2Text(s) {
-    if (typeof s !== 'string' || s.indexOf('C1+C2') === -1 && s.indexOf('C1 + C2') === -1) return s;
+    if (typeof s !== 'string') return s;
+    if (s.indexOf('C1+C2') === -1 && s.indexOf('C1 + C2') === -1) return s;
     var scope = getScope();
     if (scope !== 'c1only') return s;
-    return s
+    var out = s
       .replace(/Σ\s*C1\s*\+\s*C2/g, '% C1')
       .replace(/%\s*C1\s*\+\s*C2/g, '% C1')
       .replace(/limite\s+C1\s*\+\s*C2\s*=\s*([\d.]+)\s*%/gi, 'limite C1 = $1 %')
       .replace(/Total\s+branchement\s*\(\s*C1\s*\+\s*C2\s*\)/gi, 'Chute C1 (CIBE → TA)')
       .replace(/C1\s*\+\s*C2/g, 'C1');
+    if (out !== s) { _c1c2ReplaceCount++; bumpC1C2Badge(); }
+    return out;
   }
   function patchPdfC1C2() {
     if (typeof jspdf === 'undefined' || !jspdf.jsPDF || !jspdf.jsPDF.prototype) {

@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.48';
+window.AL_VERSION      = 'v3.49';
 window.AL_VERSION_DATE = '2026-05-28';
-window.AL_VERSION_TIME = '17:30';
-window.AL_VERSION_NOTE = 'Autocontrôle PDF SéQuélec — (1) line-height plus serré (×0.95) quand un drawText contient des sauts de ligne, donc les multiples SGX sont visuellement plus rapprochés sur la fiche. (2) Re-numérotation dynamique des pages : juste avant la sauvegarde du PDF, on blanchit la zone bas-droite où le template imprime « X sur 10 » et on réécrit « <i+1> sur <total> » avec le vrai nombre de pages.';
+window.AL_VERSION_TIME = '17:45';
+window.AL_VERSION_NOTE = 'Autocontrôle PDF SéQuélec — correctif coords du whiteOut « X sur 10 » : descendu à y=12, agrandi à 130×26 (était y=50, 95×18) pour couvrir effectivement la position réelle du texte du template. Ajout d\'une notif visible « PDF : X/Y pages renumérotées » en bas-droite après chaque génération PDF, pour vérifier que le code itère bien sur toutes les pages des projets multi-bâtiments.';

@@ -962,6 +962,83 @@ SGX-A = 12 kVA"></textarea>
   } else {
     attachObserver();
   }
+
+  // ────────────────────────────────────────────────────────────────
+  // (v3.48) Patch pdf-lib :
+  //   1) line-height plus serré (×0.95) quand un drawText() contient
+  //      un \n. Effet visible sur le champ « P/SG » multi-lignes.
+  //   2) Re-numérotation dynamique des pages : juste avant que
+  //      buildFilledPDF / buildC4PDF n'appelle out.save(), on
+  //      blanchit la zone bas-droite (où le template imprime
+  //      « X sur 10 ») et on réécrit « <i+1> sur <total> ».
+  // ────────────────────────────────────────────────────────────────
+  function patchPdfLib() {
+    if (typeof PDFLib === 'undefined' || !PDFLib.PDFPage || !PDFLib.PDFDocument) {
+      setTimeout(patchPdfLib, 100);
+      return;
+    }
+
+    // 1) Line-height serré sur les drawText multi-lignes
+    if (!PDFLib.PDFPage.prototype.__algomesDrawTextPatched) {
+      PDFLib.PDFPage.prototype.__algomesDrawTextPatched = true;
+      var origDrawText = PDFLib.PDFPage.prototype.drawText;
+      PDFLib.PDFPage.prototype.drawText = function (text, options) {
+        try {
+          if (typeof text === 'string' && text.indexOf('\n') !== -1 && options && options.lineHeight == null) {
+            var size = options.size || 10;
+            options = Object.assign({}, options, { lineHeight: size * 0.95 });
+          }
+        } catch (_) {}
+        return origDrawText.call(this, text, options);
+      };
+    }
+
+    // 2) Re-numérotation des pages dans PDFDocument.save
+    if (!PDFLib.PDFDocument.prototype.__algomesSavePatched) {
+      PDFLib.PDFDocument.prototype.__algomesSavePatched = true;
+      var origSave = PDFLib.PDFDocument.prototype.save;
+      PDFLib.PDFDocument.prototype.save = async function () {
+        try { await renumberPages(this); } catch (e) {
+          try { console.warn('[ALGOMES autocontrole] renumberPages a échoué', e); } catch (_) {}
+        }
+        return origSave.apply(this, arguments);
+      };
+    }
+  }
+
+  async function renumberPages(doc) {
+    if (!doc || typeof doc.getPages !== 'function') return;
+    var pages = doc.getPages();
+    if (pages.length < 4) return;
+    var helv;
+    try { helv = await doc.embedFont(PDFLib.StandardFonts.Helvetica); } catch (_) { return; }
+    var white = PDFLib.rgb(1, 1, 1);
+    var black = PDFLib.rgb(0.05, 0.05, 0.10);
+    var total = pages.length;
+    for (var i = 0; i < pages.length; i++) {
+      var p = pages[i];
+      var size = p.getSize();
+      var rectX = size.width - 110;
+      var rectY = 50;
+      var rectW = 95;
+      var rectH = 18;
+      try { p.drawRectangle({ x: rectX, y: rectY, width: rectW, height: rectH, color: white, opacity: 1 }); } catch (_) {}
+      var label = (i + 1) + ' sur ' + total;
+      var textSize = 9;
+      var textWidth = helv.widthOfTextAtSize(label, textSize);
+      try {
+        p.drawText(label, {
+          x: rectX + rectW - textWidth - 4,
+          y: rectY + (rectH - textSize) / 2 + 1,
+          size: textSize,
+          font: helv,
+          color: black
+        });
+      } catch (_) {}
+    }
+  }
+
+  patchPdfLib();
 })();
 </script>
 

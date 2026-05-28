@@ -1085,6 +1085,56 @@ label.rb-block-h{cursor:pointer}
     return function patchedAutoTable(opts) {
       try {
         opts = Object.assign({}, opts || {});
+        var scope = getScope();
+
+        // En mode c1only : la colonne « % C1+C2 » fait double emploi avec
+        // « %ΔU C1 » (il n'y a pas de C2 à additionner). On la SUPPRIME
+        // entièrement (header + cellules) au lieu de simplement la renommer.
+        if (scope === 'c1only' && Array.isArray(opts.head)) {
+          var colsToRemove = [];
+          opts.head.forEach(function (row) {
+            row.forEach(function (cell, idx) {
+              var s = typeof cell === 'string' ? cell : (cell && cell.content) || '';
+              if (typeof s === 'string' && /C1\s*\+\s*C2/.test(s)) {
+                if (colsToRemove.indexOf(idx) === -1) colsToRemove.push(idx);
+              }
+            });
+          });
+          if (colsToRemove.length > 0) {
+            // Tri décroissant pour que les splice ne décalent pas les indices.
+            colsToRemove.sort(function (a, b) { return b - a; });
+            opts.head = opts.head.map(function (row) {
+              var newRow = row.slice();
+              colsToRemove.forEach(function (idx) { if (idx < newRow.length) newRow.splice(idx, 1); });
+              return newRow;
+            });
+            if (Array.isArray(opts.body)) {
+              opts.body = opts.body.map(function (row) {
+                var newRow = row.slice();
+                colsToRemove.forEach(function (idx) { if (idx < newRow.length) newRow.splice(idx, 1); });
+                return newRow;
+              });
+            }
+            // Décale les indices numériques de columnStyles
+            if (opts.columnStyles && typeof opts.columnStyles === 'object') {
+              var newStyles = {};
+              Object.keys(opts.columnStyles).forEach(function (k) {
+                var ki = parseInt(k, 10);
+                if (isNaN(ki)) { newStyles[k] = opts.columnStyles[k]; return; }
+                if (colsToRemove.indexOf(ki) !== -1) return; // supprimée
+                var shift = 0;
+                colsToRemove.forEach(function (idx) { if (idx < ki) shift++; });
+                newStyles[ki - shift] = opts.columnStyles[k];
+              });
+              opts.columnStyles = newStyles;
+            }
+            _c1c2ReplaceCount += colsToRemove.length;
+            bumpC1C2Badge(scope);
+          }
+        }
+
+        // Pour les autres chaînes (titres, autres cellules), garde aussi le
+        // renommage générique « C1+C2 » → « C1 » via fixC1C2Text.
         if (Array.isArray(opts.head)) {
           opts.head = opts.head.map(function (row) { return row.map(fixC1C2Text); });
         }

@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.55';
+window.AL_VERSION      = 'v3.56';
 window.AL_VERSION_DATE = '2026-05-28';
-window.AL_VERSION_TIME = '19:15';
-window.AL_VERSION_NOTE = 'Calculs individuels — même bug que pour save() en v3.43 : le patch C1+C2 sur le PROTOTYPE.text n\'était pas appelé parce que le code obfusqué fait `doc.text = function(...)` sur l\'instance. Solution identique : on wrap text et autoTable AU NIVEAU INSTANCE dans le constructeur Wrapped, comme save/output. Badge persistant « C1+C2 : vus=N remplacés=M scope=… » bas-droite (cliquer pour masquer) — montre exactement combien de chaînes contenant C1+C2 ont été interceptées et quel scope a été détecté.';
+window.AL_VERSION_TIME = '19:30';
+window.AL_VERSION_NOTE = 'Calculs individuels — en mode CIBE → TA seul, la colonne « % C1+C2 » du PDF n\'est plus juste renommée mais SUPPRIMÉE entièrement (header + cellules + columnStyles). En c1only il n\'y a pas de C2 à additionner, cette colonne fait double emploi avec « %ΔU C1 ». Détection : recherche d\'une chaîne /C1\\s*\\+\\s*C2/ dans le head, suppression des indices correspondants dans head + body + ajustement des columnStyles indexés.';

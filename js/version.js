@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.60';
+window.AL_VERSION      = 'v3.61';
 window.AL_VERSION_DATE = '2026-05-28';
-window.AL_VERSION_TIME = '20:30';
-window.AL_VERSION_NOTE = 'Calculs individuels — ÉTAPE 2 affiche maintenant des VRAIS tableaux de note de calcul (câbles CCPI → REMBT et REMBT → REMBT cascade) en haut, comme les étapes suivantes. Les cartes de configuration des REMBTs restent en dessous pour permettre la modification des longueurs / sections. Tables auto-régénérées via MutationObserver sur sh-dim.';
+window.AL_VERSION_TIME = '20:45';
+window.AL_VERSION_NOTE = 'Calculs individuels — Étape 2 : la ligne du tableau « câbles REMBT → REMBT cascade » s\'affiche maintenant aussi quand `linkChute()` renvoie null (link pas encore configuré). On affiche « — » sur les colonnes calculées au lieu de masquer la ligne — l\'utilisateur voit immédiatement les REMBTs en cascade existants et sait qu\'il faut renseigner long/section.';

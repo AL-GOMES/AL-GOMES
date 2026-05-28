@@ -994,19 +994,16 @@ label.rb-block-h{cursor:pointer}
     var cascRows = [];
     CIref.rembts.forEach(function (r) {
       if (r.parentId == null && r.cf && r.cf.active) {
-        try {
-          if (typeof cfChute === 'function') {
-            var c = cfChute(r);
-            if (c) ccpiRows.push({ r: r, c: c });
-          }
-        } catch (_) {}
+        var c = null;
+        try { if (typeof cfChute === 'function') c = cfChute(r); } catch (_) {}
+        ccpiRows.push({ r: r, c: c });
       } else if (r.parentId != null) {
-        try {
-          if (typeof linkChute === 'function') {
-            var lc = linkChute(r);
-            if (lc) cascRows.push({ r: r, c: lc });
-          }
-        } catch (_) {}
+        // Toujours afficher la ligne du REMBT en cascade — même si link
+        // n'est pas encore configuré (long / section vides) → on affiche
+        // « — » pour les valeurs manquantes plutôt que de masquer la ligne.
+        var lc = null;
+        try { if (typeof linkChute === 'function') lc = linkChute(r); } catch (_) {}
+        cascRows.push({ r: r, c: lc });
       }
     });
     if (ccpiRows.length === 0 && cascRows.length === 0) return '';
@@ -1040,15 +1037,16 @@ label.rb-block-h{cursor:pointer}
         '<th style="' + thCss + '">% ΔU</th>' +
         '</tr></thead><tbody>';
       ccpiRows.forEach(function (it) {
+        var c = it.c || {};
         html += '<tr>' +
           '<td style="' + tdCss + ';font-weight:600;color:#fff">' + escHtml(it.r.name) + '</td>' +
           '<td style="' + tdCss + '">' + escHtml(it.r.cf.long || '—') + '</td>' +
           '<td style="' + tdCss + '">' + escHtml(it.r.cf.section || '—') + '</td>' +
-          '<td style="' + tdCss + '">' + num(it.c.Pfois, 1) + '</td>' +
-          '<td style="' + tdCss + '">' + num(it.c.Itri, 0) + '</td>' +
-          '<td style="' + tdCss + '">' + num(it.c.calibre, 0) + '</td>' +
-          '<td style="' + tdCss + '">' + num(it.c.vu, 2) + '</td>' +
-          statusCell(it.c.pc) +
+          '<td style="' + tdCss + '">' + num(c.Pfois, 1) + '</td>' +
+          '<td style="' + tdCss + '">' + num(c.Itri, 0) + '</td>' +
+          '<td style="' + tdCss + '">' + num(c.calibre, 0) + '</td>' +
+          '<td style="' + tdCss + '">' + num(c.vu, 2) + '</td>' +
+          statusCell(c.pc) +
           '</tr>';
       });
       html += '</tbody></table></div>';
@@ -1070,16 +1068,17 @@ label.rb-block-h{cursor:pointer}
         '</tr></thead><tbody>';
       cascRows.forEach(function (it) {
         var parent = byId[it.r.parentId];
+        var c = it.c || {};
         html += '<tr>' +
           '<td style="' + tdCss + ';color:#94a3b8">' + escHtml(parent ? parent.name : '?') + '</td>' +
           '<td style="' + tdCss + ';font-weight:600;color:#fff">' + escHtml(it.r.name) + '</td>' +
           '<td style="' + tdCss + '">' + escHtml((it.r.link && it.r.link.long) || '—') + '</td>' +
           '<td style="' + tdCss + '">' + escHtml((it.r.link && it.r.link.section) || '—') + '</td>' +
-          '<td style="' + tdCss + '">' + num(it.c.Pfois, 1) + '</td>' +
-          '<td style="' + tdCss + '">' + num(it.c.Itri, 0) + '</td>' +
-          '<td style="' + tdCss + '">' + num(it.c.calibre, 0) + '</td>' +
-          '<td style="' + tdCss + '">' + num(it.c.vu, 2) + '</td>' +
-          statusCell(it.c.pc) +
+          '<td style="' + tdCss + '">' + num(c.Pfois, 1) + '</td>' +
+          '<td style="' + tdCss + '">' + num(c.Itri, 0) + '</td>' +
+          '<td style="' + tdCss + '">' + num(c.calibre, 0) + '</td>' +
+          '<td style="' + tdCss + '">' + num(c.vu, 2) + '</td>' +
+          statusCell(c.pc) +
           '</tr>';
       });
       html += '</tbody></table></div>';

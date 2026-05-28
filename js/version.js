@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.69';
+window.AL_VERSION      = 'v3.70';
 window.AL_VERSION_DATE = '2026-05-28';
-window.AL_VERSION_TIME = '22:45';
-window.AL_VERSION_NOTE = 'Calculs individuels — Étape 1 : la redirection auto vers l\'Étape 2 lors d\'un clic sur les boutons « Mode de calcul » revenait, parce que setScope() du code obfusqué appelle R() directement (sans passer par mon refreshAndStay). Monkey-patch GLOBAL de window.R : si sh-scenario était actif avant R(), on le réactive après. Marche pour tous les callers (setScope, toggleCF, etc.).';
+window.AL_VERSION_TIME = '23:00';
+window.AL_VERSION_NOTE = 'Calculs individuels — Étape 5 (Synthèse) : retrait du bandeau de stats récapitulatives (REMBTs / Logements / Plages cumulées / Chute MAX / Limites). Géré via CSS .schema-stats{display:none}.';

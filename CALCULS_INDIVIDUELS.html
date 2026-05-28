@@ -1050,14 +1050,28 @@ label.rb-block-h{cursor:pointer}
     }
     function num(v, dec) { return (v == null || isNaN(v)) ? '—' : Number(v).toFixed(dec == null ? 0 : dec); }
 
+    var SECTIONS = [16, 25, 35, 50, 70, 95, 120, 150, 185, 240];
+    function sectionSelect(rid, field, current) {
+      var html = '<select data-rid="' + rid + '" data-field="' + field + '" class="algomes-sec-sel" style="background:rgba(20,22,30,.6);border:1px solid rgba(104,118,156,.35);border-radius:5px;color:#fff;padding:4px 6px;font-size:12px;text-align:center">';
+      SECTIONS.forEach(function (s) {
+        html += '<option value="' + s + '"' + (String(current) === String(s) ? ' selected' : '') + '>' + s + '</option>';
+      });
+      html += '</select>';
+      return html;
+    }
+    function longInput(rid, field, current) {
+      return '<input type="number" min="0" step="0.5" data-rid="' + rid + '" data-field="' + field + '" class="algomes-long-inp" value="' + escHtml(current || '') + '" style="background:rgba(20,22,30,.6);border:1px solid rgba(104,118,156,.35);border-radius:5px;color:#fff;padding:4px 6px;font-size:12px;width:70px;text-align:center">';
+    }
+
     var html = '';
-    var hint = '<span style="margin-left:10px;font-size:12px;font-weight:400;color:#94a3b8">Câbles réseau BT — ALU ρ = 0,037 — tri 400 V — limite tronçon ' + lim.toFixed(2) + ' %. Pour modifier les longueurs / sections, voir les cartes ci-dessous.</span>';
+    var hint = '<span style="margin-left:10px;font-size:12px;font-weight:400;color:#94a3b8">Câbles réseau BT — ALU ρ = 0,037 — tri 400 V — limite tronçon ' + lim.toFixed(2) + ' %.</span>';
 
     if (ccpiRows.length) {
       html += '<div class="panel" style="margin-bottom:18px;padding:18px;background:rgba(29,33,48,0.55);border:1px solid rgba(104,118,156,0.30);border-radius:10px">' +
         '<h3 style="margin:0 0 12px 0;font-size:15px;color:#fff">📐 Note de calcul — câbles CCPI → REMBT' + hint + '</h3>' +
         '<table style="' + tableCss + '"><thead><tr>' +
         '<th style="' + thCss + '">REMBT</th>' +
+        '<th style="' + thCss + '">Câble</th>' +
         '<th style="' + thCss + '">Long. (m)</th>' +
         '<th style="' + thCss + '">Section (mm²)</th>' +
         '<th style="' + thCss + '">P fois. (kVA)</th>' +
@@ -1070,8 +1084,9 @@ label.rb-block-h{cursor:pointer}
         var c = it.c || {};
         html += '<tr>' +
           '<td style="' + tdCss + ';font-weight:600;color:#fff">' + escHtml(it.r.name) + '</td>' +
-          '<td style="' + tdCss + '">' + escHtml(it.r.cf.long || '—') + '</td>' +
-          '<td style="' + tdCss + '">' + escHtml(it.r.cf.section || '—') + '</td>' +
+          '<td style="' + tdCss + ';font-family:monospace;color:#94a3b8">HN33S33</td>' +
+          '<td style="' + tdCss + '">' + longInput(it.r.id, 'cf-long', it.r.cf.long) + '</td>' +
+          '<td style="' + tdCss + '">' + sectionSelect(it.r.id, 'cf-section', it.r.cf.section) + '</td>' +
           '<td style="' + tdCss + '">' + num(c.Pfois, 1) + '</td>' +
           '<td style="' + tdCss + '">' + num(c.Itri, 0) + '</td>' +
           '<td style="' + tdCss + '">' + num(c.calibre, 0) + '</td>' +
@@ -1088,6 +1103,7 @@ label.rb-block-h{cursor:pointer}
         '<table style="' + tableCss + '"><thead><tr>' +
         '<th style="' + thCss + '">De</th>' +
         '<th style="' + thCss + '">Vers</th>' +
+        '<th style="' + thCss + '">Câble</th>' +
         '<th style="' + thCss + '">Long. (m)</th>' +
         '<th style="' + thCss + '">Section (mm²)</th>' +
         '<th style="' + thCss + '">P fois. (kVA)</th>' +
@@ -1102,8 +1118,9 @@ label.rb-block-h{cursor:pointer}
         html += '<tr>' +
           '<td style="' + tdCss + ';color:#94a3b8">' + escHtml(parent ? parent.name : '?') + '</td>' +
           '<td style="' + tdCss + ';font-weight:600;color:#fff">' + escHtml(it.r.name) + '</td>' +
-          '<td style="' + tdCss + '">' + escHtml((it.r.link && it.r.link.long) || '—') + '</td>' +
-          '<td style="' + tdCss + '">' + escHtml((it.r.link && it.r.link.section) || '—') + '</td>' +
+          '<td style="' + tdCss + ';font-family:monospace;color:#94a3b8">HN33S33</td>' +
+          '<td style="' + tdCss + '">' + longInput(it.r.id, 'link-long', (it.r.link && it.r.link.long)) + '</td>' +
+          '<td style="' + tdCss + '">' + sectionSelect(it.r.id, 'link-section', (it.r.link && it.r.link.section)) + '</td>' +
           '<td style="' + tdCss + '">' + num(c.Pfois, 1) + '</td>' +
           '<td style="' + tdCss + '">' + num(c.Itri, 0) + '</td>' +
           '<td style="' + tdCss + '">' + num(c.calibre, 0) + '</td>' +
@@ -1115,6 +1132,25 @@ label.rb-block-h{cursor:pointer}
     }
     return html;
   }
+  // Edit handler pour les inputs des tableaux (Long / Section).
+  function onReseauCellChange(ev) {
+    var el = ev.target;
+    if (!el || !el.dataset || !el.dataset.rid || !el.dataset.field) return;
+    var ci = getCIref();
+    if (!ci) return;
+    var r = ci.rembts.find(function (x) { return x.id === el.dataset.rid; });
+    if (!r) return;
+    var field = el.dataset.field;
+    var val = el.value;
+    if (field === 'cf-long') { if (!r.cf) r.cf = {}; r.cf.long = val; }
+    else if (field === 'cf-section') { if (!r.cf) r.cf = {}; r.cf.section = val; }
+    else if (field === 'link-long') { if (!r.link) r.link = {}; r.link.long = val; }
+    else if (field === 'link-section') { if (!r.link) r.link = {}; r.link.section = val; }
+    try { if (typeof save === 'function') save(); } catch (_) {}
+    try { if (typeof R === 'function') R(); } catch (_) {}
+    // injectReseauTables sera re-déclenché par le MutationObserver.
+  }
+
   var _injectingReseau = false;
   function injectReseauTables() {
     if (_injectingReseau) return;
@@ -1123,6 +1159,12 @@ label.rb-block-h{cursor:pointer}
       var dim = document.getElementById('sh-dim');
       if (!dim) return;
       var existing = dim.querySelector('.algomes-reseau-tables');
+      // Si un input du tableau a le focus, on ne reconstruit pas l'HTML
+      // pour ne pas perdre la saisie (on attend que l'utilisateur sorte
+      // du champ → le change event déclenche save+R+re-render).
+      if (existing && document.activeElement && existing.contains(document.activeElement)) {
+        return;
+      }
       var html = buildReseauTables();
       if (!html) {
         if (existing) existing.remove();
@@ -1136,7 +1178,15 @@ label.rb-block-h{cursor:pointer}
         wrapper.style.cssText = 'margin-bottom:24px';
         wrapper.innerHTML = html;
         dim.insertBefore(wrapper, dim.firstChild);
+        existing = wrapper;
       }
+      // Attache les listeners sur les inputs (Long) et selects (Section).
+      existing.querySelectorAll('.algomes-long-inp').forEach(function (i) {
+        i.addEventListener('change', onReseauCellChange);
+      });
+      existing.querySelectorAll('.algomes-sec-sel').forEach(function (s) {
+        s.addEventListener('change', onReseauCellChange);
+      });
     } finally {
       setTimeout(function () { _injectingReseau = false; }, 50);
     }

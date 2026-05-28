@@ -647,7 +647,7 @@ label.rb-block-h{cursor:pointer}
 
   var BACKUP_BEGIN = '%ALGOMES_CI_BACKUP_BEGIN';
   var BACKUP_END = '%ALGOMES_CI_BACKUP_END';
-  var BUILD_TAG = 'v3.41';
+  var BUILD_TAG = 'v3.42';
 
   function b64encUtf8(s) {
     return btoa(unescape(encodeURIComponent(s)));
@@ -782,12 +782,22 @@ label.rb-block-h{cursor:pointer}
       var iBeg = tail.indexOf(BACKUP_BEGIN);
       var iEnd = tail.indexOf(BACKUP_END);
       if (iBeg < 0 || iEnd < 0 || iEnd <= iBeg) {
+        // Diagnostic : on dump les 150 derniers caractères imprimables du
+        // PDF pour voir CE QU'IL Y A vraiment dedans (le payload est censé
+        // s'y trouver). Si on voit juste « %%EOF », l'injection n'a pas
+        // tourné. Si on voit « %ALGOMES… » coupé, c'est une erreur d'encodage.
+        var dump = tail.substring(Math.max(0, tail.length - 200))
+          .replace(/[\x00-\x1F\x7F-\xFF]/g, '·');
         alert('Ce PDF ne contient pas de sauvegarde A.L.GOMES.\n\n' +
-              'Il faut d\'abord générer un PDF NEUF avec ce module (à partir de la v3.40) :\n' +
-              '1) saisir/ouvrir un projet\n' +
-              '2) cliquer « 📄 PDF » → la notif verte « ✓ PDF avec sauvegarde intégrée » doit apparaître\n' +
-              '3) puis « 📥 Import » sur ce nouveau PDF.\n\n' +
-              'Les PDF générés avant la v3.40 ne contiennent pas de sauvegarde, c\'est normal.');
+              '— DIAGNOSTIC —\n' +
+              'Taille fichier : ' + Math.round(u8.length / 1024) + ' Ko\n' +
+              'Marqueur BEGIN : ' + (iBeg >= 0 ? 'trouvé' : 'ABSENT') + '\n' +
+              'Marqueur END   : ' + (iEnd >= 0 ? 'trouvé' : 'ABSENT') + '\n' +
+              'Derniers ~200 caractères du PDF :\n' +
+              '──────────\n' + dump + '\n──────────\n\n' +
+              'Si on n\'y voit pas « %ALGOMES_CI_BACKUP_BEGIN », le PDF a été généré\n' +
+              'sans injection — probablement avant v3.40 (le badge en haut affiche\n' +
+              'la version active du module).');
         input.value = '';
         return;
       }

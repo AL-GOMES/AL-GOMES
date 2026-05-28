@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.52';
+window.AL_VERSION      = 'v3.53';
 window.AL_VERSION_DATE = '2026-05-28';
-window.AL_VERSION_TIME = '18:30';
-window.AL_VERSION_NOTE = 'Calculs individuels — correctif PDF mode « CIBE → TA seul » : les libellés « C1+C2 » qui apparaissent dans le titre, l\'en-tête de colonne et le tableau récap sont remplacés par « C1 » via un monkey-patch de jsPDF.text et jspdf-autotable. En mode c1only il n\'y a pas de tronçon C2, donc « C1+C2 » était trompeur.';
+window.AL_VERSION_TIME = '18:45';
+window.AL_VERSION_NOTE = 'Calculs individuels — la détection du scope=c1only en v3.52 retournait null (CI inaccessible depuis ma <script>). Fallbacks ajoutés : DOM (.scope-btn.on), puis localStorage. Notif violette bas-droite « C1+C2→C1 : N (scope=…) » qui s\'affiche pendant la génération PDF pour valider que le remplacement tourne effectivement et avec quel scope détecté.';

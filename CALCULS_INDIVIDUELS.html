@@ -1029,40 +1029,33 @@ label.rb-block-h{cursor:pointer}
     return null;
   }
 
-  // Debug visible & PERSISTANT : compteur de C1+C2 vus / remplacés et
-  // scope détecté. Le badge reste à l'écran jusqu'au prochain export.
-  var _c1c2SeenCount = 0;
-  var _c1c2ReplaceCount = 0;
-  function bumpC1C2Badge(scope) {
-    try {
-      var b = document.getElementById('algomes-c1c2-badge');
-      if (!b) {
-        b = document.createElement('span');
-        b.id = 'algomes-c1c2-badge';
-        b.style.cssText = 'position:fixed;bottom:60px;right:18px;padding:8px 14px;background:rgba(135,120,215,.95);color:#fff;border-radius:6px;font-family:Rajdhani,sans-serif;font-weight:700;font-size:13px;z-index:99999;box-shadow:0 4px 12px rgba(0,0,0,.4);cursor:pointer';
-        b.title = 'Cliquer pour masquer';
-        b.onclick = function () { try { b.remove(); } catch (_) {} };
-        document.body.appendChild(b);
-      }
-      b.textContent = 'C1+C2 : vus=' + _c1c2SeenCount + ' remplacés=' + _c1c2ReplaceCount + ' scope=' + (scope || '?');
-    } catch (_) {}
+  // Aligne le PDF sur le site : `showTotal = !c1only && !noCibe`. Hors
+  // mode complet, la colonne et les libellés C1+C2 n'ont pas de sens (un
+  // seul tronçon est calculé).
+  function shouldHideC1C2(scope) {
+    return scope === 'c1only' || scope === 'noCibe';
   }
-
   function fixC1C2Text(s) {
     if (typeof s !== 'string') return s;
     if (s.indexOf('C1+C2') === -1 && s.indexOf('C1 + C2') === -1) return s;
-    _c1c2SeenCount++;
     var scope = getScope();
-    if (scope !== 'c1only') { bumpC1C2Badge(scope); return s; }
-    var out = s
-      .replace(/Σ\s*C1\s*\+\s*C2/g, '% C1')
-      .replace(/%\s*C1\s*\+\s*C2/g, '% C1')
-      .replace(/limite\s+C1\s*\+\s*C2\s*=\s*([\d.]+)\s*%/gi, 'limite C1 = $1 %')
-      .replace(/Total\s+branchement\s*\(\s*C1\s*\+\s*C2\s*\)/gi, 'Chute C1 (CIBE → TA)')
-      .replace(/C1\s*\+\s*C2/g, 'C1');
-    if (out !== s) _c1c2ReplaceCount++;
-    bumpC1C2Badge(scope);
-    return out;
+    if (scope === 'c1only') {
+      return s
+        .replace(/Σ\s*C1\s*\+\s*C2/g, '% C1')
+        .replace(/%\s*C1\s*\+\s*C2/g, '% C1')
+        .replace(/limite\s+C1\s*\+\s*C2\s*=\s*([\d.]+)\s*%/gi, 'limite C1 = $1 %')
+        .replace(/Total\s+branchement\s*\(\s*C1\s*\+\s*C2\s*\)/gi, 'Chute C1 (CIBE → TA)')
+        .replace(/C1\s*\+\s*C2/g, 'C1');
+    }
+    if (scope === 'noCibe') {
+      return s
+        .replace(/Σ\s*C1\s*\+\s*C2/g, '% Chute')
+        .replace(/%\s*C1\s*\+\s*C2/g, '% Chute')
+        .replace(/limite\s+C1\s*\+\s*C2\s*=\s*([\d.]+)\s*%/gi, 'limite totale = $1 %')
+        .replace(/Total\s+branchement\s*\(\s*C1\s*\+\s*C2\s*\)/gi, 'Chute totale (REMBT → TA)')
+        .replace(/C1\s*\+\s*C2/g, 'Chute');
+    }
+    return s;
   }
 
   // Constructeurs utilisés par wrapConstructor : on wrap text et
@@ -1087,10 +1080,11 @@ label.rb-block-h{cursor:pointer}
         opts = Object.assign({}, opts || {});
         var scope = getScope();
 
-        // En mode c1only : la colonne « % C1+C2 » fait double emploi avec
-        // « %ΔU C1 » (il n'y a pas de C2 à additionner). On la SUPPRIME
-        // entièrement (header + cellules) au lieu de simplement la renommer.
-        if (scope === 'c1only' && Array.isArray(opts.head)) {
+        // Reproduit la logique du site (renderFiches : showTotal = !c1only
+        // && !noCibe). Hors mode complet, la colonne « % C1+C2 » fait
+        // double emploi avec le tronçon affiché et est SUPPRIMÉE
+        // entièrement (header + cellules + columnStyles).
+        if (shouldHideC1C2(scope) && Array.isArray(opts.head)) {
           var colsToRemove = [];
           opts.head.forEach(function (row) {
             row.forEach(function (cell, idx) {
@@ -1128,8 +1122,6 @@ label.rb-block-h{cursor:pointer}
               });
               opts.columnStyles = newStyles;
             }
-            _c1c2ReplaceCount += colsToRemove.length;
-            bumpC1C2Badge(scope);
           }
         }
 

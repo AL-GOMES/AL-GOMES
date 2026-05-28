@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.49';
+window.AL_VERSION      = 'v3.50';
 window.AL_VERSION_DATE = '2026-05-28';
-window.AL_VERSION_TIME = '17:45';
-window.AL_VERSION_NOTE = 'Autocontrôle PDF SéQuélec — correctif coords du whiteOut « X sur 10 » : descendu à y=12, agrandi à 130×26 (était y=50, 95×18) pour couvrir effectivement la position réelle du texte du template. Ajout d\'une notif visible « PDF : X/Y pages renumérotées » en bas-droite après chaque génération PDF, pour vérifier que le code itère bien sur toutes les pages des projets multi-bâtiments.';
+window.AL_VERSION_TIME = '17:50';
+window.AL_VERSION_NOTE = 'Autocontrôle PDF SéQuélec — la pagination dynamique tient compte de l\'orientation : pour les pages PAYSAGE (les fiches A1..C1), le « X sur Y » du template est au CENTRE-bas et non à droite. On détecte size.width > size.height et on positionne le whiteOut + nouveau numéro au centre pour le paysage, à droite pour le portrait (couverture / référence / sommaire).';

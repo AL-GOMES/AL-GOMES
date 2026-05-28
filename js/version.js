@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.66';
+window.AL_VERSION      = 'v3.67';
 window.AL_VERSION_DATE = '2026-05-28';
-window.AL_VERSION_TIME = '22:00';
-window.AL_VERSION_NOTE = 'Calculs individuels — Étape 2 cartes REMBT : retrait des blocs « Coffret de façade (CCPI) » et « Liaison cascade » dans toutes les cartes REMBT (root + enfants). Ces blocs sont redondants avec les configurations désormais accessibles dans l\'Étape 1 (longueurs CCPI et cascade par REMBT) et dans les tableaux en haut de l\'Étape 2 (section éditable, type HN33S33, chute). Retrait aussi du bouton « Modifier la config » dans le bandeau d\'onglets.';
+window.AL_VERSION_TIME = '22:15';
+window.AL_VERSION_NOTE = 'Calculs individuels — bande vide entre le bandeau du haut et les onglets supprimée : la .mode-bar avait été déplacée dans l\'Étape 1 (v3.59) mais son emplacement réservé (50 px à top:48px) restait vide. .tabs descend maintenant de top:98px à top:48px et .content margin-top passe de 160 à 110 px.';

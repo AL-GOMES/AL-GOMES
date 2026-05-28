@@ -1201,41 +1201,87 @@ label.rb-block-h{cursor:pointer}
     new MutationObserver(function () { injectReseauTables(); cleanRembtCardBlocks(); }).observe(dim, { childList: true, subtree: true });
   }
 
-  // (v3.77) Renomme « % ΔU C1 / C2 / dériv. » → « ΔU (%) » partout dans
-  // les onglets Chutes (sh-rc, sh-ct) et la Synthèse (sh-sch). Et idem
-  // pour « VU (V) » → « ΔU (V) » dans les tags du schéma.
+  // (v3.78) Mapping UNIFIÉ des libellés de chute de tension — réutilisé
+  // partout : nœuds texte/attributs du DOM (site) ET cellules du PDF.
+  // Cible (choix utilisateur « suffixes C1/C2 conservés ») :
+  //   - chute en volts                  → « ΔU (V) »
+  //   - chute du tronçon C2 / C1 / dériv → « ΔU C2 (%) » / « ΔU C1 (%) »
+  //                                        / « ΔU dériv. (%) »
+  //   - chute totale C1+C2              → « ΔU C1+C2 (%) »
+  // Le moteur (code obfusqué) produit des libellés hétérogènes selon l'onglet
+  // et le PDF : « VU (V) », « VU » (en-tête volts d'Étape 3/4, l'unité « V »
+  // étant dans un <span> enfant → traité au niveau de l'élément, voir
+  // normalizeChuteHeaders), « % ΔU C2 », « %ΔU C1 », « %C2 », « %C1 »,
+  // « % dériv. », « % C1+C2 », « Σ C1+C2 ».
+  // IMPORTANT : le total (C1+C2 / Σ C1+C2) doit être traité AVANT « C1 » /
+  // « C2 », sinon « C1+C2 » serait cassé en « ΔU C1 (%)+C2 ».
+  function normalizeChuteLabel(s) {
+    if (typeof s !== 'string') return s;
+    return s
+      .replace(/Σ\s*C1\s*\+\s*C2/g, 'ΔU C1+C2 (%)')
+      .replace(/%\s*ΔU\s*C1\s*\+\s*C2/g, 'ΔU C1+C2 (%)')
+      .replace(/%\s*C1\s*\+\s*C2/g, 'ΔU C1+C2 (%)')
+      .replace(/%\s*ΔU\s*dériv\./g, 'ΔU dériv. (%)')
+      .replace(/%\s*ΔU\s*C2/g, 'ΔU C2 (%)')
+      .replace(/%\s*ΔU\s*C1/g, 'ΔU C1 (%)')
+      .replace(/%\s*dériv\./g, 'ΔU dériv. (%)')
+      .replace(/%\s*C2/g, 'ΔU C2 (%)')
+      .replace(/%\s*C1/g, 'ΔU C1 (%)')
+      // « % chute » (en-tête du tableau réseau PDF / Étape 2) → « ΔU (%) »,
+      // mais sans toucher au tooltip « % chute de tension (= VU / 2,3) ».
+      .replace(/%\s*chute(?!\s*de)/g, 'ΔU (%)')
+      .replace(/%\s*ΔU/g, 'ΔU (%)')
+      .replace(/(?<![A-Za-zΔ])VU\s*\(V\)/g, 'ΔU (V)');
+  }
+
+  // (v3.78) Normalise les libellés de chute dans le DOM (site) : onglets
+  // Chutes (sh-rc, sh-ct), Synthèse (sh-sch) et tags du schéma.
   function normalizeChuteHeaders(node) {
     if (!node) return;
     if (node.nodeType === 3) {
       var v = node.nodeValue;
       if (!v) return;
-      var nv = v
-        .replace(/%\s*ΔU\s*C1\+C2/g, 'ΔU (%)')
-        .replace(/%\s*ΔU\s*C[12]/g, 'ΔU (%)')
-        .replace(/%\s*ΔU\s*dériv\./g, 'ΔU (%)')
-        .replace(/%\s*ΔU/g, 'ΔU (%)')
-        .replace(/(?<![A-Za-zΔ])VU\s*\(V\)/g, 'ΔU (V)');
+      var nv = normalizeChuteLabel(v);
       if (nv !== v) node.nodeValue = nv;
       return;
     }
     if (node.nodeType !== 1) return;
+    // En-tête « volts » d'Étape 3/4 : le moteur rend « VU<br><span>V</span> »
+    // dans un <th title="Chute de tension (V) …">. Un simple remplacement de
+    // texte laisserait le « V » de l'unité → on réécrit le contenu de
+    // l'élément, en se calant sur le title (stable). Garde anti-boucle : on
+    // ne réécrit que si le libellé n'est pas déjà « ΔU (V) ».
+    try {
+      var ttl = node.getAttribute('title');
+      if (ttl && /^Chute de tension \(V\)/.test(ttl)) {
+        if ((node.textContent || '').replace(/\s+/g, ' ').trim() !== 'ΔU (V)') {
+          node.innerHTML = 'ΔU (V)';
+        }
+        return;
+      }
+    } catch (_) {}
     var attrs = ['title', 'aria-label'];
     attrs.forEach(function (a) {
       var v = node.getAttribute(a);
-      if (!v || (!v.includes('ΔU') && !v.includes('VU '))) return;
-      var nv = v
-        .replace(/%\s*ΔU\s*C1\+C2/g, 'ΔU (%)')
-        .replace(/%\s*ΔU\s*C[12]/g, 'ΔU (%)')
-        .replace(/%\s*ΔU\s*dériv\./g, 'ΔU (%)')
-        .replace(/%\s*ΔU/g, 'ΔU (%)')
-        .replace(/VU\s*\(V\)/g, 'ΔU (V)');
+      // Court-circuit : ne lance les regex que si un motif de chute est présent.
+      if (!v || (v.indexOf('ΔU') === -1 && v.indexOf('VU (V)') === -1 &&
+          v.indexOf('% C') === -1 && v.indexOf('%C') === -1 &&
+          v.indexOf('Σ') === -1 && v.indexOf('% d') === -1)) return;
+      var nv = normalizeChuteLabel(v);
       if (nv !== v) node.setAttribute(a, nv);
     });
     for (var i = 0; i < node.childNodes.length; i++) normalizeChuteHeaders(node.childNodes[i]);
   }
   function attachChuteHeaderObserver() {
-    if (!document.body) { setTimeout(attachChuteHeaderObserver, 100); return; }
-    normalizeChuteHeaders(document.body);
+    // (v3.78) On observe le conteneur des feuilles (.content) plutôt que
+    // document.body : cela couvre TOUS les onglets de calcul (sh-dim/Étape 2,
+    // sh-rc/Étape 3, sh-ct/Étape 4, sh-sch/Synthèse) et le schéma, tout en
+    // EXCLUANT la barre d'onglets (.tabs, sibling de .content) dont les
+    // sous-titres « %C2 / %C1 par logement » sont de simples repères de
+    // navigation à garder concis.
+    var root = document.querySelector('.content');
+    if (!root) { setTimeout(attachChuteHeaderObserver, 100); return; }
+    normalizeChuteHeaders(root);
     new MutationObserver(function (mutations) {
       for (var i = 0; i < mutations.length; i++) {
         var m = mutations[i];
@@ -1245,7 +1291,7 @@ label.rb-block-h{cursor:pointer}
           normalizeChuteHeaders(m.target);
         }
       }
-    }).observe(document.body, { childList: true, subtree: true, characterData: true });
+    }).observe(root, { childList: true, subtree: true, characterData: true });
   }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', attachChuteHeaderObserver);
@@ -1584,23 +1630,18 @@ label.rb-block-h{cursor:pointer}
   // « limite C1+C2 » ni « Total branchement (C1+C2) » dans le PDF.
   function shouldHideC1C2(scope) { return scope === 'c1only' || scope === 'noCibe'; }
   function shouldHideRembt(scope) { return scope === 'c1only'; }
-  // (v3.77) Normalise tous les labels de chute pour le PDF :
-  //   « % ΔU C1 » / « % ΔU C2 » / « % ΔU dériv. » / « % ΔU » → « ΔU (%) »
-  //   « VU (V) » → « ΔU (V) »
+  // (v3.78) PDF : on réutilise EXACTEMENT le même mapping que le site
+  // (normalizeChuteLabel) → libellés cohérents partout :
+  //   « VU (V) » → « ΔU (V) » ; « % ΔU C2 » / « %C2 » → « ΔU C2 (%) » ;
+  //   « % ΔU C1 » / « %C1 » → « ΔU C1 (%) » ; « % dériv. » → « ΔU dériv. (%) » ;
+  //   « % C1+C2 » / « Σ C1+C2 » → « ΔU C1+C2 (%) ».
   function normalizeChuteLabelPdf(s) {
-    if (typeof s !== 'string') return s;
-    return s
-      .replace(/%\s*ΔU\s*C1\+C2/g, 'ΔU (%)')
-      .replace(/%\s*ΔU\s*C[12]/g, 'ΔU (%)')
-      .replace(/%\s*ΔU\s*dériv\./g, 'ΔU (%)')
-      .replace(/%\s*ΔU/g, 'ΔU (%)')
-      .replace(/(?<![A-Za-zΔ])VU\s*\(V\)/g, 'ΔU (V)');
+    return normalizeChuteLabel(s);
   }
   function fixHeaderC2Label(s, scope) {
     if (typeof s !== 'string') return s;
-    // v3.77 : on remplace systématiquement par « ΔU (%) » au lieu de
-    // garder la nomenclature C1/C2/dériv. — l'utilisateur veut un libellé
-    // unifié partout (côté site et PDF).
+    // v3.78 : libellés unifiés ΔU (V) / ΔU C2 (%) / ΔU C1 (%) /
+    // ΔU dériv. (%) / ΔU C1+C2 (%), identiques côté site et PDF.
     return normalizeChuteLabelPdf(s);
   }
 

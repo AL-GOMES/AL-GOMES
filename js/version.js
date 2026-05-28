@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.64';
+window.AL_VERSION      = 'v3.65';
 window.AL_VERSION_DATE = '2026-05-28';
-window.AL_VERSION_TIME = '21:30';
-window.AL_VERSION_NOTE = 'Calculs individuels — Étape 2 tableaux : (1) tout le contenu centré (text-align:center sur th et td). (2) La chute de tension cascade s\'affiche désormais même quand le courant d\'emploi est nul (Itri=0) — avant linkChute() retournait null si aucun logement aval n\'avait de kVA, ce qui masquait toute la ligne. On reimplémente le calcul localement pour afficher 0 plutôt que « — » dans ce cas.';
+window.AL_VERSION_TIME = '21:45';
+window.AL_VERSION_NOTE = 'Calculs individuels — Étape 2 tableaux : ajout d\'une colonne « Câble » qui affiche « HN33S33 » (câbles réseau BT par convention NF C 14-100, idem CCPI→REMBT et cascade). Les colonnes Long. (m) et Section (mm²) sont désormais ÉDITABLES inline : input numérique pour la longueur, select pour la section (16/25/35/50/70/95/120/150/185/240 mm²). Modification → save() + R() → tableaux et schéma se mettent à jour automatiquement. Préservation du focus pendant les re-renders.';

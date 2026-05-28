@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.37';
+window.AL_VERSION      = 'v3.38';
 window.AL_VERSION_DATE = '2026-05-28';
-window.AL_VERSION_TIME = '06:30';
-window.AL_VERSION_NOTE = 'Admin — colonne « Mot de passe » dans le tableau utilisateurs (afficher/copier) : les mdp créés/modifiés via l\'admin sont désormais stockés en clair dans users/{uid}.password (les mdp existants restent inaccessibles, Firebase Auth ne les expose pas). Nouveau bouton « ⏏ Déco » qui force la déconnexion d\'un utilisateur sur toutes ses sessions ouvertes via le champ users/{uid}.forceLogoutAt, écouté par le nouveau js/force-logout-check.js.';
+window.AL_VERSION_TIME = '07:00';
+window.AL_VERSION_NOTE = 'Admin — bouton « 🔑 Capturer » ajouté à côté des « non stocké » dans la colonne « Mot de passe ». Permet à l\'admin de saisir une fois le mdp actuel d\'un utilisateur existant : le mdp est vérifié auprès de Firebase Auth (signInWithEmailAndPassword via app secondaire), puis stocké en clair dans users/{uid}.password et apparaît dans la colonne. C\'est le seul moyen côté client de populer le champ pour les comptes créés avant la v3.37 (Firebase Auth ne révèle jamais les mdp existants).';

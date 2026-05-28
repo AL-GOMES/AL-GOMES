@@ -37,6 +37,7 @@ avec authentification et données via Firebase (Auth + Firestore).
 |---|---|
 | `js/firebase-init.js` | Configuration et initialisation Firebase (chargé en premier) |
 | `js/auth-guard.js` | Garde d'authentification + contrôle d'accès par page |
+| `js/force-logout-check.js` | Écoute `users/{uid}.forceLogoutAt` et `signOut()` si l'admin a déclenché une déconnexion forcée |
 | `js/util.js` | Utilitaires partagés (`esc`, `escAttr`, `fmtDate`…) |
 
 ### Assets
@@ -50,7 +51,7 @@ avec authentification et données via Firebase (Auth + Firestore).
 
 | Collection | Description |
 |---|---|
-| `users/{uid}` | `{ login, name, role, banned, schedule, createdAt, createdBy }` |
+| `users/{uid}` | `{ login, name, role, banned, schedule, password, forceLogoutAt, createdAt, createdBy }` — `password` est stocké en clair pour permettre à l'admin de consulter/copier les mdp depuis le panneau ; `forceLogoutAt` (Timestamp) est posé par l'admin pour déconnecter le user de toutes ses sessions (cf. `js/force-logout-check.js`). |
 | `presence/{uid}` | `{ online, lastSeen, ip, city, country, lat, lon, deviceName, os, browser, hostname, role }` |
 | `sessions` | Journal des connexions : `{ uid, login, name, ip, city, country, lat, lon, userAgent, os, browser, hostname, deviceName, timestamp }` |
 | `bannedIps/{ip}` | `{ ip, reason, bannedAt, bannedBy }` |

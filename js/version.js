@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.36';
-window.AL_VERSION_DATE = '2026-05-27';
-window.AL_VERSION_TIME = '00:38';
-window.AL_VERSION_NOTE = 'Obfuscation étendue aux fichiers du dossier js/ (firebase-init, util, auth-guard, cloud-sync) : ils étaient encore lisibles dans l\'onglet Sources de F12, c\'est désormais du charabia comme le reste. Comportement identique (vérifié page par page). La structure HTML/CSS (onglet Elements) reste visible par nature.';
+window.AL_VERSION      = 'v3.37';
+window.AL_VERSION_DATE = '2026-05-28';
+window.AL_VERSION_TIME = '06:30';
+window.AL_VERSION_NOTE = 'Admin — colonne « Mot de passe » dans le tableau utilisateurs (afficher/copier) : les mdp créés/modifiés via l\'admin sont désormais stockés en clair dans users/{uid}.password (les mdp existants restent inaccessibles, Firebase Auth ne les expose pas). Nouveau bouton « ⏏ Déco » qui force la déconnexion d\'un utilisateur sur toutes ses sessions ouvertes via le champ users/{uid}.forceLogoutAt, écouté par le nouveau js/force-logout-check.js.';

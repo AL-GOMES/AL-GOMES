@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.54';
+window.AL_VERSION      = 'v3.55';
 window.AL_VERSION_DATE = '2026-05-28';
-window.AL_VERSION_TIME = '19:00';
-window.AL_VERSION_NOTE = 'Calculs individuels — fix bête : le BUILD_TAG du badge bas-droite était hardcodé à v3.44, donc impossible de savoir si le navigateur servait la dernière version ou une version cachée. Le badge lit désormais window.AL_VERSION (avec fallback window.parent.AL_VERSION pour le contexte iframe). Si après Ctrl+F5 le badge n\'affiche pas v3.54, le navigateur sert encore une version cachée et il faut vider le cache du domaine ou cliquer droit dans l\'iframe → Recharger le cadre.';
+window.AL_VERSION_TIME = '19:15';
+window.AL_VERSION_NOTE = 'Calculs individuels — même bug que pour save() en v3.43 : le patch C1+C2 sur le PROTOTYPE.text n\'était pas appelé parce que le code obfusqué fait `doc.text = function(...)` sur l\'instance. Solution identique : on wrap text et autoTable AU NIVEAU INSTANCE dans le constructeur Wrapped, comme save/output. Badge persistant « C1+C2 : vus=N remplacés=M scope=… » bas-droite (cliquer pour masquer) — montre exactement combien de chaînes contenant C1+C2 ont été interceptées et quel scope a été détecté.';

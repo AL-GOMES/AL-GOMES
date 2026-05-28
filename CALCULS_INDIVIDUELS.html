@@ -825,6 +825,22 @@ label.rb-block-h{cursor:pointer}
       var oOutput = inst.output ? inst.output.bind(inst) : (origOutputPrototype && origOutputPrototype.bind(inst));
       if (oSave) inst.save = makePatchedSave(oOutput, oSave);
       if (oOutput) inst.output = makePatchedOutput(oOutput);
+      // (v3.55) On wrap aussi text + autoTable AU NIVEAU INSTANCE pour
+      // que le code obfusqué qui fait `_docText = doc.text.bind(doc); doc.text = ...`
+      // capture NOTRE version (qui appliquera fixC1C2Text) AVANT que sa
+      // surcharge ne s'installe.
+      try {
+        if (typeof inst.text === 'function') {
+          var oText = inst.text.bind(inst);
+          inst.text = makePatchedText(oText);
+        }
+      } catch (_) {}
+      try {
+        if (typeof inst.autoTable === 'function') {
+          var oAutoTable = inst.autoTable.bind(inst);
+          inst.autoTable = makePatchedAutoTable(oAutoTable);
+        }
+      } catch (_) {}
       return inst;
     }
     Wrapped.prototype = Original.prototype;
@@ -1013,48 +1029,47 @@ label.rb-block-h{cursor:pointer}
     return null;
   }
 
-  // Notif visible (compteur de remplacements C1+C2 — debug).
+  // Debug visible & PERSISTANT : compteur de C1+C2 vus / remplacés et
+  // scope détecté. Le badge reste à l'écran jusqu'au prochain export.
+  var _c1c2SeenCount = 0;
   var _c1c2ReplaceCount = 0;
-  function bumpC1C2Badge() {
+  function bumpC1C2Badge(scope) {
     try {
       var b = document.getElementById('algomes-c1c2-badge');
       if (!b) {
         b = document.createElement('span');
         b.id = 'algomes-c1c2-badge';
-        b.style.cssText = 'position:fixed;bottom:60px;right:18px;padding:6px 12px;background:rgba(135,120,215,.92);color:#fff;border-radius:6px;font-family:Rajdhani,sans-serif;font-weight:600;font-size:12px;z-index:99999;box-shadow:0 4px 12px rgba(0,0,0,.3)';
+        b.style.cssText = 'position:fixed;bottom:60px;right:18px;padding:8px 14px;background:rgba(135,120,215,.95);color:#fff;border-radius:6px;font-family:Rajdhani,sans-serif;font-weight:700;font-size:13px;z-index:99999;box-shadow:0 4px 12px rgba(0,0,0,.4);cursor:pointer';
+        b.title = 'Cliquer pour masquer';
+        b.onclick = function () { try { b.remove(); } catch (_) {} };
         document.body.appendChild(b);
       }
-      var scope = getScope() || '?';
-      b.textContent = 'C1+C2→C1 : ' + _c1c2ReplaceCount + ' (scope=' + scope + ')';
-      clearTimeout(b._t);
-      b._t = setTimeout(function () { try { b.remove(); _c1c2ReplaceCount = 0; } catch (_) {} }, 4000);
+      b.textContent = 'C1+C2 : vus=' + _c1c2SeenCount + ' remplacés=' + _c1c2ReplaceCount + ' scope=' + (scope || '?');
     } catch (_) {}
   }
 
   function fixC1C2Text(s) {
     if (typeof s !== 'string') return s;
     if (s.indexOf('C1+C2') === -1 && s.indexOf('C1 + C2') === -1) return s;
+    _c1c2SeenCount++;
     var scope = getScope();
-    if (scope !== 'c1only') return s;
+    if (scope !== 'c1only') { bumpC1C2Badge(scope); return s; }
     var out = s
       .replace(/Σ\s*C1\s*\+\s*C2/g, '% C1')
       .replace(/%\s*C1\s*\+\s*C2/g, '% C1')
       .replace(/limite\s+C1\s*\+\s*C2\s*=\s*([\d.]+)\s*%/gi, 'limite C1 = $1 %')
       .replace(/Total\s+branchement\s*\(\s*C1\s*\+\s*C2\s*\)/gi, 'Chute C1 (CIBE → TA)')
       .replace(/C1\s*\+\s*C2/g, 'C1');
-    if (out !== s) { _c1c2ReplaceCount++; bumpC1C2Badge(); }
+    if (out !== s) _c1c2ReplaceCount++;
+    bumpC1C2Badge(scope);
     return out;
   }
-  function patchPdfC1C2() {
-    if (typeof jspdf === 'undefined' || !jspdf.jsPDF || !jspdf.jsPDF.prototype) {
-      setTimeout(patchPdfC1C2, 100); return;
-    }
-    var Proto = jspdf.jsPDF.prototype;
-    if (Proto.__algomesC1C2Patched) return;
-    Proto.__algomesC1C2Patched = true;
-    // jsPDF.text
-    var origText = Proto.text;
-    Proto.text = function (text) {
+
+  // Constructeurs utilisés par wrapConstructor : on wrap text et
+  // autoTable AU NIVEAU INSTANCE pour intercepter même si le code
+  // obfusqué fait `doc.text = function(...)` après coup.
+  function makePatchedText(origText) {
+    return function patchedText() {
       try {
         var args = Array.prototype.slice.call(arguments);
         if (typeof args[0] === 'string') {
@@ -1065,33 +1080,30 @@ label.rb-block-h{cursor:pointer}
         return origText.apply(this, args);
       } catch (_) { return origText.apply(this, arguments); }
     };
-    // jspdf-autotable : remplace dans head / body et via didParseCell
-    var origAutoTable = Proto.autoTable;
-    if (typeof origAutoTable === 'function') {
-      Proto.autoTable = function (opts) {
-        try {
-          opts = Object.assign({}, opts || {});
-          if (Array.isArray(opts.head)) {
-            opts.head = opts.head.map(function (row) { return row.map(fixC1C2Text); });
-          }
-          if (Array.isArray(opts.body)) {
-            opts.body = opts.body.map(function (row) { return row.map(fixC1C2Text); });
-          }
-          var userParse = opts.didParseCell;
-          opts.didParseCell = function (data) {
-            try {
-              if (data.cell && Array.isArray(data.cell.text)) {
-                data.cell.text = data.cell.text.map(fixC1C2Text);
-              }
-            } catch (_) {}
-            if (typeof userParse === 'function') userParse(data);
-          };
-          return origAutoTable.call(this, opts);
-        } catch (_) { return origAutoTable.apply(this, arguments); }
-      };
-    }
   }
-  patchPdfC1C2();
+  function makePatchedAutoTable(origAutoTable) {
+    return function patchedAutoTable(opts) {
+      try {
+        opts = Object.assign({}, opts || {});
+        if (Array.isArray(opts.head)) {
+          opts.head = opts.head.map(function (row) { return row.map(fixC1C2Text); });
+        }
+        if (Array.isArray(opts.body)) {
+          opts.body = opts.body.map(function (row) { return row.map(fixC1C2Text); });
+        }
+        var userParse = opts.didParseCell;
+        opts.didParseCell = function (data) {
+          try {
+            if (data.cell && Array.isArray(data.cell.text)) {
+              data.cell.text = data.cell.text.map(fixC1C2Text);
+            }
+          } catch (_) {}
+          if (typeof userParse === 'function') userParse(data);
+        };
+        return origAutoTable.call(this, opts);
+      } catch (_) { return origAutoTable.apply(this, arguments); }
+    };
+  }
 })();
 </script>
 

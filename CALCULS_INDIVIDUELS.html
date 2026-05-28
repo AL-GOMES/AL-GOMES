@@ -647,7 +647,8 @@ label.rb-block-h{cursor:pointer}
 
   var BACKUP_BEGIN = '%ALGOMES_CI_BACKUP_BEGIN';
   var BACKUP_END = '%ALGOMES_CI_BACKUP_END';
-  var BUILD_TAG = 'v3.42';
+  var BUILD_TAG = 'v3.43';
+  var _patchState = { wrap: false, proto: false, saves: 0, outputs: 0 };
 
   function b64encUtf8(s) {
     return btoa(unescape(encodeURIComponent(s)));
@@ -664,18 +665,28 @@ label.rb-block-h{cursor:pointer}
   }
 
   // ---- UI helpers : badge en topbar + toast pour signaler visuellement
-  // que le patch est actif (les utilisateurs ne sont pas obligés d'ouvrir
-  // la console pour vérifier).
-  function showStatusBadge() {
-    if (document.getElementById('algomes-backup-badge')) return;
+  // que le patch est actif. Le badge reflète l'état réel : vert = jsPDF
+  // wrappé avec succès, orange = patch non encore appliqué (lib jspdf
+  // non chargé ?), rouge = échec.
+  function updateBadge() {
     var topbar = document.querySelector('.topbar-center');
     if (!topbar) return;
-    var b = document.createElement('span');
-    b.id = 'algomes-backup-badge';
-    b.textContent = BUILD_TAG + ' ✓ sauvegarde PDF';
-    b.title = 'La sauvegarde PDF est active : chaque export contient les données du projet, réimportables via « 📥 Import ».';
-    b.style.cssText = 'display:inline-block;margin-left:8px;padding:2px 8px;background:rgba(34,197,94,.18);color:#4ade80;border:1px solid rgba(34,197,94,.4);border-radius:5px;font-size:11px;font-weight:700;letter-spacing:.5px;font-family:Rajdhani,sans-serif';
-    topbar.appendChild(b);
+    var b = document.getElementById('algomes-backup-badge');
+    if (!b) {
+      b = document.createElement('span');
+      b.id = 'algomes-backup-badge';
+      topbar.appendChild(b);
+    }
+    var ok = _patchState.wrap || _patchState.proto;
+    if (ok) {
+      b.textContent = BUILD_TAG + ' ✓ sauvegarde PDF [s:' + _patchState.saves + ' o:' + _patchState.outputs + ']';
+      b.title = 'Sauvegarde PDF active. s = nombre de save() interceptés, o = output() interceptés.';
+      b.style.cssText = 'display:inline-block;margin-left:8px;padding:2px 8px;background:rgba(34,197,94,.18);color:#4ade80;border:1px solid rgba(34,197,94,.4);border-radius:5px;font-size:11px;font-weight:700;font-family:Rajdhani,sans-serif';
+    } else {
+      b.textContent = BUILD_TAG + ' ⚠ patch en attente';
+      b.title = 'jsPDF pas encore chargé — le patch sera appliqué dès que possible.';
+      b.style.cssText = 'display:inline-block;margin-left:8px;padding:2px 8px;background:rgba(245,158,11,.18);color:#fbbf24;border:1px solid rgba(245,158,11,.4);border-radius:5px;font-size:11px;font-weight:700;font-family:Rajdhani,sans-serif';
+    }
   }
   function showToast(msg, kind) {
     var t = document.createElement('div');
@@ -713,15 +724,11 @@ label.rb-block-h{cursor:pointer}
     }
   }
 
-  // Patch jsPDF.prototype.{save, output}.
-  function patchJsPdf() {
-    if (typeof jspdf === 'undefined' || !jspdf.jsPDF || !jspdf.jsPDF.prototype) return false;
-    var Proto = jspdf.jsPDF.prototype;
-    if (Proto.__algomesPatched) return true;
-    Proto.__algomesPatched = true;
-    var origSave = Proto.save;
-    var origOutput = Proto.output;
-    Proto.save = function (filename) {
+  // Logique commune save/output (utilisée par les 2 approches de patch).
+  function makePatchedSave(origOutput, origSave) {
+    return function patchedSave(filename) {
+      _patchState.saves++;
+      updateBadge();
       try {
         var arrBuf = origOutput.call(this, 'arraybuffer');
         var augmented = injectBackup(arrBuf);
@@ -737,33 +744,106 @@ label.rb-block-h{cursor:pointer}
           try { document.body.removeChild(a); } catch (_) {}
         }, 1000);
       } catch (e) {
-        try { console.error('[ALGOMES backup] save patché en erreur, fallback', e); } catch (_) {}
+        try { console.error('[ALGOMES backup] save erreur, fallback', e); } catch (_) {}
         return origSave.apply(this, arguments);
       }
     };
-    Proto.output = function (type) {
+  }
+  function makePatchedOutput(origOutput) {
+    return function patchedOutput(type) {
+      _patchState.outputs++;
+      updateBadge();
       var res = origOutput.apply(this, arguments);
       if (type === 'arraybuffer' && res && (res.byteLength || res.buffer)) {
         return injectBackup(res);
       }
       return res;
     };
-    try { console.log('[ALGOMES backup] ' + BUILD_TAG + ' actif — jsPDF prototype patché.'); } catch (_) {}
+  }
+
+  // Approche 1 : patch du prototype (peut être contourné par certaines
+  // optimisations d'obfuscation qui capturent la méthode avant le patch).
+  function patchPrototype() {
+    if (typeof jspdf === 'undefined' || !jspdf.jsPDF || !jspdf.jsPDF.prototype) return false;
+    var Proto = jspdf.jsPDF.prototype;
+    if (Proto.__algomesPatched) return true;
+    Proto.__algomesPatched = true;
+    var origSave = Proto.save;
+    var origOutput = Proto.output;
+    Proto.save = makePatchedSave(origOutput, origSave);
+    Proto.output = makePatchedOutput(origOutput);
+    _patchState.proto = true;
+    updateBadge();
+    try { console.log('[ALGOMES backup] ' + BUILD_TAG + ' — prototype patché.'); } catch (_) {}
     return true;
   }
 
-  // Polling : patch jsPDF dès que le lib est chargé (max 20 s).
-  var _eagerDeadline = Date.now() + 20000;
-  function pollPatchJsPdf() {
-    if (patchJsPdf()) return;
-    if (Date.now() < _eagerDeadline) setTimeout(pollPatchJsPdf, 50);
+  // Approche 2 : wrap du constructeur jspdf.jsPDF. Quand le code obfusqué
+  // fait `const { jsPDF } = jspdf; new jsPDF(...)`, il récupère notre
+  // wrapper qui crée l'instance via Reflect.construct ET ré-écrit
+  // save/output DIRECTEMENT sur l'instance — impossible à contourner.
+  function wrapConstructor() {
+    if (typeof jspdf === 'undefined' || !jspdf.jsPDF) return false;
+    if (jspdf.jsPDF.__algomesWrapped) return true;
+    var Original = jspdf.jsPDF;
+    var ProtoBackup = Original.prototype;
+    var origSavePrototype = ProtoBackup.save;
+    var origOutputPrototype = ProtoBackup.output;
+
+    function Wrapped() {
+      var args = Array.prototype.slice.call(arguments);
+      var inst;
+      if (typeof Reflect !== 'undefined' && Reflect.construct) {
+        inst = Reflect.construct(Original, args, this && this.constructor === Wrapped ? Wrapped : Original);
+      } else {
+        // Fallback pré-Reflect
+        var Tmp = function () { Original.apply(this, args); };
+        Tmp.prototype = Original.prototype;
+        inst = new Tmp();
+      }
+      // Récupère save/output sur l'instance (en cas où elles ne soient pas
+      // sur le prototype) ou via le prototype.
+      var oSave = inst.save ? inst.save.bind(inst) : (origSavePrototype && origSavePrototype.bind(inst));
+      var oOutput = inst.output ? inst.output.bind(inst) : (origOutputPrototype && origOutputPrototype.bind(inst));
+      if (oSave) inst.save = makePatchedSave(oOutput, oSave);
+      if (oOutput) inst.output = makePatchedOutput(oOutput);
+      return inst;
+    }
+    Wrapped.prototype = Original.prototype;
+    try { Object.setPrototypeOf(Wrapped, Object.getPrototypeOf(Original)); } catch (_) {}
+    Object.getOwnPropertyNames(Original).forEach(function (k) {
+      if (k === 'prototype' || k === 'name' || k === 'length') return;
+      try {
+        Object.defineProperty(Wrapped, k, Object.getOwnPropertyDescriptor(Original, k));
+      } catch (_) {}
+    });
+    Wrapped.__algomesWrapped = true;
+    jspdf.jsPDF = Wrapped;
+    _patchState.wrap = true;
+    updateBadge();
+    try { console.log('[ALGOMES backup] ' + BUILD_TAG + ' — constructeur wrappé.'); } catch (_) {}
+    return true;
   }
-  pollPatchJsPdf();
+
+  // On applique les DEUX approches : ceinture + bretelles.
+  function patchAll() {
+    var a = wrapConstructor();
+    var b = patchPrototype();
+    return a || b;
+  }
+
+  // Polling : patch dès que jspdf est chargé (max 20 s).
+  var _eagerDeadline = Date.now() + 20000;
+  function pollPatch() {
+    if (patchAll()) return;
+    if (Date.now() < _eagerDeadline) setTimeout(pollPatch, 50);
+  }
+  pollPatch();
 
   // Polling pour ajouter le badge dès que la topbar est dans le DOM.
   var _badgeDeadline = Date.now() + 20000;
   function pollBadge() {
-    showStatusBadge();
+    updateBadge();
     if (!document.getElementById('algomes-backup-badge') && Date.now() < _badgeDeadline) {
       setTimeout(pollBadge, 200);
     }

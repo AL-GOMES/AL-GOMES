@@ -829,12 +829,9 @@ label.rb-block-h{cursor:pointer}
       // que le code obfusqué qui fait `_docText = doc.text.bind(doc); doc.text = ...`
       // capture NOTRE version (qui appliquera fixC1C2Text) AVANT que sa
       // surcharge ne s'installe.
-      try {
-        if (typeof inst.text === 'function') {
-          var oText = inst.text.bind(inst);
-          inst.text = makePatchedText(oText);
-        }
-      } catch (_) {}
+      // Pas de wrap sur inst.text : le PDF garde « limite C1+C2 » dans
+      // les sous-titres (le site garde aussi « Limite totale C1+C2 »
+      // comme label, donc PDF = site).
       try {
         if (typeof inst.autoTable === 'function') {
           var oAutoTable = inst.autoTable.bind(inst);
@@ -1029,50 +1026,63 @@ label.rb-block-h{cursor:pointer}
     return null;
   }
 
-  // Aligne le PDF sur le site : `showTotal = !c1only && !noCibe`. Hors
-  // mode complet, la colonne et les libellés C1+C2 n'ont pas de sens (un
-  // seul tronçon est calculé).
-  function shouldHideC1C2(scope) {
-    return scope === 'c1only' || scope === 'noCibe';
-  }
-  function fixC1C2Text(s) {
+  // Aligne le PDF sur la logique du site (voir renderFiches() dans
+  // l'ancien source pré-obfuscation, lignes 1323-1359) :
+  //   showREMBT = !c1only          → masque la colonne REMBT en c1only
+  //   showTotal = !c1only && !noCibe → masque la colonne « % C1+C2 »
+  //   header %ΔU :
+  //     - 'rc' + noCibe → '% ΔU dériv.'
+  //     - 'rc' (full)   → '% ΔU C2'
+  //     - 'ct'          → '% ΔU C1'
+  // Le site garde par contre « Limite totale C1+C2 » comme label dans
+  // tous les modes (input limTot), donc on NE TOUCHE PAS aux textes
+  // « limite C1+C2 » ni « Total branchement (C1+C2) » dans le PDF.
+  function shouldHideC1C2(scope) { return scope === 'c1only' || scope === 'noCibe'; }
+  function shouldHideRembt(scope) { return scope === 'c1only'; }
+  // Renomme « %ΔU C2 » → « %ΔU dériv. » en mode noCibe (côté 'rc' uniquement,
+  // c'est le seul cas où ça s'applique).
+  function fixHeaderC2Label(s, scope) {
     if (typeof s !== 'string') return s;
-    if (s.indexOf('C1+C2') === -1 && s.indexOf('C1 + C2') === -1) return s;
-    var scope = getScope();
-    if (scope === 'c1only') {
-      return s
-        .replace(/Σ\s*C1\s*\+\s*C2/g, '% C1')
-        .replace(/%\s*C1\s*\+\s*C2/g, '% C1')
-        .replace(/limite\s+C1\s*\+\s*C2\s*=\s*([\d.]+)\s*%/gi, 'limite C1 = $1 %')
-        .replace(/Total\s+branchement\s*\(\s*C1\s*\+\s*C2\s*\)/gi, 'Chute C1 (CIBE → TA)')
-        .replace(/C1\s*\+\s*C2/g, 'C1');
-    }
-    if (scope === 'noCibe') {
-      return s
-        .replace(/Σ\s*C1\s*\+\s*C2/g, '% Chute')
-        .replace(/%\s*C1\s*\+\s*C2/g, '% Chute')
-        .replace(/limite\s+C1\s*\+\s*C2\s*=\s*([\d.]+)\s*%/gi, 'limite totale = $1 %')
-        .replace(/Total\s+branchement\s*\(\s*C1\s*\+\s*C2\s*\)/gi, 'Chute totale (REMBT → TA)')
-        .replace(/C1\s*\+\s*C2/g, 'Chute');
-    }
-    return s;
+    if (scope !== 'noCibe') return s;
+    return s.replace(/%\s*ΔU\s*C2/g, '% ΔU dériv.').replace(/%ΔU C2/g, '%ΔU dériv.');
   }
 
-  // Constructeurs utilisés par wrapConstructor : on wrap text et
-  // autoTable AU NIVEAU INSTANCE pour intercepter même si le code
-  // obfusqué fait `doc.text = function(...)` après coup.
-  function makePatchedText(origText) {
-    return function patchedText() {
-      try {
-        var args = Array.prototype.slice.call(arguments);
-        if (typeof args[0] === 'string') {
-          args[0] = fixC1C2Text(args[0]);
-        } else if (Array.isArray(args[0])) {
-          args[0] = args[0].map(fixC1C2Text);
+  // Identifie les indices des colonnes du `head` à supprimer en fonction
+  // du scope. On matche le contenu (string ou cell.content) du header.
+  function collectColsToRemove(head, scope) {
+    var indices = [];
+    var hideC1C2 = shouldHideC1C2(scope);
+    var hideRembt = shouldHideRembt(scope);
+    head.forEach(function (row) {
+      row.forEach(function (cell, idx) {
+        var s = typeof cell === 'string' ? cell : (cell && cell.content) || '';
+        if (typeof s !== 'string') return;
+        if (hideC1C2 && /C1\s*\+\s*C2/.test(s)) {
+          if (indices.indexOf(idx) === -1) indices.push(idx);
+        } else if (hideRembt && /^\s*REMBT\s*$/i.test(s)) {
+          if (indices.indexOf(idx) === -1) indices.push(idx);
         }
-        return origText.apply(this, args);
-      } catch (_) { return origText.apply(this, arguments); }
-    };
+      });
+    });
+    return indices;
+  }
+  function dropCols(row, sortedDesc) {
+    var out = row.slice();
+    sortedDesc.forEach(function (idx) { if (idx < out.length) out.splice(idx, 1); });
+    return out;
+  }
+  function shiftColumnStyles(styles, sortedAsc) {
+    if (!styles || typeof styles !== 'object') return styles;
+    var out = {};
+    Object.keys(styles).forEach(function (k) {
+      var ki = parseInt(k, 10);
+      if (isNaN(ki)) { out[k] = styles[k]; return; }
+      if (sortedAsc.indexOf(ki) !== -1) return; // colonne supprimée
+      var shift = 0;
+      sortedAsc.forEach(function (idx) { if (idx < ki) shift++; });
+      out[ki - shift] = styles[k];
+    });
+    return out;
   }
   function makePatchedAutoTable(origAutoTable) {
     return function patchedAutoTable(opts) {
@@ -1080,68 +1090,33 @@ label.rb-block-h{cursor:pointer}
         opts = Object.assign({}, opts || {});
         var scope = getScope();
 
-        // Reproduit la logique du site (renderFiches : showTotal = !c1only
-        // && !noCibe). Hors mode complet, la colonne « % C1+C2 » fait
-        // double emploi avec le tronçon affiché et est SUPPRIMÉE
-        // entièrement (header + cellules + columnStyles).
-        if (shouldHideC1C2(scope) && Array.isArray(opts.head)) {
-          var colsToRemove = [];
-          opts.head.forEach(function (row) {
-            row.forEach(function (cell, idx) {
-              var s = typeof cell === 'string' ? cell : (cell && cell.content) || '';
-              if (typeof s === 'string' && /C1\s*\+\s*C2/.test(s)) {
-                if (colsToRemove.indexOf(idx) === -1) colsToRemove.push(idx);
-              }
-            });
-          });
-          if (colsToRemove.length > 0) {
-            // Tri décroissant pour que les splice ne décalent pas les indices.
-            colsToRemove.sort(function (a, b) { return b - a; });
-            opts.head = opts.head.map(function (row) {
-              var newRow = row.slice();
-              colsToRemove.forEach(function (idx) { if (idx < newRow.length) newRow.splice(idx, 1); });
-              return newRow;
-            });
+        // 1) Suppression des colonnes (REMBT en c1only, C1+C2 en c1only/noCibe).
+        if (Array.isArray(opts.head)) {
+          var cols = collectColsToRemove(opts.head, scope);
+          if (cols.length > 0) {
+            var sortedAsc = cols.slice().sort(function (a, b) { return a - b; });
+            var sortedDesc = cols.slice().sort(function (a, b) { return b - a; });
+            opts.head = opts.head.map(function (row) { return dropCols(row, sortedDesc); });
             if (Array.isArray(opts.body)) {
-              opts.body = opts.body.map(function (row) {
-                var newRow = row.slice();
-                colsToRemove.forEach(function (idx) { if (idx < newRow.length) newRow.splice(idx, 1); });
-                return newRow;
-              });
+              opts.body = opts.body.map(function (row) { return dropCols(row, sortedDesc); });
             }
-            // Décale les indices numériques de columnStyles
-            if (opts.columnStyles && typeof opts.columnStyles === 'object') {
-              var newStyles = {};
-              Object.keys(opts.columnStyles).forEach(function (k) {
-                var ki = parseInt(k, 10);
-                if (isNaN(ki)) { newStyles[k] = opts.columnStyles[k]; return; }
-                if (colsToRemove.indexOf(ki) !== -1) return; // supprimée
-                var shift = 0;
-                colsToRemove.forEach(function (idx) { if (idx < ki) shift++; });
-                newStyles[ki - shift] = opts.columnStyles[k];
-              });
-              opts.columnStyles = newStyles;
-            }
+            opts.columnStyles = shiftColumnStyles(opts.columnStyles, sortedAsc);
           }
         }
 
-        // Pour les autres chaînes (titres, autres cellules), garde aussi le
-        // renommage générique « C1+C2 » → « C1 » via fixC1C2Text.
-        if (Array.isArray(opts.head)) {
-          opts.head = opts.head.map(function (row) { return row.map(fixC1C2Text); });
+        // 2) Renomme « %ΔU C2 » → « %ΔU dériv. » en noCibe (header).
+        if (scope === 'noCibe' && Array.isArray(opts.head)) {
+          opts.head = opts.head.map(function (row) {
+            return row.map(function (cell) {
+              if (typeof cell === 'string') return fixHeaderC2Label(cell, scope);
+              if (cell && typeof cell.content === 'string') {
+                return Object.assign({}, cell, { content: fixHeaderC2Label(cell.content, scope) });
+              }
+              return cell;
+            });
+          });
         }
-        if (Array.isArray(opts.body)) {
-          opts.body = opts.body.map(function (row) { return row.map(fixC1C2Text); });
-        }
-        var userParse = opts.didParseCell;
-        opts.didParseCell = function (data) {
-          try {
-            if (data.cell && Array.isArray(data.cell.text)) {
-              data.cell.text = data.cell.text.map(fixC1C2Text);
-            }
-          } catch (_) {}
-          if (typeof userParse === 'function') userParse(data);
-        };
+
         return origAutoTable.call(this, opts);
       } catch (_) { return origAutoTable.apply(this, arguments); }
     };

@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.38';
+window.AL_VERSION      = 'v3.39';
 window.AL_VERSION_DATE = '2026-05-28';
-window.AL_VERSION_TIME = '07:00';
-window.AL_VERSION_NOTE = 'Admin — bouton « 🔑 Capturer » ajouté à côté des « non stocké » dans la colonne « Mot de passe ». Permet à l\'admin de saisir une fois le mdp actuel d\'un utilisateur existant : le mdp est vérifié auprès de Firebase Auth (signInWithEmailAndPassword via app secondaire), puis stocké en clair dans users/{uid}.password et apparaît dans la colonne. C\'est le seul moyen côté client de populer le champ pour les comptes créés avant la v3.37 (Firebase Auth ne révèle jamais les mdp existants).';
+window.AL_VERSION_TIME = '07:30';
+window.AL_VERSION_NOTE = 'Calculs individuels — le PDF devient le format de sauvegarde : les données JSON du projet sont embarquées en fin de fichier après %%EOF (ignoré par les visualiseurs PDF) et le bouton « 📥 Import » accepte désormais les PDF pour restaurer un projet. L\'ancien bouton « 📥 Excel » devient « 🔗 Partage TA » (export .ALG vers le module Tableau Abonné). Les deux boutons d\'export à l\'intérieur de la vue Synthèse (PDF complet + Enregistrer dérivations) sont retirés — les exports restent accessibles via le bandeau du haut.';

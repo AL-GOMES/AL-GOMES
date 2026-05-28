@@ -1252,6 +1252,11 @@ label.rb-block-h{cursor:pointer}
   } else {
     attachChuteHeaderObserver();
   }
+  // (v3.78) Filet de sécurité : re-normalise toute la page chaque seconde
+  // au cas où le MutationObserver rate des rendus (ex. innerHTML replace
+  // pendant que mon observer est encore en train de processer la mutation
+  // précédente, sheets cachés rendus avant l'attache de l'observer, etc.).
+  setInterval(function () { try { normalizeChuteHeaders(document.body); } catch (_) {} }, 1000);
   // (v3.66) Retire les blocs CCPI et Cascade dans les cartes REMBT (sh-dim) :
   // la config se fait maintenant dans l'Étape 1 + dans les tableaux d'Étape 2,
   // donc ces blocs sont redondants. Retire aussi le bouton « Modifier la config ».

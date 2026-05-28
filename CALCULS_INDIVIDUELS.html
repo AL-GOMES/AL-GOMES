@@ -967,6 +967,163 @@ label.rb-block-h{cursor:pointer}
     }
   };
 
+  // (v3.60) Tableaux de note de calcul des câbles CCPI → REMBT et
+  // REMBT → REMBT (cascade) injectés en haut du sheet sh-dim (Étape 2).
+  // Utilise les fonctions globales cfChute() et linkChute() du script
+  // obfusqué pour calculer Pfois, Itri, %ΔU, calibre.
+  function escHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+    });
+  }
+  function cellClass(pc, lim) {
+    if (pc == null) return 'cf-na';
+    if (pc > lim) return 'cf-bad';
+    if (pc > lim * 0.8) return 'cf-warn';
+    return 'cf-ok';
+  }
+  function buildReseauTables() {
+    var CIref;
+    try { CIref = (typeof CI === 'object' && CI) ? CI : window.CI; } catch (_) { CIref = null; }
+    if (!CIref || !Array.isArray(CIref.rembts)) return '';
+    var lim = (typeof CIref.limT === 'number') ? CIref.limT : 1;
+    var byId = {};
+    CIref.rembts.forEach(function (r) { byId[r.id] = r; });
+
+    var ccpiRows = [];
+    var cascRows = [];
+    CIref.rembts.forEach(function (r) {
+      if (r.parentId == null && r.cf && r.cf.active) {
+        try {
+          if (typeof cfChute === 'function') {
+            var c = cfChute(r);
+            if (c) ccpiRows.push({ r: r, c: c });
+          }
+        } catch (_) {}
+      } else if (r.parentId != null) {
+        try {
+          if (typeof linkChute === 'function') {
+            var lc = linkChute(r);
+            if (lc) cascRows.push({ r: r, c: lc });
+          }
+        } catch (_) {}
+      }
+    });
+    if (ccpiRows.length === 0 && cascRows.length === 0) return '';
+
+    var tableCss = 'width:100%;border-collapse:collapse;font-size:13px;color:#cbd5e1';
+    var thCss = 'padding:8px 10px;background:rgba(104,118,156,.18);border-bottom:1px solid rgba(104,118,156,.35);font-weight:700;text-align:left;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:#94a3b8';
+    var tdCss = 'padding:8px 10px;border-bottom:1px solid rgba(104,118,156,.10)';
+    function statusCell(pc) {
+      if (pc == null) return '<td style="' + tdCss + '">—</td>';
+      var cls = cellClass(pc, lim);
+      var bg = cls === 'cf-bad' ? 'rgba(255,107,107,.18)' : cls === 'cf-warn' ? 'rgba(255,184,108,.18)' : 'rgba(95,224,154,.15)';
+      var col = cls === 'cf-bad' ? '#FF6B6B' : cls === 'cf-warn' ? '#FFB86C' : '#5FE09A';
+      return '<td style="' + tdCss + ';background:' + bg + ';color:' + col + ';font-weight:700">' + pc.toFixed(3) + ' %</td>';
+    }
+    function num(v, dec) { return (v == null || isNaN(v)) ? '—' : Number(v).toFixed(dec == null ? 0 : dec); }
+
+    var html = '';
+    var hint = '<span style="margin-left:10px;font-size:12px;font-weight:400;color:#94a3b8">Câbles réseau BT — ALU ρ = 0,037 — tri 400 V — limite tronçon ' + lim.toFixed(2) + ' %. Pour modifier les longueurs / sections, voir les cartes ci-dessous.</span>';
+
+    if (ccpiRows.length) {
+      html += '<div class="panel" style="margin-bottom:18px;padding:18px;background:rgba(29,33,48,0.55);border:1px solid rgba(104,118,156,0.30);border-radius:10px">' +
+        '<h3 style="margin:0 0 12px 0;font-size:15px;color:#fff">📐 Note de calcul — câbles CCPI → REMBT' + hint + '</h3>' +
+        '<table style="' + tableCss + '"><thead><tr>' +
+        '<th style="' + thCss + '">REMBT</th>' +
+        '<th style="' + thCss + '">Long. (m)</th>' +
+        '<th style="' + thCss + '">Section (mm²)</th>' +
+        '<th style="' + thCss + '">P fois. (kVA)</th>' +
+        '<th style="' + thCss + '">I (A)</th>' +
+        '<th style="' + thCss + '">Calibre (A)</th>' +
+        '<th style="' + thCss + '">VU (V)</th>' +
+        '<th style="' + thCss + '">% ΔU</th>' +
+        '</tr></thead><tbody>';
+      ccpiRows.forEach(function (it) {
+        html += '<tr>' +
+          '<td style="' + tdCss + ';font-weight:600;color:#fff">' + escHtml(it.r.name) + '</td>' +
+          '<td style="' + tdCss + '">' + escHtml(it.r.cf.long || '—') + '</td>' +
+          '<td style="' + tdCss + '">' + escHtml(it.r.cf.section || '—') + '</td>' +
+          '<td style="' + tdCss + '">' + num(it.c.Pfois, 1) + '</td>' +
+          '<td style="' + tdCss + '">' + num(it.c.Itri, 0) + '</td>' +
+          '<td style="' + tdCss + '">' + num(it.c.calibre, 0) + '</td>' +
+          '<td style="' + tdCss + '">' + num(it.c.vu, 2) + '</td>' +
+          statusCell(it.c.pc) +
+          '</tr>';
+      });
+      html += '</tbody></table></div>';
+    }
+
+    if (cascRows.length) {
+      html += '<div class="panel" style="margin-bottom:18px;padding:18px;background:rgba(29,33,48,0.55);border:1px solid rgba(104,118,156,0.30);border-radius:10px">' +
+        '<h3 style="margin:0 0 12px 0;font-size:15px;color:#fff">📐 Note de calcul — câbles REMBT → REMBT (cascade)' + hint + '</h3>' +
+        '<table style="' + tableCss + '"><thead><tr>' +
+        '<th style="' + thCss + '">De</th>' +
+        '<th style="' + thCss + '">Vers</th>' +
+        '<th style="' + thCss + '">Long. (m)</th>' +
+        '<th style="' + thCss + '">Section (mm²)</th>' +
+        '<th style="' + thCss + '">P fois. (kVA)</th>' +
+        '<th style="' + thCss + '">I (A)</th>' +
+        '<th style="' + thCss + '">Calibre (A)</th>' +
+        '<th style="' + thCss + '">VU (V)</th>' +
+        '<th style="' + thCss + '">% ΔU</th>' +
+        '</tr></thead><tbody>';
+      cascRows.forEach(function (it) {
+        var parent = byId[it.r.parentId];
+        html += '<tr>' +
+          '<td style="' + tdCss + ';color:#94a3b8">' + escHtml(parent ? parent.name : '?') + '</td>' +
+          '<td style="' + tdCss + ';font-weight:600;color:#fff">' + escHtml(it.r.name) + '</td>' +
+          '<td style="' + tdCss + '">' + escHtml((it.r.link && it.r.link.long) || '—') + '</td>' +
+          '<td style="' + tdCss + '">' + escHtml((it.r.link && it.r.link.section) || '—') + '</td>' +
+          '<td style="' + tdCss + '">' + num(it.c.Pfois, 1) + '</td>' +
+          '<td style="' + tdCss + '">' + num(it.c.Itri, 0) + '</td>' +
+          '<td style="' + tdCss + '">' + num(it.c.calibre, 0) + '</td>' +
+          '<td style="' + tdCss + '">' + num(it.c.vu, 2) + '</td>' +
+          statusCell(it.c.pc) +
+          '</tr>';
+      });
+      html += '</tbody></table></div>';
+    }
+    return html;
+  }
+  var _injectingReseau = false;
+  function injectReseauTables() {
+    if (_injectingReseau) return;
+    _injectingReseau = true;
+    try {
+      var dim = document.getElementById('sh-dim');
+      if (!dim) return;
+      var existing = dim.querySelector('.algomes-reseau-tables');
+      var html = buildReseauTables();
+      if (!html) {
+        if (existing) existing.remove();
+        return;
+      }
+      if (existing) {
+        existing.innerHTML = html;
+      } else {
+        var wrapper = document.createElement('div');
+        wrapper.className = 'algomes-reseau-tables';
+        wrapper.style.cssText = 'margin-bottom:24px';
+        wrapper.innerHTML = html;
+        dim.insertBefore(wrapper, dim.firstChild);
+      }
+    } finally {
+      setTimeout(function () { _injectingReseau = false; }, 50);
+    }
+  }
+  function attachReseauObserver() {
+    var dim = document.getElementById('sh-dim');
+    if (!dim) { setTimeout(attachReseauObserver, 100); return; }
+    injectReseauTables();
+    new MutationObserver(function () { injectReseauTables(); }).observe(dim, { childList: true, subtree: true });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', attachReseauObserver);
+  } else {
+    attachReseauObserver();
+  }
+
   // Nettoyage de la vue Synthèse.
   function cleanSyntheseButtons() {
     var sh = document.getElementById('sh-sch');

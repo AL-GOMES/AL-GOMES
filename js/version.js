@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.59';
+window.AL_VERSION      = 'v3.60';
 window.AL_VERSION_DATE = '2026-05-28';
-window.AL_VERSION_TIME = '20:15';
-window.AL_VERSION_NOTE = 'Calculs individuels — restructuration des onglets : ÉTAPE 1 = « Choix du scénario » (mode de calcul, déplacé depuis l\'ancien bandeau au-dessus des onglets), ÉTAPE 2 = « Note de calcul câbles CCPI ↔ REMBT + REMBT ↔ REMBT » (ex-Installation), ÉTAPE 3 = Chutes REMBT → CIBE, ÉTAPE 4 = Chutes CIBE → TA, ÉTAPE 5 = Synthèse. Le nouvel onglet 1 a son propre handler JS pour activer/désactiver son sheet.';
+window.AL_VERSION_TIME = '20:30';
+window.AL_VERSION_NOTE = 'Calculs individuels — ÉTAPE 2 affiche maintenant des VRAIS tableaux de note de calcul (câbles CCPI → REMBT et REMBT → REMBT cascade) en haut, comme les étapes suivantes. Les cartes de configuration des REMBTs restent en dessous pour permettre la modification des longueurs / sections. Tables auto-régénérées via MutationObserver sur sh-dim.';

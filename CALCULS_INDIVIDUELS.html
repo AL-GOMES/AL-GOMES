@@ -647,7 +647,16 @@ label.rb-block-h{cursor:pointer}
 
   var BACKUP_BEGIN = '%ALGOMES_CI_BACKUP_BEGIN';
   var BACKUP_END = '%ALGOMES_CI_BACKUP_END';
-  var BUILD_TAG = 'v3.44';
+  // Lit la version réelle depuis window.AL_VERSION (chargée via version.js).
+  // Avant, BUILD_TAG était hardcodé et n'évoluait pas → impossible de savoir
+  // si le navigateur servait la dernière version ou une version cachée.
+  // Cette page est chargée en iframe d'accueil.html ; on essaie l'iframe
+  // window puis window.parent (où version.js est chargé).
+  var BUILD_TAG = (function () {
+    try { if (typeof window.AL_VERSION === 'string') return window.AL_VERSION; } catch (_) {}
+    try { if (window.parent && typeof window.parent.AL_VERSION === 'string') return window.parent.AL_VERSION; } catch (_) {}
+    return 'v?.??';
+  })();
   var _patchState = { wrap: false, proto: false, saves: 0, outputs: 0 };
 
   // Renomme le fichier généré : « <affaire>_Calculs_Individuels.pdf »

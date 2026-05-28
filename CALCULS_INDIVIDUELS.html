@@ -1234,14 +1234,40 @@ label.rb-block-h{cursor:pointer}
       .replace(/(?<![A-Za-zΔ])VU\s*\(V\)/g, 'ΔU (V)');
   }
 
-  // (v3.78) Normalise les libellés de chute dans le DOM (site) : onglets
-  // Chutes (sh-rc, sh-ct), Synthèse (sh-sch) et tags du schéma.
+  // (v3.79) Renommage d'en-têtes de colonnes (site + PDF), même mécanisme
+  // que les libellés de chute. Demandé par l'utilisateur :
+  //   « M/T »                                              → « Mono/Tri »
+  //   « Surf. / kVA » / « Surface / kVA » / « S / kVA » /
+  //     « S/kVA »                                          → « Surf. »
+  //   « HALL »                                             → « Bat »
+  // Les variantes « Surface … » d'abord, puis « S / kVA » (le « kVA » seul,
+  // « Puiss. kVA », « P foisonnée (kVA) »… ne doivent PAS bouger : les regex
+  // exigent « S / », « Surf. / » ou « Surface / » devant kVA). « M/T » et
+  // « HALL » sont bornés pour ne matcher que le jeton entier.
+  function normalizeColLabel(s) {
+    if (typeof s !== 'string') return s;
+    return s
+      .replace(/Surface\s*\/\s*kVA/g, 'Surf.')
+      .replace(/Surf\.\s*\/\s*kVA/g, 'Surf.')
+      .replace(/(?<![A-Za-z])S\s*\/\s*kVA/g, 'Surf.')
+      .replace(/(?<![A-Za-z0-9])M\/T(?![A-Za-z0-9])/g, 'Mono/Tri')
+      .replace(/\bHALL\b/g, 'Bat');
+  }
+
+  // Point d'entrée unique de normalisation de libellés (chute + colonnes),
+  // utilisé par l'observateur DOM (site) ET le PDF → cohérence partout.
+  function normalizeLabel(s) {
+    return normalizeColLabel(normalizeChuteLabel(s));
+  }
+
+  // (v3.78) Normalise les libellés dans le DOM (site) : onglets Chutes
+  // (sh-rc, sh-ct), Synthèse (sh-sch) et tags du schéma.
   function normalizeChuteHeaders(node) {
     if (!node) return;
     if (node.nodeType === 3) {
       var v = node.nodeValue;
       if (!v) return;
-      var nv = normalizeChuteLabel(v);
+      var nv = normalizeLabel(v);
       if (nv !== v) node.nodeValue = nv;
       return;
     }
@@ -1630,13 +1656,15 @@ label.rb-block-h{cursor:pointer}
   // « limite C1+C2 » ni « Total branchement (C1+C2) » dans le PDF.
   function shouldHideC1C2(scope) { return scope === 'c1only' || scope === 'noCibe'; }
   function shouldHideRembt(scope) { return scope === 'c1only'; }
-  // (v3.78) PDF : on réutilise EXACTEMENT le même mapping que le site
-  // (normalizeChuteLabel) → libellés cohérents partout :
+  // (v3.78/79) PDF : on réutilise EXACTEMENT le même mapping que le site
+  // (normalizeLabel = chute + colonnes) → libellés cohérents partout :
   //   « VU (V) » → « ΔU (V) » ; « % ΔU C2 » / « %C2 » → « ΔU C2 (%) » ;
   //   « % ΔU C1 » / « %C1 » → « ΔU C1 (%) » ; « % dériv. » → « ΔU dériv. (%) » ;
-  //   « % C1+C2 » / « Σ C1+C2 » → « ΔU C1+C2 (%) ».
+  //   « % C1+C2 » / « Σ C1+C2 » → « ΔU C1+C2 (%) » ; « M/T » → « Mono/Tri » ;
+  //   « Surf. / kVA » / « Surface / kVA » / « S / kVA » → « Surf. » ;
+  //   « HALL » → « Bat ».
   function normalizeChuteLabelPdf(s) {
-    return normalizeChuteLabel(s);
+    return normalizeLabel(s);
   }
   function fixHeaderC2Label(s, scope) {
     if (typeof s !== 'string') return s;

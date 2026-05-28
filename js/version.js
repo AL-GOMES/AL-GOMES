@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.43';
+window.AL_VERSION      = 'v3.44';
 window.AL_VERSION_DATE = '2026-05-28';
-window.AL_VERSION_TIME = '16:00';
-window.AL_VERSION_NOTE = 'Calculs individuels — nouvelle stratégie de patch jsPDF (ceinture + bretelles) : en plus du patch du prototype (méthode v3.40), on wrappe désormais le constructeur jspdf.jsPDF lui-même via Reflect.construct, et on ré-écrit save/output directement sur chaque instance créée. Impossible à contourner par l\'obfuscateur. Le badge affiche aussi un compteur [s:N o:N] des appels save()/output() interceptés — si « 📄 PDF » incrémente s ou o, le patch fonctionne.';
+window.AL_VERSION_TIME = '16:30';
+window.AL_VERSION_NOTE = 'Calculs individuels — renommage du fichier PDF généré : « <affaire>_Calculs_Individuels.pdf » → « <affaire> - Calculs Individuels.pdf » (espaces autour du tiret, casse normale dans « Calculs Individuels »). Le nom de l\'affaire reste inchangé. Couvre les deux chemins de sauvegarde : doc.save() (Firefox) et window.showSaveFilePicker (Chrome/Edge).';

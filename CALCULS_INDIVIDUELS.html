@@ -647,8 +647,16 @@ label.rb-block-h{cursor:pointer}
 
   var BACKUP_BEGIN = '%ALGOMES_CI_BACKUP_BEGIN';
   var BACKUP_END = '%ALGOMES_CI_BACKUP_END';
-  var BUILD_TAG = 'v3.43';
+  var BUILD_TAG = 'v3.44';
   var _patchState = { wrap: false, proto: false, saves: 0, outputs: 0 };
+
+  // Renomme le fichier généré : « <affaire>_Calculs_Individuels.pdf »
+  // → « <affaire> - Calculs Individuels.pdf » (vrai tiret cadratin court
+  // entouré d'espaces, comme demandé). On n'altère pas le nom de l'affaire.
+  function prettifyFilename(fn) {
+    if (!fn) return fn;
+    return String(fn).replace(/_Calculs_Individuels\.pdf$/i, ' - Calculs Individuels.pdf');
+  }
 
   function b64encUtf8(s) {
     return btoa(unescape(encodeURIComponent(s)));
@@ -729,6 +737,7 @@ label.rb-block-h{cursor:pointer}
     return function patchedSave(filename) {
       _patchState.saves++;
       updateBadge();
+      var prettyName = prettifyFilename(filename);
       try {
         var arrBuf = origOutput.call(this, 'arraybuffer');
         var augmented = injectBackup(arrBuf);
@@ -736,7 +745,7 @@ label.rb-block-h{cursor:pointer}
         var url = URL.createObjectURL(blob);
         var a = document.createElement('a');
         a.href = url;
-        a.download = filename || 'document.pdf';
+        a.download = prettyName || 'document.pdf';
         document.body.appendChild(a);
         a.click();
         setTimeout(function () {
@@ -745,7 +754,7 @@ label.rb-block-h{cursor:pointer}
         }, 1000);
       } catch (e) {
         try { console.error('[ALGOMES backup] save erreur, fallback', e); } catch (_) {}
-        return origSave.apply(this, arguments);
+        return origSave.call(this, prettyName);
       }
     };
   }
@@ -825,7 +834,28 @@ label.rb-block-h{cursor:pointer}
     return true;
   }
 
-  // On applique les DEUX approches : ceinture + bretelles.
+  // Pour le chemin Chrome/Edge qui utilise window.showSaveFilePicker
+  // (le code obfusqué passe directement `suggestedName: fn` sans qu'on
+  // puisse l'intercepter via les prototypes jsPDF), on wrap la fonction
+  // globale pour réécrire suggestedName.
+  function wrapSaveFilePicker() {
+    if (typeof window.showSaveFilePicker !== 'function') return;
+    if (window.showSaveFilePicker.__algomesWrapped) return;
+    var orig = window.showSaveFilePicker;
+    var wrapped = function (options) {
+      try {
+        if (options && options.suggestedName) {
+          options = Object.assign({}, options, { suggestedName: prettifyFilename(options.suggestedName) });
+        }
+      } catch (_) {}
+      return orig.apply(this, [options].concat(Array.prototype.slice.call(arguments, 1)));
+    };
+    wrapped.__algomesWrapped = true;
+    window.showSaveFilePicker = wrapped;
+  }
+  wrapSaveFilePicker();
+
+  // On applique les DEUX approches jsPDF : ceinture + bretelles.
   function patchAll() {
     var a = wrapConstructor();
     var b = patchPrototype();

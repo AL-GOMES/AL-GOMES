@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.63';
+window.AL_VERSION      = 'v3.64';
 window.AL_VERSION_DATE = '2026-05-28';
-window.AL_VERSION_TIME = '21:15';
-window.AL_VERSION_NOTE = 'Calculs individuels — Étape 1 : 3 correctifs. (1) Plus de redirection vers Étape 2 : R() repositionne le tab actif sur \'dim\' via une variable globale, on re-active sh-scenario juste après via refreshAndStay(). (2) Le hint « → N REMBT(s) » sera désormais visible (on reste sur l\'étape 1). (3) Le champ unique « longueur cascade » devient UN champ par REMBT enfant (généré dynamiquement avec libellé « <parent> → <enfant> ») pour pouvoir saisir des longueurs différentes pour chaque liaison cascade.';
+window.AL_VERSION_TIME = '21:30';
+window.AL_VERSION_NOTE = 'Calculs individuels — Étape 2 tableaux : (1) tout le contenu centré (text-align:center sur th et td). (2) La chute de tension cascade s\'affiche désormais même quand le courant d\'emploi est nul (Itri=0) — avant linkChute() retournait null si aucun logement aval n\'avait de kVA, ce qui masquait toute la ligne. On reimplémente le calcul localement pour afficher 0 plutôt que « — » dans ce cas.';

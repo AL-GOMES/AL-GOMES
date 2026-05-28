@@ -1014,25 +1014,33 @@ label.rb-block-h{cursor:pointer}
 
     var ccpiRows = [];
     var cascRows = [];
+    // Reimplémentation locale pour ne PAS bailler quand Itri=0 (logements
+     // pas encore configurés en kVA), comme le fait cfChute / linkChute.
+     // On affiche alors « 0 » sur Pfois / I / VU / ΔU plutôt que « — »,
+     // ce qui est plus parlant : le calcul est fait, juste que le courant
+     // d'emploi est nul tant que la puissance n'est pas saisie.
+    function calcChute(r, cableObj) {
+      if (!cableObj) return null;
+      var L = parseFloat(cableObj.long), S = parseFloat(cableObj.section);
+      if (!L || !S) return null;
+      var a = {};
+      try { if (typeof rembtAutoCalibre === 'function') a = rembtAutoCalibre(r.id) || {}; } catch (_) {}
+      var Itri = a.Itri || 0;
+      var vu = (0.037 * L * Itri) / S;
+      return { vu: vu, pc: vu / 2.3, calibre: a.cal || 0, sumP: a.sumP || 0, Pfois: a.Pfois || 0, k: a.k || 0, Itri: Itri, nLgts: a.nLgts || 0 };
+    }
     CIref.rembts.forEach(function (r) {
       if (r.parentId == null && r.cf && r.cf.active) {
-        var c = null;
-        try { if (typeof cfChute === 'function') c = cfChute(r); } catch (_) {}
-        ccpiRows.push({ r: r, c: c });
+        ccpiRows.push({ r: r, c: calcChute(r, r.cf) });
       } else if (r.parentId != null) {
-        // Toujours afficher la ligne du REMBT en cascade — même si link
-        // n'est pas encore configuré (long / section vides) → on affiche
-        // « — » pour les valeurs manquantes plutôt que de masquer la ligne.
-        var lc = null;
-        try { if (typeof linkChute === 'function') lc = linkChute(r); } catch (_) {}
-        cascRows.push({ r: r, c: lc });
+        cascRows.push({ r: r, c: calcChute(r, r.link) });
       }
     });
     if (ccpiRows.length === 0 && cascRows.length === 0) return '';
 
     var tableCss = 'width:100%;border-collapse:collapse;font-size:13px;color:#cbd5e1';
-    var thCss = 'padding:8px 10px;background:rgba(104,118,156,.18);border-bottom:1px solid rgba(104,118,156,.35);font-weight:700;text-align:left;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:#94a3b8';
-    var tdCss = 'padding:8px 10px;border-bottom:1px solid rgba(104,118,156,.10)';
+    var thCss = 'padding:8px 10px;background:rgba(104,118,156,.18);border-bottom:1px solid rgba(104,118,156,.35);font-weight:700;text-align:center;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:#94a3b8';
+    var tdCss = 'padding:8px 10px;border-bottom:1px solid rgba(104,118,156,.10);text-align:center';
     function statusCell(pc) {
       if (pc == null) return '<td style="' + tdCss + '">—</td>';
       var cls = cellClass(pc, lim);

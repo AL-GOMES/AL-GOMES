@@ -475,22 +475,8 @@ label.rb-block-h{cursor:pointer}
 .plan-wire-tag{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;display:inline-flex;align-items:center;gap:7px;background:#fff;border:2px solid #c0392b;border-left:6px solid #c0392b;padding:8px 14px;font-family:'Helvetica','Arial',sans-serif;font-size:11.5px;font-weight:700;color:#a83232;letter-spacing:0.3px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.18)}
 .plan-wire-tag b{color:#1a1a1a}
 .plan-wire-tag b.ok{color:#2e6b3e}.plan-wire-tag b.warn{color:#b26d24}.plan-wire-tag b.bad{color:#a83232}
-.plan-rembt-section{position:relative;margin-bottom:30px;padding-bottom:20px;padding-left:40px;border-bottom:1.5px dashed #c2b89a}
+.plan-rembt-section{margin-bottom:30px;padding-bottom:20px;border-bottom:1.5px dashed #c2b89a}
 .plan-rembt-section:last-of-type{border-bottom:none}
-/* (v3.72) Câble cascade dessiné comme une vraie ligne continue qui part
-   du haut du REMBT, descend sur le côté gauche, rejoint la zone .plan-wire
-   en bas. Un trait horizontal en T part du bord gauche du bloc REMBT
-   vers la ligne verticale, et la ligne verticale se prolonge dans le
-   .plan-wire suivant pour rejoindre le REMBT n+1. */
-.plan-rembt-section:has(+ .plan-wire)::before{
-  content:'';position:absolute;left:8px;top:34px;bottom:-30px;width:6px;
-  background:#c0392b;border-radius:3px 3px 0 0;z-index:1;
-  box-shadow:0 0 0 1px rgba(192,57,43,.25);
-}
-.plan-rembt-section:has(+ .plan-wire)::after{
-  content:'';position:absolute;left:14px;top:34px;width:24px;height:6px;
-  background:#c0392b;border-radius:0 3px 3px 0;z-index:1;
-}
 .plan-rembt-title{font-family:'Helvetica','Arial',sans-serif;font-size:12px;font-weight:700;color:#1f3864;letter-spacing:2.5px;text-transform:uppercase;margin-bottom:18px;padding:6px 12px;background:#fff;border:1.5px solid #1f3864;display:inline-block}
 
 /* Ligne principale horizontale Réseau→CCPI→REMBT→CIBE */

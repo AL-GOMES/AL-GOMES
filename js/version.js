@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.72';
+window.AL_VERSION      = 'v3.73';
 window.AL_VERSION_DATE = '2026-05-28';
-window.AL_VERSION_TIME = '23:30';
-window.AL_VERSION_NOTE = 'Calculs individuels — Étape 5 schéma : câble cascade dessiné comme une vraie LIGNE CONTINUE sur le côté gauche de la section REMBT (au lieu d\'un simple trait au milieu de l\'espace entre deux REMBTs). ::before sur les .plan-rembt-section ayant un .plan-wire après → trait vertical rouge 6 px depuis le haut du REMBT jusqu\'à 30 px dans la zone .plan-wire. ::after = bras horizontal du REMBT box vers la ligne verticale (forme en T). Padding-left:40px sur la section pour faire la place.';
+window.AL_VERSION_TIME = '23:50';
+window.AL_VERSION_NOTE = 'Calculs individuels — revert de la v3.72 (ligne câble continue) qui produisait des segments rouges détachés sur le côté gauche du schéma (CSS :has flottant hors contexte). Retour à la v3.71 (trait rouge épais centré entre REMBTs). Une vraie ligne continue allant du REMBT 1 jusqu\'au REMBT 2 nécessitera de modifier le HTML/SVG généré par le code obfusqué, pas seulement du CSS.';

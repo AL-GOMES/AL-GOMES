@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.50';
+window.AL_VERSION      = 'v3.51';
 window.AL_VERSION_DATE = '2026-05-28';
-window.AL_VERSION_TIME = '17:50';
-window.AL_VERSION_NOTE = 'Autocontrôle PDF SéQuélec — la pagination dynamique tient compte de l\'orientation : pour les pages PAYSAGE (les fiches A1..C1), le « X sur Y » du template est au CENTRE-bas et non à droite. On détecte size.width > size.height et on positionne le whiteOut + nouveau numéro au centre pour le paysage, à droite pour le portrait (couverture / référence / sommaire).';
+window.AL_VERSION_TIME = '18:00';
+window.AL_VERSION_NOTE = 'Autocontrôle PDF SéQuélec — la détection portrait/paysage v3.50 ne marchait pas : les pages du template ont toutes une MediaBox portrait, mais le « X sur 10 » du template est positionné au CENTRE-bas. On place donc systématiquement la pagination dynamique au centre-bas (largeur 160 pt), peu importe l\'orientation visuelle.';

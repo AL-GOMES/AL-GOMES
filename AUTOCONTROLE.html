@@ -1020,28 +1020,17 @@ SGX-A = 12 kVA"></textarea>
       var p = pages[i];
       var size;
       try { size = p.getSize(); } catch (_) { continue; }
-      // Le « X sur 10 » du template SéQuélec n'est PAS au même endroit
-      // selon l'orientation :
-      //   - pages portrait (couverture / référence / sommaire) → bas-DROIT
-      //   - pages paysage (fiches A1..C1)                       → bas-CENTRE
-      var isLandscape = size.width > size.height;
+      // Le « X sur 10 » du template SéQuélec est positionné au bas-CENTRE
+      // sur toutes les pages des fiches (y compris les pages texte).
+      // On y place donc systématiquement notre numérotation dynamique.
       var rectY = 12;
       var rectH = 26;
-      var rectW, rectX, textX;
+      var rectW = 160;
+      var rectX = (size.width - rectW) / 2;
       var label = (i + 1) + ' sur ' + total;
       var textSize = 9;
       var textWidth = helv.widthOfTextAtSize(label, textSize);
-      if (isLandscape) {
-        // Bas-centre : on couvre une bande large autour du milieu.
-        rectW = 160;
-        rectX = (size.width - rectW) / 2;
-        textX = (size.width - textWidth) / 2;
-      } else {
-        // Bas-droite (portrait)
-        rectW = 130;
-        rectX = size.width - 140;
-        textX = rectX + rectW - textWidth - 6;
-      }
+      var textX = (size.width - textWidth) / 2;
       try { p.drawRectangle({ x: rectX, y: rectY, width: rectW, height: rectH, color: white, opacity: 1 }); } catch (_) {}
       try {
         p.drawText(label, {

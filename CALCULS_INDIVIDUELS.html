@@ -1079,8 +1079,8 @@ label.rb-block-h{cursor:pointer}
         '<th style="' + thCss + '">P fois. (kVA)</th>' +
         '<th style="' + thCss + '">I (A)</th>' +
         '<th style="' + thCss + '">Coef. fois.</th>' +
-        '<th style="' + thCss + '">Chute (V)</th>' +
-        '<th style="' + thCss + '">% ΔU</th>' +
+        '<th style="' + thCss + '">ΔU (V)</th>' +
+        '<th style="' + thCss + '">ΔU (%)</th>' +
         '</tr></thead><tbody>';
       ccpiRows.forEach(function (it) {
         var c = it.c || {};
@@ -1111,8 +1111,8 @@ label.rb-block-h{cursor:pointer}
         '<th style="' + thCss + '">P fois. (kVA)</th>' +
         '<th style="' + thCss + '">I (A)</th>' +
         '<th style="' + thCss + '">Coef. fois.</th>' +
-        '<th style="' + thCss + '">Chute (V)</th>' +
-        '<th style="' + thCss + '">% ΔU</th>' +
+        '<th style="' + thCss + '">ΔU (V)</th>' +
+        '<th style="' + thCss + '">ΔU (%)</th>' +
         '</tr></thead><tbody>';
       cascRows.forEach(function (it) {
         var parent = byId[it.r.parentId];
@@ -1199,6 +1199,58 @@ label.rb-block-h{cursor:pointer}
     injectReseauTables();
     cleanRembtCardBlocks();
     new MutationObserver(function () { injectReseauTables(); cleanRembtCardBlocks(); }).observe(dim, { childList: true, subtree: true });
+  }
+
+  // (v3.77) Renomme « % ΔU C1 / C2 / dériv. » → « ΔU (%) » partout dans
+  // les onglets Chutes (sh-rc, sh-ct) et la Synthèse (sh-sch). Et idem
+  // pour « VU (V) » → « ΔU (V) » dans les tags du schéma.
+  function normalizeChuteHeaders(node) {
+    if (!node) return;
+    if (node.nodeType === 3) {
+      var v = node.nodeValue;
+      if (!v) return;
+      var nv = v
+        .replace(/%\s*ΔU\s*C1\+C2/g, 'ΔU (%)')
+        .replace(/%\s*ΔU\s*C[12]/g, 'ΔU (%)')
+        .replace(/%\s*ΔU\s*dériv\./g, 'ΔU (%)')
+        .replace(/%\s*ΔU/g, 'ΔU (%)')
+        .replace(/(?<![A-Za-zΔ])VU\s*\(V\)/g, 'ΔU (V)');
+      if (nv !== v) node.nodeValue = nv;
+      return;
+    }
+    if (node.nodeType !== 1) return;
+    var attrs = ['title', 'aria-label'];
+    attrs.forEach(function (a) {
+      var v = node.getAttribute(a);
+      if (!v || (!v.includes('ΔU') && !v.includes('VU '))) return;
+      var nv = v
+        .replace(/%\s*ΔU\s*C1\+C2/g, 'ΔU (%)')
+        .replace(/%\s*ΔU\s*C[12]/g, 'ΔU (%)')
+        .replace(/%\s*ΔU\s*dériv\./g, 'ΔU (%)')
+        .replace(/%\s*ΔU/g, 'ΔU (%)')
+        .replace(/VU\s*\(V\)/g, 'ΔU (V)');
+      if (nv !== v) node.setAttribute(a, nv);
+    });
+    for (var i = 0; i < node.childNodes.length; i++) normalizeChuteHeaders(node.childNodes[i]);
+  }
+  function attachChuteHeaderObserver() {
+    if (!document.body) { setTimeout(attachChuteHeaderObserver, 100); return; }
+    normalizeChuteHeaders(document.body);
+    new MutationObserver(function (mutations) {
+      for (var i = 0; i < mutations.length; i++) {
+        var m = mutations[i];
+        if (m.type === 'childList') {
+          for (var j = 0; j < m.addedNodes.length; j++) normalizeChuteHeaders(m.addedNodes[j]);
+        } else if (m.type === 'characterData') {
+          normalizeChuteHeaders(m.target);
+        }
+      }
+    }).observe(document.body, { childList: true, subtree: true, characterData: true });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', attachChuteHeaderObserver);
+  } else {
+    attachChuteHeaderObserver();
   }
   // (v3.66) Retire les blocs CCPI et Cascade dans les cartes REMBT (sh-dim) :
   // la config se fait maintenant dans l'Étape 1 + dans les tableaux d'Étape 2,
@@ -1532,12 +1584,24 @@ label.rb-block-h{cursor:pointer}
   // « limite C1+C2 » ni « Total branchement (C1+C2) » dans le PDF.
   function shouldHideC1C2(scope) { return scope === 'c1only' || scope === 'noCibe'; }
   function shouldHideRembt(scope) { return scope === 'c1only'; }
-  // Renomme « %ΔU C2 » → « %ΔU dériv. » en mode noCibe (côté 'rc' uniquement,
-  // c'est le seul cas où ça s'applique).
+  // (v3.77) Normalise tous les labels de chute pour le PDF :
+  //   « % ΔU C1 » / « % ΔU C2 » / « % ΔU dériv. » / « % ΔU » → « ΔU (%) »
+  //   « VU (V) » → « ΔU (V) »
+  function normalizeChuteLabelPdf(s) {
+    if (typeof s !== 'string') return s;
+    return s
+      .replace(/%\s*ΔU\s*C1\+C2/g, 'ΔU (%)')
+      .replace(/%\s*ΔU\s*C[12]/g, 'ΔU (%)')
+      .replace(/%\s*ΔU\s*dériv\./g, 'ΔU (%)')
+      .replace(/%\s*ΔU/g, 'ΔU (%)')
+      .replace(/(?<![A-Za-zΔ])VU\s*\(V\)/g, 'ΔU (V)');
+  }
   function fixHeaderC2Label(s, scope) {
     if (typeof s !== 'string') return s;
-    if (scope !== 'noCibe') return s;
-    return s.replace(/%\s*ΔU\s*C2/g, '% ΔU dériv.').replace(/%ΔU C2/g, '%ΔU dériv.');
+    // v3.77 : on remplace systématiquement par « ΔU (%) » au lieu de
+    // garder la nomenclature C1/C2/dériv. — l'utilisateur veut un libellé
+    // unifié partout (côté site et PDF).
+    return normalizeChuteLabelPdf(s);
   }
 
   // Identifie les indices des colonnes du `head` à supprimer en fonction
@@ -1597,23 +1661,61 @@ label.rb-block-h{cursor:pointer}
           }
         }
 
-        // 2) Renomme « %ΔU C2 » → « %ΔU dériv. » en noCibe (header).
-        if (scope === 'noCibe' && Array.isArray(opts.head)) {
-          opts.head = opts.head.map(function (row) {
-            return row.map(function (cell) {
-              if (typeof cell === 'string') return fixHeaderC2Label(cell, scope);
-              if (cell && typeof cell.content === 'string') {
-                return Object.assign({}, cell, { content: fixHeaderC2Label(cell.content, scope) });
-              }
-              return cell;
-            });
-          });
+        // 2) Normalise tous les libellés de chute (« % ΔU C1/C2/dériv. »
+        //    → « ΔU (%) ») dans le head ET dans les cellules body+head.
+        function normCell(cell) {
+          if (typeof cell === 'string') return normalizeChuteLabelPdf(cell);
+          if (cell && typeof cell.content === 'string') {
+            return Object.assign({}, cell, { content: normalizeChuteLabelPdf(cell.content) });
+          }
+          return cell;
         }
+        if (Array.isArray(opts.head)) {
+          opts.head = opts.head.map(function (row) { return row.map(normCell); });
+        }
+        if (Array.isArray(opts.body)) {
+          opts.body = opts.body.map(function (row) { return row.map(normCell); });
+        }
+        var userParse = opts.didParseCell;
+        opts.didParseCell = function (data) {
+          try {
+            if (data.cell && Array.isArray(data.cell.text)) {
+              data.cell.text = data.cell.text.map(normalizeChuteLabelPdf);
+            }
+          } catch (_) {}
+          if (typeof userParse === 'function') userParse(data);
+        };
 
         return origAutoTable.call(this, opts);
       } catch (_) { return origAutoTable.apply(this, arguments); }
     };
   }
+
+  // (v3.77) Patch jsPDF.text pour remplacer ΔU / VU dans le texte
+  // général du PDF (sous-titres, etc.) — pas seulement les tables.
+  function patchJsPdfChuteText() {
+    if (typeof jspdf === 'undefined' || !jspdf.jsPDF || !jspdf.jsPDF.prototype) {
+      setTimeout(patchJsPdfChuteText, 100); return;
+    }
+    var Proto = jspdf.jsPDF.prototype;
+    if (Proto.__algomesChutePatched) return;
+    Proto.__algomesChutePatched = true;
+    var origText = Proto.text;
+    Proto.text = function (text) {
+      try {
+        var args = Array.prototype.slice.call(arguments);
+        if (typeof args[0] === 'string') {
+          args[0] = normalizeChuteLabelPdf(args[0]);
+        } else if (Array.isArray(args[0])) {
+          args[0] = args[0].map(function (s) {
+            return typeof s === 'string' ? normalizeChuteLabelPdf(s) : s;
+          });
+        }
+        return origText.apply(this, args);
+      } catch (_) { return origText.apply(this, arguments); }
+    };
+  }
+  patchJsPdfChuteText();
 })();
 </script>
 

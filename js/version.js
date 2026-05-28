@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.70';
+window.AL_VERSION      = 'v3.71';
 window.AL_VERSION_DATE = '2026-05-28';
-window.AL_VERSION_TIME = '23:00';
-window.AL_VERSION_NOTE = 'Calculs individuels — Étape 5 (Synthèse) : retrait du bandeau de stats récapitulatives (REMBTs / Logements / Plages cumulées / Chute MAX / Limites). Géré via CSS .schema-stats{display:none}.';
+window.AL_VERSION_TIME = '23:15';
+window.AL_VERSION_NOTE = 'Calculs individuels — Étape 5 schéma : câble cascade entre REMBT n et REMBT n+1 rendu beaucoup plus visible. Trait 5 px rouge #c0392b (au lieu de 3 px bleu marine peu visible), pastille de jonction agrandie, flèche d\'arrivée plus marquée, étiquette « Câble cascade » avec bordure rouge et ombre portée. Le min-height de la zone passe de 74 à 94 px pour donner plus d\'air autour du tag.';

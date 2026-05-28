@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.56';
+window.AL_VERSION      = 'v3.57';
 window.AL_VERSION_DATE = '2026-05-28';
-window.AL_VERSION_TIME = '19:30';
-window.AL_VERSION_NOTE = 'Calculs individuels — en mode CIBE → TA seul, la colonne « % C1+C2 » du PDF n\'est plus juste renommée mais SUPPRIMÉE entièrement (header + cellules + columnStyles). En c1only il n\'y a pas de C2 à additionner, cette colonne fait double emploi avec « %ΔU C1 ». Détection : recherche d\'une chaîne /C1\\s*\\+\\s*C2/ dans le head, suppression des indices correspondants dans head + body + ajustement des columnStyles indexés.';
+window.AL_VERSION_TIME = '19:45';
+window.AL_VERSION_NOTE = 'Calculs individuels — alignement du PDF sur la logique du site (`showTotal = !c1only && !noCibe`). La colonne C1+C2 et les libellés associés sont retirés dans les modes CIBE → TA seul ET REMBT → TA sans CIBE (et pas seulement c1only). Suppression des badges de debug C1+C2 qui polluaient l\'écran.';

@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.67';
+window.AL_VERSION      = 'v3.68';
 window.AL_VERSION_DATE = '2026-05-28';
-window.AL_VERSION_TIME = '22:15';
-window.AL_VERSION_NOTE = 'Calculs individuels — bande vide entre le bandeau du haut et les onglets supprimée : la .mode-bar avait été déplacée dans l\'Étape 1 (v3.59) mais son emplacement réservé (50 px à top:48px) restait vide. .tabs descend maintenant de top:98px à top:48px et .content margin-top passe de 160 à 110 px.';
+window.AL_VERSION_TIME = '22:30';
+window.AL_VERSION_NOTE = 'Calculs individuels — la bande vide était encore là parce qu\'un <style id="shell-override"> en tête de fichier forçait .content{margin-top:112px} (calculé pour l\'ancien layout). Mise à jour à 62 px (110 nouveau total - 48 topbar) → le contenu remonte juste sous les onglets sur tous les onglets.';

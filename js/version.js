@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.61';
+window.AL_VERSION      = 'v3.62';
 window.AL_VERSION_DATE = '2026-05-28';
-window.AL_VERSION_TIME = '20:45';
-window.AL_VERSION_NOTE = 'Calculs individuels — Étape 2 : la ligne du tableau « câbles REMBT → REMBT cascade » s\'affiche maintenant aussi quand `linkChute()` renvoie null (link pas encore configuré). On affiche « — » sur les colonnes calculées au lieu de masquer la ligne — l\'utilisateur voit immédiatement les REMBTs en cascade existants et sait qu\'il faut renseigner long/section.';
+window.AL_VERSION_TIME = '21:00';
+window.AL_VERSION_NOTE = 'Calculs individuels — Étape 1 enrichie : ajout de 4 champs (1) Nombre de logements qui ajuste CI.lgts via addLgt/delLgt + affiche le nombre de REMBT résultant, (2) Toggle CCPI Oui / Non sur le REMBT racine, (3) Longueur câble CCPI → REMBT racine (visible si CCPI = Oui), (4) Longueur câble cascade REMBT → REMBT (visible si ≥ 1 REMBT enfant, s\'applique à toutes les liaisons cascade). Sync auto bidirectionnelle CI ↔ inputs (intervalle 800 ms + listeners).';

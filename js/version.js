@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.45';
+window.AL_VERSION      = 'v3.46';
 window.AL_VERSION_DATE = '2026-05-28';
-window.AL_VERSION_TIME = '16:45';
-window.AL_VERSION_NOTE = 'Autocontrôle — le texte « N niveaux » sur chaque ligne d\'escalier est désormais cliquable (souligné en pointillés) et ouvre un prompt pour modifier directement le nombre de niveaux. Avant, il fallait passer par « Renommer » qui demandait le nom puis les niveaux dans 2 prompts successifs, ce qui n\'était pas évident. Le défaut de 5 niveaux à la création d\'un bâtiment est conservé mais maintenant modifiable.';
+window.AL_VERSION_TIME = '17:00';
+window.AL_VERSION_NOTE = 'Autocontrôle — Étape 4 « PDF Officiel SéQuélec » : retrait du bandeau récapitulatif (Bâtiments / Escaliers / Pages totales / Modèle). L\'info est déjà disponible dans les étapes précédentes et dans l\'aperçu lui-même.';

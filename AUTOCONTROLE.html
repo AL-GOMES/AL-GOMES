@@ -572,8 +572,10 @@ main{padding:24px;max-width:1400px;margin:0 auto}
           <input type="number" min="0" id="f_nbSG" placeholder="2">
         </div>
         <div class="field">
-          <label for="f_pSG">P / SG</label>
-          <input type="text" id="f_pSG" placeholder="Ex : COMMERCE = 12 kVA / SGX-A = 12 kVA">
+          <label for="f_pSG">P / SG <span style="color:var(--txt-3);font-weight:400;font-size:11px">(1 ligne par SG : appuyez sur Entrée pour aller à la ligne)</span></label>
+          <textarea id="f_pSG" rows="3" style="min-height:auto;resize:vertical;line-height:1.4" placeholder="Ex :
+COMMERCE = 12 kVA
+SGX-A = 12 kVA"></textarea>
         </div>
       </div>
     </div>
@@ -930,6 +932,29 @@ main{padding:24px;max-width:1400px;margin:0 auto}
     if (!list) { setTimeout(attachObserver, 100); return; }
     decorateRows();
     new MutationObserver(decorateRows).observe(list, { childList: true, subtree: true });
+  }
+
+  // Migration auto pour le champ « P / SG » : si l'utilisateur a déjà
+  // saisi « SGX-A = 12 kVA / TGBT = 36 kVA » avec des `/`, on convertit
+  // les séparateurs en saut de ligne (le PDF passe à plusieurs lignes).
+  // Fait une seule fois par page-load, déclenche l'event 'input' pour
+  // que le code obfusqué sauvegarde la version multi-ligne.
+  function migratePsg() {
+    var ta = document.getElementById('f_pSG');
+    if (!ta) { setTimeout(migratePsg, 200); return; }
+    var v = ta.value || '';
+    if (v.indexOf('\n') === -1 && /\s*\/\s*/.test(v)) {
+      var migrated = v.split(/\s*\/\s*/).filter(function (s) { return s.trim() !== ''; }).join('\n');
+      if (migrated !== v) {
+        ta.value = migrated;
+        try { ta.dispatchEvent(new Event('input', { bubbles: true })); } catch (_) {}
+      }
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () { setTimeout(migratePsg, 300); });
+  } else {
+    setTimeout(migratePsg, 300);
   }
 
   if (document.readyState === 'loading') {

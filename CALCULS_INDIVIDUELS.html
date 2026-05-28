@@ -1389,6 +1389,31 @@ label.rb-block-h{cursor:pointer}
     if (typeof activateScenarioSheet === 'function') activateScenarioSheet();
     syncScenarioFields();
   }
+
+  // (v3.69) Monkey-patch GLOBAL de window.R : preserve l'onglet scenario
+  // actif après n'importe quel render. Nécessaire parce que des fonctions
+  // du code obfusqué (setScope, toggleCF, etc.) appellent R() directement
+  // — donc même refreshAndStay() ne suffisait pas pour les boutons mode
+  // de l'Étape 1.
+  function patchGlobalR() {
+    if (typeof R !== 'function' || R.__algomesScenarioPatched) {
+      if (typeof R !== 'function') { setTimeout(patchGlobalR, 100); return; }
+      return;
+    }
+    var origR = R;
+    var wrapped = function () {
+      var sheet = document.getElementById('sh-scenario');
+      var wasScenario = sheet && sheet.classList.contains('active');
+      var ret = origR.apply(this, arguments);
+      if (wasScenario && typeof activateScenarioSheet === 'function') {
+        try { activateScenarioSheet(); } catch (_) {}
+      }
+      return ret;
+    };
+    wrapped.__algomesScenarioPatched = true;
+    try { window.R = wrapped; } catch (_) {}
+  }
+  patchGlobalR();
   function attachScenarioFields() {
     var nbInput = document.getElementById('algo-nb-lgts');
     if (!nbInput) { setTimeout(attachScenarioFields, 150); return; }

@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.68';
+window.AL_VERSION      = 'v3.69';
 window.AL_VERSION_DATE = '2026-05-28';
-window.AL_VERSION_TIME = '22:30';
-window.AL_VERSION_NOTE = 'Calculs individuels — la bande vide était encore là parce qu\'un <style id="shell-override"> en tête de fichier forçait .content{margin-top:112px} (calculé pour l\'ancien layout). Mise à jour à 62 px (110 nouveau total - 48 topbar) → le contenu remonte juste sous les onglets sur tous les onglets.';
+window.AL_VERSION_TIME = '22:45';
+window.AL_VERSION_NOTE = 'Calculs individuels — Étape 1 : la redirection auto vers l\'Étape 2 lors d\'un clic sur les boutons « Mode de calcul » revenait, parce que setScope() du code obfusqué appelle R() directement (sans passer par mon refreshAndStay). Monkey-patch GLOBAL de window.R : si sh-scenario était actif avant R(), on le réactive après. Marche pour tous les callers (setScope, toggleCF, etc.).';

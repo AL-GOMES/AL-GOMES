@@ -465,12 +465,14 @@ label.rb-block-h{cursor:pointer}
   padding:9px 18px;border-bottom:2.5px solid #1a1a1a;text-align:center}
 
 /* Bloc REMBT (une "ligne" complète Réseau→CIBE + dérivations) */
-/* Câble de liaison cascade entre REMBT (vue synthèse) : ligne verticale CENTRÉE (alignée sur l'axe des blocs REMBT) + jonction au départ + flèche d'arrivée + étiquette posée dessus */
-.plan-wire{position:relative;min-height:74px;margin:0}
-.plan-wire-line{position:absolute;left:50%;transform:translateX(-50%);top:-16px;bottom:-16px;width:3px;background:#1f3864}
-.plan-wire-line::before{content:'';position:absolute;left:50%;top:0;width:13px;height:13px;border-radius:50%;background:#1f3864;border:2px solid #faf7ee;transform:translate(-50%,-50%)}
-.plan-wire-line::after{content:'';position:absolute;left:50%;bottom:0;transform:translate(-50%,50%);border-left:7px solid transparent;border-right:7px solid transparent;border-top:11px solid #1f3864}
-.plan-wire-tag{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;display:inline-flex;align-items:center;gap:7px;background:#fff;border:1.5px solid #1f3864;border-left:5px solid #1f3864;padding:7px 13px;font-family:'Helvetica','Arial',sans-serif;font-size:11px;font-weight:600;color:#1f3864;letter-spacing:0.3px;white-space:nowrap}
+/* Câble de liaison cascade entre REMBT (vue synthèse) : (v3.71) trait
+   bien visible — 5 px d'épaisseur, ligne pleine #c0392b style « câble
+   réseau », s'étend en hauteur pour relier visuellement REMBT n à n+1. */
+.plan-wire{position:relative;min-height:94px;margin:0}
+.plan-wire-line{position:absolute;left:50%;transform:translateX(-50%);top:-20px;bottom:-20px;width:5px;background:#c0392b;box-shadow:0 0 0 1px rgba(192,57,43,.25)}
+.plan-wire-line::before{content:'';position:absolute;left:50%;top:0;width:16px;height:16px;border-radius:50%;background:#c0392b;border:2px solid #faf7ee;transform:translate(-50%,-50%);box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.plan-wire-line::after{content:'';position:absolute;left:50%;bottom:0;transform:translate(-50%,50%);border-left:9px solid transparent;border-right:9px solid transparent;border-top:13px solid #c0392b}
+.plan-wire-tag{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;display:inline-flex;align-items:center;gap:7px;background:#fff;border:2px solid #c0392b;border-left:6px solid #c0392b;padding:8px 14px;font-family:'Helvetica','Arial',sans-serif;font-size:11.5px;font-weight:700;color:#a83232;letter-spacing:0.3px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.18)}
 .plan-wire-tag b{color:#1a1a1a}
 .plan-wire-tag b.ok{color:#2e6b3e}.plan-wire-tag b.warn{color:#b26d24}.plan-wire-tag b.bad{color:#a83232}
 .plan-rembt-section{margin-bottom:30px;padding-bottom:20px;border-bottom:1.5px dashed #c2b89a}

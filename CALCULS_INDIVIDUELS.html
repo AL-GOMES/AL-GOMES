@@ -1078,7 +1078,7 @@ label.rb-block-h{cursor:pointer}
         '<th style="' + thCss + '">Section (mm²)</th>' +
         '<th style="' + thCss + '">P fois. (kVA)</th>' +
         '<th style="' + thCss + '">I (A)</th>' +
-        '<th style="' + thCss + '">Calibre (A)</th>' +
+        '<th style="' + thCss + '">Coef. fois.</th>' +
         '<th style="' + thCss + '">VU (V)</th>' +
         '<th style="' + thCss + '">% ΔU</th>' +
         '</tr></thead><tbody>';
@@ -1091,7 +1091,7 @@ label.rb-block-h{cursor:pointer}
           '<td style="' + tdCss + '">' + sectionSelect(it.r.id, 'cf-section', it.r.cf.section) + '</td>' +
           '<td style="' + tdCss + '">' + num(c.Pfois, 1) + '</td>' +
           '<td style="' + tdCss + '">' + num(c.Itri, 0) + '</td>' +
-          '<td style="' + tdCss + '">' + num(c.calibre, 0) + '</td>' +
+          '<td style="' + tdCss + '">' + num(c.k, 2) + '</td>' +
           '<td style="' + tdCss + '">' + num(c.vu, 2) + '</td>' +
           statusCell(c.pc) +
           '</tr>';
@@ -1110,7 +1110,7 @@ label.rb-block-h{cursor:pointer}
         '<th style="' + thCss + '">Section (mm²)</th>' +
         '<th style="' + thCss + '">P fois. (kVA)</th>' +
         '<th style="' + thCss + '">I (A)</th>' +
-        '<th style="' + thCss + '">Calibre (A)</th>' +
+        '<th style="' + thCss + '">Coef. fois.</th>' +
         '<th style="' + thCss + '">VU (V)</th>' +
         '<th style="' + thCss + '">% ΔU</th>' +
         '</tr></thead><tbody>';
@@ -1125,7 +1125,7 @@ label.rb-block-h{cursor:pointer}
           '<td style="' + tdCss + '">' + sectionSelect(it.r.id, 'link-section', (it.r.link && it.r.link.section)) + '</td>' +
           '<td style="' + tdCss + '">' + num(c.Pfois, 1) + '</td>' +
           '<td style="' + tdCss + '">' + num(c.Itri, 0) + '</td>' +
-          '<td style="' + tdCss + '">' + num(c.calibre, 0) + '</td>' +
+          '<td style="' + tdCss + '">' + num(c.k, 2) + '</td>' +
           '<td style="' + tdCss + '">' + num(c.vu, 2) + '</td>' +
           statusCell(c.pc) +
           '</tr>';

@@ -1755,6 +1755,69 @@ label.rb-block-h{cursor:pointer}
       return null;
     };
 
+    // (v3.83) Schéma busbar du REMBT (Étape 2) — réimplémentation FIDÈLE de
+    // busbarSvg (géométrie/couleurs identiques), seul le rendu des modules
+    // RAC35 (role 'nonpro') change : l'original dessinait 3 sous-départs
+    // cramés par module (→ 6 flèches illisibles pour 2 RAC35). On dessine
+    // désormais une box propre avec UN départ, sans symbole disjoncteur
+    // (RAC35 = non protégé), libellée « RAC 35 ».
+    window.busbarSvg = function (rembt) {
+      var P = { RAC240: 2, RAC150: 2, RAC150b: 1, RAC35: 1, BR60T: 1, BR60M: 1, RCP400: 4 };
+      var modP = function (m) { return P[m] || 1; };
+      var layout = window.rembtLayout(rembt);
+      var used = window.rembtPlages(rembt);
+      var sugg = window.rembtSuggest(used);
+      var slots = sugg || Math.max(used, 1);
+      var NAVY = '#1f3864', BLACK = '#1a1a1a', BLUE = '#1f6fb2', YELLOW = '#f3c521', GRAY = '#9aa3b2';
+      var PW = 50, MX = 30, BY = 30, BH = 9, BOXY = BY + BH + 12, BOXH = 44,
+          ARROWY = BOXY + BOXH, AH = 24, LABELY = ARROWY + AH + 13;
+      var W = MX * 2 + slots * PW, H = LABELY + 44;
+      var esc = function (v) { return escHtml(String(v)); };
+      var xAt = function (i) { return MX + i * PW; };
+      var out = [];
+      out.push('<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" class="uni-svg" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica,Arial,sans-serif">');
+      out.push('<rect x="' + MX + '" y="' + BY + '" width="' + (slots * PW) + '" height="' + BH + '" rx="1" fill="' + YELLOW + '" stroke="' + BLACK + '" stroke-width="1"/>');
+      for (var t = 0; t <= slots; t++) { out.push('<line x1="' + xAt(t) + '" y1="' + (BY - 4) + '" x2="' + xAt(t) + '" y2="' + (BY + BH + 4) + '" stroke="' + BLACK + '" stroke-width="0.8"/>'); }
+      for (var pn = 0; pn < slots; pn++) { out.push('<text x="' + (xAt(pn) + PW / 2) + '" y="' + (BY - 7) + '" font-size="10" font-weight="700" fill="' + BLACK + '" text-anchor="middle">' + (pn + 1) + '</text>'); }
+      var arrowDown = function (x, c) { return '<line x1="' + x + '" y1="' + ARROWY + '" x2="' + x + '" y2="' + (ARROWY + AH - 8) + '" stroke="' + c + '" stroke-width="2"/><path d="M' + (x - 5) + ' ' + (ARROWY + AH - 9) + ' L' + (x + 5) + ' ' + (ARROWY + AH - 9) + ' L' + x + ' ' + (ARROWY + AH) + ' Z" fill="' + c + '"/>'; };
+      var arrowUp = function (x, c) { return '<line x1="' + x + '" y1="' + (ARROWY + AH) + '" x2="' + x + '" y2="' + (ARROWY + 8) + '" stroke="' + c + '" stroke-width="2"/><path d="M' + (x - 5) + ' ' + (ARROWY + 9) + ' L' + (x + 5) + ' ' + (ARROWY + 9) + ' L' + x + ' ' + ARROWY + ' Z" fill="' + c + '"/>'; };
+      var breaker = function (x) { return '<rect x="' + (x - 7) + '" y="' + (BOXY + 10) + '" width="14" height="22" fill="#fff" stroke="' + NAVY + '" stroke-width="1.5"/><line x1="' + x + '" y1="' + (BOXY + 10) + '" x2="' + x + '" y2="' + (BOXY + 32) + '" stroke="' + NAVY + '" stroke-width="1.5"/>'; };
+      var groups = [];
+      layout.forEach(function (it) {
+        var key = [it.role, it.mod, it.phase || '', it.sec || ''].join('|');
+        var last = groups[groups.length - 1];
+        if (last && last.key === key) last.n++;
+        else groups.push({ key: key, role: it.role, mod: it.mod, phase: it.phase, sec: it.sec, n: 1 });
+      });
+      var off = 0;
+      if (layout.length === 0) { out.push('<text x="' + (W / 2) + '" y="' + (BOXY + 28) + '" font-size="11" fill="#888" text-anchor="middle">Aucun module — rattachez des logements ou ajustez ci-dessous.</text>'); }
+      groups.forEach(function (g) {
+        var p = modP(g.mod), gx = xAt(off), gw = g.n * p * PW, gcx = gx + gw / 2;
+        for (var j = 0; j < g.n; j++) {
+          var bx = xAt(off + j * p), bw = p * PW, cx = bx + bw / 2;
+          out.push('<line x1="' + cx + '" y1="' + (BY + BH) + '" x2="' + cx + '" y2="' + BOXY + '" stroke="' + NAVY + '" stroke-width="1.4"/>');
+          out.push('<rect x="' + (bx + 5) + '" y="' + BOXY + '" width="' + (bw - 10) + '" height="' + BOXH + '" rx="2" fill="#fff" stroke="' + NAVY + '" stroke-width="1.5"/>');
+          if (g.role === 'rcp') { out.push(breaker(cx)); out.push(arrowDown(cx, NAVY)); }
+          else if (g.role === 'br') { out.push(breaker(cx)); out.push(arrowDown(cx, BLACK)); }
+          else if (g.role === 'nonpro') { out.push(arrowDown(cx, BLACK)); }
+          else if (g.role === 'arrivee') { out.push(arrowUp(cx, BLUE)); }
+          else { out.push(arrowDown(cx, BLUE)); }
+        }
+        var lab = '', sub = '';
+        if (g.role === 'rcp') { lab = 'RCP 400'; sub = 'coupure 400 / prot. 200'; }
+        else if (g.role === 'br') { lab = (g.n > 1 ? g.n + '× ' : '') + 'BR 60' + (g.phase === 'T' ? 'T' : 'M'); sub = 'protégé'; }
+        else if (g.role === 'nonpro') { lab = (g.n > 1 ? g.n + '× ' : '') + 'RAC 35'; sub = '3 dép. non prot.'; }
+        else if (g.role === 'arrivee') { lab = 'Arrivée réseau'; sub = g.sec ? g.sec + ' mm²' : ''; }
+        else { lab = (g.n > 1 ? g.n + '× ' : '') + 'Départ réseau'; sub = g.sec ? g.sec + ' mm²' : ''; }
+        out.push('<text x="' + gcx + '" y="' + LABELY + '" font-size="9" font-weight="700" fill="' + NAVY + '" text-anchor="middle">' + esc(lab) + '</text>');
+        if (sub) out.push('<text x="' + gcx + '" y="' + (LABELY + 11) + '" font-size="8.5" font-weight="500" fill="#555" text-anchor="middle">' + esc(sub) + '</text>');
+        off += g.n * p;
+      });
+      for (var f = off; f < slots; f++) { out.push('<text x="' + (xAt(f) + PW / 2) + '" y="' + (BOXY + 26) + '" font-size="8.5" fill="' + GRAY + '" text-anchor="middle">libre</text>'); }
+      out.push('</svg>');
+      return out.join('');
+    };
+
     // Persistance de projType : restaure maintenant + après chaque load().
     restoreProjTypeFromStorage();
     if (typeof window.load === 'function' && !window.load.__algomesProjPatched) {

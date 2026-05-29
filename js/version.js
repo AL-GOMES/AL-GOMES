@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.82';
+window.AL_VERSION      = 'v3.83';
 window.AL_VERSION_DATE = '2026-05-29';
-window.AL_VERSION_TIME = '11:40';
-window.AL_VERSION_NOTE = 'Calculs individuels — dimensionnement du support REMBT avec réserve de réalimentation : on garde TOUJOURS ≥ 2 plages libres → rembtSuggest passe au support plus gros (6 → 9 → 12) dès que le support choisi laisserait moins de 2 plages libres (5-6 pl. → 9 ; 8-9 pl. → 12). Au-delà de 10 plages utiles (≥ 11), même un 12 ne garde pas 2 de libre → « à diviser ». Aucun impact sous 5 plages utiles.';
+window.AL_VERSION_TIME = '12:20';
+window.AL_VERSION_NOTE = 'Calculs individuels — correction du schéma busbar du REMBT (Étape 2) cassé en lotissement depuis le passage des RAC35 en role « nonpro » (v3.81) : la branche « nonpro » de busbarSvg (jamais exécutée auparavant) dessinait 3 sous-départs cramés par module → 6 flèches illisibles pour 2 RAC35. busbarSvg est réimplémentée à l’identique (géométrie/couleurs/labels) SAUF le rendu RAC35, désormais une box propre avec un seul départ, sans symbole disjoncteur (RAC35 = non protégé), libellée « RAC 35 ». Rendu byte-for-byte identique à l’original pour RCP400 / BR60 / cascade / arrivée.';

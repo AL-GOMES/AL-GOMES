@@ -141,6 +141,7 @@ h4{font-size:14px;font-weight:600;color:var(--t1);margin:16px 0 8px;padding-bott
     <div class="nav-item" data-page="nfc14-general" onclick="showPage(this)"><span class="nav-icon">🏗️</span><span>Branchement & Types</span></div>
     <div class="nav-item" data-page="nfc14-colonne" onclick="showPage(this)"><span class="nav-icon">📐</span><span>Colonne montante</span></div>
     <div class="nav-item" data-page="nfc14-foisonnement" onclick="showPage(this)"><span class="nav-icon">📊</span><span>Foisonnement</span></div>
+    <div class="nav-item" data-page="nfc14-modules" onclick="showPage(this)"><span class="nav-icon">🔌</span><span>Modules & REMBT</span></div>
     <div class="nav-item" data-page="irve" onclick="showPage(this)"><span class="nav-icon">🔋</span><span>IRVE / Borne VE</span></div>
     <div class="nav-item" data-page="pmr" onclick="showPage(this)"><span class="nav-icon">♿</span><span>Accessibilité PMR</span></div>
     <div class="nav-item" data-page="autoconso" onclick="showPage(this)"><span class="nav-icon">☀️</span><span>Autoconso PV</span></div>
@@ -944,6 +945,96 @@ h4{font-size:14px;font-weight:600;color:var(--t1);margin:16px 0 8px;padding-bott
 </div>
 
 <!-- ===== FOISONNEMENT ===== -->
+<!-- ===== MODULES & REMBT (règles appliquées dans Calculs individuels) ===== -->
+<div class="page" id="page-nfc14-modules">
+<div class="page-title">NF C 14-100 — Modules de raccordement & REMBT</div>
+<div class="page-subtitle">Branchement collectif / lotissement — règles appliquées dans l'outil « Calculs individuels »</div>
+
+<div class="note note-accent" style="margin-bottom:18px"><strong>Cadre :</strong> cette page documente les règles de dimensionnement et de choix de matériel appliquées par l'outil <strong>Calculs individuels</strong> (note de calcul des câbles réseau, chutes de tension, nomenclature des modules Cahors G3). Les textes officiels (NF C 14-100, guides ENEDIS / SéQuélec) étant protégés, les exigences sont reformulées avec la clause de référence.</div>
+
+<div class="section open"><div class="section-header" onclick="toggleSection(this)"><span class="icon">🏷️</span><h3>Terminologie & types de projet</h3><span class="chevron">▶</span></div><div class="section-body">
+<table class="norm-table"><thead><tr><th>Terme</th><th>Signification</th></tr></thead><tbody>
+<tr><td><strong>CCPI</strong></td><td>Coupe-Circuit Principal Individuel — coffret de façade en limite de propriété (arrivée réseau).</td></tr>
+<tr><td><strong>REMBT</strong></td><td>Répartiteur / coffret modulaire BT (jeu de barres) qui distribue vers les clients. Support Cahors G3 de 6, 9 ou 12 plages.</td></tr>
+<tr><td><strong>CIBE</strong></td><td>Coffret Individuel de Branchement (un CIBE = un seul client), intercalé entre le REMBT et le tableau abonné.</td></tr>
+<tr><td><strong>T.A</strong></td><td>Tableau Abonné — origine de l'installation privative (NF C 15-100), aval AGCP.</td></tr>
+</tbody></table>
+<table class="norm-table"><thead><tr><th>Type de projet</th><th>Tête de réseau</th><th>Application</th></tr></thead><tbody>
+<tr><td><span class="tag tag-blue">Petit collectif</span></td><td><strong>RCP 400</strong> (point de coupure / protection)</td><td>Immeuble : un branchement dessert plusieurs logements (colonne / REMBT).</td></tr>
+<tr><td><span class="tag tag-green">Lotissement</span></td><td><strong>RAC 240 / RAC 150</strong> selon section</td><td>Maisons individuelles : pas de RCP 400, arrivée par RAC de fausse coupure.</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="section"><div class="section-header" onclick="toggleSection(this)"><span class="icon">🔌</span><h3>Modules de raccordement Cahors G3</h3><span class="chevron">▶</span></div><div class="section-body">
+<table class="norm-table"><thead><tr><th>Module</th><th>Réf. ENEDIS</th><th>Plages</th><th>Rôle &amp; conditions d'utilisation</th></tr></thead><tbody>
+<tr><td><span class="tag tag-blue">RCP 400</span></td><td class="val">67.71.109</td><td class="val val-red">4</td><td>Tête de réseau — raccordement + coupure 400 A / protection 200 A. <strong>Petit collectif uniquement.</strong></td></tr>
+<tr><td><span class="tag tag-green">RAC 240</span></td><td class="val">67.71.700</td><td class="val">2</td><td>Tête de réseau (lotissement) ou départ vers REMBT enfant — câble <strong>&gt; 150 mm²</strong> (240² / N 150²).</td></tr>
+<tr><td><span class="tag tag-green">RAC 150</span></td><td class="val">67.71.702</td><td class="val">2</td><td>Idem — câble <strong>96 à 150 mm²</strong>.</td></tr>
+<tr><td><span class="tag tag-green">RAC 150 (≤95)</span></td><td class="val">67.71.702</td><td class="val val-green">1</td><td>Idem — câble <strong>≤ 95 mm²</strong> (variante 1 plage).</td></tr>
+<tr><td><span class="tag tag-amber">RAC 35</span></td><td class="val">67.71.704</td><td class="val val-green">1</td><td>Départ vers T.A <strong>non protégé</strong>, <strong>avec CIBE</strong> : 3 T.A mono <strong>OU</strong> 1 T.A tri par module.</td></tr>
+<tr><td><span class="tag tag-amber">BR 60M</span></td><td class="val">67.71.706</td><td class="val val-green">1</td><td>Départ <strong>mono</strong> protégé 60 A, <strong>sans CIBE</strong> : 1 par T.A mono.</td></tr>
+<tr><td><span class="tag tag-amber">BR 60T</span></td><td class="val">67.71.708</td><td class="val val-green">1</td><td>Départ <strong>tri</strong> protégé 60 A, <strong>sans CIBE</strong> : 1 par T.A tri.</td></tr>
+</tbody></table>
+<div class="note note-info"><strong>Support du REMBT :</strong> coffret Cahors G3 <strong>REMMO 300</strong> (6 plages) / <strong>450</strong> (9 plages) / <strong>600</strong> (12 plages). La somme des plages des modules détermine la taille de support nécessaire.</div>
+</div></div>
+
+<div class="section"><div class="section-header" onclick="toggleSection(this)"><span class="icon">🔝</span><h3>Choix de la tête de réseau</h3><span class="chevron">▶</span></div><div class="section-body">
+<p>En <strong>petit collectif</strong>, la tête est un <strong>RCP 400</strong> (raccordement + coupure + protection en tête de colonne). En <strong>lotissement</strong> (maisons individuelles), pas de RCP 400 : la tête est un <strong>RAC</strong> (« fausse coupure », réseau déjà protégé en amont), dont le calibre dépend de la section du câble d'arrivée.</p>
+<table class="norm-table"><thead><tr><th>Section câble d'arrivée</th><th>Module RAC</th><th>Plages</th></tr></thead><tbody>
+<tr><td>≤ 95 mm²</td><td class="val val-green">RAC 150 (≤95)</td><td class="val">1</td></tr>
+<tr><td>96 à 150 mm²</td><td class="val">RAC 150</td><td class="val">2</td></tr>
+<tr><td>&gt; 150 mm²</td><td class="val">RAC 240</td><td class="val">2</td></tr>
+</tbody></table>
+<div class="note note-accent"><strong>Cascade REMBT → REMBT :</strong> l'alimentation d'un REMBT enfant depuis un REMBT parent utilise un départ <strong>RAC 150 ou RAC 240</strong> selon la section du câble de liaison (même règle que ci-dessus).</div>
+</div></div>
+
+<div class="section"><div class="section-header" onclick="toggleSection(this)"><span class="icon">🏠</span><h3>Départs vers les tableaux abonnés</h3><span class="chevron">▶</span></div><div class="section-body">
+<table class="norm-table"><thead><tr><th>Configuration</th><th>Module de départ</th><th>Règle</th></tr></thead><tbody>
+<tr><td><strong>Avec CIBE</strong> (REMBT → CIBE → T.A)</td><td class="val val-amber">RAC 35</td><td>3 T.A mono <strong>ou</strong> 1 T.A tri par RAC 35.</td></tr>
+<tr><td><strong>Sans CIBE</strong> (REMBT → T.A direct)</td><td class="val val-amber">BR 60M / BR 60T</td><td>1 module par T.A : BR 60M (mono) ou BR 60T (tri).</td></tr>
+</tbody></table>
+<div class="note note-info"><strong>Nombre de RAC 35 (avec CIBE) :</strong> ⌈ nombre de T.A mono / 3 ⌉ + nombre de T.A tri. Exemple : 4 mono + 1 tri ⇒ 2 + 1 = <strong>3 RAC 35</strong>.</div>
+</div></div>
+
+<div class="section"><div class="section-header" onclick="toggleSection(this)"><span class="icon">📉</span><h3>Chutes de tension (réseau & dérivations)</h3><span class="chevron">▶</span></div><div class="section-body">
+<table class="norm-table"><thead><tr><th>Grandeur</th><th>Formule</th></tr></thead><tbody>
+<tr><td>ΔU monophasé</td><td class="val">ΔU = 2 · ρ · L · I / S</td></tr>
+<tr><td>ΔU triphasé</td><td class="val">ΔU = ρ · L · I / S</td></tr>
+<tr><td>Pourcentage</td><td class="val">ΔU (%) = ΔU / 2,3 &nbsp;(référence 230 V)</td></tr>
+</tbody></table>
+<table class="norm-table"><thead><tr><th>Paramètre</th><th>Valeur</th></tr></thead><tbody>
+<tr><td>ρ aluminium</td><td class="val">0,037 Ω·mm²/m</td></tr>
+<tr><td>ρ cuivre</td><td class="val">0,0225 Ω·mm²/m</td></tr>
+<tr><td>I (dérivation)</td><td class="val">calibre du disjoncteur de branchement (AGCP)</td></tr>
+<tr><td>I (réseau / REMBT)</td><td class="val">P foisonnée × 1000 / (400 · √3)</td></tr>
+</tbody></table>
+<div class="note note-warn"><strong>Limites (preset NF C 14-100) :</strong> <strong>≤ 1 %</strong> par tronçon · <strong>≤ 2 %</strong> au total (C1 + C2). Pour une dérivation unique (lotissement), c'est la limite totale qui s'applique.</div>
+</div></div>
+
+<div class="section"><div class="section-header" onclick="toggleSection(this)"><span class="icon">🔋</span><h3>Dimensionnement du support &amp; réserve</h3><span class="chevron">▶</span></div><div class="section-body">
+<p>Le support REMBT est choisi pour laisser une <strong>réserve de réalimentation</strong> : on retient le plus petit support (6 / 9 / 12 plages) dont la taille couvre <strong>les plages utilisées + 2</strong>.</p>
+<table class="norm-table"><thead><tr><th>Plages utilisées</th><th>Support retenu</th><th>Réserve</th></tr></thead><tbody>
+<tr><td>≤ 4</td><td class="val val-green">6 plages (REMMO 300)</td><td class="val">≥ 2</td></tr>
+<tr><td>5 — 7</td><td class="val val-green">9 plages (REMMO 450)</td><td class="val">≥ 2</td></tr>
+<tr><td>8 — 10</td><td class="val val-amber">12 plages (REMMO 600)</td><td class="val">≥ 2</td></tr>
+<tr><td>≥ 11</td><td class="val val-red">à diviser</td><td class="val">—</td></tr>
+</tbody></table>
+<h4>Puissance par logement (surface)</h4>
+<table class="norm-table"><thead><tr><th>Surface</th><th>Puissance retenue</th></tr></thead><tbody>
+<tr><td>&lt; 35 m²</td><td class="val">6 kVA</td></tr>
+<tr><td>35 à 100 m²</td><td class="val">9 kVA</td></tr>
+<tr><td>≥ 100 m²</td><td class="val">12 kVA</td></tr>
+</tbody></table>
+<div class="note note-info"><strong>Foisonnement :</strong> la puissance cumulée des logements desservis est affectée d'un coefficient de foisonnement selon leur nombre — voir la page <strong>« Foisonnement »</strong> dédiée.</div>
+</div></div>
+
+<div class="sources"><strong>Sources :</strong><br>
+NF C 14-100 (édition juillet 2021) — branchements BT.<br>
+Guides pratiques SÉQUÉLEC / ENEDIS — colonnes électriques & modules Cahors G3.<br>
+Catalogue Cahors — gamme REMMO / modules de raccordement.
+</div>
+</div>
+
 <div class="page" id="page-nfc14-foisonnement">
 <div class="page-title">NF C 14-100 — Coefficients de foisonnement</div>
 <div class="page-subtitle">Simultanéité de consommation pour le dimensionnement des colonnes montantes</div>
@@ -951,18 +1042,18 @@ h4{font-size:14px;font-weight:600;color:var(--t1);margin:16px 0 8px;padding-bott
 <div class="section open"><div class="section-header" onclick="toggleSection(this)"><span class="icon">📊</span><h3>Tableau des coefficients (NF C 14-100)</h3><span class="chevron">▶</span></div><div class="section-body">
 <p>Le coefficient de foisonnement permet de ne pas surdimensionner la colonne montante : tous les logements ne consomment jamais en même temps à pleine puissance.</p>
 <table class="norm-table"><thead><tr><th>Nombre de logements desservis</th><th>Coefficient de foisonnement</th></tr></thead><tbody>
-<tr><td>2</td><td class="val val-red">1,00</td></tr>
-<tr><td>3 — 4</td><td class="val val-amber">0,78</td></tr>
-<tr><td>5 — 9</td><td class="val val-amber">0,63</td></tr>
-<tr><td>10 — 14</td><td class="val val-green">0,53</td></tr>
-<tr><td>15 — 19</td><td class="val val-green">0,49</td></tr>
-<tr><td>20 — 24</td><td class="val val-blue">0,46</td></tr>
-<tr><td>25 — 29</td><td class="val val-blue">0,44</td></tr>
-<tr><td>30 — 34</td><td class="val val-blue">0,42</td></tr>
-<tr><td>35 — 39</td><td class="val val-accent">0,41</td></tr>
-<tr><td>40 — 49</td><td class="val val-accent">0,40</td></tr>
+<tr><td>2 — 4</td><td class="val val-red">1,00</td></tr>
+<tr><td>5 — 9</td><td class="val val-amber">0,78</td></tr>
+<tr><td>10 — 14</td><td class="val val-amber">0,63</td></tr>
+<tr><td>15 — 19</td><td class="val val-green">0,53</td></tr>
+<tr><td>20 — 24</td><td class="val val-green">0,49</td></tr>
+<tr><td>25 — 29</td><td class="val val-blue">0,46</td></tr>
+<tr><td>30 — 34</td><td class="val val-blue">0,44</td></tr>
+<tr><td>35 — 39</td><td class="val val-blue">0,42</td></tr>
+<tr><td>40 — 49</td><td class="val val-accent">0,41</td></tr>
 <tr><td>≥ 50</td><td class="val val-accent">0,38</td></tr>
 </tbody></table>
+<div class="note note-info"><strong>Cohérence outil :</strong> ces valeurs sont exactement celles appliquées par l'outil <strong>Calculs individuels</strong> (table de foisonnement du moteur de calcul). Le palier <strong>2 à 4 logements</strong> n'est pas foisonné (coefficient = 1,00).</div>
 <div class="note note-accent"><strong>Formule :</strong> P colonne = Σ (P unitaire × n logements) × coefficient de foisonnement. Les puissances des clients non domestiques sont comptées en supplément, sans foisonnement.</div>
 <div class="note note-info"><strong>IRVE :</strong> Un coefficient de foisonnement spécifique est appliqué pour les bornes de recharge VE (généralement entre <strong>0,35 et 0,50</strong> selon le nombre de points de charge — voir tableau IRVE plus bas). Formule : P_IRVE = nb places × P_référence × coeff. foisonnement IRVE.</div>
 </div></div>

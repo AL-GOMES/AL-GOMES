@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.81';
+window.AL_VERSION      = 'v3.82';
 window.AL_VERSION_DATE = '2026-05-29';
-window.AL_VERSION_TIME = '11:00';
-window.AL_VERSION_NOTE = 'Calculs individuels — corrige 2 points du choix « Lotissement » (v3.80) : (1) plus aucun RCP400 possible en lotissement — rcpOn force false (même si forçage manuel rembt.rcp) et le bloc RCP400 de la carte REMBT est masqué ; (2) le schéma busbar du REMBT étiquetait les RAC35 « BR 60M » car busbarSvg se base sur item.role : les modules RAC35 utilisent désormais role « nonpro » (→ « RAC 35 » dans le schéma) tout en restant agrégés comme RAC35 dans la nomenclature. Petit collectif inchangé (RCP400 auto/manuel conservé).';
+window.AL_VERSION_TIME = '11:40';
+window.AL_VERSION_NOTE = 'Calculs individuels — dimensionnement du support REMBT avec réserve de réalimentation : on garde TOUJOURS ≥ 2 plages libres → rembtSuggest passe au support plus gros (6 → 9 → 12) dès que le support choisi laisserait moins de 2 plages libres (5-6 pl. → 9 ; 8-9 pl. → 12). Au-delà de 10 plages utiles (≥ 11), même un 12 ne garde pas 2 de libre → « à diviser ». Aucun impact sous 5 plages utiles.';

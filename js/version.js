@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.87';
+window.AL_VERSION      = 'v3.88';
 window.AL_VERSION_DATE = '2026-05-29';
-window.AL_VERSION_TIME = '14:35';
-window.AL_VERSION_NOTE = 'Calculs individuels — Étape 2 : Aide enrichie. L’accordéon « Aide » de chaque carte REMBT détaille désormais le rôle ET les conditions d’utilisation de chaque module Cahors G3 (RCP 400 petit collectif uniquement ; RAC 240/150 en tête selon section ; RAC 35 départ avec CIBE = 3 mono ou 1 tri ; BR 60M/60T départ sans CIBE ; cascade RAC 150/240 ; réserve ≥ 2 plages), avec réf. ENEDIS et nb de plages.';
+window.AL_VERSION_TIME = '15:20';
+window.AL_VERSION_NOTE = 'Calculs individuels — PDF : ajout du schéma busbar (jeu de barres) de chaque REMBT sous sa table de modules, sur la page « dim ». Le busbar est pré-rendu (SVG→PNG) avant exportPDF puis inséré ; lastAutoTable.finalY est mis à jour pour que le moteur poursuive sous le schéma (pas de chevauchement). Légende avec le type de projet (Petit collectif / Lotissement). Le PDF reflétait déjà les modules (table lue depuis dim) et les libellés (ΔU, Mono/Tri, Surf., Bat). Tout est défensif : en cas d’échec, le PDF est généré sans le schéma, jamais cassé.';

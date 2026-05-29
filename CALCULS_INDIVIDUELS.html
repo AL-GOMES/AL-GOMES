@@ -877,6 +877,26 @@ label.rb-block-h{cursor:pointer}
           inst.autoTable = makePatchedAutoTable(oAutoTable);
         }
       } catch (_) {}
+      // (v3.88) Capture du REMBT courant via le titre de la page « dim »
+      // (« NOM  ·  N logement(s)  ·  alimenté par … ») pour insérer son busbar
+      // sous sa table de modules.
+      try {
+        if (typeof inst.text === 'function') {
+          var oText = inst.text.bind(inst);
+          inst.text = function (text) {
+            try {
+              var s = (typeof text === 'string') ? text : (Array.isArray(text) ? text.join(' ') : '');
+              var m = s.match(/^(.+?)\s+·\s+\d+\s+logement\(s\)\s+·\s+aliment/);
+              if (m) {
+                var nm = m[1].trim(), ci = getCIref();
+                var r = ci && Array.isArray(ci.rembts) && ci.rembts.filter(function (x) { return x.name === nm; })[0];
+                _pdfBusbar.curRembtId = r ? r.id : null;
+              }
+            } catch (e) {}
+            return oText.apply(this, arguments);
+          };
+        }
+      } catch (_) {}
       return inst;
     }
     Wrapped.prototype = Original.prototype;
@@ -2055,6 +2075,84 @@ label.rb-block-h{cursor:pointer}
     });
     return out;
   }
+  // (v3.88) Schéma busbar dans le PDF (page « dim »). On pré-rend chaque
+  // busbar (SVG→PNG via canvas) AVANT exportPDF, puis on l'insère sous la
+  // table des modules de chaque REMBT. On met à jour lastAutoTable.finalY
+  // pour que le moteur (qui fait `Y = finalY + 6`) poursuive SOUS le schéma
+  // → aucun chevauchement. 100 % défensif : tout échec ⇒ PDF sans schéma,
+  // jamais cassé.
+  var _pdfBusbar = { cache: {}, curRembtId: null, projType: '' };
+  function _svgToPng(svg) {
+    return new Promise(function (resolve) {
+      try {
+        var img = new Image();
+        img.onload = function () {
+          try {
+            var w = img.naturalWidth || 360, h = img.naturalHeight || 176, s = 2;
+            var cv = document.createElement('canvas');
+            cv.width = Math.round(w * s); cv.height = Math.round(h * s);
+            var cx = cv.getContext('2d');
+            cx.fillStyle = '#ffffff'; cx.fillRect(0, 0, cv.width, cv.height);
+            cx.drawImage(img, 0, 0, cv.width, cv.height);
+            resolve({ png: cv.toDataURL('image/png'), w: w, h: h });
+          } catch (e) { resolve(null); }
+        };
+        img.onerror = function () { resolve(null); };
+        img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+      } catch (e) { resolve(null); }
+    });
+  }
+  function _prerenderPdfBusbars() {
+    return new Promise(function (resolve) {
+      try {
+        _pdfBusbar.cache = {}; _pdfBusbar.curRembtId = null;
+        _pdfBusbar.projType = (getProjType() === 'lotissement') ? 'Lotissement' : 'Petit collectif';
+        var ci = getCIref();
+        if (!ci || !Array.isArray(ci.rembts) || typeof window.busbarSvg !== 'function') { resolve(); return; }
+        var list = ci.rembts.slice(), i = 0;
+        (function next() {
+          if (i >= list.length) { resolve(); return; }
+          var r = list[i++], svg = '';
+          try { svg = window.busbarSvg(r); } catch (e) {}
+          if (!svg) { next(); return; }
+          _svgToPng(svg).then(function (res) { if (res) _pdfBusbar.cache[r.id] = res; next(); });
+        })();
+      } catch (e) { resolve(); }
+    });
+  }
+  function _installPdfBusbarHook() {
+    if (typeof window.exportPDF !== 'function') { setTimeout(_installPdfBusbarHook, 200); return; }
+    if (window.exportPDF.__algomesBusbar) return;
+    var orig = window.exportPDF;
+    var wrapped = function () {
+      var self = this, args = arguments;
+      return Promise.resolve(_prerenderPdfBusbars()).then(function () { return orig.apply(self, args); });
+    };
+    wrapped.__algomesBusbar = true;
+    try { window.exportPDF = wrapped; } catch (e) {}
+  }
+  _installPdfBusbarHook();
+  function _drawPdfBusbar(doc) {
+    try {
+      var rid = _pdfBusbar.curRembtId, entry = rid && _pdfBusbar.cache[rid];
+      if (!entry || !entry.png) return;
+      if (!doc.lastAutoTable || typeof doc.lastAutoTable.finalY !== 'number') return;
+      var finalY = doc.lastAutoTable.finalY;
+      var pageW = doc.internal.pageSize.getWidth();
+      var pageH = doc.internal.pageSize.getHeight();
+      var imgW = Math.min(pageW - 24, 165);
+      var imgH = imgW * (entry.h / entry.w);
+      var capH = 6, y = finalY + 4;
+      if (y + capH + imgH > pageH - 10) { doc.addPage(); y = 16; }
+      try {
+        doc.setFontSize(8.5); doc.setTextColor(40, 30, 60); doc.setFont('helvetica', 'bold');
+        doc.text('Schéma de câblage — jeu de barres  ·  ' + _pdfBusbar.projType, 12, y + 3);
+      } catch (e) {}
+      doc.addImage(entry.png, 'PNG', 12, y + capH, imgW, imgH);
+      // Le moteur poursuit à finalY + 6 → on intègre la hauteur du schéma.
+      doc.lastAutoTable.finalY = y + capH + imgH;
+    } catch (e) {}
+  }
   function makePatchedAutoTable(origAutoTable) {
     return function patchedAutoTable(opts) {
       try {
@@ -2100,7 +2198,18 @@ label.rb-block-h{cursor:pointer}
           if (typeof userParse === 'function') userParse(data);
         };
 
-        return origAutoTable.call(this, opts);
+        // (v3.88) Détecte la table des modules de la page « dim » (en-tête
+        // « Désignation ») pour insérer le schéma busbar du REMBT juste après.
+        var _isDimMod = false;
+        try {
+          _isDimMod = Array.isArray(opts.head) && opts.head[0] && opts.head[0].some(function (c) {
+            var s = (typeof c === 'string') ? c : (c && c.content);
+            return s === 'Désignation';
+          });
+        } catch (e) {}
+        var _r = origAutoTable.call(this, opts);
+        if (_isDimMod) { try { _drawPdfBusbar(this); } catch (e) {} }
+        return _r;
       } catch (_) { return origAutoTable.apply(this, arguments); }
     };
   }

@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.85';
+window.AL_VERSION      = 'v3.86';
 window.AL_VERSION_DATE = '2026-05-29';
-window.AL_VERSION_TIME = '13:35';
-window.AL_VERSION_NOTE = 'Calculs individuels — corrige le double « Étape 1 » dans le bandeau d’onglets. Le moteur renumérote ses onglets (dim/rc/ct/sch) à partir de 1 selon le scope, sans connaître l’onglet « Choix du scénario » (Étape 1, statique, lui aussi « 1 ») → deux onglets « 1 ». On renumérote désormais tous les onglets VISIBLES dans l’ordre du DOM (scénario=1, puis 2, 3, …), via un MutationObserver sur le bandeau (.tabs) qui suit les changements de numéro et de visibilité.';
+window.AL_VERSION_TIME = '14:05';
+window.AL_VERSION_NOTE = 'Calculs individuels — Étape 2 : bandeau indiquant le type de projet avec code couleur. 🏢 « Petit collectif » (violet, tête de réseau RCP 400) ou 🏠 « Lotissement — maisons individuelles » (vert, tête RAC 240/150, pas de RCP 400). Réinjecté en haut de l’Étape 2 à chaque rendu (idempotent), avec un rappel « modifiable à l’Étape 1 ».';

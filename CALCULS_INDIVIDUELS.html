@@ -1743,6 +1743,18 @@ label.rb-block-h{cursor:pointer}
     newRembtAutoItems.__algomesModuleRules = true;
     window.rembtAutoItems = newRembtAutoItems;
 
+    // (v3.82) Dimensionnement du support REMBT avec réserve de réalimentation :
+    // on garde TOUJOURS ≥ 2 plages libres → on prend le plus petit support
+    // (6/9/12 plages) dont la taille couvre « plages utilisées + 2 ». Quand
+    // même un 12 plages ne laisse pas 2 de libre (≥ 11 plages utiles) →
+    // retourne null = « à diviser ».
+    window.rembtSuggest = function (plages) {
+      var sizes = [6, 9, 12];
+      try { if (Array.isArray(REMBT_SIZES) && REMBT_SIZES.length) sizes = REMBT_SIZES; } catch (_) {}
+      for (var i = 0; i < sizes.length; i++) { if (plages + 2 <= sizes[i]) return sizes[i]; }
+      return null;
+    };
+
     // Persistance de projType : restaure maintenant + après chaque load().
     restoreProjTypeFromStorage();
     if (typeof window.load === 'function' && !window.load.__algomesProjPatched) {

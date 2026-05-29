@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.79';
+window.AL_VERSION      = 'v3.80';
 window.AL_VERSION_DATE = '2026-05-29';
-window.AL_VERSION_TIME = '02:15';
-window.AL_VERSION_NOTE = 'Calculs individuels — renommage d’en-têtes de colonnes (onglets Chutes + PDF), même mécanisme que les libellés ΔU : « M/T » → « Mono/Tri », « Surf. / kVA » / « Surface / kVA » / « S / kVA » → « Surf. », « HALL » → « Bat ». Appliqué côté site (observateur DOM sur .content) et dans le PDF (autoTable + jsPDF.text) via un point d’entrée unifié normalizeLabel (= chute + colonnes). Les colonnes « kVA » seules (Puiss. kVA, P foisonnée (kVA)…) et les valeurs M/T des lignes ne sont pas touchées.';
+window.AL_VERSION_TIME = '03:10';
+window.AL_VERSION_NOTE = 'Calculs individuels — règles métier de sélection des modules Cahors G3 (surcharge des fonctions globales du moteur) + nouveau choix « Petit collectif / Lotissement » dans l’Étape 1. (1) RCP400 réservé au petit collectif ; en lotissement (maisons individuelles) → RAC 240 / RAC 150 selon section. (2) Départ par T.A AVEC CIBE → RAC35 (3 T.A mono OU 1 T.A tri par module). (3) Départ par T.A SANS CIBE → BR60M (mono) / BR60T (tri) par T.A. (4) Départ vers REMBT enfant (cascade) → RAC 150/240 selon section (inchangé). Le type de projet est persisté (restauré au load car migrate() le strippe). Défaut « petit collectif » = comportement antérieur (rétro-compatible).';

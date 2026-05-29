@@ -642,6 +642,13 @@ label.rb-block-h{cursor:pointer}
               <button id="algo-ccpi-yes" class="scope-btn" type="button">Oui</button>
             </div>
           </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <label style="font-size:12px;color:rgba(180,190,210,.75);font-weight:600">Type de projet</label>
+            <div class="scope-toggle" style="align-self:flex-start" title="Pilote le module de tête : petit collectif → RCP400 ; lotissement (maisons individuelles) → RAC 240 / RAC 150 selon section">
+              <button id="algo-proj-collectif" class="scope-btn" type="button">Petit collectif</button>
+              <button id="algo-proj-lotissement" class="scope-btn" type="button">Lotissement</button>
+            </div>
+          </div>
           <div id="algo-ccpi-long-field" style="display:none;flex-direction:column;gap:6px;grid-column:1/-1;max-width:300px">
             <label for="algo-ccpi-long" style="font-size:12px;color:rgba(180,190,210,.75);font-weight:600">Longueur câble CCPI → REMBT racine (m)</label>
             <input type="number" id="algo-ccpi-long" min="0" step="0.5" style="background:rgba(20,22,30,.6);border:1px solid rgba(104,118,156,.35);border-radius:6px;color:#fff;padding:8px 10px;font-size:14px">
@@ -1450,6 +1457,14 @@ label.rb-block-h{cursor:pointer}
     if (longInput && root && root.cf && document.activeElement !== longInput) {
       longInput.value = root.cf.long || '';
     }
+    // Type de projet (petit collectif / lotissement) — pilote RCP400 vs RAC
+    var btnColl = document.getElementById('algo-proj-collectif');
+    var btnLot = document.getElementById('algo-proj-lotissement');
+    if (btnColl && btnLot) {
+      var isLot = (ci.projType === 'lotissement');
+      btnColl.classList.toggle('on', !isLot);
+      btnLot.classList.toggle('on', isLot);
+    }
     // Cascade entre REMBTs : un champ PAR enfant, généré dynamiquement
     var cascadeContainer = document.getElementById('algo-cascade-fields');
     var children = (Array.isArray(ci.rembts) ? ci.rembts.filter(function (r) { return r.parentId != null; }) : []);
@@ -1585,6 +1600,17 @@ label.rb-block-h{cursor:pointer}
     if (btnYes) btnYes.addEventListener('click', function () { setCcpi(true); });
     if (btnNo) btnNo.addEventListener('click', function () { setCcpi(false); });
 
+    // Type de projet : petit collectif (RCP400) / lotissement (RAC par section)
+    function setProjType(t) {
+      var ci = getCIref(); if (!ci) return;
+      ci.projType = (t === 'lotissement') ? 'lotissement' : 'collectif';
+      refreshAndStay();
+    }
+    var btnColl = document.getElementById('algo-proj-collectif');
+    var btnLot = document.getElementById('algo-proj-lotissement');
+    if (btnColl) btnColl.addEventListener('click', function () { setProjType('collectif'); });
+    if (btnLot) btnLot.addEventListener('click', function () { setProjType('lotissement'); });
+
     // Longueur CCPI → REMBT
     if (longInput) {
       longInput.addEventListener('change', function () {
@@ -1605,6 +1631,122 @@ label.rb-block-h{cursor:pointer}
   } else {
     attachScenarioFields();
   }
+
+  // ════════════════════════════════════════════════════════════════
+  // (v3.80) Règles métier de sélection des modules Cahors G3.
+  // On surcharge les fonctions GLOBALES du moteur (le moteur n'est pas
+  // dans une IIFE → ses fonctions top-level sont des propriétés de window,
+  // et ses appels « bare » les résolvent : c'est le même mécanisme que le
+  // window.R = wrapped déjà utilisé plus haut). autoModules() rappelle
+  // rembtAutoItems() à chaque rendu pour les REMBT en mode auto.
+  //
+  //   1. RCP400 → uniquement en « petit collectif » ; en « lotissement »
+  //      (maisons individuelles) → RAC 240 / RAC 150 selon section.
+  //   2. Départ par T.A AVEC CIBE (modes REMBT→CIBE→TA et CIBE→TA seul) →
+  //      RAC35 ; 3 T.A mono OU 1 T.A tri par RAC35.
+  //   3. Départ par T.A SANS CIBE (mode REMBT→TA direct) →
+  //      BR60M par T.A mono / BR60T par T.A tri.
+  //   4. Départ vers un REMBT enfant (cascade) → RAC 150/240 selon section
+  //      (comportement d'origine conservé).
+  var SKEY_CI = 'algomes_calculs_individuels_v1';
+  function getProjType() {
+    var ci = getCIref();
+    return (ci && ci.projType === 'lotissement') ? 'lotissement' : 'collectif';
+  }
+  // migrate()/load() du moteur utilisent une whitelist qui supprime
+  // projType ; save() sérialise tout CI donc projType EST persisté → on le
+  // restaure après chaque load depuis le JSON brut (défaut « collectif »).
+  function restoreProjTypeFromStorage() {
+    try {
+      var ci = getCIref(); if (!ci) return;
+      var raw = localStorage.getItem(SKEY_CI);
+      var pt = 'collectif';
+      if (raw) { var d = JSON.parse(raw); if (d && d.projType === 'lotissement') pt = 'lotissement'; }
+      ci.projType = pt;
+    } catch (_) {}
+  }
+  function installModuleRules() {
+    if (typeof window.rembtAutoItems !== 'function' ||
+        typeof window.sectionToRAC !== 'function' ||
+        typeof window.lgtPhase !== 'function' ||
+        typeof window.rcpOn !== 'function') {
+      setTimeout(installModuleRules, 120); return;
+    }
+    if (window.rembtAutoItems.__algomesModuleRules) return;
+    var _sectionToRAC = window.sectionToRAC;
+    var _lgtPhase = window.lgtPhase;
+    var _rcpOn = window.rcpOn;
+
+    // Règle 1 : RCP400 auto seulement en petit collectif (sinon RAC section).
+    // (rcpOn garde la priorité au forçage manuel rembt.rcp = true/false.)
+    window.rcpAuto = function (rembt) {
+      return getProjType() === 'collectif' && !!rembt &&
+        rembt.parentId == null && !(rembt.cf && rembt.cf.active);
+    };
+
+    var newRembtAutoItems = function (rembt) {
+      var items = [];
+      if (!rembt) return items;
+      var ci = getCIref();
+      if (!ci || !Array.isArray(ci.lgts) || !Array.isArray(ci.rembts)) return items;
+      var here = ci.lgts.filter(function (l) { return l.rembtId === rembt.id; });
+      var nMono = here.filter(function (l) { return _lgtPhase(l) === 'M'; }).length;
+      var nTri = here.filter(function (l) { return _lgtPhase(l) === 'T'; }).length;
+      var children = ci.rembts.filter(function (r) { return r.parentId === rembt.id; });
+      var isRoot = (rembt.parentId == null);
+      var hasLoad = (here.length > 0 || children.length > 0);
+
+      // Tête : RCP400 (collectif) ou RAC selon section (lotissement / enfant).
+      if (hasLoad || !isRoot) {
+        if (_rcpOn(rembt)) {
+          items.push({ role: 'rcp', mod: 'RCP400' });
+        } else {
+          var sec = 240;
+          if (rembt.parentId != null && rembt.link) sec = rembt.link.section;
+          else if (rembt.cf && rembt.cf.active) sec = rembt.cf.section;
+          items.push({ role: 'arrivee', mod: _sectionToRAC(sec), sec: sec });
+        }
+      }
+
+      // Départs vers les T.A rattachés ici.
+      // CIBE présent dans tous les modes sauf « REMBT → TA direct » (noCibe).
+      var withCibe = (ci.scope !== 'noCibe');
+      if (withCibe) {
+        // Règle 2 : RAC35 — 3 T.A mono OU 1 T.A tri par module.
+        var nRac35 = Math.ceil(nMono / 3) + nTri;
+        for (var i = 0; i < nRac35; i++) items.push({ role: 'br', mod: 'RAC35' });
+      } else {
+        // Règle 3 : BR60T par T.A tri, BR60M par T.A mono.
+        for (var t = 0; t < nTri; t++) items.push({ role: 'br', mod: 'BR60T', phase: 'T' });
+        for (var m = 0; m < nMono; m++) items.push({ role: 'br', mod: 'BR60M', phase: 'M' });
+      }
+
+      // Règle 4 : départs cascade vers REMBT enfants — RAC selon section.
+      children.forEach(function (child) {
+        var csec = (child.link && child.link.section) || 240;
+        items.push({ role: 'depart', mod: _sectionToRAC(csec), sec: csec, to: child.name });
+      });
+      return items;
+    };
+    newRembtAutoItems.__algomesModuleRules = true;
+    window.rembtAutoItems = newRembtAutoItems;
+
+    // Persistance de projType : restaure maintenant + après chaque load().
+    restoreProjTypeFromStorage();
+    if (typeof window.load === 'function' && !window.load.__algomesProjPatched) {
+      var origLoad = window.load;
+      var wrappedLoad = function () {
+        var r = origLoad.apply(this, arguments);
+        restoreProjTypeFromStorage();
+        return r;
+      };
+      wrappedLoad.__algomesProjPatched = true;
+      try { window.load = wrappedLoad; } catch (_) {}
+    }
+    // Recalcule les REMBT auto avec les nouvelles règles.
+    try { if (typeof window.R === 'function') window.R(); } catch (_) {}
+  }
+  installModuleRules();
 
   // ────────────────────────────────────────────────────────────────
   // (v3.52) Correction des libellés « C1+C2 » dans le PDF quand le

@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.93';
+window.AL_VERSION      = 'v3.94';
 window.AL_VERSION_DATE = '2026-05-29';
-window.AL_VERSION_TIME = '18:30';
-window.AL_VERSION_NOTE = 'Calculs individuels — PDF : la page « Schéma récapitulatif » ne contient plus que le schéma unifilaire. Le « TABLEAU RÉCAPITULATIF — tous les logements » qui suivait le schéma n’est plus inclus (table non dessinée + barre de titre effacée), sans toucher aux pieds de page ni à la pagination.';
+window.AL_VERSION_TIME = '19:25';
+window.AL_VERSION_NOTE = 'Calculs individuels — PDF : la page « Schéma récapitulatif » affiche désormais le schéma unifilaire EXACT de l’Étape 4 (le SVG du site est capturé et embarqué en image), à la place de l’arbre que le moteur redessinait. L’arbre du moteur et le tableau récapitulatif sont effacés. Pour un projet sur une seule page de schéma (cas courant) le rendu est propre ; à signaler si très gros arbre multi-pages.';

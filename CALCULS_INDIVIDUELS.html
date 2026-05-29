@@ -2133,6 +2133,24 @@ label.rb-block-h{cursor:pointer}
       } catch (e) { resolve(); }
     });
   }
+  // (v3.94) Capture le schéma unifilaire EXACT de l'Étape 4 (SVG `.uni-svg`
+  // rendu par renderSchema dans #sh-sch) → PNG, pour l'embarquer dans le PDF
+  // (page « Schéma récapitulatif ») à la place de l'arbre redessiné par le
+  // moteur. Le SVG est autonome (styles inline) donc convertible tel quel.
+  var _pdfUnif = null;
+  function _capturePdfUnif() {
+    return new Promise(function (resolve) {
+      try {
+        _pdfUnif = null;
+        var el = document.querySelector('#sh-sch .uni-svg') || document.querySelector('#sh-sch svg');
+        if (!el) { resolve(); return; }
+        var svg = el.outerHTML;
+        if (!svg || svg.indexOf('<svg') === -1) { resolve(); return; }
+        if (svg.indexOf('xmlns') === -1) svg = svg.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+        _svgToPng(svg).then(function (res) { if (res) _pdfUnif = res; resolve(); });
+      } catch (e) { resolve(); }
+    });
+  }
   function _installPdfBusbarHook() {
     if (typeof window.exportPDF !== 'function') { setTimeout(_installPdfBusbarHook, 200); return; }
     if (window.exportPDF.__algomesBusbar) return;
@@ -2141,6 +2159,7 @@ label.rb-block-h{cursor:pointer}
       var self = this, args = arguments;
       return Promise.resolve(_loadPdfLogo())
         .then(function () { return _prerenderPdfBusbars(); })
+        .then(function () { return _capturePdfUnif(); })
         .then(function () { return orig.apply(self, args); });
     };
     wrapped.__algomesBusbar = true;
@@ -2324,11 +2343,23 @@ label.rb-block-h{cursor:pointer}
         if (_pdfBusbar.recapPending) {
           _pdfBusbar.recapPending = false;
           try {
-            var _sy = opts && opts.startY;
-            if (typeof _sy === 'number') {
-              var _pwR = this.internal.pageSize.getWidth();
+            var _pwR = this.internal.pageSize.getWidth();
+            var _phR = this.internal.pageSize.getHeight();
+            if (_pdfUnif && _pdfUnif.png && _pdfUnif.w && _pdfUnif.h) {
+              // (v3.94) Remplace l'arbre redessiné par le moteur par le schéma
+              // EXACT de l'Étape 4 : on efface la zone de contenu (sous l'en-tête,
+              // au-dessus du pied de page) puis on dessine le SVG capturé.
               this.setFillColor(255, 255, 255);
-              this.rect(0, _sy - 9, _pwR, 9, 'F');
+              this.rect(0, 20, _pwR, _phR - 32, 'F');
+              var _aw = _pwR - 20, _ah = _phR - 22 - 12;
+              var _sc = Math.min(_aw / _pdfUnif.w, _ah / _pdfUnif.h);
+              var _iw = _pdfUnif.w * _sc, _ih = _pdfUnif.h * _sc;
+              this.addImage(_pdfUnif.png, 'PNG', (_pwR - _iw) / 2, 22, _iw, _ih);
+            } else {
+              // Pas de SVG capturé : on garde l'arbre du moteur, on efface juste
+              // la barre de titre du tableau récap.
+              var _sy = opts && opts.startY;
+              if (typeof _sy === 'number') { this.setFillColor(255, 255, 255); this.rect(0, _sy - 9, _pwR, 9, 'F'); }
             }
           } catch (e) {}
           return;

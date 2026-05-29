@@ -1348,6 +1348,8 @@ label.rb-block-h{cursor:pointer}
         if (/Coffret de façade.*CCPI/.test(txt)) { block.style.display = 'none'; return; }
         // Cascade block : « 🔗 Liaison cascade — câble … »
         if (/Liaison cascade/.test(txt)) { block.style.display = 'none'; return; }
+        // (v3.81) Bloc RCP400 : sans objet en lotissement (maisons indiv.).
+        if (getProjType() === 'lotissement' && /RCP\s*400/.test(txt)) { block.style.display = 'none'; return; }
       });
     } catch (_) {}
   }
@@ -1675,14 +1677,22 @@ label.rb-block-h{cursor:pointer}
     if (window.rembtAutoItems.__algomesModuleRules) return;
     var _sectionToRAC = window.sectionToRAC;
     var _lgtPhase = window.lgtPhase;
-    var _rcpOn = window.rcpOn;
 
     // Règle 1 : RCP400 auto seulement en petit collectif (sinon RAC section).
-    // (rcpOn garde la priorité au forçage manuel rembt.rcp = true/false.)
-    window.rcpAuto = function (rembt) {
+    var newRcpAuto = function (rembt) {
       return getProjType() === 'collectif' && !!rembt &&
         rembt.parentId == null && !(rembt.cf && rembt.cf.active);
     };
+    window.rcpAuto = newRcpAuto;
+    // En LOTISSEMENT : jamais de RCP400, même si rembt.rcp a été forcé à la
+    // main (le bloc UI est aussi masqué, cf. cleanRembtCardBlocks). En petit
+    // collectif : forçage manuel prioritaire, sinon auto.
+    var newRcpOn = function (rembt) {
+      if (getProjType() === 'lotissement') return false;
+      if (rembt && (rembt.rcp === true || rembt.rcp === false)) return rembt.rcp;
+      return newRcpAuto(rembt);
+    };
+    window.rcpOn = newRcpOn;
 
     var newRembtAutoItems = function (rembt) {
       var items = [];
@@ -1698,7 +1708,7 @@ label.rb-block-h{cursor:pointer}
 
       // Tête : RCP400 (collectif) ou RAC selon section (lotissement / enfant).
       if (hasLoad || !isRoot) {
-        if (_rcpOn(rembt)) {
+        if (newRcpOn(rembt)) {
           items.push({ role: 'rcp', mod: 'RCP400' });
         } else {
           var sec = 240;
@@ -1713,8 +1723,10 @@ label.rb-block-h{cursor:pointer}
       var withCibe = (ci.scope !== 'noCibe');
       if (withCibe) {
         // Règle 2 : RAC35 — 3 T.A mono OU 1 T.A tri par module.
+        // role 'nonpro' → busbarSvg étiquette « RAC 35 » (role 'br' donnerait
+        // « BR 60M »). La nomenclature agrège par item.mod = 'RAC35'.
         var nRac35 = Math.ceil(nMono / 3) + nTri;
-        for (var i = 0; i < nRac35; i++) items.push({ role: 'br', mod: 'RAC35' });
+        for (var i = 0; i < nRac35; i++) items.push({ role: 'nonpro', mod: 'RAC35' });
       } else {
         // Règle 3 : BR60T par T.A tri, BR60M par T.A mono.
         for (var t = 0; t < nTri; t++) items.push({ role: 'br', mod: 'BR60T', phase: 'T' });

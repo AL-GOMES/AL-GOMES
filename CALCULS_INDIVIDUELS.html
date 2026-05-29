@@ -2221,61 +2221,59 @@ label.rb-block-h{cursor:pointer}
       var coverIdx = doc.internal.getNumberOfPages();
       doc.setPage(coverIdx);
 
+      // (v3.91) Mise en page calée pour l'A4 PAYSAGE (≈ 297 × 210 mm).
       // Bandeau haut + logo
-      doc.setFillColor(NAVY[0], NAVY[1], NAVY[2]); doc.rect(0, 0, pw, 46, 'F');
+      doc.setFillColor(NAVY[0], NAVY[1], NAVY[2]); doc.rect(0, 0, pw, 36, 'F');
       if (_pdfLogo) {
-        try { var lh = 22, lw = lh * _pdfLogo.ratio; doc.setFillColor(255, 255, 255);
-          doc.roundedRect((pw - lw) / 2 - 4, 12, lw + 8, lh + 6, 2, 2, 'F');
-          doc.addImage(_pdfLogo.data, 'PNG', (pw - lw) / 2, 15, lw, lh); } catch (e) {}
+        try { var lh = 20, lw = lh * _pdfLogo.ratio; doc.setFillColor(255, 255, 255);
+          doc.roundedRect((pw - lw) / 2 - 4, 7, lw + 8, lh + 5, 2, 2, 'F');
+          doc.addImage(_pdfLogo.data, 'PNG', (pw - lw) / 2, 9, lw, lh); } catch (e) {}
       } else {
-        doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(22);
-        doc.text(PDF_COMPANY.name, pw / 2, 28, { align: 'center' });
+        doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(20);
+        doc.text(PDF_COMPANY.name, pw / 2, 22, { align: 'center' });
       }
 
       // Titre du document
-      doc.setTextColor(DARK[0], DARK[1], DARK[2]); doc.setFont('helvetica', 'bold'); doc.setFontSize(26);
-      doc.text('NOTE DE CALCUL', pw / 2, 76, { align: 'center' });
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(13); doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
-      doc.text(_pdfCoverDocTitle(), pw / 2, 86, { align: 'center' });
-      doc.setFontSize(10.5); doc.setTextColor(GREY[0], GREY[1], GREY[2]);
-      doc.text('Conforme NF C 14-100', pw / 2, 94, { align: 'center' });
+      doc.setTextColor(DARK[0], DARK[1], DARK[2]); doc.setFont('helvetica', 'bold'); doc.setFontSize(24);
+      doc.text('NOTE DE CALCUL', pw / 2, 54, { align: 'center' });
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(12.5); doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
+      doc.text(_pdfCoverDocTitle(), pw / 2, 63, { align: 'center' });
+      doc.setFontSize(10); doc.setTextColor(GREY[0], GREY[1], GREY[2]);
+      doc.text('Conforme NF C 14-100', pw / 2, 70, { align: 'center' });
       doc.setDrawColor(NAVY[0], NAVY[1], NAVY[2]); doc.setLineWidth(0.8);
-      doc.line(pw / 2 - 28, 99, pw / 2 + 28, 99);
+      doc.line(pw / 2 - 26, 74, pw / 2 + 26, 74);
 
       // Bloc Affaire
-      var bx = 28, bw = pw - 56, by = 112;
+      var bx = 34, bw = pw - 68, by = 82;
       doc.setDrawColor(LINE[0], LINE[1], LINE[2]); doc.setLineWidth(0.4);
-      doc.setFillColor(247, 249, 252); doc.roundedRect(bx, by, bw, 38, 2.5, 2.5, 'FD');
-      function field(label, val, y) {
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(GREY[0], GREY[1], GREY[2]);
-        doc.text(label, bx + 8, y);
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(DARK[0], DARK[1], DARK[2]);
-        doc.text(String(val || '—'), bx + 8, y + 6.5);
-      }
+      doc.setFillColor(247, 249, 252); doc.roundedRect(bx, by, bw, 30, 2.5, 2.5, 'FD');
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(GREY[0], GREY[1], GREY[2]);
+      doc.text('AFFAIRE', bx + 8, by + 8);
+      doc.setFontSize(12.5); doc.setTextColor(DARK[0], DARK[1], DARK[2]);
+      doc.text(String(ci.P || 'Sans titre'), bx + 8, by + 14.5, { maxWidth: bw * 0.6 });
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(GREY[0], GREY[1], GREY[2]);
+      doc.text('DATE', bx + bw - 60, by + 8);
+      doc.setFontSize(12.5); doc.setTextColor(DARK[0], DARK[1], DARK[2]);
+      doc.text(new Date().toLocaleDateString('fr-FR'), bx + bw - 60, by + 14.5);
       var typeTxt = (getProjType() === 'lotissement') ? 'Lotissement (maisons individuelles)' : 'Petit collectif';
-      field('AFFAIRE', ci.P || 'Sans titre', by + 9);
       doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(GREY[0], GREY[1], GREY[2]);
-      doc.text('DATE', bx + bw - 52, by + 9);
-      doc.setFontSize(12); doc.setTextColor(DARK[0], DARK[1], DARK[2]);
-      doc.text(new Date().toLocaleDateString('fr-FR'), bx + bw - 52, by + 15.5);
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(GREY[0], GREY[1], GREY[2]);
-      doc.text('TYPE DE PROJET', bx + 8, by + 26);
+      doc.text('TYPE DE PROJET', bx + 8, by + 22);
       doc.setFontSize(11); doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
-      doc.text(typeTxt, bx + 8, by + 32.5);
+      doc.text(typeTxt, bx + 8, by + 27.5);
 
       // Bloc récapitulatif
-      var ry = by + 48;
       doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
-      doc.text('RÉCAPITULATIF', bx, ry); ry += 4;
+      doc.text('RÉCAPITULATIF', bx, 122);
+      var ry = 125;
       doc.setDrawColor(LINE[0], LINE[1], LINE[2]); doc.setFillColor(255, 255, 255);
-      doc.roundedRect(bx, ry, bw, 30, 2.5, 2.5, 'FD');
+      doc.roundedRect(bx, ry, bw, 28, 2.5, 2.5, 'FD');
       var nR = Array.isArray(ci.rembts) ? ci.rembts.length : 0;
       var nL = Array.isArray(ci.lgts) ? ci.lgts.length : 0;
       function stat(x, label, val) {
         doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
-        doc.text(String(val), x, ry + 13, { align: 'center' });
+        doc.text(String(val), x, ry + 12, { align: 'center' });
         doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(GREY[0], GREY[1], GREY[2]);
-        doc.text(label, x, ry + 21, { align: 'center' });
+        doc.text(label, x, ry + 20, { align: 'center' });
       }
       var c1 = bx + bw * 0.17, c2 = bx + bw * 0.39, c3 = bx + bw * 0.63, c4 = bx + bw * 0.86;
       stat(c1, 'REMBT(s)', nR);
@@ -2284,20 +2282,20 @@ label.rb-block-h{cursor:pointer}
       stat(c4, 'Limite totale', (typeof ci.limTot === 'number' ? ci.limTot : 2) + ' %');
 
       // Bloc émetteur (bas de page)
-      var ey = ph - 56;
+      var ey = ph - 44;
       doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(GREY[0], GREY[1], GREY[2]);
       doc.text('ÉMETTEUR', bx, ey);
       doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(DARK[0], DARK[1], DARK[2]);
       doc.text(PDF_COMPANY.name + '  —  ' + PDF_COMPANY.activite, bx, ey + 7);
       doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(GREY[0], GREY[1], GREY[2]);
-      doc.text(PDF_COMPANY.adresse + ', ' + PDF_COMPANY.cpville, bx, ey + 13.5);
-      doc.text('Tél : ' + PDF_COMPANY.tel + '     ·     ' + PDF_COMPANY.email, bx, ey + 19);
+      doc.text(PDF_COMPANY.adresse + ', ' + PDF_COMPANY.cpville, bx, ey + 13);
+      doc.text('Tél : ' + PDF_COMPANY.tel + '     ·     ' + PDF_COMPANY.email, bx, ey + 18);
 
       // Mentions légales (tout en bas)
       doc.setDrawColor(LINE[0], LINE[1], LINE[2]); doc.setLineWidth(0.3);
-      doc.line(bx, ph - 16, bx + bw, ph - 16);
+      doc.line(bx, ph - 15, bx + bw, ph - 15);
       doc.setFontSize(7); doc.setTextColor(150, 155, 165);
-      doc.text(PDF_COMPANY.legal, pw / 2, ph - 11, { align: 'center', maxWidth: bw });
+      doc.text(PDF_COMPANY.legal, pw / 2, ph - 10, { align: 'center', maxWidth: bw });
 
       // Déplace la page de garde en 1ʳᵉ position.
       try { if (typeof doc.movePage === 'function') doc.movePage(coverIdx, 1); } catch (e) {}

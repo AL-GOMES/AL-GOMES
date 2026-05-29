@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.88';
+window.AL_VERSION      = 'v3.89';
 window.AL_VERSION_DATE = '2026-05-29';
-window.AL_VERSION_TIME = '15:20';
-window.AL_VERSION_NOTE = 'Calculs individuels — PDF : ajout du schéma busbar (jeu de barres) de chaque REMBT sous sa table de modules, sur la page « dim ». Le busbar est pré-rendu (SVG→PNG) avant exportPDF puis inséré ; lastAutoTable.finalY est mis à jour pour que le moteur poursuive sous le schéma (pas de chevauchement). Légende avec le type de projet (Petit collectif / Lotissement). Le PDF reflétait déjà les modules (table lue depuis dim) et les libellés (ΔU, Mono/Tri, Surf., Bat). Tout est défensif : en cas d’échec, le PDF est généré sans le schéma, jamais cassé.';
+window.AL_VERSION_TIME = '16:10';
+window.AL_VERSION_NOTE = 'Calculs individuels — PDF : page de garde « PRO ». 1ʳᵉ page dédiée (bandeau bleu marine + logo ALGOMES, titre « NOTE DE CALCUL », sous-titre selon scénario, « Conforme NF C 14-100 », encart Affaire/Date/Type de projet, encart récap REMBTs/logements/limites, bloc émetteur A.L. GOMES + adresse + tél + email récupérés des Attestations, mentions légales Siret/TVA/APE en bas). Ajoutée au save puis déplacée en 1ʳᵉ position (page de garde non numérotée, le contenu garde « Page X »). Pied de page enrichi du Siret. 100 % défensif : tout échec ⇒ PDF généré sans la page de garde, jamais cassé. Rendu à valider en navigateur.';

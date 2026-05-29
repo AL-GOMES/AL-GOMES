@@ -1348,8 +1348,12 @@ label.rb-block-h{cursor:pointer}
         if (/Coffret de façade.*CCPI/.test(txt)) { block.style.display = 'none'; return; }
         // Cascade block : « 🔗 Liaison cascade — câble … »
         if (/Liaison cascade/.test(txt)) { block.style.display = 'none'; return; }
-        // (v3.81) Bloc RCP400 : sans objet en lotissement (maisons indiv.).
-        if (getProjType() === 'lotissement' && /RCP\s*400/.test(txt)) { block.style.display = 'none'; return; }
+        // (v3.81/84) Bloc toggle RCP400 : sans objet en lotissement. On cible
+        // le libellé EXACT du toggle (« Point de coupure / protection réseau »)
+        // et surtout PAS « RCP 400 » seul, sinon on masquait aussi le bloc
+        // Modules (son éditeur « Ajuster les modules » liste tous les modules,
+        // dont RCP 400) → la section Modules + schéma disparaissait (v3.81→83).
+        if (getProjType() === 'lotissement' && /Point de coupure \/ protection réseau/.test(txt)) { block.style.display = 'none'; return; }
       });
     } catch (_) {}
   }

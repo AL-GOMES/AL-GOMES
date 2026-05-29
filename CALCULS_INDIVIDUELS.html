@@ -2146,20 +2146,25 @@ label.rb-block-h{cursor:pointer}
   function _drawPdfBusbar(doc) {
     try {
       var rid = _pdfBusbar.curRembtId, entry = rid && _pdfBusbar.cache[rid];
-      if (!entry || !entry.png) return;
+      if (!entry || !entry.png || !entry.w || !entry.h) return;
       if (!doc.lastAutoTable || typeof doc.lastAutoTable.finalY !== 'number') return;
-      var finalY = doc.lastAutoTable.finalY;
       var pageW = doc.internal.pageSize.getWidth();
       var pageH = doc.internal.pageSize.getHeight();
-      var imgW = Math.min(pageW - 24, 165);
+      var capH = 6, y = doc.lastAutoTable.finalY + 4;
+      // (v3.90) On NE crée PLUS de page séparée : le schéma est dimensionné
+      // pour tenir dans la place restante sous la table → table + schéma
+      // restent sur la même page.
+      var avail = (pageH - 12) - (y + capH);
+      if (avail < 16) return; // place insuffisante : on n'ajoute pas (pas de page isolée)
+      var imgW = Math.min(pageW - 24, 150);
       var imgH = imgW * (entry.h / entry.w);
-      var capH = 6, y = finalY + 4;
-      if (y + capH + imgH > pageH - 10) { doc.addPage(); y = 16; }
+      if (imgH > avail) { imgH = avail; imgW = imgH * (entry.w / entry.h); } // réduit pour tenir
+      var x = (pageW - imgW) / 2; // centré
       try {
         doc.setFontSize(8.5); doc.setTextColor(40, 30, 60); doc.setFont('helvetica', 'bold');
-        doc.text('Schéma de câblage — jeu de barres  ·  ' + _pdfBusbar.projType, 12, y + 3);
+        doc.text('Schéma de câblage — jeu de barres  ·  ' + _pdfBusbar.projType, x, y + 3);
       } catch (e) {}
-      doc.addImage(entry.png, 'PNG', 12, y + capH, imgW, imgH);
+      doc.addImage(entry.png, 'PNG', x, y + capH, imgW, imgH);
       // Le moteur poursuit à finalY + 6 → on intègre la hauteur du schéma.
       doc.lastAutoTable.finalY = y + capH + imgH;
     } catch (e) {}

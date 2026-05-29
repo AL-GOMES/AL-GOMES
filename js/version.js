@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.89';
+window.AL_VERSION      = 'v3.90';
 window.AL_VERSION_DATE = '2026-05-29';
-window.AL_VERSION_TIME = '16:10';
-window.AL_VERSION_NOTE = 'Calculs individuels — PDF : page de garde « PRO ». 1ʳᵉ page dédiée (bandeau bleu marine + logo ALGOMES, titre « NOTE DE CALCUL », sous-titre selon scénario, « Conforme NF C 14-100 », encart Affaire/Date/Type de projet, encart récap REMBTs/logements/limites, bloc émetteur A.L. GOMES + adresse + tél + email récupérés des Attestations, mentions légales Siret/TVA/APE en bas). Ajoutée au save puis déplacée en 1ʳᵉ position (page de garde non numérotée, le contenu garde « Page X »). Pied de page enrichi du Siret. 100 % défensif : tout échec ⇒ PDF généré sans la page de garde, jamais cassé. Rendu à valider en navigateur.';
+window.AL_VERSION_TIME = '16:45';
+window.AL_VERSION_NOTE = 'Calculs individuels — PDF : le schéma busbar tient désormais sur la MÊME page que la table de modules de son REMBT (plus de page séparée) : il est dimensionné pour la place restante sous la table (largeur max 150 mm, réduit si besoin), centré, sans saut de page. + (v3.89) page de garde « PRO ».'; 1ʳᵉ page dédiée (bandeau bleu marine + logo ALGOMES, titre « NOTE DE CALCUL », sous-titre selon scénario, « Conforme NF C 14-100 », encart Affaire/Date/Type de projet, encart récap REMBTs/logements/limites, bloc émetteur A.L. GOMES + adresse + tél + email récupérés des Attestations, mentions légales Siret/TVA/APE en bas). Ajoutée au save puis déplacée en 1ʳᵉ position (page de garde non numérotée, le contenu garde « Page X »). Pied de page enrichi du Siret. 100 % défensif : tout échec ⇒ PDF généré sans la page de garde, jamais cassé. Rendu à valider en navigateur.';

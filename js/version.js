@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.80';
+window.AL_VERSION      = 'v3.81';
 window.AL_VERSION_DATE = '2026-05-29';
-window.AL_VERSION_TIME = '03:10';
-window.AL_VERSION_NOTE = 'Calculs individuels — règles métier de sélection des modules Cahors G3 (surcharge des fonctions globales du moteur) + nouveau choix « Petit collectif / Lotissement » dans l’Étape 1. (1) RCP400 réservé au petit collectif ; en lotissement (maisons individuelles) → RAC 240 / RAC 150 selon section. (2) Départ par T.A AVEC CIBE → RAC35 (3 T.A mono OU 1 T.A tri par module). (3) Départ par T.A SANS CIBE → BR60M (mono) / BR60T (tri) par T.A. (4) Départ vers REMBT enfant (cascade) → RAC 150/240 selon section (inchangé). Le type de projet est persisté (restauré au load car migrate() le strippe). Défaut « petit collectif » = comportement antérieur (rétro-compatible).';
+window.AL_VERSION_TIME = '11:00';
+window.AL_VERSION_NOTE = 'Calculs individuels — corrige 2 points du choix « Lotissement » (v3.80) : (1) plus aucun RCP400 possible en lotissement — rcpOn force false (même si forçage manuel rembt.rcp) et le bloc RCP400 de la carte REMBT est masqué ; (2) le schéma busbar du REMBT étiquetait les RAC35 « BR 60M » car busbarSvg se base sur item.role : les modules RAC35 utilisent désormais role « nonpro » (→ « RAC 35 » dans le schéma) tout en restant agrégés comme RAC35 dans la nomenclature. Petit collectif inchangé (RCP400 auto/manuel conservé).';

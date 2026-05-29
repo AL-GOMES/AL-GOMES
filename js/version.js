@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.84';
+window.AL_VERSION      = 'v3.85';
 window.AL_VERSION_DATE = '2026-05-29';
-window.AL_VERSION_TIME = '13:05';
-window.AL_VERSION_NOTE = 'Calculs individuels — corrige la VRAIE cause du « schéma cassé » en lotissement (régression v3.81) : le masquage du bloc toggle RCP400 (cleanRembtCardBlocks) utilisait le motif « RCP 400 », qui matchait AUSSI le bloc « Modules » (son éditeur « Ajuster les modules » liste tous les modules, dont RCP 400) → toute la section Modules + schéma du REMBT était masquée en lotissement. On cible désormais le libellé exact du toggle « Point de coupure / protection réseau » → seul ce toggle est masqué, la section Modules + schéma (avec le rendu RAC35 propre de la v3.83) réapparaît.';
+window.AL_VERSION_TIME = '13:35';
+window.AL_VERSION_NOTE = 'Calculs individuels — corrige le double « Étape 1 » dans le bandeau d’onglets. Le moteur renumérote ses onglets (dim/rc/ct/sch) à partir de 1 selon le scope, sans connaître l’onglet « Choix du scénario » (Étape 1, statique, lui aussi « 1 ») → deux onglets « 1 ». On renumérote désormais tous les onglets VISIBLES dans l’ordre du DOM (scénario=1, puis 2, 3, …), via un MutationObserver sur le bandeau (.tabs) qui suit les changements de numéro et de visibilité.';

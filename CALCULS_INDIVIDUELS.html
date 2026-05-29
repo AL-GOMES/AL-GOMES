@@ -1427,6 +1427,43 @@ label.rb-block-h{cursor:pointer}
     attachScenarioTab();
   }
 
+  // (v3.85) Renumérotation du bandeau d'onglets. Le moteur renumérote SES
+  // onglets (dim/rc/ct/sch) à partir de 1 selon le scope, sans connaître
+  // l'onglet « Choix du scénario » (Étape 1, statique, lui aussi « 1 ») →
+  // deux onglets « 1 ». On renumérote tous les onglets VISIBLES dans l'ordre
+  // du DOM (1, 2, 3, …). Le moteur masque les onglets non applicables via
+  // style.display='none' (c1only → rc+dim ; noCibe → ct), qu'on saute.
+  function fixTabNumbers() {
+    try {
+      var tabs = document.querySelectorAll('.tabs .tab');
+      var n = 0;
+      for (var i = 0; i < tabs.length; i++) {
+        var tab = tabs[i];
+        if (tab.style.display === 'none') continue;
+        var numEl = tab.querySelector('.tab-num');
+        if (!numEl) continue;
+        n++;
+        if (numEl.textContent !== String(n)) numEl.textContent = String(n);
+      }
+    } catch (_) {}
+  }
+  function attachTabNumberObserver() {
+    var bar = document.querySelector('.tabs');
+    if (!bar) { setTimeout(attachTabNumberObserver, 120); return; }
+    fixTabNumbers();
+    // Le moteur écrit les numéros (characterData) et masque/affiche les
+    // onglets (attribut style). On renumérote après chaque changement.
+    new MutationObserver(fixTabNumbers).observe(bar, {
+      childList: true, subtree: true, characterData: true,
+      attributes: true, attributeFilter: ['style']
+    });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', attachTabNumberObserver);
+  } else {
+    attachTabNumberObserver();
+  }
+
   // (v3.62) Étape 1 : champs Nombre de logements + CCPI oui/non + longueur.
   // Synchro état CI ↔ inputs, déclenche les fonctions existantes addLgt /
   // delLgt + save() + R() pour ajuster lgts et REMBTs.

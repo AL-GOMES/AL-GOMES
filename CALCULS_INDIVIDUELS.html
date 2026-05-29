@@ -1200,6 +1200,40 @@ label.rb-block-h{cursor:pointer}
       setTimeout(function () { _injectingReseau = false; }, 50);
     }
   }
+  // (v3.87) Aide enrichie de l'Étape 2 : détaille le rôle et les conditions
+  // d'utilisation de chaque module Cahors G3. Remplace le corps de l'accordéon
+  // « Aide » de chaque carte REMBT (réinjecté à chaque rendu, idempotent).
+  var MODULE_HELP_HTML =
+    '<table class="rb-ref">' +
+      '<tr><th>Module</th><th>ENEDIS</th><th>Pl.</th><th>Rôle &amp; conditions d’utilisation</th></tr>' +
+      '<tr><td class="fl L">RCP 400</td><td>67.71.109</td><td>4</td><td class="L">Tête de réseau — raccordement + coupure 400 A / protection 200 A. <b>Petit collectif uniquement.</b></td></tr>' +
+      '<tr><td class="fl L">RAC 240</td><td>67.71.700</td><td>2</td><td class="L">Tête de réseau (lotissement) ou départ vers un REMBT enfant — câble <b>&gt; 150 mm²</b>.</td></tr>' +
+      '<tr><td class="fl L">RAC 150</td><td>67.71.702</td><td>2</td><td class="L">Idem — câble <b>96 à 150 mm²</b>.</td></tr>' +
+      '<tr><td class="fl L">RAC 150 (≤95)</td><td>67.71.702</td><td>1</td><td class="L">Idem — câble <b>≤ 95 mm²</b> (variante 1 plage).</td></tr>' +
+      '<tr><td class="fl L">RAC 35</td><td>67.71.704</td><td>1</td><td class="L">Départ vers T.A <b>non protégé</b>. <b>Avec CIBE</b> : <b>3 T.A mono OU 1 T.A tri</b> par module.</td></tr>' +
+      '<tr><td class="fl L">BR 60M</td><td>67.71.706</td><td>1</td><td class="L">Départ <b>mono</b> protégé 60 A. <b>Sans CIBE</b> : 1 par T.A mono.</td></tr>' +
+      '<tr><td class="fl L">BR 60T</td><td>67.71.708</td><td>1</td><td class="L">Départ <b>tri</b> protégé 60 A. <b>Sans CIBE</b> : 1 par T.A tri.</td></tr>' +
+    '</table>' +
+    '<p class="rb-help-p"><b>🔌 Tête de réseau</b> — RCP 400 en <b>petit collectif</b> ; en <b>lotissement</b> → RAC 240/150 selon la section du câble d’arrivée.</p>' +
+    '<p class="rb-help-p"><b>🏠 Départ par T.A</b> — un CIBE est intercalé → <b>RAC 35</b> (3 mono ou 1 tri par module) ; pas de CIBE → <b>BR 60M</b> (mono) / <b>BR 60T</b> (tri), un par T.A.</p>' +
+    '<p class="rb-help-p"><b>🔗 Cascade REMBT → REMBT</b> — RAC 150 ou RAC 240 selon la section du câble de liaison.</p>' +
+    '<p class="rb-help-p"><b>📏 Section → module</b> — ≤ 95 mm² : RAC 150 (1 pl.) · 96–150 : RAC 150 (2 pl.) · &gt; 150 : RAC 240.</p>' +
+    '<p class="rb-help-p"><b>🔋 Réserve de réalimentation</b> — on garde toujours <b>≥ 2 plages libres</b> → support 6/9/12 plages (REMMO 300/450/600) choisi en conséquence.</p>';
+  function enhanceModuleHelp() {
+    var dim = document.getElementById('sh-dim');
+    if (!dim) return;
+    var helps = dim.querySelectorAll('details.rembt-help');
+    for (var i = 0; i < helps.length; i++) {
+      var h = helps[i];
+      if (h.dataset.algomesHelp === '1') continue;
+      var body = h.querySelector('.rembt-help-body');
+      if (!body) continue;
+      h.dataset.algomesHelp = '1';
+      var sum = h.querySelector('summary');
+      if (sum) sum.innerHTML = '💡 Aide — modules Cahors G3 : rôles &amp; conditions d’utilisation';
+      body.innerHTML = MODULE_HELP_HTML;
+    }
+  }
   // (v3.86) Bandeau indiquant le type de projet en Étape 2 (sh-dim), avec
   // code couleur : 🏢 Petit collectif (RCP 400) / 🏠 Lotissement (RAC). Réinjecté
   // à chaque rendu (renderDim réécrit sh-dim). Idempotent via data-projtype.
@@ -1245,7 +1279,8 @@ label.rb-block-h{cursor:pointer}
     injectReseauTables();
     cleanRembtCardBlocks();
     injectProjTypeBadge();
-    new MutationObserver(function () { injectReseauTables(); cleanRembtCardBlocks(); injectProjTypeBadge(); }).observe(dim, { childList: true, subtree: true });
+    enhanceModuleHelp();
+    new MutationObserver(function () { injectReseauTables(); cleanRembtCardBlocks(); injectProjTypeBadge(); enhanceModuleHelp(); }).observe(dim, { childList: true, subtree: true });
   }
 
   // (v3.78) Mapping UNIFIÉ des libellés de chute de tension — réutilisé

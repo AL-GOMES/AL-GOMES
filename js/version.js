@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.86';
+window.AL_VERSION      = 'v3.87';
 window.AL_VERSION_DATE = '2026-05-29';
-window.AL_VERSION_TIME = '14:05';
-window.AL_VERSION_NOTE = 'Calculs individuels — Étape 2 : bandeau indiquant le type de projet avec code couleur. 🏢 « Petit collectif » (violet, tête de réseau RCP 400) ou 🏠 « Lotissement — maisons individuelles » (vert, tête RAC 240/150, pas de RCP 400). Réinjecté en haut de l’Étape 2 à chaque rendu (idempotent), avec un rappel « modifiable à l’Étape 1 ».';
+window.AL_VERSION_TIME = '14:35';
+window.AL_VERSION_NOTE = 'Calculs individuels — Étape 2 : Aide enrichie. L’accordéon « Aide » de chaque carte REMBT détaille désormais le rôle ET les conditions d’utilisation de chaque module Cahors G3 (RCP 400 petit collectif uniquement ; RAC 240/150 en tête selon section ; RAC 35 départ avec CIBE = 3 mono ou 1 tri ; BR 60M/60T départ sans CIBE ; cascade RAC 150/240 ; réserve ≥ 2 plages), avec réf. ENEDIS et nb de plages.';

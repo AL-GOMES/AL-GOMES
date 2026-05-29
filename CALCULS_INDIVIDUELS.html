@@ -894,6 +894,10 @@ label.rb-block-h{cursor:pointer}
                 var r = ci && Array.isArray(ci.rembts) && ci.rembts.filter(function (x) { return x.name === nm; })[0];
                 _pdfBusbar.curRembtId = r ? r.id : null;
               }
+              // (v3.93) page « Schéma récapitulatif » : on ne garde QUE le schéma
+              // unifilaire → on repère le titre du « TABLEAU RÉCAPITULATIF » pour
+              // ne PAS dessiner ce tableau (cf. makePatchedAutoTable).
+              if (s.indexOf('TABLEAU RÉCAPITULATIF') !== -1) _pdfBusbar.recapPending = true;
             } catch (e) {}
             return oText.apply(this, arguments);
           };
@@ -2114,7 +2118,7 @@ label.rb-block-h{cursor:pointer}
   function _prerenderPdfBusbars() {
     return new Promise(function (resolve) {
       try {
-        _pdfBusbar.cache = {}; _pdfBusbar.curRembtId = null;
+        _pdfBusbar.cache = {}; _pdfBusbar.curRembtId = null; _pdfBusbar.recapPending = false;
         _pdfBusbar.projType = (getProjType() === 'lotissement') ? 'Lotissement' : 'Petit collectif';
         var ci = getCIref();
         if (!ci || !Array.isArray(ci.rembts) || typeof window.busbarSvg !== 'function') { resolve(); return; }
@@ -2312,6 +2316,23 @@ label.rb-block-h{cursor:pointer}
     return function patchedAutoTable(opts) {
       try {
         opts = Object.assign({}, opts || {});
+        // (v3.93) Page « Schéma récapitulatif » : on ne conserve QUE le schéma
+        // unifilaire. Le « TABLEAU RÉCAPITULATIF — tous les logements » (repéré
+        // par son titre via inst.text) n'est PAS dessiné, et on efface sa barre
+        // de titre (rectangle blanc). C'est le dernier élément de la page, donc
+        // ne pas le dessiner ne décale rien.
+        if (_pdfBusbar.recapPending) {
+          _pdfBusbar.recapPending = false;
+          try {
+            var _sy = opts && opts.startY;
+            if (typeof _sy === 'number') {
+              var _pwR = this.internal.pageSize.getWidth();
+              this.setFillColor(255, 255, 255);
+              this.rect(0, _sy - 9, _pwR, 9, 'F');
+            }
+          } catch (e) {}
+          return;
+        }
         var scope = getScope();
 
         // 1) Suppression des colonnes (REMBT en c1only, C1+C2 en c1only/noCibe).

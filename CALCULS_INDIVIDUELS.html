@@ -1200,12 +1200,52 @@ label.rb-block-h{cursor:pointer}
       setTimeout(function () { _injectingReseau = false; }, 50);
     }
   }
+  // (v3.86) Bandeau indiquant le type de projet en Étape 2 (sh-dim), avec
+  // code couleur : 🏢 Petit collectif (RCP 400) / 🏠 Lotissement (RAC). Réinjecté
+  // à chaque rendu (renderDim réécrit sh-dim). Idempotent via data-projtype.
+  function injectProjTypeBadge() {
+    var dim = document.getElementById('sh-dim');
+    if (!dim) return;
+    var lot = (getProjType() === 'lotissement');
+    var type = lot ? 'lotissement' : 'collectif';
+    var existing = dim.querySelector('.algomes-projtype-badge');
+    if (existing && existing.dataset.projtype === type) return;
+    var col = lot ? '#5FE09A' : '#8B86D2';
+    var bg = lot ? 'rgba(95,224,154,.12)' : 'rgba(139,134,210,.16)';
+    var bord = lot ? 'rgba(95,224,154,.45)' : 'rgba(139,134,210,.5)';
+    var icon = lot ? '🏠' : '🏢';
+    var label = lot ? 'Lotissement — maisons individuelles' : 'Petit collectif';
+    var sub = lot
+      ? 'Tête de réseau : RAC 240 / RAC 150 selon section · pas de RCP 400'
+      : 'Tête de réseau : RCP 400 (point de coupure / protection)';
+    var inner =
+      '<span style="font-size:18px;line-height:1">' + icon + '</span>' +
+      '<span style="display:flex;flex-direction:column;line-height:1.25">' +
+        '<b style="color:' + col + ';font-size:13.5px;letter-spacing:.3px">' + escHtml(label) + '</b>' +
+        '<span style="font-size:11px;color:rgba(180,190,210,.75)">' + escHtml(sub) + '</span>' +
+      '</span>' +
+      '<span style="margin-left:auto;font-size:10.5px;color:rgba(180,190,210,.55)">↩ modifiable à l’Étape 1</span>';
+    if (existing) {
+      existing.dataset.projtype = type;
+      existing.style.background = bg;
+      existing.style.borderColor = bord;
+      existing.innerHTML = inner;
+    } else {
+      var el = document.createElement('div');
+      el.className = 'algomes-projtype-badge';
+      el.dataset.projtype = type;
+      el.style.cssText = 'display:flex;align-items:center;gap:12px;margin:0 0 16px;padding:10px 16px;border-radius:10px;background:' + bg + ';border:1px solid ' + bord;
+      el.innerHTML = inner;
+      dim.insertBefore(el, dim.firstChild);
+    }
+  }
   function attachReseauObserver() {
     var dim = document.getElementById('sh-dim');
     if (!dim) { setTimeout(attachReseauObserver, 100); return; }
     injectReseauTables();
     cleanRembtCardBlocks();
-    new MutationObserver(function () { injectReseauTables(); cleanRembtCardBlocks(); }).observe(dim, { childList: true, subtree: true });
+    injectProjTypeBadge();
+    new MutationObserver(function () { injectReseauTables(); cleanRembtCardBlocks(); injectProjTypeBadge(); }).observe(dim, { childList: true, subtree: true });
   }
 
   // (v3.78) Mapping UNIFIÉ des libellés de chute de tension — réutilisé

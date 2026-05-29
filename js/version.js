@@ -9,7 +9,7 @@
 //   `js/version.js?b=NN` dans accueil.html (sinon le navigateur peut
 //   servir une ancienne version.js en cache et le bandeau reste figé).
 // =====================================================================
-window.AL_VERSION      = 'v3.91';
+window.AL_VERSION      = 'v3.92';
 window.AL_VERSION_DATE = '2026-05-29';
-window.AL_VERSION_TIME = '17:20';
-window.AL_VERSION_NOTE = 'Calculs individuels — PDF : correction de la page de garde — le bloc Émetteur chevauchait le Récapitulatif car les positions étaient calées en portrait alors que le PDF est en A4 PAYSAGE (297×210). Toute la page de garde est recalée pour le paysage (210 mm de haut) : titre, encart Affaire/Date/Type, encart Récap (REMBTs/logements/limites), bloc Émetteur, mentions légales — sans chevauchement. + (v3.90) schéma busbar sur la même page que sa table.'; 1ʳᵉ page dédiée (bandeau bleu marine + logo ALGOMES, titre « NOTE DE CALCUL », sous-titre selon scénario, « Conforme NF C 14-100 », encart Affaire/Date/Type de projet, encart récap REMBTs/logements/limites, bloc émetteur A.L. GOMES + adresse + tél + email récupérés des Attestations, mentions légales Siret/TVA/APE en bas). Ajoutée au save puis déplacée en 1ʳᵉ position (page de garde non numérotée, le contenu garde « Page X »). Pied de page enrichi du Siret. 100 % défensif : tout échec ⇒ PDF généré sans la page de garde, jamais cassé. Rendu à valider en navigateur.';
+window.AL_VERSION_TIME = '17:55';
+window.AL_VERSION_NOTE = 'Correctif version.js : la note v3.90/v3.91 laissait un résidu de l’ancienne note après le point-virgule (erreur de syntaxe) → version.js ne se chargeait plus et le bandeau affichait « --- ». Note réécrite proprement. Rappel des MAJ PDF récentes : page de garde A4 paysage (logo, titre, affaire/date/type, récap, émetteur A.L. GOMES, mentions légales) et schéma busbar sur la même page que la table de modules de chaque REMBT.';
